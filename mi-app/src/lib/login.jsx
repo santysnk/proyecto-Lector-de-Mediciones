@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import "./login.css";
 
 const usuariosValidos = [
@@ -21,7 +22,7 @@ const Login = () => {
 	};
 
 	return (
-		<form onSubmit={handleSubmit}>
+		<form onSubmit={handleSubmit} className="login-form">
 			<div className="container">
 				<div className="izquierda">
 					<img
@@ -65,7 +66,9 @@ const Login = () => {
 								Iniciar sesión
 							</button>
 							<p className="recordarme">¿Olvidaste tu contraseña?</p>
-							<p className="registrarse">¿No tienes cuenta? registrate</p>
+							<Link to="/registro" className="registrarse">
+								¿No tienes cuenta? registrate
+							</Link>
 						</div>
 					</div>
 				</div>

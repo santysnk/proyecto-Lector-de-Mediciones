@@ -3,11 +3,16 @@
 	box-sizing: border-box;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;      /* evita la barra horizontal por si algo se pasa */
+}
+
 body {
-	margin: 0;
-	padding: 0;
-	background-color: black;
-	font-family: "Baloo Bhai 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-color: black;
+  font-family: "Baloo Bhai 2", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* Fuentes */
@@ -27,13 +32,21 @@ body {
 	font-display: swap;
 }
 
+.login-form {
+  margin: 0;
+  padding: 0;
+
+}
+
 /* 2) Contenedor principal pantalla completa sin overflow */
 .container {
-	height: 100vh;
-	width: 100vw;
-	display: flex;
-	font-family: "Baloo Bhai 2", system-ui, -apple-system, "Segoe UI", sans-serif;
+  position: relative;
+  min-height: 100vh;   /* ocupa alto de la pantalla */
+  min-width: 100%;         /* ocupa todo el ancho disponible del form/viewport */
+  display: flex;
+  font-family: "Baloo Bhai 2", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
+
 
 /* 3) Columna izquierda (logo) */
 .izquierda {
