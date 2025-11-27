@@ -1,8 +1,8 @@
 // src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "./lib/login.jsx";
-import Registro from "./lib/Registro.jsx";
+import Login from "./lib/Login/login.jsx";
+import Registro from "./lib/Registro/Registro.jsx";
 
 function App() {
 	return (

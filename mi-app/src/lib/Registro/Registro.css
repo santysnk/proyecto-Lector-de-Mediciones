@@ -1,0 +1,77 @@
+/* Estilos específicos de la pantalla de registro */
+
+/* Título "REGISTRO" */
+.registro-page .titulo-registro {
+	text-align: center;
+	color: #ffffff;
+	font-size: 30px;
+	margin: 8px 0 16px;
+}
+
+/* Labels de campos (Nombre completo, Usuario, etc.) */
+.registro-page .label-registro {
+	text-align: left;
+	color: #ffffff;
+	font-size: 22px;
+	/* un poco más chico */
+	margin: 10px 0 2px 0;
+	/* menos espacio vertical */
+}
+
+/* Panel celeste un poco más compacto en REGISTRO */
+.registro-page .derecha {
+	position: relative;
+	padding: 24px 32px 24px;
+	/* antes 40px */
+	margin: 10px;
+	/* menos margen vertical */
+}
+
+.registro-page .input {
+	padding: 14px 16px;
+	/* antes 18px 20px */
+	margin-bottom: 10px;
+	/* menos separación entre campos */
+}
+
+.registro-page .acciones {
+	margin-top: 20px;
+	/* antes 38px */
+	align-items: center;
+}
+
+
+/* Botón volver colocado en el área del padding de .derecha */
+.registro-page .btn-volver {
+  position: absolute;
+  top: 24px;     /* el mismo padding-top que uses en .derecha */
+  left: 32px;    /* el mismo padding-left que uses en .derecha */
+
+  padding: 8px 20px;
+  border-radius: 999px;
+  border: none;
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.registro-page .btn-volver:hover {
+  background-color: rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+}
+
+/* Texto de error debajo del campo */
+.registro-page .error-text {
+  color: #9c0a0a;        /* rojo más intenso */
+  font-size: 16px;
+   font-weight: 500;
+  margin: 4px 0 0 4px;
+}
+
+/* Agrega un * delante del mensaje */
+.registro-page .error-text::before {
+  content: "* ";
+  font-weight: bold;
+}
