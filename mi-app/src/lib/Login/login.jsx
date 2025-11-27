@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./login.css";
 
-const usuariosValidos = [
-	{ usuario: "admin", contraseña: "admin" },
-	{ usuario: "santy", contraseña: "santy1985" },
-	{ usuario: "vani", contraseña: "vani1981" },
-];
+const [usuariosValidos, setUsuariosValidos] = useState([])
+
+useEffect(() => {
+	fetch("http://localhost:4000/users")
+	.then(response => response.json())
+	.then(data => setUsuariosValidos(data))
+});
 
 const Login = () => {
 	const [usuario, setUsuario] = useState("");

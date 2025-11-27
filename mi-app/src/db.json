@@ -1,0 +1,21 @@
+{
+    "users": [
+    { "id": "1" ,
+    "Nombre": "administrador",
+    "Usuario": "admin" ,
+    "Email": "admin@gmail.com",
+        "Contraseña": "admin1234"},
+
+    { "id": "2" ,
+    "Nombre": "Santiago Casal",
+    "Usuario": "Santy" ,
+    "Email": "Santiago@gmail.com",
+        "Contraseña": "santy1985"},
+
+    { "id": "3" ,
+    "Nombre": "Vanina Labrunee",
+    "Usuario": "Vani" ,
+    "Email": "vanina@gmail.com",
+        "Contraseña": "vani1981"}
+    ]
+}

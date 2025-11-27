@@ -5,6 +5,7 @@ import Login from "./lib/Login/login.jsx";
 import Registro from "./lib/Registro/Registro.jsx";
 
 function App() {
+	
 	return (
 		
 			<Routes>
