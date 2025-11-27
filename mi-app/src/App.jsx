@@ -4,9 +4,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./lib/Login/login.jsx";
 import Registro from "./lib/Registro/Registro.jsx";
 
-function App() {
-	
-	return (
+function App() {	
+
+		return (
 		
 			<Routes>
 				{/* Ruta principal: login */}

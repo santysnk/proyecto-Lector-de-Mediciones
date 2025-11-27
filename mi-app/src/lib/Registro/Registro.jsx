@@ -4,6 +4,16 @@ import { useNavigate } from "react-router-dom";
 import "../Login/login.css";
 import "./Registro.css";
 
+
+
+/*	const [usuariosValidos, setUsuariosValidos] = useState([])
+	
+	useEffect(() => {
+		fetch("http://localhost:4000/users")
+		.then(response => response.json())
+		.then(data => setUsuariosValidos(data))
+	});*/
+
 const Registro = () => {
 	const [nombre, setNombre] = useState("");
 	const [usuario, setUsuario] = useState("");
