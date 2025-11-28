@@ -6,7 +6,6 @@ import "./Registro.css";
 
 
 const Registro = () => {
-	const [usuariosValidos, setUsuariosValidos] = useState([])
 	const [nombre, setNombre] = useState("");
 	const [usuario, setUsuario] = useState("");
 	const [email, setEmail] = useState("");
@@ -14,12 +13,6 @@ const Registro = () => {
 	const [confirmar, setConfirmar] = useState("");
 
 	const [errores, setErrores] = useState({}) // { nombre: "...", usuario: "...", ... }
-
-	useEffect(() => {
-		fetch("http://localhost:4000/users")
-		.then(response => response.json())
-		.then(data => setUsuariosValidos(data))
-	})
 
 	const navigate = useNavigate();
 

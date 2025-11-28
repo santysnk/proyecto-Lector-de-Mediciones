@@ -4,7 +4,7 @@
     "Nombre": "administrador",
     "Usuario": "admin" ,
     "Email": "admin@gmail.com",
-        "Contraseña": "admin1234"},
+        "Contraseña": "admin"},
 
     { "id": "2" ,
     "Nombre": "Santiago Casal",
