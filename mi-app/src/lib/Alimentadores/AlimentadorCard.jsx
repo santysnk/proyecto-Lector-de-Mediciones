@@ -1,20 +1,38 @@
+// src/lib/Alimentadores/AlimentadorCard.jsx
 import React from "react";
 import "./Alimentadores.css";
-import configIcon from "../../assets/imagenes/Config_Icon.png"; // 
+import configIcon from "../../assets/imagenes/Config_Icon.png";
 
-const AlimentadorCard = ({ nombre, color, onConfigClick }) => {
+const AlimentadorCard = ({
+   nombre,
+   color,
+   onConfigClick,
+   draggable = false,
+   isDragging = false,
+   onDragStart,
+   onDragOver,
+   onDrop,
+   onDragEnd,
+}) => {
    return (
-      <div className="alim-card">
+      <div
+         className={"alim-card" + (isDragging ? " alim-card-dragging" : "")}
+         style={{ cursor: draggable ? "grab" : "default" }}
+         draggable={draggable}
+         onDragStart={onDragStart}
+         onDragOver={onDragOver}
+         onDrop={onDrop}
+         onDragEnd={onDragEnd}
+      >
          <div
             className="alim-card-header"
             style={{ backgroundColor: color || "#0ea5e9" }}
          >
-            {/* botón de configuración a la IZQUIERDA */}
             <button
                type="button"
                className="alim-card-config-btn"
                onClick={onConfigClick}
-               title="Configurar alimentador"
+               title="Configurar registrador"
             >
                <img
                   src={configIcon}
@@ -23,10 +41,10 @@ const AlimentadorCard = ({ nombre, color, onConfigClick }) => {
                />
             </button>
 
-            {/* título centrado */}
             <span className="alim-card-title">{nombre}</span>
          </div>
 
+         {/* resto del cuerpo igual que ya lo tenías */}
          <div className="alim-card-body">
             <div className="alim-card-section">
                <h3 className="alim-card-section-title">CONSUMO (A)</h3>

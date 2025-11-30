@@ -1,3 +1,4 @@
+// src/lib/Alimentadores/NuevoAlimentadorModal.jsx
 import React, { useEffect, useState } from "react";
 import "./Alimentadores.css";
 
@@ -23,14 +24,12 @@ const NuevoAlimentadorModal = ({
    initialData,
    onCancelar,
    onConfirmar,
+   onEliminar, // 👈 nueva prop
 }) => {
    const [nombre, setNombre] = useState("");
    const [color, setColor] = useState(COLORES_ALIM[0]);
-
-   // pestaña activa: "rele" o "analizador"
    const [tab, setTab] = useState("rele");
 
-   // Config RELÉ
    const [rele, setRele] = useState({
       ip: "",
       puerto: "",
@@ -39,7 +38,6 @@ const NuevoAlimentadorModal = ({
       relacionTI: "",
    });
 
-   // Config ANALIZADOR
    const [analizador, setAnalizador] = useState({
       ip: "",
       puerto: "502",
@@ -48,7 +46,6 @@ const NuevoAlimentadorModal = ({
       relacionTI: "",
    });
 
-   // Cada vez que se abre el modal, reseteamos campos
    useEffect(() => {
       if (abierto) {
          if (initialData) {
@@ -72,7 +69,6 @@ const NuevoAlimentadorModal = ({
                relacionTI: initialData.analizador?.relacionTI ?? "",
             });
          } else {
-            // valores por defecto (como ya tenías)
             setNombre("");
             setColor(COLORES_ALIM[0]);
             setTab("rele");
@@ -104,8 +100,6 @@ const NuevoAlimentadorModal = ({
       const datos = {
          nombre: limpioNombre,
          color,
-
-         // Mandamos la config de ambos equipos
          rele: {
             ...rele,
             puerto: rele.puerto ? Number(rele.puerto) : null,
@@ -135,18 +129,29 @@ const NuevoAlimentadorModal = ({
       onConfirmar(datos);
    };
 
+   const handleEliminarClick = () => {
+      if (!onEliminar) return;
+      const seguro = window.confirm(
+         "¿Seguro que querés eliminar este registrador?"
+      );
+      if (seguro) {
+         onEliminar();
+      }
+   };
+
    return (
       <div className="alim-modal-overlay">
          <div className="alim-modal">
             <h2>
-               {modo === "editar" ? "Editar alimentador en " : "Nuevo alimentador en "}
+               {modo === "editar"
+                  ? "EDITAR REGISTRADOR: EN "
+                  : "NUEVO REGISTRADOR: EN "}
                {puestoNombre}
             </h2>
 
             <form onSubmit={handleSubmit}>
-               {/* Nombre */}
                <label className="alim-modal-label">
-                  Nombre del alimentador
+                  Nombre
                   <input
                      type="text"
                      className="alim-modal-input"
@@ -157,7 +162,6 @@ const NuevoAlimentadorModal = ({
                   />
                </label>
 
-               {/* Paleta de colores */}
                <div className="alim-color-picker">
                   <div className="alim-color-grid">
                      {COLORES_ALIM.map((c) => (
@@ -175,7 +179,6 @@ const NuevoAlimentadorModal = ({
                   </div>
                </div>
 
-               {/* Pestañas RELÉ / ANALIZADOR */}
                <div className="alim-tabs">
                   <button
                      type="button"
@@ -198,9 +201,9 @@ const NuevoAlimentadorModal = ({
                   </button>
                </div>
 
-               {/* === Contenido de pestaña RELÉ === */}
                {tab === "rele" && (
                   <div className="alim-modal-grid">
+                     {/* campos RELÉ como ya los tenías */}
                      <label className="alim-field">
                         <span className="alim-field-label">Dirección IP</span>
                         <input
@@ -213,7 +216,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 172.16.0.1"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Puerto</span>
                         <input
@@ -226,7 +228,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 502"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Índice inicial</span>
                         <input
@@ -242,7 +243,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 137"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">
                            Cant. registros
@@ -260,7 +260,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 3"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Relación T.I</span>
                         <input
@@ -279,9 +278,9 @@ const NuevoAlimentadorModal = ({
                   </div>
                )}
 
-               {/* === Contenido de pestaña ANALIZADOR === */}
                {tab === "analizador" && (
                   <div className="alim-modal-grid">
+                     {/* campos ANALIZADOR como ya los tenías */}
                      <label className="alim-field">
                         <span className="alim-field-label">Dirección IP</span>
                         <input
@@ -297,7 +296,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 172.16.0.5"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Puerto</span>
                         <input
@@ -313,7 +311,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 502"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Índice inicial</span>
                         <input
@@ -329,7 +326,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 200"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">
                            Cant. registros
@@ -347,7 +343,6 @@ const NuevoAlimentadorModal = ({
                            placeholder="Ej: 10"
                         />
                      </label>
-
                      <label className="alim-field">
                         <span className="alim-field-label">Relación T.I</span>
                         <input
@@ -367,6 +362,16 @@ const NuevoAlimentadorModal = ({
                )}
 
                <div className="alim-modal-actions">
+						{modo === "editar" && (
+                     <button
+                        type="button"
+                        className="alim-modal-btn alim-modal-btn-eliminar"
+                        onClick={handleEliminarClick}
+                     >
+                        Eliminar
+                     </button>
+                  )}
+
                   <button
                      type="button"
                      className="alim-modal-btn alim-modal-btn-cancelar"
@@ -374,6 +379,7 @@ const NuevoAlimentadorModal = ({
                   >
                      Cancelar
                   </button>
+
                   <button
                      type="submit"
                      className="alim-modal-btn alim-modal-btn-aceptar"

@@ -1,51 +1,174 @@
-import React, { useState } from "react";
+// src/lib/Alimentadores/Alimentadores.jsx
+import React, { useState, useEffect } from "react";
 import "./Alimentadores.css";
 import AlimentadorCard from "./AlimentadorCard.jsx";
 import NuevoAlimentadorModal from "./NuevoAlimentadorModal.jsx";
 
-const Alimentadores = () => {
+const STORAGE_KEY_PUESTOS = "rw-puestos";
+const STORAGE_KEY_PUESTO_SEL = "rw-puesto-seleccionado";
 
-	
-   const COLORES_PUESTO = [
-      "#22c55e", // verde
-      "#0ea5e9", // celeste
-      "#3b82f6", // azul
-      "#a855f7", // violeta
-      "#ec4899", // rosa
-      "#f97316", // naranja
-      "#ef4444", // rojo
-      "#eab308", // amarillo
-      "#14b8a6", // turquesa
-      "#10b981", // verde menta
-      "#6366f1", // índigo
-      "#64748b", // gris azulado
-   ];
+const COLORES_PUESTO = [
+   "#22c55e", // verde
+   "#0ea5e9", // celeste
+   "#3b82f6", // azul
+   "#a855f7", // violeta
+   "#ec4899", // rosa
+   "#f97316", // naranja
+   "#ef4444", // rojo
+   "#eab308", // amarillo
+   "#14b8a6", // turquesa
+   "#10b981", // verde menta
+   "#6366f1", // índigo
+   "#64748b", // gris azulado
+];
+
+const Alimentadores = () => {
+   // ===== PUESTOS (barra superior) =====
+   const [puestos, setPuestos] = useState(() => {
+      // Cargar desde localStorage solo una vez
+      try {
+         const guardado = localStorage.getItem(STORAGE_KEY_PUESTOS);
+         if (!guardado) return [];
+         const parsed = JSON.parse(guardado);
+         return Array.isArray(parsed) ? parsed : [];
+      } catch {
+         return [];
+      }
+   });
+
+   const [puestoSeleccionadoId, setPuestoSeleccionadoId] = useState(() => {
+      try {
+         const raw = localStorage.getItem(STORAGE_KEY_PUESTO_SEL);
+         return raw ? Number(raw) : null;
+      } catch {
+         return null;
+      }
+   });
 
    const [colorPuesto, setColorPuesto] = useState(COLORES_PUESTO[0]);
 
-   // ===== PUESTOS (barra superior) =====
-   const [puestos, setPuestos] = useState([]);
-   const [puestoSeleccionadoId, setPuestoSeleccionadoId] = useState(null);
-   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] =
-      useState(false);
-   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] =
-      useState(false);
+   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
+
+   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
+
    const [nuevoNombrePuesto, setNuevoNombrePuesto] = useState("");
+
    const [puestosEditados, setPuestosEditados] = useState([]);
 
-   // ===== TARJETAS DE ALIMENTADORES (asociadas al puesto seleccionado) =====
+   // ===== TARJETAS DE ALIMENTADORES =====
    const [mostrarModalNuevoAlim, setMostrarModalNuevoAlim] = useState(false);
 
    const [modoAlim, setModoAlim] = useState("crear"); // "crear" | "editar"
+
+   const [dragAlimId, setDragAlimId] = useState(null);
+
    const [alimentadorEnEdicion, setAlimentadorEnEdicion] = useState(null);
 
    // Puesto actualmente activo (si el id no existe, toma el primero)
-   const puestoSeleccionado =
-      puestos.find((p) => p.id === puestoSeleccionadoId) || puestos[0] || null;
+   const puestoSeleccionado = puestos.find((p) => p.id === puestoSeleccionadoId) || puestos[0] || null;
+
+   // ---------- DRAG & DROP DE ALIMENTADORES ----------
+
+   const handleDragStartAlim = (alimId) => {
+      setDragAlimId(alimId);
+   };
+
+   const handleDragEndAlim = () => {
+      setDragAlimId(null);
+   };
+
+   const handleDragOverAlim = (e) => {
+      // Necesario para permitir el drop
+      e.preventDefault();
+   };
+
+   const handleDropAlim = (targetAlimId) => {
+      if (!puestoSeleccionado || dragAlimId == null) return;
+      if (dragAlimId === targetAlimId) return;
+
+      setPuestos((prev) =>
+         prev.map((p) => {
+            if (p.id !== puestoSeleccionado.id) return p;
+
+            const nuevoOrden = [...p.alimentadores];
+            const fromIndex = nuevoOrden.findIndex((a) => a.id === dragAlimId);
+            const toIndex = nuevoOrden.findIndex((a) => a.id === targetAlimId);
+
+            if (fromIndex === -1 || toIndex === -1) return p;
+
+            const [movido] = nuevoOrden.splice(fromIndex, 1);
+            nuevoOrden.splice(toIndex, 0, movido);
+
+            return { ...p, alimentadores: nuevoOrden };
+         })
+      );
+
+      setDragAlimId(null);
+   };
+
+   // opcional: soltar sobre la tarjeta "Agregar alimentador" para enviarlo al final
+   const handleDropAlimAlFinal = () => {
+      if (!puestoSeleccionado || dragAlimId == null) return;
+
+      setPuestos((prev) =>
+         prev.map((p) => {
+            if (p.id !== puestoSeleccionado.id) 
+					return p;
+
+            const nuevoOrden = [...p.alimentadores];
+            const fromIndex = nuevoOrden.findIndex((a) => a.id === dragAlimId);
+            if (fromIndex === -1) return p;
+
+            const [movido] = nuevoOrden.splice(fromIndex, 1);
+            
+				nuevoOrden.push(movido);
+
+            return { ...p, alimentadores: nuevoOrden };
+         })
+      );
+
+      setDragAlimId(null);
+   };
+
+   // ====== EFECTOS PARA PERSISTENCIA ======
+   useEffect(() => {
+      try {
+         localStorage.setItem(STORAGE_KEY_PUESTOS, JSON.stringify(puestos));
+      } catch (err) {
+         console.error("Error guardando puestos", err);
+      }
+   }, [puestos]);
+
+   useEffect(() => {
+      try {
+         if (puestoSeleccionadoId != null) {
+            localStorage.setItem(
+               STORAGE_KEY_PUESTO_SEL,
+               String(puestoSeleccionadoId)
+            );
+         } else {
+            localStorage.removeItem(STORAGE_KEY_PUESTO_SEL);
+         }
+      } catch (err) {
+         console.error("Error guardando puesto seleccionado", err);
+      }
+   }, [puestoSeleccionadoId]);
+
+   useEffect(() => {
+      if (!puestos.length) return;
+
+      if (
+         puestoSeleccionadoId == null ||
+         !puestos.some((p) => p.id === puestoSeleccionadoId)
+      ) {
+         setPuestoSeleccionadoId(puestos[0].id);
+      }
+   }, [puestos, puestoSeleccionadoId]);
 
    // ---------- AGREGAR PUESTO ----------
    const abrirModalNuevoPuesto = () => {
       setNuevoNombrePuesto("");
+      setColorPuesto(COLORES_PUESTO[0]);
       setMostrarModalNuevoPuesto(true);
    };
 
@@ -99,13 +222,17 @@ const Alimentadores = () => {
       setMostrarModalEditarPuestos(false);
       setPuestosEditados([]);
 
-      // si el puesto seleccionado fue eliminado, dejamos seleccionado el primero
+      if (!sinVacios.length) {
+         setPuestoSeleccionadoId(null);
+         return;
+      }
+
       if (!sinVacios.some((p) => p.id === puestoSeleccionadoId)) {
-         setPuestoSeleccionadoId(sinVacios[0]?.id ?? null);
+         setPuestoSeleccionadoId(sinVacios[0].id);
       }
    };
 
-   // ---------- AGREGAR TARJETA DE ALIMENTADOR (AL PUESTO SELECCIONADO) ----------
+   // ---------- AGREGAR / EDITAR TARJETA DE ALIMENTADOR ----------
    const abrirModalNuevoAlim = () => {
       setModoAlim("crear");
       setAlimentadorEnEdicion(null);
@@ -120,6 +247,7 @@ const Alimentadores = () => {
 
    const cerrarModalNuevoAlim = () => {
       setMostrarModalNuevoAlim(false);
+      setAlimentadorEnEdicion(null);
    };
 
    // datos viene desde el modal: { nombre, color, rele: {...}, analizador: {...} }
@@ -127,7 +255,6 @@ const Alimentadores = () => {
       if (!datos || !datos.nombre) return;
 
       if (modoAlim === "crear") {
-         // crear en el puesto actualmente seleccionado
          if (!puestoSeleccionado) return;
 
          const nuevoAlim = {
@@ -137,34 +264,34 @@ const Alimentadores = () => {
 
          setPuestos((prev) =>
             prev.map((p) =>
-               p.id === puestoSeleccionado.id
-                  ? {
-                       ...p,
-                       alimentadores: [...p.alimentadores, nuevoAlim],
-                    }
-                  : p
-            )
-         );
+               p.id === puestoSeleccionado.id ? { ...p, alimentadores: [...p.alimentadores, nuevoAlim], } : p
+         ));
+
       } else if (modoAlim === "editar" && alimentadorEnEdicion) {
-         // editar el alimentador existente
          const { puestoId, alimId } = alimentadorEnEdicion;
 
          setPuestos((prev) =>
-            prev.map((p) =>
-               p.id === puestoId
-                  ? {
-                       ...p,
-                       alimentadores: p.alimentadores.map((a) =>
-                          a.id === alimId ? { ...a, ...datos } : a
-                       ),
-                    }
-                  : p
-            )
+            prev.map((p) => p.id === puestoId ? { ...p, alimentadores: p.alimentadores.map((a) =>
+                          a.id === alimId ? { ...a, ...datos } : a ),} : p )
          );
       }
 
-      setMostrarModalNuevoAlim(false);
-      setAlimentadorEnEdicion(null);
+      cerrarModalNuevoAlim();
+   };
+
+   // 🔴 ELIMINAR ALIMENTADOR (usado por el botón del modal)
+   const handleEliminarAlimentador = () => {
+      if (!alimentadorEnEdicion) 
+			return;
+		
+      const { puestoId, alimId } = alimentadorEnEdicion;
+
+      setPuestos((prev) =>
+         prev.map((p) =>
+            p.id === puestoId ? { ...p, alimentadores: p.alimentadores.filter((a) => a.id !== alimId), } : p )
+	);
+
+      cerrarModalNuevoAlim();
    };
 
    return (
@@ -233,10 +360,14 @@ const Alimentadores = () => {
                      <AlimentadorCard
                         key={a.id}
                         nombre={a.nombre}
-                        color={a.color} // 👈 le pasamos el color guardado
-                        onConfigClick={() =>
-                           abrirModalEditarAlim(puestoSeleccionado.id, a)
-                        }
+                        color={a.color}
+                        onConfigClick={() => abrirModalEditarAlim(puestoSeleccionado.id, a)}
+                        draggable={true}
+                        isDragging={dragAlimId === a.id} // 👈 nueva prop
+                        onDragStart={() => handleDragStartAlim(a.id)}
+                        onDragOver={handleDragOverAlim}
+                        onDrop={() => handleDropAlim(a.id)}
+                        onDragEnd={handleDragEndAlim} // 👈 resetea el estado
                      />
                   ))}
 
@@ -244,6 +375,8 @@ const Alimentadores = () => {
                      type="button"
                      className="alim-card alim-card-add"
                      onClick={abrirModalNuevoAlim}
+                     onDragOver={handleDragOverAlim}
+                     onDrop={handleDropAlimAlFinal}
                   >
                      <span className="alim-card-add-plus">+</span>
                      <span className="alim-card-add-text">
@@ -313,7 +446,7 @@ const Alimentadores = () => {
             </div>
          )}
 
-         {/* ===== MODAL NUEVO ALIMENTADOR (COMPONENTE) ===== */}
+         {/* ===== MODAL NUEVO / EDITAR ALIMENTADOR ===== */}
          <NuevoAlimentadorModal
             abierto={mostrarModalNuevoAlim && !!puestoSeleccionado}
             puestoNombre={puestoSeleccionado?.nombre ?? ""}
@@ -321,13 +454,17 @@ const Alimentadores = () => {
             initialData={
                modoAlim === "editar" &&
                alimentadorEnEdicion &&
-               puestoSeleccionado ? puestoSeleccionado.alimentadores.find((a) => a.id === alimentadorEnEdicion.alimId) || null : null
+               puestoSeleccionado
+                  ? puestoSeleccionado.alimentadores.find(
+                       (a) => a.id === alimentadorEnEdicion.alimId
+                    ) || null
+                  : null
             }
-            onCancelar={() => {
-               setMostrarModalNuevoAlim(false);
-               setAlimentadorEnEdicion(null);
-            }}
+            onCancelar={cerrarModalNuevoAlim}
             onConfirmar={handleGuardarAlimentador}
+            onEliminar={
+               modoAlim === "editar" ? handleEliminarAlimentador : undefined
+            }
          />
 
          {/* ===== MODAL EDITAR PUESTOS ===== */}
