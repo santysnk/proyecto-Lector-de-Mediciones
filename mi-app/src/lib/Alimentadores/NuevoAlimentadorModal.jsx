@@ -17,6 +17,70 @@ const COLORES_ALIM = [
    "#64748b",
 ];
 
+// Secciones de mapeo de mediciones (panel derecho)
+const SECCIONES_MAPEO = [
+   {
+      id: "tension_linea",
+      titulo: "Tensión de línea (kV)",
+      items: ["L1", "L2", "L3"],
+   },
+   {
+      id: "tension_entre_lineas",
+      titulo: "Tensión entre líneas (kV)",
+      items: ["L1-L2", "L2-L3", "L1-L3"],
+   },
+   {
+      id: "corriente_linea",
+      titulo: "Corriente de línea (A)",
+      items: ["L1", "L2", "L3"],
+   },
+   {
+      id: "potencia_activa",
+      titulo: "Potencia activa (kW)",
+      items: ["L1", "L2", "L3", "Total"],
+   },
+   {
+      id: "potencia_reactiva",
+      titulo: "Potencia reactiva (kVAr)",
+      items: ["L1", "L2", "L3", "Total"],
+   },
+   {
+      id: "potencia_aparente",
+      titulo: "Potencia aparente (kVA)",
+      items: ["L1", "L2", "L3", "Total"],
+   },
+   {
+      id: "factor_potencia",
+      titulo: "Factor de Potencia",
+      items: ["L1", "L2", "L3"],
+   },
+   {
+      id: "frecuencia",
+      titulo: "Frecuencia (Hz)",
+      items: ["L1", "L2", "L3"],
+   },
+   {
+      id: "corriente_neutro",
+      titulo: "Corriente de Neutro (A)",
+      items: ["N"],
+   },
+];
+
+function crearMapeoVacio() {
+   const base = {};
+   SECCIONES_MAPEO.forEach((sec) => {
+      base[sec.id] = {};
+      sec.items.forEach((item) => {
+         base[sec.id][item] = {
+            enabled: false,
+            registro: "",
+            formula: "",
+         };
+      });
+   });
+   return base;
+}
+
 const NuevoAlimentadorModal = ({
    abierto,
    puestoNombre,
@@ -30,14 +94,18 @@ const NuevoAlimentadorModal = ({
    const [color, setColor] = useState(COLORES_ALIM[0]);
    const [tab, setTab] = useState("rele");
 
+   // Config RELÉ
    const [rele, setRele] = useState({
       ip: "",
       puerto: "",
       indiceInicial: "",
       cantRegistros: "",
-      relacionTI: "",
    });
 
+   // Periodo de actualización (s) – antes estaba Relación T.I
+   const [periodoSegundos, setPeriodoSegundos] = useState("60");
+
+   // Config ANALIZADOR
    const [analizador, setAnalizador] = useState({
       ip: "",
       puerto: "502",
@@ -46,63 +114,145 @@ const NuevoAlimentadorModal = ({
       relacionTI: "",
    });
 
-   // ===== ESTADO DEL TEST MODBUS =====
-   const [testEstado, setTestEstado] = useState("idle"); // idle | cargando | ok | error
+   // Estado del test
+   const [isTesting, setIsTesting] = useState(false);
    const [testError, setTestError] = useState("");
-   const [testRegistros, setTestRegistros] = useState([]);
+   const [testRows, setTestRows] = useState([]); // [{index, address, value}]
 
+   // Panel de mapeo
+   const [mostrarMapeo, setMostrarMapeo] = useState(false);
+   const [mapeoMediciones, setMapeoMediciones] = useState(crearMapeoVacio);
+
+   // === Cargar datos al abrir ===
    useEffect(() => {
-      if (abierto) {
-         if (initialData) {
-            setNombre(initialData.nombre || "");
-            setColor(initialData.color || COLORES_ALIM[0]);
-            setTab("rele");
+      if (!abierto) return;
 
-            setRele({
-               ip: initialData.rele?.ip || "",
-               puerto: String(initialData.rele?.puerto ?? ""),
-               indiceInicial: initialData.rele?.indiceInicial ?? "",
-               cantRegistros: initialData.rele?.cantRegistros ?? "",
-               relacionTI: initialData.rele?.relacionTI ?? "",
+      if (initialData) {
+         setNombre(initialData.nombre || "");
+         setColor(initialData.color || COLORES_ALIM[0]);
+         setTab("rele");
+
+         setRele({
+            ip: initialData.rele?.ip || "",
+            puerto: String(initialData.rele?.puerto ?? ""),
+            indiceInicial: initialData.rele?.indiceInicial ?? "",
+            cantRegistros: initialData.rele?.cantRegistros ?? "",
+         });
+
+         setPeriodoSegundos(
+            initialData.periodoSegundos != null
+               ? String(initialData.periodoSegundos)
+               : "60"
+         );
+
+         setAnalizador({
+            ip: initialData.analizador?.ip || "",
+            puerto: String(initialData.analizador?.puerto ?? "502"),
+            indiceInicial: initialData.analizador?.indiceInicial ?? "",
+            cantRegistros: initialData.analizador?.cantRegistros ?? "",
+            relacionTI: initialData.analizador?.relacionTI ?? "",
+         });
+
+         // Cargar mapeo si existe, si no, uno vacío
+         if (initialData.mapeoMediciones) {
+            // Mezclamos con un esqueleto vacío por si faltan claves
+            const base = crearMapeoVacio();
+            const guardado = initialData.mapeoMediciones;
+            const combinado = { ...base };
+
+            SECCIONES_MAPEO.forEach((sec) => {
+               sec.items.forEach((item) => {
+                  combinado[sec.id][item] = {
+                     ...base[sec.id][item],
+                     ...(guardado[sec.id]?.[item] || {}),
+                  };
+               });
             });
 
-            setAnalizador({
-               ip: initialData.analizador?.ip || "",
-               puerto: String(initialData.analizador?.puerto ?? ""),
-               indiceInicial: initialData.analizador?.indiceInicial ?? "",
-               cantRegistros: initialData.analizador?.cantRegistros ?? "",
-               relacionTI: initialData.analizador?.relacionTI ?? "",
-            });
+            setMapeoMediciones(combinado);
          } else {
-            setNombre("");
-            setColor(COLORES_ALIM[0]);
-            setTab("rele");
-            setRele({
-               ip: "",
-               puerto: "",
-               indiceInicial: "",
-               cantRegistros: "",
-               relacionTI: "",
-            });
-            setAnalizador({
-               ip: "",
-               puerto: "",
-               indiceInicial: "",
-               cantRegistros: "",
-               relacionTI: "",
-            });
+            setMapeoMediciones(crearMapeoVacio());
          }
-
-         // cada vez que abrís el modal, reseteo el test
-         setTestEstado("idle");
-         setTestError("");
-         setTestRegistros([]);
+      } else {
+         // Nuevo alimentador
+         setNombre("");
+         setColor(COLORES_ALIM[0]);
+         setTab("rele");
+         setRele({
+            ip: "",
+            puerto: "",
+            indiceInicial: "",
+            cantRegistros: "",
+         });
+         setPeriodoSegundos("60");
+         setAnalizador({
+            ip: "",
+            puerto: "502",
+            indiceInicial: "",
+            cantRegistros: "",
+            relacionTI: "",
+         });
+         setMapeoMediciones(crearMapeoVacio());
       }
+
+      // Reset de estado de test y mapeo al abrir
+      setIsTesting(false);
+      setTestError("");
+      setTestRows([]);
+      setMostrarMapeo(false);
    }, [abierto, initialData]);
 
    if (!abierto) return null;
 
-   // ========= GUARDAR =========
+   // === TEST CONEXIÓN (simulado / o backend real) ===
+   const handleTestConexion = async () => {
+      const ip = rele.ip.trim();
+      const puerto = Number(rele.puerto);
+      const inicio = Number(rele.indiceInicial);
+      const cantidad = Number(rele.cantRegistros);
+
+      if (!ip || !puerto || isNaN(inicio) || isNaN(cantidad) || cantidad <= 0) {
+         setTestError(
+            "Completa IP, puerto, índice inicial y cantidad de registros antes de probar."
+         );
+         setTestRows([]);
+         return;
+      }
+
+      setIsTesting(true);
+      setTestError("");
+      setTestRows([]);
+
+      try {
+         // 👉 Aquí va TU lógica real:
+         //    - llamar a tu backend que consulta Modbus
+         //    - o a tu API fake
+         //
+         // Ejemplo de datos de prueba (BORRÁ ESTO cuando uses los reales):
+         const registros = Array.from({ length: cantidad }, (_, i) => ({
+            index: i,
+            address: inicio + i,
+            value: 100 + i * 5, // valor ficticio
+         }));
+
+         // Simulamos pequeña demora
+         await new Promise((res) => setTimeout(res, 300));
+
+         setTestRows(registros);
+      } catch (err) {
+         console.error(err);
+         setTestError(
+            err?.message || "Error de red o al intentar leer los registros."
+         );
+         setTestRows([]);
+      } finally {
+         setIsTesting(false);
+      }
+   };
+
+   const puedeConfigurarMapeo = testRows.length > 0 && !testError && !isTesting;
+
+   // === SUBMIT GENERAL ===
    const handleSubmit = (e) => {
       e.preventDefault();
       const limpioNombre = nombre.trim();
@@ -111,6 +261,8 @@ const NuevoAlimentadorModal = ({
       const datos = {
          nombre: limpioNombre,
          color,
+         periodoSegundos: periodoSegundos ? Number(periodoSegundos) : null,
+
          rele: {
             ...rele,
             puerto: rele.puerto ? Number(rele.puerto) : null,
@@ -120,7 +272,6 @@ const NuevoAlimentadorModal = ({
             cantRegistros: rele.cantRegistros
                ? Number(rele.cantRegistros)
                : null,
-            relacionTI: rele.relacionTI ? Number(rele.relacionTI) : null,
          },
          analizador: {
             ...analizador,
@@ -135,12 +286,14 @@ const NuevoAlimentadorModal = ({
                ? Number(analizador.relacionTI)
                : null,
          },
+
+         // Mandamos el mapeo hacia arriba (aunque todavía no lo uses)
+         mapeoMediciones,
       };
 
       onConfirmar(datos);
    };
 
-   // ========= ELIMINAR =========
    const handleEliminarClick = () => {
       if (!onEliminar) return;
       const seguro = window.confirm(
@@ -151,70 +304,27 @@ const NuevoAlimentadorModal = ({
       }
    };
 
-   // ========= TEST MODBUS =========
-   const handleTestConexion = async () => {
-      // uso la config de la pestaña actual
-      const cfg = tab === "rele" ? rele : analizador;
-
-      const ip = cfg.ip.trim();
-      const puerto = Number(cfg.puerto);
-      const indiceInicial = Number(cfg.indiceInicial);
-      const cantRegistros = Number(cfg.cantRegistros);
-
-      if (!ip || !puerto || !Number.isFinite(indiceInicial) || !Number.isFinite(cantRegistros)) {
-         setTestEstado("error");
-         setTestError(
-            "Completá IP, puerto, índice inicial y cantidad de registros antes de probar."
-         );
-         setTestRegistros([]);
-         return;
-      }
-
-      setTestEstado("cargando");
-      setTestError("");
-      setTestRegistros([]);
-
-      try {
-         // ⚠️ Cambiá esta URL por la de tu backend Modbus
-         const resp = await fetch("http://localhost:5000/api/modbus/test", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-               tipo: tab,        // "rele" o "analizador" (por si lo querés distinguir)
-               ip,
-               puerto,
-               indiceInicial,
-               cantRegistros,
-            }),
-         });
-
-         if (!resp.ok) {
-            throw new Error(`Error HTTP ${resp.status}`);
-         }
-
-         const data = await resp.json();
-         const regs = Array.isArray(data.registros) ? data.registros : [];
-
-         setTestRegistros(regs);
-         setTestEstado("ok");
-      } catch (err) {
-         console.error(err);
-         setTestEstado("error");
-         setTestError(
-            err.message || "Error al conectar o leer los registros."
-         );
-      }
+   // === Helpers mapeo ===
+   const actualizarMapeo = (secId, itemId, campo, valor) => {
+      setMapeoMediciones((prev) => ({
+         ...prev,
+         [secId]: {
+            ...prev[secId],
+            [itemId]: {
+               ...prev[secId][itemId],
+               [campo]: valor,
+            },
+         },
+      }));
    };
 
-   // índice base para mostrar en la tabla
-   const indiceBase =
-      tab === "rele"
-         ? Number(rele.indiceInicial || 0)
-         : Number(analizador.indiceInicial || 0);
+   const toggleItemMapeo = (secId, itemId, enabled) => {
+      actualizarMapeo(secId, itemId, "enabled", enabled);
+   };
 
    return (
       <div className="alim-modal-overlay">
-         <div className="alim-modal">
+         <div className={`alim-modal ${mostrarMapeo ? "alim-modal-wide" : ""}`}>
             <h2>
                {modo === "editar"
                   ? "EDITAR REGISTRADOR: EN "
@@ -223,276 +333,290 @@ const NuevoAlimentadorModal = ({
             </h2>
 
             <form onSubmit={handleSubmit}>
-               {/* ===== NOMBRE ===== */}
-               <label className="alim-modal-label">
-                  Nombre
-                  <input
-                     type="text"
-                     className="alim-modal-input"
-                     value={nombre}
-                     onChange={(e) => setNombre(e.target.value)}
-                     placeholder="Ej: ALIMENTADOR 1"
-                     autoFocus
-                  />
-               </label>
+               <div className="alim-modal-layout">
+                  {/* === COLUMNA IZQUIERDA: CONFIG BÁSICA === */}
+                  <div className="alim-modal-left">
+                     {/* Nombre */}
+                     <label className="alim-modal-label">
+                        Nombre
+                        <input
+                           type="text"
+                           className="alim-modal-input"
+                           value={nombre}
+                           onChange={(e) => setNombre(e.target.value)}
+                           placeholder="Ej: ALIMENTADOR 1"
+                           autoFocus
+                        />
+                     </label>
 
-               {/* ===== COLORES ===== */}
-               <div className="alim-color-picker">
-                  <div className="alim-color-grid">
-                     {COLORES_ALIM.map((c) => (
+                     {/* Paleta de colores */}
+                     <div className="alim-color-picker">
+                        <div className="alim-color-grid">
+                           {COLORES_ALIM.map((c) => (
+                              <button
+                                 key={c}
+                                 type="button"
+                                 className={
+                                    "alim-color-swatch" +
+                                    (color === c
+                                       ? " alim-color-swatch-selected"
+                                       : "")
+                                 }
+                                 style={{ backgroundColor: c }}
+                                 onClick={() => setColor(c)}
+                              />
+                           ))}
+                        </div>
+                     </div>
+
+                     {/* Tabs RELÉ / ANALIZADOR */}
+                     <div className="alim-tabs">
                         <button
-                           key={c}
                            type="button"
                            className={
-                              "alim-color-swatch" +
-                              (color === c ? " alim-color-swatch-selected" : "")
+                              "alim-tab" +
+                              (tab === "rele" ? " alim-tab-active" : "")
                            }
-                           style={{ backgroundColor: c }}
-                           onClick={() => setColor(c)}
-                        />
-                     ))}
-                  </div>
-               </div>
-
-               {/* ===== TABS ===== */}
-               <div className="alim-tabs">
-                  <button
-                     type="button"
-                     className={
-                        "alim-tab" + (tab === "rele" ? " alim-tab-active" : "")
-                     }
-                     onClick={() => setTab("rele")}
-                  >
-                     RELÉ
-                  </button>
-                  <button
-                     type="button"
-                     className={
-                        "alim-tab" +
-                        (tab === "analizador" ? " alim-tab-active" : "")
-                     }
-                     onClick={() => setTab("analizador")}
-                  >
-                     ANALIZADOR
-                  </button>
-               </div>
-
-               {/* ===== CAMPOS RELÉ ===== */}
-               {tab === "rele" && (
-                  <>
-                     <div className="alim-modal-grid">
-                        <label className="alim-field">
-                           <span className="alim-field-label">Dirección IP</span>
-                           <input
-                              type="text"
-                              className="alim-field-input"
-                              value={rele.ip}
-                              onChange={(e) =>
-                                 setRele({ ...rele, ip: e.target.value })
-                              }
-                              placeholder="Ej: 172.16.0.1"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">Puerto</span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={rele.puerto}
-                              onChange={(e) =>
-                                 setRele({ ...rele, puerto: e.target.value })
-                              }
-                              placeholder="Ej: 502"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">
-                              Índice inicial
-                           </span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={rele.indiceInicial}
-                              onChange={(e) =>
-                                 setRele({
-                                    ...rele,
-                                    indiceInicial: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 137"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">
-                              Cant. registros
-                           </span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={rele.cantRegistros}
-                              onChange={(e) =>
-                                 setRele({
-                                    ...rele,
-                                    cantRegistros: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 3"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">Relación T.I</span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={rele.relacionTI}
-                              onChange={(e) =>
-                                 setRele({
-                                    ...rele,
-                                    relacionTI: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 250"
-                           />
-                        </label>
+                           onClick={() => setTab("rele")}
+                        >
+                           RELÉ
+                        </button>
+                        <button
+                           type="button"
+                           className={
+                              "alim-tab" +
+                              (tab === "analizador" ? " alim-tab-active" : "")
+                           }
+                           onClick={() => setTab("analizador")}
+                        >
+                           ANALIZADOR
+                        </button>
                      </div>
 
-                     {/* BOTÓN TEST PARA RELÉ */}
+                     {/* === TAB RELÉ === */}
+                     {tab === "rele" && (
+                        <div className="alim-modal-grid">
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Dirección IP
+                              </span>
+                              <input
+                                 type="text"
+                                 className="alim-field-input"
+                                 value={rele.ip}
+                                 onChange={(e) =>
+                                    setRele({ ...rele, ip: e.target.value })
+                                 }
+                                 placeholder="Ej: 172.16.0.1"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">Puerto</span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={rele.puerto}
+                                 onChange={(e) =>
+                                    setRele({ ...rele, puerto: e.target.value })
+                                 }
+                                 placeholder="Ej: 502"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Índice inicial
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={rele.indiceInicial}
+                                 onChange={(e) =>
+                                    setRele({
+                                       ...rele,
+                                       indiceInicial: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 137"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Cant. registros
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={rele.cantRegistros}
+                                 onChange={(e) =>
+                                    setRele({
+                                       ...rele,
+                                       cantRegistros: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 20"
+                              />
+                           </label>
+
+                           {/* Nuevo: Periodo actualización */}
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Periodo actualización (s)
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={periodoSegundos}
+                                 onChange={(e) =>
+                                    setPeriodoSegundos(e.target.value)
+                                 }
+                                 placeholder="Ej: 60"
+                                 min={1}
+                              />
+                           </label>
+
+                           {periodoSegundos &&
+                              Number(periodoSegundos) > 0 &&
+                              Number(periodoSegundos) < 60 && (
+                                 <p className="alim-warning">
+                                    ⚠️ Periodos menores a 60&nbsp;s pueden
+                                    recargar el sistema y la red de
+                                    comunicaciones.
+                                 </p>
+                              )}
+                        </div>
+                     )}
+
+                     {/* === TAB ANALIZADOR === */}
+                     {tab === "analizador" && (
+                        <div className="alim-modal-grid">
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Dirección IP
+                              </span>
+                              <input
+                                 type="text"
+                                 className="alim-field-input"
+                                 value={analizador.ip}
+                                 onChange={(e) =>
+                                    setAnalizador({
+                                       ...analizador,
+                                       ip: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 172.16.0.5"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">Puerto</span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={analizador.puerto}
+                                 onChange={(e) =>
+                                    setAnalizador({
+                                       ...analizador,
+                                       puerto: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 502"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Índice inicial
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={analizador.indiceInicial}
+                                 onChange={(e) =>
+                                    setAnalizador({
+                                       ...analizador,
+                                       indiceInicial: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 200"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Cant. registros
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={analizador.cantRegistros}
+                                 onChange={(e) =>
+                                    setAnalizador({
+                                       ...analizador,
+                                       cantRegistros: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 10"
+                              />
+                           </label>
+
+                           <label className="alim-field">
+                              <span className="alim-field-label">
+                                 Relación T.I
+                              </span>
+                              <input
+                                 type="number"
+                                 className="alim-field-input"
+                                 value={analizador.relacionTI}
+                                 onChange={(e) =>
+                                    setAnalizador({
+                                       ...analizador,
+                                       relacionTI: e.target.value,
+                                    })
+                                 }
+                                 placeholder="Ej: 250"
+                              />
+                           </label>
+                        </div>
+                     )}
+
+                     {/* Botones Test + Configurar mapeo */}
                      <div className="alim-test-row">
                         <button
                            type="button"
                            className="alim-test-btn"
                            onClick={handleTestConexion}
-                           disabled={testEstado === "cargando"}
+                           disabled={isTesting}
                         >
-                           {testEstado === "cargando"
-                              ? "Probando..."
-                              : "Test conexión"}
+                           {isTesting ? "Probando..." : "Test conexión"}
                         </button>
-                     </div>
-                  </>
-               )}
 
-               {/* ===== CAMPOS ANALIZADOR ===== */}
-               {tab === "analizador" && (
-                  <>
-                     <div className="alim-modal-grid">
-                        <label className="alim-field">
-                           <span className="alim-field-label">Dirección IP</span>
-                           <input
-                              type="text"
-                              className="alim-field-input"
-                              value={analizador.ip}
-                              onChange={(e) =>
-                                 setAnalizador({
-                                    ...analizador,
-                                    ip: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 172.16.0.5"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">Puerto</span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={analizador.puerto}
-                              onChange={(e) =>
-                                 setAnalizador({
-                                    ...analizador,
-                                    puerto: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 502"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">
-                              Índice inicial
-                           </span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={analizador.indiceInicial}
-                              onChange={(e) =>
-                                 setAnalizador({
-                                    ...analizador,
-                                    indiceInicial: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 200"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">
-                              Cant. registros
-                           </span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={analizador.cantRegistros}
-                              onChange={(e) =>
-                                 setAnalizador({
-                                    ...analizador,
-                                    cantRegistros: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 10"
-                           />
-                        </label>
-                        <label className="alim-field">
-                           <span className="alim-field-label">Relación T.I</span>
-                           <input
-                              type="number"
-                              className="alim-field-input"
-                              value={analizador.relacionTI}
-                              onChange={(e) =>
-                                 setAnalizador({
-                                    ...analizador,
-                                    relacionTI: e.target.value,
-                                 })
-                              }
-                              placeholder="Ej: 250"
-                           />
-                        </label>
-                     </div>
-
-                     {/* BOTÓN TEST PARA ANALIZADOR */}
-                     <div className="alim-test-row">
                         <button
                            type="button"
-                           className="alim-test-btn"
-                           onClick={handleTestConexion}
-                           disabled={testEstado === "cargando"}
+                           className="alim-map-btn"
+                           disabled={!puedeConfigurarMapeo}
+                           onClick={() => setMostrarMapeo((v) => !v)}
                         >
-                           {testEstado === "cargando"
-                              ? "Probando..."
-                              : "Test conexión"}
+                           {mostrarMapeo ? "Ocultar mapeo" : "Configurar mapeo"}
                         </button>
                      </div>
-                  </>
-               )}
 
-               {/* ===== RESULTADO DEL TEST (tabla) ===== */}
-               {testEstado !== "idle" && (
-                  <div className="alim-test-panel">
-                     {testEstado === "cargando" && (
-                        <p className="alim-test-info">
-                           Probando conexión Modbus...
-                        </p>
+                     {/* Resultado test / tabla registros */}
+                     {testError && (
+                        <div className="alim-test-message alim-test-error">
+                           {testError}
+                        </div>
                      )}
 
-                     {testEstado === "error" && (
-                        <p className="alim-test-error">{testError}</p>
-                     )}
+                     {!testError && testRows.length > 0 && (
+                        <div className="alim-test-table">
+                           <div className="alim-test-message alim-test-ok">
+                              Test correcto. Registros leídos: {testRows.length}
+                           </div>
 
-                     {testEstado === "ok" && (
-                        <>
-                           <p className="alim-test-ok">
-                              Test correcto. Registros leídos:{" "}
-                              {testRegistros.length}
-                           </p>
-                           <table className="alim-test-table">
+                           <table>
                               <thead>
                                  <tr>
                                     <th>#</th>
@@ -501,21 +625,88 @@ const NuevoAlimentadorModal = ({
                                  </tr>
                               </thead>
                               <tbody>
-                                 {testRegistros.map((valor, i) => (
-                                    <tr key={i}>
-                                       <td>{i}</td>
-                                       <td>{indiceBase + i}</td>
-                                       <td>{valor}</td>
+                                 {testRows.map((r) => (
+                                    <tr key={r.index}>
+                                       <td>{r.index}</td>
+                                       <td>{r.address}</td>
+                                       <td>{r.value}</td>
                                     </tr>
                                  ))}
                               </tbody>
                            </table>
-                        </>
+                        </div>
                      )}
                   </div>
-               )}
 
-               {/* ===== BOTONES FINALES ===== */}
+                  {/* === COLUMNA DERECHA: MAPEO DE MEDICIONES === */}
+                  {mostrarMapeo && (
+                     <div className="alim-modal-right">
+                        {SECCIONES_MAPEO.map((sec) => (
+                           <div key={sec.id} className="alim-map-section">
+                              <h4 className="alim-map-section-title">
+                                 {sec.titulo}
+                              </h4>
+
+                              {sec.items.map((itemId) => {
+                                 const cfg = mapeoMediciones[sec.id][itemId];
+                                 return (
+                                    <div key={itemId} className="alim-map-row">
+                                       <label className="alim-map-check">
+                                          <input
+                                             type="checkbox"
+                                             checked={cfg.enabled}
+                                             onChange={(e) =>
+                                                toggleItemMapeo(
+                                                   sec.id,
+                                                   itemId,
+                                                   e.target.checked
+                                                )
+                                             }
+                                          />
+                                          <span>{itemId}</span>
+                                       </label>
+
+                                       <input
+                                          type="number"
+                                          className="alim-map-input"
+                                          placeholder="Registro"
+                                          disabled={!cfg.enabled}
+                                          value={cfg.registro}
+                                          onChange={(e) =>
+                                             actualizarMapeo(
+                                                sec.id,
+                                                itemId,
+                                                "registro",
+                                                e.target.value
+                                             )
+                                          }
+                                       />
+
+                                       <input
+                                          type="text"
+                                          className="alim-map-input alim-map-formula"
+                                          placeholder="Fórmula (ej: x * 500 / 1000)"
+                                          disabled={!cfg.enabled}
+                                          value={cfg.formula}
+                                          onChange={(e) =>
+                                             actualizarMapeo(
+                                                sec.id,
+                                                itemId,
+                                                "formula",
+                                                e.target.value
+                                             )
+                                          }
+                                       />
+                                    </div>
+                                 );
+                              })}
+                           </div>
+                        ))}
+                     </div>
+                  )}
+               </div>
+
+               {/* Botones inferiores */}
                <div className="alim-modal-actions">
                   {modo === "editar" && (
                      <button
