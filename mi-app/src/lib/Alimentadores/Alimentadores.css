@@ -541,3 +541,71 @@
    color: #111827;
    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
 }
+
+.alim-test-row {
+   margin-top: 12px;
+   display: flex;
+   justify-content: flex-start;
+}
+
+.alim-test-btn {
+   padding: 8px 14px;
+   border-radius: 999px;
+   border: none;
+   font-size: 0.9rem;
+   font-weight: 500;
+   cursor: pointer;
+   background: #2563eb;
+   color: white;
+   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
+}
+
+.alim-test-btn:disabled {
+   opacity: 0.6;
+   cursor: default;
+}
+
+.alim-test-panel {
+   margin-top: 16px;
+   padding: 10px 12px;
+   background: #f3f4f6;
+   border-radius: 12px;
+   max-height: 220px;
+   overflow: auto;
+}
+
+.alim-test-info {
+   font-size: 0.85rem;
+   color: #4b5563;
+   margin-bottom: 4px;
+}
+
+.alim-test-error {
+   font-size: 0.85rem;
+   color: #b91c1c;
+   margin-bottom: 4px;
+}
+
+.alim-test-ok {
+   font-size: 0.85rem;
+   color: #15803d;
+   margin-bottom: 6px;
+}
+
+.alim-test-table {
+   width: 100%;
+   border-collapse: collapse;
+   font-size: 0.8rem;
+}
+
+.alim-test-table th,
+.alim-test-table td {
+   padding: 4px 6px;
+   border-bottom: 1px solid #e5e7eb;
+   text-align: right;
+}
+
+.alim-test-table th:first-child,
+.alim-test-table td:first-child {
+   text-align: left;
+}

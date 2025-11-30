@@ -50,11 +50,9 @@ const Alimentadores = () => {
 
    const [colorPuesto, setColorPuesto] = useState(COLORES_PUESTO[0]);
 
-   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] =
-      useState(false);
+   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
 
-   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] =
-      useState(false);
+   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
 
    const [nuevoNombrePuesto, setNuevoNombrePuesto] = useState("");
 
@@ -261,12 +259,10 @@ const Alimentadores = () => {
       if (!datos || !datos.nombre) return;
 
       if (modoAlim === "crear") {
-         if (!puestoSeleccionado) return;
+         if (!puestoSeleccionado) 
+            return;
 
-         const nuevoAlim = {
-            id: Date.now(),
-            ...datos,
-         };
+         const nuevoAlim = {id: Date.now(), ...datos,};
 
          setPuestos((prev) =>
             prev.map((p) =>
