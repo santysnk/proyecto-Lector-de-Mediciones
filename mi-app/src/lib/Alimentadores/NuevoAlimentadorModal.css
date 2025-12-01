@@ -297,6 +297,16 @@
    margin-bottom: 8px;
 }
 
+.alim-test-btn-secondary {
+   background-color: #e5e7eb;
+   color: #111827;
+}
+
+.alim-test-btn-stop {
+   background-color: #ef4444;
+   color: #f9fafb;
+}
+
 .alim-test-btn {
    padding: 8px 16px;
    border-radius: 999px;

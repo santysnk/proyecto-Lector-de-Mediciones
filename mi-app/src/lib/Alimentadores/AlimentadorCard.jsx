@@ -8,7 +8,9 @@ const AlimentadorCard = ({
    nombre,
    color,
    onConfigClick,
-   onMapClick,          // 👈 nuevo callback
+   onMapClick,
+   consumo,
+   tensionLinea,
    draggable = false,
    isDragging = false,
    onDragStart,
@@ -16,7 +18,12 @@ const AlimentadorCard = ({
    onDrop,
    onDragEnd,
 }) => {
+	   // valores por defecto si todavía no hay medición
+   const consumoSafe = consumo || { R: "ERROR", S: "ERROR", T: "ERROR" };
+   const tensionSafe = tensionLinea || { R: "ERROR", S: "ERROR", T: "ERROR" };
+
    return (
+		
       <div
          className={"alim-card" + (isDragging ? " alim-card-dragging" : "")}
          style={{ cursor: draggable ? "grab" : "default" }}
@@ -51,19 +58,13 @@ const AlimentadorCard = ({
                   onClick={onMapClick}
                   title="Mapeo"
                >
-                  <img
-                     src={mapIcon}
-                     alt="Mapeo"
-                     className="alim-card-icon"
-                  />
-                  
+                  <img src={mapIcon} alt="Mapeo" className="alim-card-icon" />
                </button>
             </div>
 
             <span className="alim-card-title">{nombre}</span>
          </div>
 
-         {/* resto del cuerpo igual que ya lo tenías */}
          <div className="alim-card-body">
             <div className="alim-card-section">
                <h3 className="alim-card-section-title">CONSUMO (A)</h3>
@@ -71,7 +72,9 @@ const AlimentadorCard = ({
                   {["R", "S", "T"].map((fase) => (
                      <div key={fase} className="alim-card-meter">
                         <span className="alim-card-meter-phase">{fase}</span>
-                        <span className="alim-card-meter-value">34,21</span>
+                        <span className="alim-card-meter-value">
+                           {consumoSafe[fase] ?? "ERROR"}
+                        </span>
                      </div>
                   ))}
                </div>
@@ -83,7 +86,9 @@ const AlimentadorCard = ({
                   {["R", "S", "T"].map((fase) => (
                      <div key={fase} className="alim-card-meter">
                         <span className="alim-card-meter-phase">{fase}</span>
-                        <span className="alim-card-meter-value">21,23</span>
+                        <span className="alim-card-meter-value">
+                           {tensionSafe[fase] ?? "ERROR"}
+                        </span>
                      </div>
                   ))}
                </div>

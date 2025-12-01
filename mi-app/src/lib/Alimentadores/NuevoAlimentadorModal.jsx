@@ -1,5 +1,5 @@
 // src/lib/Alimentadores/NuevoAlimentadorModal.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import "./NuevoAlimentadorModal.css";
 
 const COLORES_ALIM = [
@@ -25,6 +25,7 @@ const NuevoAlimentadorModal = ({
    onCancelar,
    onConfirmar,
    onEliminar,
+   onUpdateLecturas, // 👈 nuevo, opcional
 }) => {
    const [nombre, setNombre] = useState("");
    const [color, setColor] = useState(COLORES_ALIM[0]);
@@ -55,6 +56,12 @@ const NuevoAlimentadorModal = ({
    const [testError, setTestError] = useState("");
    const [testRows, setTestRows] = useState([]); // [{index, address, value}]
 
+   const [mapeoMediciones, setMapeoMediciones] = useState(null);
+
+   // estado de medición periódica
+   const [isMeasuring, setIsMeasuring] = useState(false);
+   const medicionIntervalRef = useRef(null);
+
    // === Cargar datos al abrir ===
    useEffect(() => {
       if (!abierto) return;
@@ -84,6 +91,8 @@ const NuevoAlimentadorModal = ({
             cantRegistros: initialData.analizador?.cantRegistros ?? "",
             relacionTI: initialData.analizador?.relacionTI ?? "",
          });
+
+         setMapeoMediciones(initialData.mapeoMediciones || null);
       } else {
          // Nuevo alimentador
          setNombre("");
@@ -103,55 +112,164 @@ const NuevoAlimentadorModal = ({
             cantRegistros: "",
             relacionTI: "",
          });
+
+         setMapeoMediciones(null);
       }
 
-      // Reset test
+      // ✅ Reset SOLO del test (no de la medición periódica)
       setIsTesting(false);
       setTestError("");
       setTestRows([]);
    }, [abierto, initialData]);
 
+   // 👇 VOLVER A PONER ESTE GUARD
    if (!abierto) return null;
 
-   // === TEST CONEXIÓN (simulado / o backend real) ===
-   const handleTestConexion = async () => {
+   const aplicarFormula = (formulaStr, x) => {
+      const trimmed = (formulaStr || "").trim();
+      if (!trimmed) return x; // si no hay fórmula, usamos el valor crudo
+
+      try {
+         const fn = new Function("x", `return ${trimmed};`);
+         const res = fn(x);
+         if (typeof res === "number" && !Number.isNaN(res)) return res;
+         return null;
+      } catch {
+         return null;
+      }
+   };
+
+   const formatearValor = (valor) => {
+      if (valor == null || Number.isNaN(valor)) return "ERROR";
+      return valor.toFixed(2).replace(".", ",");
+   };
+
+   const calcularConsumoDesdeRegistros = (registros) => {
+      const salida = { R: "ERROR", S: "ERROR", T: "ERROR" };
+
+      if (!mapeoMediciones || !registros?.length) return salida;
+
+      const corr = mapeoMediciones.corriente_linea || {};
+      const mapFase = { L1: "R", L2: "S", L3: "T" };
+
+      ["L1", "L2", "L3"].forEach((itemId) => {
+         const cfg = corr[itemId];
+         const faseCard = mapFase[itemId];
+
+         if (!cfg?.enabled) {
+            salida[faseCard] = "--,--";
+            return;
+         }
+
+         const regNum = Number(cfg.registro);
+         if (!regNum && regNum !== 0) {
+            salida[faseCard] = "ERROR";
+            return;
+         }
+
+         const row = registros.find((r) => r.address === regNum);
+         if (!row) {
+            salida[faseCard] = "ERROR";
+            return;
+         }
+
+         const calculado = aplicarFormula(cfg.formula || "x", row.value);
+         salida[faseCard] = formatearValor(calculado);
+      });
+
+      return salida;
+   };
+
+   const dispararTickMedicion = async () => {
+      if (!onUpdateLecturas) return;
+
+      // lee registros, actualiza tabla y errores si el modal está abierto
+      const registros = await leerRegistrosDesdeRele({
+         rele,
+         setTestError,
+         setTestRows,
+      });
+
+      if (!registros) return;
+
+      const consumo = calcularConsumoDesdeRegistros(registros);
+      onUpdateLecturas({ consumo });
+   };
+
+   // Lee registros desde el relé (por ahora simulado 0–500) y opcionalmente
+   // actualiza el mensaje de error y las filas de la tabla de test.
+   const leerRegistrosDesdeRele = async ({
+      rele,
+      setTestError,
+      setTestRows,
+   }) => {
       const ip = rele.ip.trim();
       const puerto = Number(rele.puerto);
       const inicio = Number(rele.indiceInicial);
       const cantidad = Number(rele.cantRegistros);
 
       if (!ip || !puerto || isNaN(inicio) || isNaN(cantidad) || cantidad <= 0) {
-         setTestError(
+         setTestError?.(
             "Completa IP, puerto, índice inicial y cantidad de registros antes de probar."
          );
-         setTestRows([]);
-         return;
+         setTestRows?.([]);
+         return null;
       }
 
-      setIsTesting(true);
-      setTestError("");
-      setTestRows([]);
-
       try {
-         // Ejemplo de datos de prueba (reemplazar por lectura real Modbus)
+         // 🔁 ACÁ IRÍA LA LLAMADA REAL AL BACKEND MODBUS
+         // Por ahora simulamos valores aleatorios 0–500:
          const registros = Array.from({ length: cantidad }, (_, i) => ({
             index: i,
             address: inicio + i,
-            value: 100 + i * 5,
+            value: Math.floor(Math.random() * 501),
          }));
 
-         await new Promise((res) => setTimeout(res, 300));
-
-         setTestRows(registros);
+         setTestError?.("");
+         setTestRows?.(registros);
+         return registros;
       } catch (err) {
          console.error(err);
-         setTestError(
+         setTestError?.(
             err?.message || "Error de red o al intentar leer los registros."
          );
-         setTestRows([]);
-      } finally {
-         setIsTesting(false);
+         setTestRows?.([]);
+         return null;
       }
+   };
+
+   // === TEST CONEXIÓN (simulado / o backend real) ===
+   const handleTestConexion = async () => {
+      setIsTesting(true);
+      await leerRegistrosDesdeRele({ rele, setTestError, setTestRows });
+      setIsTesting(false);
+   };
+
+   const handleToggleMedicion = () => {
+      // si ya está midiendo, detenemos
+      if (isMeasuring) {
+         if (medicionIntervalRef.current) {
+            clearInterval(medicionIntervalRef.current);
+            medicionIntervalRef.current = null;
+         }
+         setIsMeasuring(false);
+         return;
+      }
+
+      // para iniciar: al menos necesitamos una config válida
+      const periodo =
+         Number(periodoSegundos) > 0 ? Number(periodoSegundos) : 60;
+
+      // tick inmediato
+      dispararTickMedicion();
+
+      // y luego periódico
+      medicionIntervalRef.current = setInterval(() => {
+         // no hace falta await dentro del setInterval
+         dispararTickMedicion();
+      }, periodo * 1000);
+
+      setIsMeasuring(true);
    };
 
    // === SUBMIT GENERAL ===
@@ -464,7 +582,7 @@ const NuevoAlimentadorModal = ({
                         </div>
                      )}
 
-                     {/* Botón Test conexión */}
+                     {/* Botones Test conexión + Iniciar/Detener medición */}
                      <div className="alim-test-row">
                         <button
                            type="button"
@@ -473,6 +591,22 @@ const NuevoAlimentadorModal = ({
                            disabled={isTesting}
                         >
                            {isTesting ? "Probando..." : "Test conexión"}
+                        </button>
+
+                        <button
+                           type="button"
+                           className={
+                              "alim-test-btn" +
+                              (isMeasuring
+                                 ? " alim-test-btn-stop"
+                                 : " alim-test-btn-secondary")
+                           }
+                           onClick={handleToggleMedicion}
+                           disabled={isTesting}
+                        >
+                           {isMeasuring
+                              ? "Detener medición"
+                              : "Iniciar medición"}
                         </button>
                      </div>
 

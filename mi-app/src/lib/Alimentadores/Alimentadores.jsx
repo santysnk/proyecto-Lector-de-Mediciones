@@ -1,5 +1,5 @@
 // src/lib/Alimentadores/Alimentadores.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./Alimentadores.css";
 import AlimentadorCard from "./AlimentadorCard.jsx";
 import NuevoAlimentadorModal from "./NuevoAlimentadorModal.jsx";
@@ -48,8 +48,10 @@ const Alimentadores = () => {
    });
 
    const [colorPuesto, setColorPuesto] = useState(COLORES_PUESTO[0]);
-   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
-   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
+   const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] =
+      useState(false);
+   const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] =
+      useState(false);
    const [nuevoNombrePuesto, setNuevoNombrePuesto] = useState("");
    const [puestosEditados, setPuestosEditados] = useState([]);
 
@@ -58,6 +60,21 @@ const Alimentadores = () => {
    const [modoAlim, setModoAlim] = useState("crear"); // "crear" | "editar"
    const [dragAlimId, setDragAlimId] = useState(null);
    const [alimentadorEnEdicion, setAlimentadorEnEdicion] = useState(null);
+
+   // ===== LECTURAS EN TIEMPO REAL (por alimentador) =====
+   const [lecturas, setLecturas] = useState({});
+   // estructura: { [alimId]: { consumo: { R, S, T }, tensionLinea: { R, S, T } } }
+
+   const handleUpdateLecturasAlim = (alimId, dataParcial) => {
+      if (!alimId) return;
+      setLecturas((prev) => ({
+         ...prev,
+         [alimId]: {
+            ...(prev[alimId] || {}),
+            ...dataParcial, // ej: { consumo: {...} } o { tensionLinea: {...} }
+         },
+      }));
+   };
 
    // ===== MODAL MAPEO MEDICIONES =====
    const [mostrarModalMapeo, setMostrarModalMapeo] = useState(false);
@@ -68,20 +85,16 @@ const Alimentadores = () => {
       puestos.find((p) => p.id === puestoSeleccionadoId) || puestos[0] || null;
 
    // Alimentador seleccionado para mapeo (objeto completo)
-   const alimMapeoObj =
-      alimentadorMapeo
-         ? (() => {
-              const p = puestos.find(
-                 (px) => px.id === alimentadorMapeo.puestoId
-              );
-              if (!p) return null;
-              return (
-                 p.alimentadores.find(
-                    (a) => a.id === alimentadorMapeo.alimId
-                 ) || null
-              );
-           })()
-         : null;
+   const alimMapeoObj = alimentadorMapeo
+      ? (() => {
+           const p = puestos.find((px) => px.id === alimentadorMapeo.puestoId);
+           if (!p) return null;
+           return (
+              p.alimentadores.find((a) => a.id === alimentadorMapeo.alimId) ||
+              null
+           );
+        })()
+      : null;
 
    // ---------- DRAG & DROP DE ALIMENTADORES ----------
    const handleDragStartAlim = (alimId) => {
@@ -341,7 +354,9 @@ const Alimentadores = () => {
                ? {
                     ...p,
                     alimentadores: p.alimentadores.map((a) =>
-                       a.id === alimId ? { ...a, mapeoMediciones: nuevoMapeo } : a
+                       a.id === alimId
+                          ? { ...a, mapeoMediciones: nuevoMapeo }
+                          : a
                     ),
                  }
                : p
@@ -371,8 +386,7 @@ const Alimentadores = () => {
                      key={p.id}
                      className={
                         "alim-btn" +
-                        (puestoSeleccionado &&
-                        puestoSeleccionado.id === p.id
+                        (puestoSeleccionado && puestoSeleccionado.id === p.id
                            ? " alim-btn-active"
                            : "")
                      }
@@ -406,8 +420,7 @@ const Alimentadores = () => {
          <main
             className="alim-main"
             style={{
-               backgroundColor:
-                  puestoSeleccionado?.bgColor || DEFAULT_MAIN_BG,
+               backgroundColor: puestoSeleccionado?.bgColor || DEFAULT_MAIN_BG,
             }}
          >
             {!puestos.length ? (
@@ -431,6 +444,8 @@ const Alimentadores = () => {
                         onMapClick={() =>
                            abrirModalMapeo(puestoSeleccionado.id, a)
                         }
+                        consumo={lecturas[a.id]?.consumo}
+                        tensionLinea={lecturas[a.id]?.tensionLinea}
                         draggable={true}
                         isDragging={dragAlimId === a.id}
                         onDragStart={() => handleDragStartAlim(a.id)}
@@ -533,6 +548,15 @@ const Alimentadores = () => {
             onConfirmar={handleGuardarAlimentador}
             onEliminar={
                modoAlim === "editar" ? handleEliminarAlimentador : undefined
+            }
+            onUpdateLecturas={
+               modoAlim === "editar" && alimentadorEnEdicion
+                  ? (data) =>
+                       handleUpdateLecturasAlim(
+                          alimentadorEnEdicion.alimId,
+                          data
+                       )
+                  : undefined
             }
          />
 
