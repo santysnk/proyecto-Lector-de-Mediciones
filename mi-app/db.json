@@ -1,21 +1,32 @@
 {
-    "users": [
-    { "id": "1" ,
+"users": [
+    {
+    "id": "1",
     "Nombre": "administrador",
-    "Usuario": "admin" ,
+    "Usuario": "admin",
     "Email": "admin@gmail.com",
-        "Contraseña": "admin"},
-
-    { "id": "2" ,
+    "Contraseña": "admin"
+    },
+    {
+    "id": "2",
     "Nombre": "Santiago Casal",
-    "Usuario": "Santy" ,
+    "Usuario": "Santy",
     "Email": "Santiago@gmail.com",
-        "Contraseña": "santy1985"},
-
-    { "id": "3" ,
+    "Contraseña": "santy1985"
+    },
+    {
+    "id": "3",
     "Nombre": "Vanina Labrunee",
-    "Usuario": "Vani" ,
+    "Usuario": "Vani",
     "Email": "vanina@gmail.com",
-        "Contraseña": "vani1981"}
-    ]
+    "Contraseña": "vani1981"
+    },
+    {
+    "id": "1764629161510",
+    "Nombre": "juan",
+    "Usuario": "juancito",
+    "Email": "juan@gmail.com",
+    "Contraseña": "juan@gmail.com"
+    }
+]
 }

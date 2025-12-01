@@ -95,22 +95,89 @@ const Registro = () => {
 		return mensajes.every((m) => m === "");
 	};
 
-	const handleSubmit = (event) => {
-		event.preventDefault();
+	const handleSubmit = async (event) => {
+  event.preventDefault(); // evita que la página se recargue
 
-		if (!validarTodo()) {
-			// si hay errores, no seguimos
-			return;
-		}
+  // 1. Validamos todo el formulario (ya lo tenías)
+    if (!validarTodo()) {
+    return; // si hay errores → no hacemos nada más
+    }
 
-		console.log("Nombre:", nombre);
-		console.log("Usuario:", usuario);
-		console.log("Email:", email);
-		console.log("Contraseña:", contraseña);
-		console.log("Confirmar:", confirmar);
+  // ------------------------------------------------------------------
+  // 2. Evitamos que se registre dos veces el mismo email o usuario
+  // ------------------------------------------------------------------
+    try {
+    // Preguntamos al servidor: "¿ya existe alguien con este email?"
+    const respuestaEmail = await fetch(
+    `http://localhost:4000/users?Email=${encodeURIComponent(email.trim().toLowerCase())}`
+    );
+    const usuariosConEseEmail = await respuestaEmail.json();
 
-		// acá iría el envío al backend
-	};
+    if (usuariosConEseEmail.length > 0) {
+    alert("Ese email ya está registrado");
+      return; // salimos, no seguimos creando la cuenta
+    }
+
+    // Lo mismo pero con el nombre de usuario
+    const respuestaUsuario = await fetch(
+    `http://localhost:4000/users?Usuario=${encodeURIComponent(usuario.trim())}`
+    );
+    const usuariosConEseUsuario = await respuestaUsuario.json();
+
+    if (usuariosConEseUsuario.length > 0) {
+    alert("Ese nombre de usuario ya está en uso");
+    return;
+    }
+} catch (err) {
+    // Si por algún motivo falla esta parte, seguimos igual (es solo para el TP)
+    console.log("No se pudo verificar duplicados, seguimos...");
+}
+
+  // ------------------------------------------------------------------
+  // 3. Armamos el objeto exactamente igual a los que ya están en db.json
+  // ------------------------------------------------------------------
+    const nuevoUsuario = {
+    id: Date.now().toString(),        // id único (número de milisegundos desde 1970 → siempre diferente)
+    Nombre: nombre.trim(),           // importante la mayúscula y sin espacios al principio/final
+    Usuario: usuario.trim(),
+    Email: email.trim().toLowerCase(),
+    Contraseña: contraseña           // solo para el trabajo práctico
+};
+
+  // ------------------------------------------------------------------
+  // 4. Enviamos el nuevo usuario al json-server (es como un POST a una API)
+  // ------------------------------------------------------------------
+    try {
+    const respuesta = await fetch("http://localhost:4000/users", {
+      method: "POST",                                 // crear nuevo recurso
+        headers: {
+        "Content-Type": "application/json"              // le decimos que mandamos JSON
+    },
+      body: JSON.stringify(nuevoUsuario)               // convertimos el objeto a texto JSON
+    });
+
+    // Si todo salió bien...
+    if (respuesta.ok) {
+    alert("¡Cuenta creada con éxito!");
+
+      // Limpiamos todos los campos
+    setNombre("");
+    setUsuario("");
+    setEmail("");
+    setContraseña("");
+    setConfirmar("");
+      setErrores({}); // quitamos cualquier mensaje rojo
+
+      // Lo mandamos al login (cambiá la ruta si tu página de login es otra)
+    navigate("/login");
+    } else {
+    alert("Hubo un error al guardar. Mirá la consola.");
+    }
+} catch (error) {
+    console.error(error);
+    alert("No se pudo conectar con la base de datos. ¿Tenés json-server corriendo?");
+}
+};
 
 	const handleVolver = () => {
 		navigate("/");

@@ -12,6 +12,20 @@ const Login = () => {
 
 	const navigate = useNavigate();
 
+	useEffect(() => {
+    const stored = localStorage.getItem("usuarioLogueado");
+
+	if (stored) {
+    const parsed = JSON.parse(stored);
+
+    if (parsed.recordarme) {
+      setUsuario(parsed.usuario || "");
+      setContraseña(parsed.contraseña || "");
+      setRecordarme(true);
+    }
+  }
+}, []);
+
 	// Cargar usuarios desde db.json (json-server en http://localhost:4000)
 	useEffect(() => {
 		fetch("http://localhost:4000/users")
@@ -57,6 +71,8 @@ const Login = () => {
 					nombre: usuarioEncontrado.Nombre,
 					usuario: usuarioEncontrado.Usuario,
 					email: usuarioEncontrado.Email,
+					contraseña: usuarioEncontrado.Contraseña,
+					recordarme: true
 				})
 			);
 		}
