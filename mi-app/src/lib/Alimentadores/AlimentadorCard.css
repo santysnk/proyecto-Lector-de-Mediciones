@@ -1,0 +1,128 @@
+/* src/lib/Alimentadores/AlimentadorCard.css */
+
+/* Tarjeta base */
+.alim-card {
+   background-color: #111827;
+   border-radius: 16px;
+   overflow: hidden;
+   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
+   color: #f9fafb;
+   border: 1px solid #1f2937;
+   min-height: 230px;
+}
+
+/* Header de la tarjeta */
+.alim-card-header {
+   padding: 0.2rem 0.3rem;
+   display: flex;
+   align-items: center;
+}
+
+/* contenedor de los iconos (tuerca + mapeo) */
+.alim-card-icons {
+   display: flex;
+   align-items: center;
+   gap: 4px;
+}
+
+/* Botón base para iconos (tuerca y mapeo) */
+.alim-card-icon-btn,
+.alim-card-config-btn {
+   border: 1px solid #37415171;
+   border-radius: 10px;
+   background: transparent;
+   cursor: pointer;
+   padding: 4px 6px;
+   display: inline-flex;
+   align-items: center;
+   gap: 4px;
+}
+
+.alim-card-icon-btn:hover,
+.alim-card-config-btn:hover {
+   background-color: rgba(221, 225, 233, 0.6);
+}
+
+/* Iconos (PNG) */
+.alim-card-icon,
+.alim-card-config-icon {
+   width: 20px;
+   height: 20px;
+   display: block;
+}
+
+/* Título centrado dentro del header */
+.alim-card-title {
+   flex: 1;
+   text-align: left;
+	font-weight: 700;
+   padding-left: 0.4rem;
+   white-space: nowrap; /* 👈 no permitir salto de línea */
+   overflow: hidden; /* 👈 cortar lo que sobra */
+   text-overflow: ellipsis; /* 👈 poner "..." al final */
+}
+
+/* Botón específico de mapeo */
+.alim-card-map-btn {
+   padding-right: 10px;
+}
+
+.alim-card-map-label {
+   font-size: 0.7rem;
+   text-transform: uppercase;
+   letter-spacing: 0.04em;
+}
+
+/* Cuerpo de la tarjeta */
+.alim-card-body {
+   padding: 0.8rem 1rem 1rem;
+   background-color: #2b2c2b;
+}
+
+.alim-card-section {
+   margin-bottom: 0.75rem;
+}
+
+.alim-card-section-title {
+   margin: 0 0 0.4rem;
+   font-size: 0.8rem;
+   letter-spacing: 0.05em;
+}
+
+.alim-card-meters {
+   display: flex;
+   justify-content: space-between;
+   gap: 0.5rem;
+}
+
+.alim-card-meter {
+   flex: 1;
+   text-align: center;
+}
+
+.alim-card-meter-phase {
+   display: block;
+   font-size: 1rem;
+   margin-bottom: 0.2rem;
+}
+
+.alim-card-meter-value {
+   display: block;
+   font-family: "DS-Digital", "Courier New", monospace;
+   font-size: 1.3rem;
+   letter-spacing: 0.06em;
+   padding: 0.25rem 0.3rem;
+   border-radius: 6px;
+   background-color: #020617;
+   border-width: 1px;
+   border-color: #0ea5e9;
+   color: #facc15;
+   box-shadow: inset 0 0 6px rgba(250, 204, 21, 0.4);
+}
+
+/* Estado arrastrando */
+.alim-card-dragging {
+   opacity: 0.35;
+   transform: scale(0.98);
+   transition: opacity 0.15s ease, transform 0.15s ease;
+}

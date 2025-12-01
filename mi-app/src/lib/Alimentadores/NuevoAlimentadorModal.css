@@ -1,0 +1,358 @@
+/* Overlay compartido por todos los modales */
+.alim-modal-overlay {
+   position: fixed;
+   inset: 0;
+   background-color: rgba(15, 23, 42, 0.5);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 50;
+}
+
+/* ===== MODAL BASE (Nuevo / Editar registrador) ===== */
+.alim-modal {
+   background-color: #ffffff;
+   border-radius: 12px;
+   padding: 1.3rem 1.3rem;
+   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.3);
+   width: 100%;
+   max-width: 22.2vw;          /* ahora solo una columna, puede ser un ancho fijo cómodo */
+   max-height: 90vh;
+   overflow-y: auto;
+   box-sizing: border-box;
+}
+
+/* Layout interno (solo columna izquierda, pero lo dejamos por si luego agregás algo más) */
+.alim-modal-layout {
+   display: flex;
+   align-items: flex-start;
+}
+
+/* Columna izquierda */
+.alim-modal-left {
+   flex: 1 1 0;
+   padding: 16px;
+   background-color: #eff5f1;
+   border-radius: 6px;
+   max-height: 67.2vh;
+   overflow-y: auto;
+}
+
+.alim-modal h2 {
+   margin-top: 0;
+   margin-bottom: 1rem;
+   font-weight: 600;
+}
+
+.alim-modal-label {
+   display: flex;
+   flex-direction: column;
+   font-size: 0.9rem;
+   gap: 0.35rem;
+   margin-bottom: 1.25rem;
+}
+
+.alim-modal-input {
+   padding: 0.45rem 0.6rem;
+   border-radius: 0.5rem;
+   border: 1px solid #cbd5e1;
+   font-size: 0.95rem;
+}
+
+.alim-modal-input:focus {
+   outline: none;
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px #2563eb33;
+}
+
+.alim-modal-actions {
+   display: flex;
+   justify-content: flex-end;
+   gap: 0.5rem;
+   margin-top: 1.5rem;
+}
+
+.alim-modal-btn {
+   border-radius: 999px;
+   padding: 0.35rem 1rem;
+   font-size: 0.85rem;
+   border: none;
+   cursor: pointer;
+}
+
+.alim-modal-btn-cancelar {
+   background-color: #e5e7eb;
+   color: #111827;
+}
+
+.alim-modal-btn-aceptar {
+   background-color: #2563eb;
+   color: white;
+}
+
+.alim-modal-btn-cancelar:hover {
+   background-color: #d1d5db;
+}
+
+.alim-modal-btn-aceptar:hover {
+   background-color: #1d4ed8;
+}
+
+.alim-modal-btn-eliminar {
+   background: #ef4444;
+   color: #fff;
+}
+
+.alim-modal-btn-eliminar:hover {
+   background: #dc2626;
+}
+
+/* Lista de puestos dentro del modal de edición */
+.alim-edit-list {
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+   margin-bottom: 1.25rem;
+}
+
+/* Fila de edición de puesto */
+.alim-edit-row {
+   display: grid;
+   grid-template-columns: minmax(0, 1fr) auto auto;
+   column-gap: 0.75rem;
+   align-items: center;
+   margin-bottom: 0.5rem;
+}
+
+.alim-edit-colors {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+}
+
+.alim-edit-color-label {
+   font-size: 0.75rem;
+   color: #6b7280;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 0.15rem;
+}
+
+/* Selector de color redondeado */
+.alim-edit-color-input {
+   -webkit-appearance: none;
+   appearance: none;
+   width: 26px;
+   height: 26px;
+   padding: 0;
+   border-radius: 999px;
+   border: 2px solid #e5e7eb;
+   background: transparent;
+   cursor: pointer;
+}
+
+.alim-edit-color-input::-webkit-color-swatch-wrapper {
+   padding: 0;
+   border-radius: 999px;
+}
+
+.alim-edit-color-input::-webkit-color-swatch {
+   border-radius: 999px;
+   border: none;
+}
+
+.alim-edit-color-input:hover {
+   transform: scale(1.05);
+}
+
+.alim-edit-input {
+   flex: 1;
+   padding: 0.35rem 0.6rem;
+   border-radius: 0.5rem;
+   border: 1px solid #cbd5e1;
+   font-size: 0.9rem;
+   width: 100%;
+}
+
+.alim-edit-input:focus {
+   outline: none;
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px #2563eb33;
+}
+
+.alim-edit-delete {
+   border: none;
+   border-radius: 999px;
+   padding: 0.3rem 0.75rem;
+   font-size: 0.8rem;
+   background-color: #fee2e2;
+   color: #b91c1c;
+   cursor: pointer;
+}
+
+.alim-edit-delete:hover {
+   background-color: #fecaca;
+}
+
+/* Paleta de colores en los modales */
+.alim-color-picker {
+   margin-top: 0.5rem;
+   display: flex;
+   flex-direction: column;
+   gap: 0.35rem;
+}
+
+.alim-color-picker-label {
+   font-size: 0.8rem;
+   color: #6b7280;
+}
+
+.alim-color-grid {
+   display: flex;
+   flex-wrap: nowrap;
+   gap: 0.4rem;
+   max-width: 100%;
+   overflow-x: auto;
+   padding-bottom: 0.2rem;
+}
+
+.alim-color-swatch {
+   width: 1.6rem;
+   height: 1.6rem;
+   border-radius: 0.45rem;
+   border: 2px solid transparent;
+   padding: 0;
+   cursor: pointer;
+}
+
+.alim-color-swatch-selected {
+   border-color: #2563eb;
+   box-shadow: 0 0 0 2px #2563eb33;
+}
+
+/* Grid de campos técnicos dentro del modal de alimentador */
+.alim-modal-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+   gap: 0.75rem 1rem;
+   margin-top: 1rem;
+}
+
+.alim-field {
+   display: flex;
+   flex-direction: column;
+}
+
+.alim-field-label {
+   font-size: 0.8rem;
+   color: #6b7280;
+   margin-bottom: 0.25rem;
+}
+
+.alim-field-input {
+   padding: 0.35rem 0.5rem;
+   border-radius: 0.5rem;
+   border: 1px solid #cbd5e1;
+   font-size: 0.9rem;
+}
+
+.alim-field-input:focus {
+   outline: none;
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px #2563eb33;
+}
+
+/* Tabs RELÉ / ANALIZADOR */
+.alim-tabs {
+   margin-top: 1rem;
+   margin-bottom: 0.5rem;
+   display: inline-flex;
+   background-color: #e5e7eb;
+   padding: 0.2rem;
+   border-radius: 999px;
+}
+
+.alim-tab {
+   border: none;
+   background: transparent;
+   padding: 0.25rem 0.9rem;
+   font-size: 0.8rem;
+   border-radius: 999px;
+   cursor: pointer;
+   color: #4b5563;
+}
+
+.alim-tab-active {
+   background-color: #ffffff;
+   color: #111827;
+   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
+}
+
+/* Fila botón Test conexión */
+.alim-test-row {
+   display: flex;
+   gap: 12px;
+   margin-top: 12px;
+   margin-bottom: 8px;
+}
+
+.alim-test-btn {
+   padding: 8px 16px;
+   border-radius: 999px;
+   border: none;
+   font-size: 0.9rem;
+   cursor: pointer;
+   background: #2563eb;
+   color: #fff;
+}
+
+.alim-test-btn:disabled {
+   opacity: 0.5;
+   cursor: default;
+}
+
+/* Mensajes test */
+.alim-test-message {
+   font-size: 0.85rem;
+   margin-bottom: 6px;
+   padding: 6px 10px;
+   border-radius: 8px;
+}
+
+.alim-test-error {
+   background: #fef2f2;
+   color: #b91c1c;
+}
+
+.alim-test-ok {
+   background: #ecfdf3;
+   color: #166534;
+}
+
+/* Tabla test */
+.alim-test-table table {
+   width: 100%;
+   border-collapse: collapse;
+   font-size: 0.85rem;
+}
+
+.alim-test-table th,
+.alim-test-table td {
+   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+   padding: 4px 6px;
+   text-align: right;
+}
+
+.alim-test-table th:first-child,
+.alim-test-table td:first-child {
+   text-align: left;
+}
+
+/* Warning periodo < 60 */
+.alim-warning {
+   grid-column: 1 / -1;
+   margin-top: 4px;
+   font-size: 0.8rem;
+   color: #f97316;
+}

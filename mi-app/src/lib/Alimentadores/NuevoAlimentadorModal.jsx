@@ -1,6 +1,6 @@
 // src/lib/Alimentadores/NuevoAlimentadorModal.jsx
 import React, { useEffect, useState } from "react";
-import "./Alimentadores.css";
+import "./NuevoAlimentadorModal.css";
 
 const COLORES_ALIM = [
    "#22c55e",
@@ -16,70 +16,6 @@ const COLORES_ALIM = [
    "#6366f1",
    "#64748b",
 ];
-
-// Secciones de mapeo de mediciones (panel derecho)
-const SECCIONES_MAPEO = [
-   {
-      id: "tension_linea",
-      titulo: "Tensión de línea (kV)",
-      items: ["L1", "L2", "L3"],
-   },
-   {
-      id: "tension_entre_lineas",
-      titulo: "Tensión entre líneas (kV)",
-      items: ["L1-L2", "L2-L3", "L1-L3"],
-   },
-   {
-      id: "corriente_linea",
-      titulo: "Corriente de línea (A)",
-      items: ["L1", "L2", "L3"],
-   },
-   {
-      id: "potencia_activa",
-      titulo: "Potencia activa (kW)",
-      items: ["L1", "L2", "L3", "Total"],
-   },
-   {
-      id: "potencia_reactiva",
-      titulo: "Potencia reactiva (kVAr)",
-      items: ["L1", "L2", "L3", "Total"],
-   },
-   {
-      id: "potencia_aparente",
-      titulo: "Potencia aparente (kVA)",
-      items: ["L1", "L2", "L3", "Total"],
-   },
-   {
-      id: "factor_potencia",
-      titulo: "Factor de Potencia",
-      items: ["L1", "L2", "L3"],
-   },
-   {
-      id: "frecuencia",
-      titulo: "Frecuencia (Hz)",
-      items: ["L1", "L2", "L3"],
-   },
-   {
-      id: "corriente_neutro",
-      titulo: "Corriente de Neutro (A)",
-      items: ["N"],
-   },
-];
-
-function crearMapeoVacio() {
-   const base = {};
-   SECCIONES_MAPEO.forEach((sec) => {
-      base[sec.id] = {};
-      sec.items.forEach((item) => {
-         base[sec.id][item] = {
-            enabled: false,
-            registro: "",
-            formula: "",
-         };
-      });
-   });
-   return base;
-}
 
 const NuevoAlimentadorModal = ({
    abierto,
@@ -102,7 +38,7 @@ const NuevoAlimentadorModal = ({
       cantRegistros: "",
    });
 
-   // Periodo de actualización (s) – antes estaba Relación T.I
+   // Periodo de actualización (s)
    const [periodoSegundos, setPeriodoSegundos] = useState("60");
 
    // Config ANALIZADOR
@@ -114,14 +50,10 @@ const NuevoAlimentadorModal = ({
       relacionTI: "",
    });
 
-   // Estado del test
+   // Estado del test de conexión (solo informativo)
    const [isTesting, setIsTesting] = useState(false);
    const [testError, setTestError] = useState("");
    const [testRows, setTestRows] = useState([]); // [{index, address, value}]
-
-   // Panel de mapeo
-   const [mostrarMapeo, setMostrarMapeo] = useState(false);
-   const [mapeoMediciones, setMapeoMediciones] = useState(crearMapeoVacio);
 
    // === Cargar datos al abrir ===
    useEffect(() => {
@@ -152,27 +84,6 @@ const NuevoAlimentadorModal = ({
             cantRegistros: initialData.analizador?.cantRegistros ?? "",
             relacionTI: initialData.analizador?.relacionTI ?? "",
          });
-
-         // Cargar mapeo si existe, si no, uno vacío
-         if (initialData.mapeoMediciones) {
-            // Mezclamos con un esqueleto vacío por si faltan claves
-            const base = crearMapeoVacio();
-            const guardado = initialData.mapeoMediciones;
-            const combinado = { ...base };
-
-            SECCIONES_MAPEO.forEach((sec) => {
-               sec.items.forEach((item) => {
-                  combinado[sec.id][item] = {
-                     ...base[sec.id][item],
-                     ...(guardado[sec.id]?.[item] || {}),
-                  };
-               });
-            });
-
-            setMapeoMediciones(combinado);
-         } else {
-            setMapeoMediciones(crearMapeoVacio());
-         }
       } else {
          // Nuevo alimentador
          setNombre("");
@@ -192,14 +103,12 @@ const NuevoAlimentadorModal = ({
             cantRegistros: "",
             relacionTI: "",
          });
-         setMapeoMediciones(crearMapeoVacio());
       }
 
-      // Reset de estado de test y mapeo al abrir
+      // Reset test
       setIsTesting(false);
       setTestError("");
       setTestRows([]);
-      setMostrarMapeo(false);
    }, [abierto, initialData]);
 
    if (!abierto) return null;
@@ -224,18 +133,13 @@ const NuevoAlimentadorModal = ({
       setTestRows([]);
 
       try {
-         // 👉 Aquí va TU lógica real:
-         //    - llamar a tu backend que consulta Modbus
-         //    - o a tu API fake
-         //
-         // Ejemplo de datos de prueba (BORRÁ ESTO cuando uses los reales):
+         // Ejemplo de datos de prueba (reemplazar por lectura real Modbus)
          const registros = Array.from({ length: cantidad }, (_, i) => ({
             index: i,
             address: inicio + i,
-            value: 100 + i * 5, // valor ficticio
+            value: 100 + i * 5,
          }));
 
-         // Simulamos pequeña demora
          await new Promise((res) => setTimeout(res, 300));
 
          setTestRows(registros);
@@ -249,8 +153,6 @@ const NuevoAlimentadorModal = ({
          setIsTesting(false);
       }
    };
-
-   const puedeConfigurarMapeo = testRows.length > 0 && !testError && !isTesting;
 
    // === SUBMIT GENERAL ===
    const handleSubmit = (e) => {
@@ -273,6 +175,7 @@ const NuevoAlimentadorModal = ({
                ? Number(rele.cantRegistros)
                : null,
          },
+
          analizador: {
             ...analizador,
             puerto: analizador.puerto ? Number(analizador.puerto) : null,
@@ -286,9 +189,6 @@ const NuevoAlimentadorModal = ({
                ? Number(analizador.relacionTI)
                : null,
          },
-
-         // Mandamos el mapeo hacia arriba (aunque todavía no lo uses)
-         mapeoMediciones,
       };
 
       onConfirmar(datos);
@@ -304,27 +204,9 @@ const NuevoAlimentadorModal = ({
       }
    };
 
-   // === Helpers mapeo ===
-   const actualizarMapeo = (secId, itemId, campo, valor) => {
-      setMapeoMediciones((prev) => ({
-         ...prev,
-         [secId]: {
-            ...prev[secId],
-            [itemId]: {
-               ...prev[secId][itemId],
-               [campo]: valor,
-            },
-         },
-      }));
-   };
-
-   const toggleItemMapeo = (secId, itemId, enabled) => {
-      actualizarMapeo(secId, itemId, "enabled", enabled);
-   };
-
    return (
       <div className="alim-modal-overlay">
-         <div className={`alim-modal ${mostrarMapeo ? "alim-modal-wide" : ""}`}>
+         <div className="alim-modal">
             <h2>
                {modo === "editar"
                   ? "EDITAR REGISTRADOR: EN "
@@ -460,7 +342,7 @@ const NuevoAlimentadorModal = ({
                               />
                            </label>
 
-                           {/* Nuevo: Periodo actualización */}
+                           {/* Periodo actualización */}
                            <label className="alim-field">
                               <span className="alim-field-label">
                                  Periodo actualización (s)
@@ -582,7 +464,7 @@ const NuevoAlimentadorModal = ({
                         </div>
                      )}
 
-                     {/* Botones Test + Configurar mapeo */}
+                     {/* Botón Test conexión */}
                      <div className="alim-test-row">
                         <button
                            type="button"
@@ -591,15 +473,6 @@ const NuevoAlimentadorModal = ({
                            disabled={isTesting}
                         >
                            {isTesting ? "Probando..." : "Test conexión"}
-                        </button>
-
-                        <button
-                           type="button"
-                           className="alim-map-btn"
-                           disabled={!puedeConfigurarMapeo}
-                           onClick={() => setMostrarMapeo((v) => !v)}
-                        >
-                           {mostrarMapeo ? "Ocultar mapeo" : "Configurar mapeo"}
                         </button>
                      </div>
 
@@ -637,73 +510,6 @@ const NuevoAlimentadorModal = ({
                         </div>
                      )}
                   </div>
-
-                  {/* === COLUMNA DERECHA: MAPEO DE MEDICIONES === */}
-                  {mostrarMapeo && (
-                     <div className="alim-modal-right">
-                        {SECCIONES_MAPEO.map((sec) => (
-                           <div key={sec.id} className="alim-map-section">
-                              <h4 className="alim-map-section-title">
-                                 {sec.titulo}
-                              </h4>
-
-                              {sec.items.map((itemId) => {
-                                 const cfg = mapeoMediciones[sec.id][itemId];
-                                 return (
-                                    <div key={itemId} className="alim-map-row">
-                                       <label className="alim-map-check">
-                                          <input
-                                             type="checkbox"
-                                             checked={cfg.enabled}
-                                             onChange={(e) =>
-                                                toggleItemMapeo(
-                                                   sec.id,
-                                                   itemId,
-                                                   e.target.checked
-                                                )
-                                             }
-                                          />
-                                          <span>{itemId}</span>
-                                       </label>
-
-                                       <input
-                                          type="number"
-                                          className="alim-map-input"
-                                          placeholder="Registro"
-                                          disabled={!cfg.enabled}
-                                          value={cfg.registro}
-                                          onChange={(e) =>
-                                             actualizarMapeo(
-                                                sec.id,
-                                                itemId,
-                                                "registro",
-                                                e.target.value
-                                             )
-                                          }
-                                       />
-
-                                       <input
-                                          type="text"
-                                          className="alim-map-input alim-map-formula"
-                                          placeholder="Fórmula (ej: x * 500 / 1000)"
-                                          disabled={!cfg.enabled}
-                                          value={cfg.formula}
-                                          onChange={(e) =>
-                                             actualizarMapeo(
-                                                sec.id,
-                                                itemId,
-                                                "formula",
-                                                e.target.value
-                                             )
-                                          }
-                                       />
-                                    </div>
-                                 );
-                              })}
-                           </div>
-                        ))}
-                     </div>
-                  )}
                </div>
 
                {/* Botones inferiores */}

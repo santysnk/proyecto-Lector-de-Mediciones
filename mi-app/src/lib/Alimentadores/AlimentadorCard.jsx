@@ -1,12 +1,14 @@
 // src/lib/Alimentadores/AlimentadorCard.jsx
 import React from "react";
-import "./Alimentadores.css";
+import "./AlimentadorCard.css";
 import configIcon from "../../assets/imagenes/Config_Icon.png";
+import mapIcon from "../../assets/imagenes/Mapeo_icon.png";
 
 const AlimentadorCard = ({
    nombre,
    color,
    onConfigClick,
+   onMapClick,          // 👈 nuevo callback
    draggable = false,
    isDragging = false,
    onDragStart,
@@ -28,18 +30,35 @@ const AlimentadorCard = ({
             className="alim-card-header"
             style={{ backgroundColor: color || "#0ea5e9" }}
          >
-            <button
-               type="button"
-               className="alim-card-config-btn"
-               onClick={onConfigClick}
-               title="Configurar registrador"
-            >
-               <img
-                  src={configIcon}
-                  alt="Configurar"
-                  className="alim-card-config-icon"
-               />
-            </button>
+            {/* 👇 contenedor de los dos iconos */}
+            <div className="alim-card-icons">
+               <button
+                  type="button"
+                  className="alim-card-icon-btn"
+                  onClick={onConfigClick}
+                  title="Configurar registrador"
+               >
+                  <img
+                     src={configIcon}
+                     alt="Configurar"
+                     className="alim-card-icon"
+                  />
+               </button>
+
+               <button
+                  type="button"
+                  className="alim-card-icon-btn alim-card-map-btn"
+                  onClick={onMapClick}
+                  title="Mapeo"
+               >
+                  <img
+                     src={mapIcon}
+                     alt="Mapeo"
+                     className="alim-card-icon"
+                  />
+                  
+               </button>
+            </div>
 
             <span className="alim-card-title">{nombre}</span>
          </div>

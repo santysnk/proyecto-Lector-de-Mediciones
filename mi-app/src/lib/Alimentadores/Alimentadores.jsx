@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import "./Alimentadores.css";
 import AlimentadorCard from "./AlimentadorCard.jsx";
 import NuevoAlimentadorModal from "./NuevoAlimentadorModal.jsx";
+import MapeoMedicionesModal from "./MapeoMedicionesModal.jsx";
 
 const STORAGE_KEY_PUESTOS = "rw-puestos";
 const STORAGE_KEY_PUESTO_SEL = "rw-puesto-seleccionado";
@@ -23,12 +24,10 @@ const COLORES_PUESTO = [
 ];
 
 const Alimentadores = () => {
-   // ===== PUESTOS (barra superior) =====
-
    const DEFAULT_MAIN_BG = "#e5e7eb";
 
+   // ===== PUESTOS (barra superior) =====
    const [puestos, setPuestos] = useState(() => {
-      // Cargar desde localStorage solo una vez
       try {
          const guardado = localStorage.getItem(STORAGE_KEY_PUESTOS);
          if (!guardado) return [];
@@ -49,30 +48,42 @@ const Alimentadores = () => {
    });
 
    const [colorPuesto, setColorPuesto] = useState(COLORES_PUESTO[0]);
-
    const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
-
    const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
-
    const [nuevoNombrePuesto, setNuevoNombrePuesto] = useState("");
-
    const [puestosEditados, setPuestosEditados] = useState([]);
 
    // ===== TARJETAS DE ALIMENTADORES =====
    const [mostrarModalNuevoAlim, setMostrarModalNuevoAlim] = useState(false);
-
    const [modoAlim, setModoAlim] = useState("crear"); // "crear" | "editar"
-
    const [dragAlimId, setDragAlimId] = useState(null);
-
    const [alimentadorEnEdicion, setAlimentadorEnEdicion] = useState(null);
+
+   // ===== MODAL MAPEO MEDICIONES =====
+   const [mostrarModalMapeo, setMostrarModalMapeo] = useState(false);
+   const [alimentadorMapeo, setAlimentadorMapeo] = useState(null); // {puestoId, alimId}
 
    // Puesto actualmente activo (si el id no existe, toma el primero)
    const puestoSeleccionado =
       puestos.find((p) => p.id === puestoSeleccionadoId) || puestos[0] || null;
 
-   // ---------- DRAG & DROP DE ALIMENTADORES ----------
+   // Alimentador seleccionado para mapeo (objeto completo)
+   const alimMapeoObj =
+      alimentadorMapeo
+         ? (() => {
+              const p = puestos.find(
+                 (px) => px.id === alimentadorMapeo.puestoId
+              );
+              if (!p) return null;
+              return (
+                 p.alimentadores.find(
+                    (a) => a.id === alimentadorMapeo.alimId
+                 ) || null
+              );
+           })()
+         : null;
 
+   // ---------- DRAG & DROP DE ALIMENTADORES ----------
    const handleDragStartAlim = (alimId) => {
       setDragAlimId(alimId);
    };
@@ -82,7 +93,6 @@ const Alimentadores = () => {
    };
 
    const handleDragOverAlim = (e) => {
-      // Necesario para permitir el drop
       e.preventDefault();
    };
 
@@ -110,7 +120,6 @@ const Alimentadores = () => {
       setDragAlimId(null);
    };
 
-   // opcional: soltar sobre la tarjeta "Agregar alimentador" para enviarlo al final
    const handleDropAlimAlFinal = () => {
       if (!puestoSeleccionado || dragAlimId == null) return;
 
@@ -123,7 +132,6 @@ const Alimentadores = () => {
             if (fromIndex === -1) return p;
 
             const [movido] = nuevoOrden.splice(fromIndex, 1);
-
             nuevoOrden.push(movido);
 
             return { ...p, alimentadores: nuevoOrden };
@@ -190,7 +198,7 @@ const Alimentadores = () => {
          id: Date.now(),
          nombre,
          color: colorPuesto,
-         bgColor: DEFAULT_MAIN_BG, // 👈 color de fondo para las tarjetas de ese puesto
+         bgColor: DEFAULT_MAIN_BG,
          alimentadores: [],
       };
 
@@ -259,10 +267,9 @@ const Alimentadores = () => {
       if (!datos || !datos.nombre) return;
 
       if (modoAlim === "crear") {
-         if (!puestoSeleccionado) 
-            return;
+         if (!puestoSeleccionado) return;
 
-         const nuevoAlim = {id: Date.now(), ...datos,};
+         const nuevoAlim = { id: Date.now(), ...datos };
 
          setPuestos((prev) =>
             prev.map((p) =>
@@ -291,7 +298,7 @@ const Alimentadores = () => {
       cerrarModalNuevoAlim();
    };
 
-   // 🔴 ELIMINAR ALIMENTADOR (usado por el botón del modal)
+   // ELIMINAR ALIMENTADOR (usado por el botón del modal)
    const handleEliminarAlimentador = () => {
       if (!alimentadorEnEdicion) return;
 
@@ -313,6 +320,37 @@ const Alimentadores = () => {
       cerrarModalNuevoAlim();
    };
 
+   // ---------- MAPEO DE MEDICIONES ----------
+   const abrirModalMapeo = (puestoId, alimentador) => {
+      setAlimentadorMapeo({ puestoId, alimId: alimentador.id });
+      setMostrarModalMapeo(true);
+   };
+
+   const cerrarModalMapeo = () => {
+      setMostrarModalMapeo(false);
+      setAlimentadorMapeo(null);
+   };
+
+   const handleGuardarMapeo = (nuevoMapeo) => {
+      if (!alimentadorMapeo) return;
+      const { puestoId, alimId } = alimentadorMapeo;
+
+      setPuestos((prev) =>
+         prev.map((p) =>
+            p.id === puestoId
+               ? {
+                    ...p,
+                    alimentadores: p.alimentadores.map((a) =>
+                       a.id === alimId ? { ...a, mapeoMediciones: nuevoMapeo } : a
+                    ),
+                 }
+               : p
+         )
+      );
+
+      cerrarModalMapeo();
+   };
+
    return (
       <div className="alim-page">
          {/* ===== NAV SUPERIOR ===== */}
@@ -331,7 +369,13 @@ const Alimentadores = () => {
                {puestos.map((p) => (
                   <button
                      key={p.id}
-                     className={"alim-btn" + (puestoSeleccionado && puestoSeleccionado.id === p.id ? " alim-btn-active" : "")}
+                     className={
+                        "alim-btn" +
+                        (puestoSeleccionado &&
+                        puestoSeleccionado.id === p.id
+                           ? " alim-btn-active"
+                           : "")
+                     }
                      onClick={() => setPuestoSeleccionadoId(p.id)}
                      style={{ backgroundColor: p.color || "#22c55e" }}
                   >
@@ -361,7 +405,10 @@ const Alimentadores = () => {
          {/* ===== MAIN ===== */}
          <main
             className="alim-main"
-            style={{backgroundColor: puestoSeleccionado?.bgColor || DEFAULT_MAIN_BG,}}
+            style={{
+               backgroundColor:
+                  puestoSeleccionado?.bgColor || DEFAULT_MAIN_BG,
+            }}
          >
             {!puestos.length ? (
                <div className="alim-empty">
@@ -381,12 +428,15 @@ const Alimentadores = () => {
                         onConfigClick={() =>
                            abrirModalEditarAlim(puestoSeleccionado.id, a)
                         }
+                        onMapClick={() =>
+                           abrirModalMapeo(puestoSeleccionado.id, a)
+                        }
                         draggable={true}
-                        isDragging={dragAlimId === a.id} // 👈 nueva prop
+                        isDragging={dragAlimId === a.id}
                         onDragStart={() => handleDragStartAlim(a.id)}
                         onDragOver={handleDragOverAlim}
                         onDrop={() => handleDropAlim(a.id)}
-                        onDragEnd={handleDragEndAlim} // 👈 resetea el estado
+                        onDragEnd={handleDragEndAlim}
                      />
                   ))}
 
@@ -468,20 +518,22 @@ const Alimentadores = () => {
          {/* ===== MODAL NUEVO / EDITAR ALIMENTADOR ===== */}
          <NuevoAlimentadorModal
             abierto={mostrarModalNuevoAlim && !!puestoSeleccionado}
-
             puestoNombre={puestoSeleccionado?.nombre ?? ""}
-
             modo={modoAlim}
-
             initialData={
-               modoAlim === "editar" && alimentadorEnEdicion 
-						&& puestoSeleccionado ? puestoSeleccionado.alimentadores.find(
-                     (a) => a.id === alimentadorEnEdicion.alimId) || null : null
+               modoAlim === "editar" &&
+               alimentadorEnEdicion &&
+               puestoSeleccionado
+                  ? puestoSeleccionado.alimentadores.find(
+                       (a) => a.id === alimentadorEnEdicion.alimId
+                    ) || null
+                  : null
             }
-
             onCancelar={cerrarModalNuevoAlim}
             onConfirmar={handleGuardarAlimentador}
-            onEliminar={modoAlim === "editar" ? handleEliminarAlimentador : undefined}
+            onEliminar={
+               modoAlim === "editar" ? handleEliminarAlimentador : undefined
+            }
          />
 
          {/* ===== MODAL EDITAR PUESTOS ===== */}
@@ -511,7 +563,10 @@ const Alimentadores = () => {
                            onChange={(e) =>
                               setPuestosEditados((prev) =>
                                  prev.map((px) =>
-                                    px.id === p.id ? { ...px, color: e.target.value } : px )
+                                    px.id === p.id
+                                       ? { ...px, color: e.target.value }
+                                       : px
+                                 )
                               )
                            }
                         />
@@ -525,7 +580,10 @@ const Alimentadores = () => {
                            onChange={(e) =>
                               setPuestosEditados((prev) =>
                                  prev.map((px) =>
-                                    px.id === p.id ? { ...px, bgColor: e.target.value } : px )
+                                    px.id === p.id
+                                       ? { ...px, bgColor: e.target.value }
+                                       : px
+                                 )
                               )
                            }
                         />
@@ -560,6 +618,15 @@ const Alimentadores = () => {
                </div>
             </div>
          )}
+
+         {/* ===== MODAL MAPEO MEDICIONES ===== */}
+         <MapeoMedicionesModal
+            abierto={mostrarModalMapeo && !!alimMapeoObj}
+            nombreAlimentador={alimMapeoObj?.nombre || ""}
+            initialMapeo={alimMapeoObj?.mapeoMediciones || null}
+            onCancelar={cerrarModalMapeo}
+            onGuardar={handleGuardarMapeo}
+         />
       </div>
    );
 };
