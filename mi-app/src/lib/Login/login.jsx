@@ -11,7 +11,7 @@ const Login = () => {
 	const [error, setError] = useState("");
 
 	const navigate = useNavigate();
-
+	//Usuarios que usan recordarme
 	useEffect(() => {
     const stored = localStorage.getItem("usuarioLogueado");
 
@@ -19,12 +19,29 @@ const Login = () => {
     const parsed = JSON.parse(stored);
 
     if (parsed.recordarme) {
-      setUsuario(parsed.usuario || "");
-      setContraseña(parsed.contraseña || "");
-      setRecordarme(true);
+        setUsuario(parsed.usuario || "");
+        setContraseña(parsed.contraseña || "");
+        setRecordarme(true);
     }
-  }
+    }
 }, []);
+// ==== AUTOCOMPLETAR CONTRASEÑA ====
+	useEffect(() => {
+  // Solo se ejecuta cuando el usuario cambia
+    if (usuario.trim() === "") {
+    setContraseña(""); // si borra el usuario, borra la contraseña también
+    return;
+    }
+
+  // Busco en la lista guardada si este usuario tiene contraseña guardada
+    const lista = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+    const encontrado = lista.find(u => u.usuario === usuario);
+
+    if (encontrado) {
+    setContraseña(encontrado.contraseña);  // pone la contraseña automáticamente
+    setRecordarme(true);                   // marca el checkbox solo
+}
+}, [usuario]); // ← se ejecuta cada vez que cambie el campo usuario
 
 	// Cargar usuarios desde db.json (json-server en http://localhost:4000)
 	useEffect(() => {
@@ -64,17 +81,25 @@ const Login = () => {
 
 		// Si llega acá: login OK
 		if (recordarme) {
-			localStorage.setItem(
-				"usuarioLogueado",
-				JSON.stringify({
-					id: usuarioEncontrado.id,
-					nombre: usuarioEncontrado.Nombre,
-					usuario: usuarioEncontrado.Usuario,
-					email: usuarioEncontrado.Email,
-					contraseña: usuarioEncontrado.Contraseña,
-					recordarme: true
-				})
-			);
+		// 1. Leo la lista que ya tengo guardada (o creo una vacía)
+    let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+
+  // 2. Saco al usuario por si ya estaba (para no duplicar)
+    listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
+
+  // 3. Agrego el usuario actual con su contraseña
+    listaRecordados.push({
+    usuario: usuarioEncontrado.Usuario,
+    contraseña: contraseña   // sí, guardamos la contraseña en texto plano (los navegadores también lo hacen)
+});
+
+  // 4. Guardo la lista actualizada
+    localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
+} else {
+  // Si NO marcó "Recordarme", lo sacamos de la lista
+    let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+    listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
+    localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
 		}
 		
 		// Redirección directa a la página de alimentadores
@@ -101,8 +126,15 @@ const Login = () => {
 							placeholder="Ingrese su usuario"
 							value={usuario}
 							onChange={(e) => setUsuario(e.target.value)}
+							autoComplete="username"
+                            list="lista-usuarios-recordados"
 						/>
-
+						<datalist id="lista-usuarios-recordados">
+                            {JSON.parse(localStorage.getItem("usuariosRecordados") || "[]").map((u) => (
+                            <option key={u.usuario}
+						            value={u.usuario} />
+            ))}
+                        </datalist>
 						<h3 className="usuario">CONTRASEÑA</h3>
 						<input
 							className="input"
