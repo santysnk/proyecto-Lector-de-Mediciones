@@ -1,6 +1,6 @@
 // src/lib/Alimentadores/modbusClient.js
 
-export const MODBUS_MODE = "real"; // 👉 "real" para usar el server Modbus o "simulado" para usar el server simulado
+export const MODBUS_MODE = "simulado"; // 👉 "real" para usar el server Modbus o "simulado" para usar el server simulado
 export const USE_MODBUS_REAL = MODBUS_MODE === "real";
 
 const BASE_URL = "http://localhost:5000/api/modbus/test";

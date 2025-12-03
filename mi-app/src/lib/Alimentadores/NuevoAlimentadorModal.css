@@ -15,12 +15,23 @@
    border-radius: 12px;
    padding: 1.3rem 1.3rem;
    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.3);
-   width: 100%;
-   max-width: 22.2vw;          /* ahora solo una columna, puede ser un ancho fijo cómodo */
+   width: min(480px, 95vw);   /* 480px en desktop, hasta 95% del ancho en chico */
    max-height: 90vh;
    overflow-y: auto;
    box-sizing: border-box;
 }
+
+@media (max-width: 600px) {
+   .alim-modal {
+      border-radius: 10px;
+      padding: 1rem;
+   }
+
+   .alim-modal-left {
+      max-height: calc(90vh - 120px);  /* un poco más de aire */
+   }
+}
+
 
 /* Layout interno (solo columna izquierda, pero lo dejamos por si luego agregás algo más) */
 .alim-modal-layout {
