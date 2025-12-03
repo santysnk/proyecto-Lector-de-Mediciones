@@ -1,6 +1,7 @@
 // src/lib/Alimentadores/NuevoAlimentadorModal.jsx
 import React, { useEffect, useState } from "react";
 import "./NuevoAlimentadorModal.css";
+import { leerRegistrosModbus } from "./modbusClient";
 
 const COLORES_ALIM = [
    "#22c55e",
@@ -17,9 +18,6 @@ const COLORES_ALIM = [
    "#64748b",
 ];
 
-// 🔁 toggle entre modo real y simulado
-const USE_MODBUS_REAL = true; // ⇐ cambiá a true para usar el server real
-
 const NuevoAlimentadorModal = ({
    abierto,
    puestoNombre,
@@ -28,9 +26,11 @@ const NuevoAlimentadorModal = ({
    onCancelar,
    onConfirmar,
    onEliminar,
-   // nuevo: estado/control de medición proviene del padre
+   // estado/control de medición desde el padre
    isMeasuring = false,
    onToggleMedicion,
+   // ⬅️ NUEVO: registros en vivo que viene del padre
+   registros = [],
 }) => {
    const [nombre, setNombre] = useState("");
    const [color, setColor] = useState(COLORES_ALIM[0]);
@@ -44,19 +44,22 @@ const NuevoAlimentadorModal = ({
       cantRegistros: "",
    });
 
-   // Periodo de actualización (s)
+   // Periodo de actualización (s) para el RELÉ (usa Alimentadores)
    const [periodoSegundos, setPeriodoSegundos] = useState("60");
+
+   // Periodo de actualización (s) para el ANALIZADOR (se guarda en analizador)
+   const [periodoSegundosAnalizador, setPeriodoSegundosAnalizador] =
+      useState("60");
 
    // Config ANALIZADOR
    const [analizador, setAnalizador] = useState({
       ip: "",
-      puerto: "502",
+      puerto: "",
       indiceInicial: "",
       cantRegistros: "",
-      relacionTI: "",
    });
 
-   // Estado del test de conexión (solo informativo)
+   // Estado del test de conexión (solo informativo dentro del modal)
    const [isTesting, setIsTesting] = useState(false);
    const [testError, setTestError] = useState("");
    const [testRows, setTestRows] = useState([]); // [{index, address, value}]
@@ -92,12 +95,13 @@ const NuevoAlimentadorModal = ({
                : "60"
          );
 
+         // ANALIZADOR sin defaults raros
          setAnalizador({
             ip: initialData.analizador?.ip || "",
             puerto:
                initialData.analizador?.puerto != null
                   ? String(initialData.analizador.puerto)
-                  : "502",
+                  : "",
             indiceInicial:
                initialData.analizador?.indiceInicial != null
                   ? String(initialData.analizador.indiceInicial)
@@ -106,16 +110,19 @@ const NuevoAlimentadorModal = ({
                initialData.analizador?.cantRegistros != null
                   ? String(initialData.analizador.cantRegistros)
                   : "",
-            relacionTI:
-               initialData.analizador?.relacionTI != null
-                  ? String(initialData.analizador.relacionTI)
-                  : "",
          });
+
+         setPeriodoSegundosAnalizador(
+            initialData.analizador?.periodoSegundos != null
+               ? String(initialData.analizador.periodoSegundos)
+               : "60"
+         );
       } else {
          // Nuevo alimentador
          setNombre("");
          setColor(COLORES_ALIM[0]);
          setTab("rele");
+
          setRele({
             ip: "",
             puerto: "",
@@ -123,16 +130,17 @@ const NuevoAlimentadorModal = ({
             cantRegistros: "",
          });
          setPeriodoSegundos("60");
+
          setAnalizador({
             ip: "",
-            puerto: "502",
+            puerto: "",
             indiceInicial: "",
             cantRegistros: "",
-            relacionTI: "",
          });
+         setPeriodoSegundosAnalizador("60");
       }
 
-      // reset de estado del test (la medición periódica la maneja el padre)
+      // reset estado de test
       setIsTesting(false);
       setTestError("");
       setTestRows([]);
@@ -140,51 +148,6 @@ const NuevoAlimentadorModal = ({
 
    // si el modal no está abierto, no renderizamos nada
    if (!abierto) return null;
-
-   // función auxiliar para leer registros desde backend o simulado
-   async function leerRegistrosBackend({
-      ip,
-      puerto,
-      indiceInicial,
-      cantRegistros,
-   }) {
-      const start = Number(indiceInicial);
-      const len = Number(cantRegistros);
-
-      if (!USE_MODBUS_REAL) {
-         // 🧪 MODO SIMULADO: mismos datos que antes
-         return Array.from({ length: len }, (_, i) => ({
-            index: i,
-            address: start + i,
-            value: Math.floor(Math.random() * 501),
-         }));
-      }
-
-      // 🌐 MODO REAL: llamamos al servidor Express+Modbus
-      const resp = await fetch("http://localhost:5000/api/modbus/test", {
-         method: "POST",
-         headers: { "Content-Type": "application/json" },
-         body: JSON.stringify({
-            ip,
-            puerto,
-            indiceInicial: start,
-            cantRegistros: len,
-         }),
-      });
-
-      const data = await resp.json();
-
-      if (!resp.ok || !data.ok) {
-         throw new Error(data.error || "Error en lectura Modbus");
-      }
-
-      // data.registros es un array de UInt16
-      return data.registros.map((v, i) => ({
-         index: i,
-         address: start + i,
-         value: v,
-      }));
-   }
 
    // === TEST CONEXIÓN (simulado / o backend real) ===
    const handleTestConexion = async () => {
@@ -206,14 +169,14 @@ const NuevoAlimentadorModal = ({
       setTestRows([]);
 
       try {
-         const registros = await leerRegistrosBackend({
+         const fetched = await leerRegistrosModbus({
             ip,
             puerto,
             indiceInicial: inicio,
             cantRegistros: cantidad,
          });
 
-         setTestRows(registros);
+         setTestRows(fetched || []);
       } catch (err) {
          console.error(err);
          setTestError(
@@ -256,8 +219,8 @@ const NuevoAlimentadorModal = ({
             cantRegistros: analizador.cantRegistros
                ? Number(analizador.cantRegistros)
                : null,
-            relacionTI: analizador.relacionTI
-               ? Number(analizador.relacionTI)
+            periodoSegundos: periodoSegundosAnalizador
+               ? Number(periodoSegundosAnalizador)
                : null,
          },
       };
@@ -274,6 +237,17 @@ const NuevoAlimentadorModal = ({
          onEliminar();
       }
    };
+
+   // === Qué filas mostramos en la tabla ===
+   // Si está midiendo y el padre nos manda registros en vivo → usar esos.
+   // Si no, mostramos el resultado del último TEST CONEXIÓN.
+   const rowsToShow =
+      isMeasuring && registros && registros.length > 0 ? registros : testRows;
+
+   const mensajeTabla =
+      isMeasuring && registros && registros.length > 0
+         ? `Medición en curso. Registros en vivo: ${registros.length}`
+         : `Test correcto. Registros leídos: ${testRows.length}`;
 
    return (
       <div className="alim-modal-overlay">
@@ -413,7 +387,7 @@ const NuevoAlimentadorModal = ({
                               />
                            </label>
 
-                           {/* Periodo actualización */}
+                           {/* Periodo actualización (usado por Alimentadores) */}
                            <label className="alim-field">
                               <span className="alim-field-label">
                                  Periodo actualización (s)
@@ -517,20 +491,27 @@ const NuevoAlimentadorModal = ({
 
                            <label className="alim-field">
                               <span className="alim-field-label">
-                                 Relación T.I
+                                 Periodo actualización (s)
                               </span>
                               <input
                                  type="number"
                                  className="alim-field-input"
-                                 value={analizador.relacionTI}
+                                 value={periodoSegundosAnalizador}
                                  onChange={(e) =>
-                                    setAnalizador({
-                                       ...analizador,
-                                       relacionTI: e.target.value,
-                                    })
+                                    setPeriodoSegundosAnalizador(e.target.value)
                                  }
-                                 placeholder="Ej: 250"
+                                 placeholder="Ej: 60"
+                                 min={1}
                               />
+
+                              {periodoSegundosAnalizador &&
+                                 Number(periodoSegundosAnalizador) > 0 &&
+                                 Number(periodoSegundosAnalizador) < 60 && (
+                                    <p className="alim-warning">
+                                       Periodos menores a 60 s pueden recargar
+                                       el sistema y la red de comunicaciones.
+                                    </p>
+                                 )}
                            </label>
                         </div>
                      )}
@@ -572,10 +553,10 @@ const NuevoAlimentadorModal = ({
                         </div>
                      )}
 
-                     {!testError && testRows.length > 0 && (
+                     {!testError && rowsToShow.length > 0 && (
                         <div className="alim-test-table">
                            <div className="alim-test-message alim-test-ok">
-                              Test correcto. Registros leídos: {testRows.length}
+                              {mensajeTabla}
                            </div>
 
                            <table>
@@ -587,7 +568,7 @@ const NuevoAlimentadorModal = ({
                                  </tr>
                               </thead>
                               <tbody>
-                                 {testRows.map((r) => (
+                                 {rowsToShow.map((r) => (
                                     <tr key={r.index}>
                                        <td>{r.index}</td>
                                        <td>{r.address}</td>

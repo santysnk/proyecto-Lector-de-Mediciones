@@ -4,12 +4,10 @@ import "./Alimentadores.css";
 import AlimentadorCard from "./AlimentadorCard.jsx";
 import NuevoAlimentadorModal from "./NuevoAlimentadorModal.jsx";
 import MapeoMedicionesModal from "./MapeoMedicionesModal.jsx";
+import { leerRegistrosModbus } from "./modbusClient";
 
 const STORAGE_KEY_PUESTOS = "rw-puestos";
 const STORAGE_KEY_PUESTO_SEL = "rw-puesto-seleccionado";
-
-// 🔁 Cambiá esto a true para usar el servidor Modbus real
-const USE_MODBUS_REAL = true;
 
 const COLORES_PUESTO = [
    "#22c55e", // verde
@@ -118,51 +116,6 @@ const calcularTensionDesdeRegistros = (registros, mapeoMediciones) => {
    return salida;
 };
 
-// ===== Lectura de registros: real o simulada =====
-async function leerRegistrosBackend({ ip, puerto, indiceInicial, cantRegistros }) {
-   const start = Number(indiceInicial);
-   const len = Number(cantRegistros);
-   const p = Number(puerto);
-
-   if (!ip || !p || isNaN(start) || isNaN(len) || len <= 0) {
-      return null;
-   }
-
-   // 🧪 MODO SIMULADO
-   if (!USE_MODBUS_REAL) {
-      return Array.from({ length: len }, (_, i) => ({
-         index: i,
-         address: start + i,
-         value: Math.floor(Math.random() * 501), // 0–500
-      }));
-   }
-
-   // 🌐 MODO REAL – llamar al servidor Express+Modbus
-   const resp = await fetch("http://localhost:5000/api/modbus/test", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-         ip,
-         puerto: p,
-         indiceInicial: start,
-         cantRegistros: len,
-      }),
-   });
-
-   const data = await resp.json();
-
-   if (!resp.ok || !data.ok) {
-      throw new Error(data.error || "Error en lectura Modbus");
-   }
-
-   // data.registros es un array de UInt16
-   return data.registros.map((v, i) => ({
-      index: i,
-      address: start + i,
-      value: v,
-   }));
-}
-
 const Alimentadores = () => {
    const DEFAULT_MAIN_BG = "#e5e7eb";
 
@@ -215,6 +168,10 @@ const Alimentadores = () => {
          },
       }));
    };
+
+   // NUEVO: registros crudos por alimentador
+   // { [alimId]: [{ index, address, value }, ...] }
+   const [registrosEnVivo, setRegistrosEnVivo] = useState({});
 
    // Medición activa por alimentador  { [alimId]: true/false }
    const [medicionesActivas, setMedicionesActivas] = useState({});
@@ -344,7 +301,7 @@ const Alimentadores = () => {
 
    // ---------- LÓGICA DE MEDICIÓN POR ALIMENTADOR ----------
    const tickMedicionAlim = async (alim) => {
-      const registros = await leerRegistrosBackend({
+      const registros = await leerRegistrosModbus({
          ip: alim.rele?.ip?.trim(),
          puerto: alim.rele?.puerto,
          indiceInicial: alim.rele?.indiceInicial,
@@ -352,6 +309,11 @@ const Alimentadores = () => {
       });
 
       if (!registros) return;
+
+      setRegistrosEnVivo((prev) => ({
+         ...prev,
+         [alim.id]: registros,
+      }));
 
       const mapeo = alim.mapeoMediciones || null;
       const consumo = calcularConsumoDesdeRegistros(registros, mapeo);
@@ -581,9 +543,7 @@ const Alimentadores = () => {
 
    // Alimentador completo en edición (para pasar al modal como initialData)
    const alimEnEdicion =
-      modoAlim === "editar" &&
-      alimentadorEnEdicion &&
-      puestoSeleccionado
+      modoAlim === "editar" && alimentadorEnEdicion && puestoSeleccionado
          ? puestoSeleccionado.alimentadores.find(
               (a) => a.id === alimentadorEnEdicion.alimId
            ) || null
@@ -774,6 +734,10 @@ const Alimentadores = () => {
                modoAlim === "editar" && alimentadorEnEdicion
                   ? () => toggleMedicionAlim(alimentadorEnEdicion.alimId)
                   : undefined
+            }
+            // NUEVO: registros crudos para mostrar en la tabla del modal
+            registros={
+               alimEnEdicion ? registrosEnVivo[alimEnEdicion.id] || [] : []
             }
          />
 
