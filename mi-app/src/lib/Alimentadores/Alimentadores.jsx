@@ -50,97 +50,130 @@ const obtenerListaRegistros = (registrosPorOrigen, origen) => {
    return Array.isArray(lista) ? lista : null;
 };
 
-const calcularConsumoDesdeRegistros = (registrosPorOrigen, mapeoMediciones) => {
-   const salida = { R: "--,--", S: "--,--", T: "--,--" };
-   if (!mapeoMediciones) return salida;
-
-   const corr = mapeoMediciones.corriente_linea || {};
-   const mapFase = { L1: "R", L2: "S", L3: "T" };
-
-   ["L1", "L2", "L3"].forEach((itemId) => {
-      const cfg = corr[itemId];
-      const faseCard = mapFase[itemId];
-
-      if (!cfg?.enabled) return; // checkbox destildado → se queda "--,--"
-
-      const regNum = Number(cfg.registro);
-      // Config incompleta → dejamos "--,--" sin marcar ERROR
-      if ((!Number.isFinite(regNum) && regNum !== 0) || cfg.registro === "") {
-         return;
-      }
-
-      const origen = cfg.origen || "rele"; // default: relé
-      const lista = obtenerListaRegistros(registrosPorOrigen, origen);
-
-      // No hay datos aún para ese origen (no se está midiendo) → "--,--"
-      if (!lista || lista.length === 0) {
-         return;
-      }
-
-      const row = lista.find((r) => r.address === regNum);
-      if (!row) {
-         // Sí hay datos para ese origen pero no ese registro → ERROR
-         salida[faseCard] = "ERROR";
-         return;
-      }
-
-      const calculado = aplicarFormula(cfg.formula || "x", row.value);
-      if (calculado == null || Number.isNaN(calculado)) {
-         salida[faseCard] = "ERROR";
-         return;
-      }
-
-      salida[faseCard] = formatearValor(calculado);
-   });
-
-   return salida;
+// Títulos que se verán en la tarjeta según el id elegido en el mapeo
+const TITULOS_CARD = {
+   tension_linea: "Tensión de línea (kV)",
+   tension_entre_lineas: "Tensión entre líneas (kV)",
+   corriente_132: "Corriente de línea (A) (en 13,2 kV)",
+   corriente_33: "Corriente de línea (A) (en 33 kV)",
+   potencia_activa: "Potencia activa (kW)",
+   potencia_reactiva: "Potencia reactiva (kVAr)",
+   potencia_aparente: "Potencia aparente (kVA)",
+   factor_potencia: "Factor de Potencia",
+   frecuencia: "Frecuencia (Hz)",
+   corriente_neutro: "Corriente de Neutro (A)",
 };
 
-const calcularTensionDesdeRegistros = (registrosPorOrigen, mapeoMediciones) => {
-   const salida = { R: "--,--", S: "--,--", T: "--,--" };
-   if (!mapeoMediciones) return salida;
-
-   const tens = mapeoMediciones.tension_linea || {};
-   const mapFase = { L1: "R", L2: "S", L3: "T" };
-
-   ["L1", "L2", "L3"].forEach((itemId) => {
-      const cfg = tens[itemId];
-      const faseCard = mapFase[itemId];
-
-      if (!cfg?.enabled) return;
-
-      const regNum = Number(cfg.registro);
-      // Config incompleta → dejamos "--,--"
-      if ((!Number.isFinite(regNum) && regNum !== 0) || cfg.registro === "") {
-         return;
-      }
-
-      const origen = cfg.origen || "rele";
-      const lista = obtenerListaRegistros(registrosPorOrigen, origen);
-
-      // No hay datos todavía para ese origen → "--,--"
-      if (!lista || lista.length === 0) {
-         return;
-      }
-
-      const row = lista.find((r) => r.address === regNum);
-      if (!row) {
-         salida[faseCard] = "ERROR";
-         return;
-      }
-
-      const calculado = aplicarFormula(cfg.formula || "x", row.value);
-      if (calculado == null || Number.isNaN(calculado)) {
-         salida[faseCard] = "ERROR";
-         return;
-      }
-
-      salida[faseCard] = formatearValor(calculado);
-   });
-
-   return salida;
+// para poner etiquetas razonables si el usuario no escribe nada
+const ETIQUETAS_POR_DEFECTO = {
+   corriente_132: ["R", "S", "T", "N"],
+   corriente_33: ["R", "S", "T", "N"],
+   tension_linea: ["R", "S", "T", "N"],
+   tension_entre_lineas: ["L1-L2", "L2-L3", "L1-L3", ""],
+   potencia_activa: ["L1", "L2", "L3", "Total"],
+   potencia_reactiva: ["L1", "L2", "L3", "Total"],
+   potencia_aparente: ["L1", "L2", "L3", "Total"],
+   factor_potencia: ["L1", "L2", "L3", ""],
+   frecuencia: ["L1", "L2", "L3", ""],
+   corriente_neutro: ["N", "", "", ""],
 };
 
+const CARD_DESIGN_DEFAULT = {
+   superior: {
+      tituloId: "corriente_132",
+      tituloCustom: "",
+      cantidad: 3,
+      boxes: [],
+   },
+   inferior: {
+      tituloId: "tension_linea",
+      tituloCustom: "",
+      cantidad: 3,
+      boxes: [],
+   },
+};
+
+const getCardDesign = (mapeoMediciones) => {
+   const cd = mapeoMediciones?.cardDesign;
+
+   if (!cd) return CARD_DESIGN_DEFAULT;
+
+   return {
+      superior: {
+         ...CARD_DESIGN_DEFAULT.superior,
+         ...(cd.superior || {}),
+      },
+      inferior: {
+         ...CARD_DESIGN_DEFAULT.inferior,
+         ...(cd.inferior || {}),
+      },
+   };
+};
+
+const resolverTituloLado = (sideDesign) => {
+   if (!sideDesign) return "";
+   if (sideDesign.tituloId === "custom") {
+      return (sideDesign.tituloCustom || "").trim();
+   }
+   return TITULOS_CARD[sideDesign.tituloId] || "";
+};
+
+// Calcula los valores para 1-4 boxes de un lado de la tarjeta
+// Devuelve: { titulo: string, boxes: [{ etiqueta, valor }] }
+const calcularValoresLadoTarjeta = (registrosPorOrigen, sideDesign) => {
+   if (!sideDesign) {
+      return {
+         titulo: "",
+         boxes: [],
+      };
+   }
+
+   const titulo = resolverTituloLado(sideDesign);
+   const cantidad = Math.min(4, Math.max(1, Number(sideDesign.cantidad) || 1));
+   const boxesSalida = [];
+
+   const etiquetasDefault = ETIQUETAS_POR_DEFECTO[sideDesign.tituloId] || [];
+
+   for (let i = 0; i < cantidad; i++) {
+      const cfg = sideDesign.boxes?.[i] || {};
+      const etiqueta =
+         (cfg.label || "").trim() || etiquetasDefault[i] || `Box ${i + 1}`;
+
+      let valorMostrado = "--,--";
+
+      if (cfg.enabled) {
+         const regNum = Number(cfg.registro);
+
+         // si no hay registro configurado, dejamos "--,--"
+         if ((Number.isFinite(regNum) || regNum === 0) && cfg.registro !== "") {
+            const origen = cfg.origen || "rele";
+            const lista = obtenerListaRegistros(registrosPorOrigen, origen);
+
+            if (lista && lista.length > 0) {
+               const row = lista.find((r) => r.address === regNum);
+
+               if (!row) {
+                  valorMostrado = "ERROR";
+               } else {
+                  const calculado = aplicarFormula(
+                     cfg.formula || "x",
+                     row.value
+                  );
+                  if (calculado == null || Number.isNaN(calculado)) {
+                     valorMostrado = "ERROR";
+                  } else {
+                     valorMostrado = formatearValor(calculado);
+                  }
+               }
+            }
+         }
+      }
+
+      boxesSalida.push({ etiqueta, valor: valorMostrado });
+   }
+
+   return { titulo, boxes: boxesSalida };
+};
 
 const Alimentadores = () => {
    const DEFAULT_MAIN_BG = "#e5e7eb";
@@ -362,9 +395,21 @@ const Alimentadores = () => {
 
          // recalculo lecturas usando ambos orígenes
          const mapeo = alim.mapeoMediciones || null;
-         const consumo = calcularConsumoDesdeRegistros(combinados, mapeo);
-         const tensionLinea = calcularTensionDesdeRegistros(combinados, mapeo);
-         handleUpdateLecturasAlim(alim.id, { consumo, tensionLinea });
+         const cardDesign = getCardDesign(mapeo);
+
+         const parteSuperior = calcularValoresLadoTarjeta(
+            combinados,
+            cardDesign.superior
+         );
+         const parteInferior = calcularValoresLadoTarjeta(
+            combinados,
+            cardDesign.inferior
+         );
+
+         handleUpdateLecturasAlim(alim.id, {
+            parteSuperior,
+            parteInferior,
+         });
 
          return {
             ...prev,
@@ -611,6 +656,27 @@ const Alimentadores = () => {
          )
       );
 
+      // >>> PREVIEW EN LA CARD AUN SIN MEDICIÓN <<<
+      const cardDesign = getCardDesign(nuevoMapeo);
+
+      setLecturas((prev) => ({
+         ...prev,
+         [alimId]: {
+            ...(prev[alimId] || {}),
+            // Como no pasamos registros, calcularValoresLadoTarjeta
+            // devuelve todos los valores en "--,--", pero con
+            // la cantidad de boxes y títulos correctos.
+            parteSuperior: calcularValoresLadoTarjeta(
+               null,
+               cardDesign.superior
+            ),
+            parteInferior: calcularValoresLadoTarjeta(
+               null,
+               cardDesign.inferior
+            ),
+         },
+      }));
+
       cerrarModalMapeo();
    };
 
@@ -721,8 +787,8 @@ const Alimentadores = () => {
                         onMapClick={() =>
                            abrirModalMapeo(puestoSeleccionado.id, a)
                         }
-                        consumo={lecturas[a.id]?.consumo}
-                        tensionLinea={lecturas[a.id]?.tensionLinea}
+                        topSide={lecturas[a.id]?.parteSuperior}
+                        bottomSide={lecturas[a.id]?.parteInferior}
                         draggable={true}
                         isDragging={dragAlimId === a.id}
                         onDragStart={() => handleDragStartAlim(a.id)}

@@ -295,6 +295,9 @@
    gap: 12px;
    margin-top: 12px;
    margin-bottom: 8px;
+
+   /* 👉 que ocupe todas las columnas del grid */
+   grid-column: 1 / -1;
 }
 
 .alim-test-btn-secondary {
@@ -315,6 +318,7 @@
    cursor: pointer;
    background: #2563eb;
    color: #fff;
+   white-space: nowrap;   /* 👈 clave para que no se corte en 2 líneas */
 }
 
 .alim-test-btn:disabled {
@@ -328,6 +332,9 @@
    margin-bottom: 6px;
    padding: 6px 10px;
    border-radius: 8px;
+
+   /* 👉 ocupar todo el ancho del grid */
+   grid-column: 1 / -1;
 }
 
 .alim-test-error {
@@ -340,23 +347,66 @@
    color: #166534;
 }
 
-/* Tabla test */
+/* Contenedor de la tabla de test */
+.alim-test-table {
+   grid-column: 1 / -1;      /* ocupar todo el ancho del grid */
+   margin-top: 4px;
+   margin-bottom: 0.5rem;
+   padding: 8px 10px;
+   border-radius: 8px;
+   background: #f9fafb;
+   border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+/* Tabla interna */
 .alim-test-table table {
    width: 100%;
    border-collapse: collapse;
-   font-size: 0.85rem;
+   font-size: 0.8rem;
 }
 
-.alim-test-table th,
-.alim-test-table td {
-   border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+/* Cabecera */
+.alim-test-table thead {
+   background-color: #e5e7eb;
+}
+
+.alim-test-table th {
+   font-weight: 600;
+   color: #374151;
    padding: 4px 6px;
    text-align: right;
 }
 
+/* Celdas del cuerpo */
+.alim-test-table td {
+   padding: 4px 6px;
+   text-align: right;
+   font-family: "SF Mono", "Menlo", "Consolas", monospace;
+}
+
+/* Primera columna (#) alineada a la izquierda */
 .alim-test-table th:first-child,
 .alim-test-table td:first-child {
    text-align: left;
+}
+
+/* Líneas divisorias suaves */
+.alim-test-table tbody tr + tr td {
+   border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* Filas tipo zebra */
+.alim-test-table tbody tr:nth-child(odd) {
+   background-color: #f9fafb;
+}
+
+.alim-test-table tbody tr:nth-child(even) {
+   background-color: #f3f4f6;
+}
+
+.alim-test-table {
+   max-height: 180px;
+   overflow: auto;
 }
 
 /* Warning periodo < 60 */

@@ -92,8 +92,8 @@
 
 /* Grid de tarjetas en el main */
 .alim-cards-grid {
-   display: grid;
-   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+   display: flex;
+   flex-wrap: wrap;
    gap: 1.5rem;
 }
 
@@ -118,6 +118,10 @@
 
 .alim-card-add-text {
    font-size: 0.85rem;
+}
+
+.alim-card-section-title {
+   text-transform: uppercase;
 }
 
 /* Botón de puesto activo */

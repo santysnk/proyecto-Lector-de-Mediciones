@@ -9,6 +9,15 @@
    color: #f9fafb;
    border: 1px solid #1f2937;
    min-height: 230px;
+
+   /* 👇 importante para que flex calcule bien */
+   flex: 0 0 304px; /* ancho "normal" de la tarjeta */
+}
+
+/* Cuando hay 4 boxes en alguna fila, la hacemos más ancha */
+.alim-card-wide {
+   /* 👈 sin el segundo guión */
+   flex-basis: 420px;
 }
 
 /* Header de la tarjeta */
@@ -55,7 +64,7 @@
 .alim-card-title {
    flex: 1;
    text-align: left;
-	font-weight: 700;
+   font-weight: 700;
    padding-left: 0.4rem;
    white-space: nowrap; /* 👈 no permitir salto de línea */
    overflow: hidden; /* 👈 cortar lo que sobra */
@@ -91,12 +100,13 @@
 
 .alim-card-meters {
    display: flex;
-   justify-content: space-between;
-   gap: 0.5rem;
+   justify-content: space-evenly; /* 👈 reparte espacios iguales */
+   gap: 15px; /* con space-evenly no hace falta gap */
 }
 
+/* cada box con ancho fijo */
 .alim-card-meter {
-   flex: 1;
+   flex: 0 0 80px; /* ajustá 90–100px según cómo veas el tamaño ideal */
    text-align: center;
 }
 

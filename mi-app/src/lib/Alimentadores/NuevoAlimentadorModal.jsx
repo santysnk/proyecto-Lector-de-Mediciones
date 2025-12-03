@@ -489,7 +489,9 @@ const NuevoAlimentadorModal = ({
                                  onClick={handleTestConexionRele}
                                  disabled={isTestingRele}
                               >
-                                 {isTestingRele ? "Probando..." : "Test conexión"}
+                                 {isTestingRele
+                                    ? "Probando..."
+                                    : "Test conexión"}
                               </button>
 
                               <button
@@ -629,23 +631,22 @@ const NuevoAlimentadorModal = ({
                                  className="alim-field-input"
                                  value={periodoSegundosAnalizador}
                                  onChange={(e) =>
-                                    setPeriodoSegundosAnalizador(
-                                       e.target.value
-                                    )
+                                    setPeriodoSegundosAnalizador(e.target.value)
                                  }
                                  placeholder="Ej: 60"
                                  min={1}
                               />
-
-                              {periodoSegundosAnalizador &&
-                                 Number(periodoSegundosAnalizador) > 0 &&
-                                 Number(periodoSegundosAnalizador) < 60 && (
-                                    <p className="alim-warning">
-                                       Periodos menores a 60 s pueden recargar
-                                       el sistema y la red de comunicaciones.
-                                    </p>
-                                 )}
                            </label>
+									
+                           {periodoSegundosAnalizador &&
+                              Number(periodoSegundosAnalizador) > 0 &&
+                              Number(periodoSegundosAnalizador) < 60 && (
+                                 <p className="alim-warning">
+                                    ⚠️ Periodos menores a 60&nbsp;s pueden
+                                    recargar el sistema y la red de
+                                    comunicaciones.
+                                 </p>
+                              )}
 
                            {/* Botones y tabla ANALIZADOR */}
                            <div className="alim-test-row">
