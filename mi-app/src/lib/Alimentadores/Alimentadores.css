@@ -95,7 +95,7 @@
    display: flex;
    flex-wrap: wrap;
    row-gap: 1.8rem;
-   column-gap: 2.6rem;
+   column-gap: 2.4rem;
 }
 
 /* Tarjeta "+" para crear alimentador */
