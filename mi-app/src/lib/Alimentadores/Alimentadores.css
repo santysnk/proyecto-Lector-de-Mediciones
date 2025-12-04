@@ -153,3 +153,90 @@
    font-size: 0.95rem;
    text-align: center;
 }
+
+/* Fila de edición de puesto (nombre + colores + eliminar) */
+.alim-edit-row {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   margin-bottom: 12px;
+}
+
+/* Input de nombre del puesto */
+.alim-edit-input {
+   flex: 1;
+   padding: 0.45rem 0.7rem;
+   border-radius: 999px;
+   border: 1px solid #cbd5e1;
+   font-size: 0.9rem;
+}
+
+.alim-edit-input:focus {
+   outline: none;
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px #2563eb33;
+}
+
+/* Contenedor derecha: colores + botón eliminar */
+.alim-edit-right {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+}
+
+/* Grupo de color (texto “Botón/Fondo” + círculo) */
+.alim-edit-color-group {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 4px;
+   font-size: 0.7rem;
+   color: #6b7280;
+}
+
+.alim-edit-color-label {
+   line-height: 1;
+}
+
+/* Input color redondeado tipo “chip” */
+.alim-edit-color-input {
+   -webkit-appearance: none;
+   appearance: none;
+   width: 26px;
+   height: 26px;
+   padding: 0;
+   border-radius: 999px;
+   border: 2px solid #e5e7eb;
+   background: transparent;
+   cursor: pointer;
+}
+
+.alim-edit-color-input::-webkit-color-swatch-wrapper {
+   padding: 0;
+   border-radius: 999px;
+}
+
+.alim-edit-color-input::-webkit-color-swatch {
+   border-radius: 999px;
+   border: none;
+}
+
+.alim-edit-color-input:hover {
+   transform: scale(1.05);
+}
+
+/* Botón “Eliminar” como píldora a la derecha */
+.alim-edit-delete {
+   border: none;
+   border-radius: 999px;
+   padding: 0.35rem 0.9rem;
+   font-size: 0.8rem;
+   background-color: #fee2e2;
+   color: #b91c1c;
+   cursor: pointer;
+   white-space: nowrap;
+}
+
+.alim-edit-delete:hover {
+   background-color: #fecaca;
+}

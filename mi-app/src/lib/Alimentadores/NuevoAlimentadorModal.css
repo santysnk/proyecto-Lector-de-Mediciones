@@ -1,3 +1,4 @@
+
 /* Overlay compartido por todos los modales */
 .alim-modal-overlay {
    position: fixed;
@@ -116,94 +117,6 @@
 
 .alim-modal-btn-eliminar:hover {
    background: #dc2626;
-}
-
-/* Lista de puestos dentro del modal de edición */
-.alim-edit-list {
-   display: flex;
-   flex-direction: column;
-   gap: 0.5rem;
-   margin-bottom: 1.25rem;
-}
-
-/* Fila de edición de puesto */
-.alim-edit-row {
-   display: grid;
-   grid-template-columns: minmax(0, 1fr) auto auto;
-   column-gap: 0.75rem;
-   align-items: center;
-   margin-bottom: 0.5rem;
-}
-
-.alim-edit-colors {
-   display: flex;
-   align-items: center;
-   gap: 0.5rem;
-}
-
-.alim-edit-color-label {
-   font-size: 0.75rem;
-   color: #6b7280;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   gap: 0.15rem;
-}
-
-/* Selector de color redondeado */
-.alim-edit-color-input {
-   -webkit-appearance: none;
-   appearance: none;
-   width: 26px;
-   height: 26px;
-   padding: 0;
-   border-radius: 999px;
-   border: 2px solid #e5e7eb;
-   background: transparent;
-   cursor: pointer;
-}
-
-.alim-edit-color-input::-webkit-color-swatch-wrapper {
-   padding: 0;
-   border-radius: 999px;
-}
-
-.alim-edit-color-input::-webkit-color-swatch {
-   border-radius: 999px;
-   border: none;
-}
-
-.alim-edit-color-input:hover {
-   transform: scale(1.05);
-}
-
-.alim-edit-input {
-   flex: 1;
-   padding: 0.35rem 0.6rem;
-   border-radius: 0.5rem;
-   border: 1px solid #cbd5e1;
-   font-size: 0.9rem;
-   width: 100%;
-}
-
-.alim-edit-input:focus {
-   outline: none;
-   border-color: #2563eb;
-   box-shadow: 0 0 0 1px #2563eb33;
-}
-
-.alim-edit-delete {
-   border: none;
-   border-radius: 999px;
-   padding: 0.3rem 0.75rem;
-   font-size: 0.8rem;
-   background-color: #fee2e2;
-   color: #b91c1c;
-   cursor: pointer;
-}
-
-.alim-edit-delete:hover {
-   background-color: #fecaca;
 }
 
 /* Paleta de colores en los modales */

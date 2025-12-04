@@ -979,44 +979,49 @@ const Alimentadores = () => {
 									type="text"
 									className="alim-edit-input"
 									value={p.nombre}
-									onChange={(e) =>
-										cambiarNombreEditado(p.id, e.target.value)
-									}
+									onChange={(e) => cambiarNombreEditado(p.id, e.target.value)}
 								/>
 
-								{/* Color del botón */}
-								<input
-									type="color"
-									className="alim-edit-color-input"
-									title="Color del botón"
-									value={p.color || COLORES_PUESTO[0]}
-									onChange={(e) =>
-										setPuestosEditados((prev) =>
-											prev.map((px) =>
-												px.id === p.id
-													? { ...px, color: e.target.value }
-													: px
-											)
-										)
-									}
-								/>
+								{/* Colores: botón y fondo */}
+								<div className="alim-edit-colors">
+									<label className="alim-edit-color-label">
+										<span>Botón</span>
+										<input
+											type="color"
+											className="alim-edit-color-input"
+											title="Color del botón"
+											value={p.color || COLORES_PUESTO[0]}
+											onChange={(e) =>
+												setPuestosEditados((prev) =>
+													prev.map((px) =>
+														px.id === p.id
+															? { ...px, color: e.target.value }
+															: px
+													)
+												)
+											}
+										/>
+									</label>
 
-								{/* Color de fondo del área de tarjetas */}
-								<input
-									type="color"
-									className="alim-edit-color-input"
-									title="Color de fondo del panel"
-									value={p.bgColor || DEFAULT_MAIN_BG}
-									onChange={(e) =>
-										setPuestosEditados((prev) =>
-											prev.map((px) =>
-												px.id === p.id
-													? { ...px, bgColor: e.target.value }
-													: px
-											)
-										)
-									}
-								/>
+									<label className="alim-edit-color-label">
+										<span>Fondo</span>
+										<input
+											type="color"
+											className="alim-edit-color-input"
+											title="Color de fondo del panel"
+											value={p.bgColor || DEFAULT_MAIN_BG}
+											onChange={(e) =>
+												setPuestosEditados((prev) =>
+													prev.map((px) =>
+														px.id === p.id
+															? { ...px, bgColor: e.target.value }
+															: px
+													)
+												)
+											}
+										/>
+									</label>
+								</div>
 
 								{/* Botón eliminar */}
 								<button
@@ -1028,6 +1033,7 @@ const Alimentadores = () => {
 								</button>
 							</div>
 						))}
+
 
 						<div className="alim-modal-actions">
 							<button
