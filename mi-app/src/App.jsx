@@ -1,28 +1,28 @@
 // src/App.jsx
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import Login from "./lib/Login/login.jsx";
-import Registro from "./lib/Registro/Registro.jsx";
-import Alimentadores from "./lib/Alimentadores/Alimentadores.jsx";  
+import PaginaLogin from "./paginas/PaginaLogin/PaginaLogin.jsx";
+import PaginaRegistro from "./paginas/PaginaRegistro/PaginaRegistro.jsx";
+import PaginaAlimentadores from "./paginas/PaginaAlimentadores/PaginaAlimentadores.jsx";
 
-function App() {	
+function App() {
 
-		return (
-		
-			<Routes>
-				{/* Ruta principal: login */}
-				<Route path="/" element={<Login />} />
+	return (
 
-				{/* Ruta de registro */}
-				<Route path="/registro" element={<Registro />} />
+		<Routes>
+			{/* Ruta principal: login */}
+			<Route path="/" element={<PaginaLogin />} />
 
-				{/* Ruta de alimentadores */}
-				<Route path="/alimentadores" element={<Alimentadores />} />
+			{/* Ruta de registro */}
+			<Route path="/registro" element={<PaginaRegistro />} />
 
-				{/* Cualquier otra ruta -> redirige al login */}
-				<Route path="*" element={<Navigate to="/" replace />} />
-			</Routes>
-	
+			{/* Ruta de alimentadores */}
+			<Route path="/alimentadores" element={<PaginaAlimentadores />} />
+
+			{/* Cualquier otra ruta -> redirige al login */}
+			<Route path="*" element={<Navigate to="/" replace />} />
+		</Routes>
+
 	);
 }
 

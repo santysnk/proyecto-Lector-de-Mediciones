@@ -1,0 +1,266 @@
+/* === Overlay reutilizado (mismo estilo que otros modales) === */
+.alim-modal-overlay {
+   position: fixed;
+   inset: 0;
+   background-color: rgba(15, 23, 42, 0.55);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 50;
+}
+
+/* ===== CONTENEDOR DEL MODAL ===== */
+.map-modal {
+   background-color: #ffffff;
+   border-radius: 14px;
+   padding: 0.9rem 1.3rem;
+   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+
+   /* CAMBIO IMPORTANTE */
+   width: 95vw;        /* ocupa como mucho el 95% del ancho de la pantalla */
+   max-width: 580px;   /* pero nunca más ancho que 580px en escritorio */
+
+   max-height: 90vh;
+   box-sizing: border-box;
+   overflow-y: auto;
+   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+}
+
+/* Opcional: en pantallas MUY chicas reducir un poco el padding */
+@media (max-width: 480px) {
+   .map-modal {
+      padding: 1.1rem 1.2rem;
+   }
+}
+
+.map-modal__title {
+   font-size: 1.05rem;
+   font-weight: 600;
+   color: #0f172a;
+   margin: 0 0 0.5rem;
+}
+
+/* ===== FORMULARIO GENERAL ===== */
+.map-form {
+   display: flex;
+   flex-direction: column;
+   gap: 0.1rem;
+}
+
+/* ===== BLOQUE: DISEÑO DE LA TARJETA ===== */
+.map-design {
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+}
+
+.map-design__title {
+   font-size: 1rem;
+   font-weight: 600;
+   color: #111827;
+   margin-bottom: 0.25rem;
+}
+
+.map-design__help {
+   font-size: 0.82rem;
+   color: #6b7280;
+   line-height: 1.4;
+   margin-bottom: 0.8rem;
+}
+
+/* ===== PARTE SUPERIOR / INFERIOR ===== */
+.map-part {
+   margin-top: 0.25rem;
+   padding-top: 0.25rem;
+}
+
+.map-part:first-of-type {
+   border-top: none;
+   margin-top: 0;
+   padding-top: 0;
+}
+
+.map-part__title {
+   font-size: 1rem;
+   font-weight: 600;
+   color: #111827;
+   border: #80848b solid 0.5px;
+   border-radius: 5px;
+   margin-bottom: 0.6rem;
+   background-color: #8fa5d3;
+   padding-left: 5px;
+}
+
+/* fila con: Título + Cantidad de boxes */
+.map-part__header {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 1rem;
+   align-items: flex-end;
+   margin-bottom: 0.8rem;
+}
+
+/* ===== CAMPOS GENERALES (label + input/select) ===== */
+.map-field {
+   display: flex;
+   flex-direction: column;
+   gap: 0.3rem;
+   font-size: 0.8rem;
+   color: #4b5563;
+}
+
+.map-field--grow {
+   flex: 2 1 220px;
+}
+
+.map-field--small {
+   flex: 1 1 160px;
+}
+
+.map-field__label {
+   font-weight: 500;
+}
+
+.map-field__inline {
+   display: flex;
+   gap: 0.5rem;
+}
+
+/* inputs/selects base */
+.map-input,
+.map-select {
+   border-radius: 6px;
+   border: 1px solid #d1d5db;
+   padding: 0.38rem 0.55rem;
+   font-size: 0.83rem;
+   outline: none;
+   background-color: #ffffff;
+   min-height: 2rem;
+   box-sizing: border-box;
+}
+
+.map-input:focus,
+.map-select:focus {
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+
+.map-input:disabled,
+.map-select:disabled {
+   background-color: #f9fafb;
+   color: #9ca3af;
+   cursor: not-allowed;
+}
+
+/* input de título custom ocupa todo el ancho posible */
+.map-input--full {
+   flex: 1 1 auto;
+}
+
+/* ===== LISTA DE BOXES ===== */
+.map-box-list {
+   display: flex;
+   flex-direction: column;
+   gap: 0.01rem;
+}
+
+/* Cada fila de box (una sola línea, más angosta) */
+.map-box {
+   display: flex;
+   align-items: center;
+   gap: 0.4rem;
+   padding: 0.25rem 0;
+}
+
+/* Checkbox "Box 1 / Box 2 / ..." */
+.map-box__check {
+   display: flex;
+   align-items: center;
+   gap: 0.35rem;
+   font-size: 0.82rem;
+   color: #4b5563;
+   white-space: nowrap;
+}
+
+.map-box__check input[type="checkbox"] {
+   width: 14px;
+   height: 14px;
+}
+
+/* Inputs del box: todos más angostos */
+.map-box__label,
+.map-box__registro,
+.map-box__origen,
+.map-box__formula {
+   border-radius: 6px;
+   border: 1px solid #d1d5db;
+   padding: 0.32rem 0.5rem;
+   font-size: 0.82rem;
+   outline: none;
+   background-color: #ffffff;
+   box-sizing: border-box;
+}
+
+/* Anchos específicos */
+.map-box__label {
+   flex: 0 0 75px; /* Ej: R o L1, S o L2, T o L3, Total */
+   max-width: 75px;
+}
+
+.map-box__registro {
+   flex: 0 0 95px; /* Registro */
+   max-width: 95px;
+   text-align: center;
+}
+
+.map-box__origen {
+   flex: 0 0 102px; /* Relé / Analizador */
+   max-width: 102px;
+}
+
+.map-box__formula {
+   flex: 1 1 150px; /* Fórmula, el más largo pero más angosto que antes */
+   min-width: 140px;
+}
+
+/* Focus / disabled */
+.map-box__label:focus,
+.map-box__registro:focus,
+.map-box__origen:focus,
+.map-box__formula:focus {
+   border-color: #2563eb;
+   box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
+}
+
+.map-box__label:disabled,
+.map-box__registro:disabled,
+.map-box__origen:disabled,
+.map-box__formula:disabled {
+   background-color: #f9fafb;
+   color: #9ca3af;
+   cursor: not-allowed;
+}
+
+/* Opcional: ajuste para pantallas chicas */
+@media (max-width: 540px) {
+   .map-box {
+      flex-wrap: wrap;
+      max-width: 90vw;
+   }
+
+   .map-box__formula {
+      flex-basis: 100%;
+   }
+}
+
+/* reutilizamos estilos base: .map-input / .map-select */
+
+/* ===== BOTONES INFERIORES ===== */
+/* (usa .alim-modal-actions y .alim-modal-btn de tus otros estilos) */
+.alim-modal-actions {
+   display: flex;
+   justify-content: flex-end;
+   gap: 0.6rem;
+   margin-top: 0.8rem;
+}

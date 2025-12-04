@@ -1,11 +1,11 @@
-// src/lib/Registro/Registro.jsx
+// src/paginas/PaginaRegistro/PaginaRegistro.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "../Login/login.css";
-import "./Registro.css";
+import "../PaginaLogin/PaginaLogin.css";
+import "./PaginaRegistro.css";
 
 
-const Registro = () => {
+const PaginaRegistro = () => {
 	const [nombre, setNombre] = useState("");
 	const [usuario, setUsuario] = useState("");
 	const [email, setEmail] = useState("");
@@ -96,88 +96,88 @@ const Registro = () => {
 	};
 
 	const handleSubmit = async (event) => {
-  event.preventDefault(); // evita que la página se recargue
+		event.preventDefault(); // evita que la página se recargue
 
-  // 1. Validamos todo el formulario (ya lo tenías)
-    if (!validarTodo()) {
-    return; // si hay errores → no hacemos nada más
-    }
+		// 1. Validamos todo el formulario (ya lo tenías)
+		if (!validarTodo()) {
+			return; // si hay errores → no hacemos nada más
+		}
 
-  // ------------------------------------------------------------------
-  // 2. Evitamos que se registre dos veces el mismo email o usuario
-  // ------------------------------------------------------------------
-    try {
-    // Preguntamos al servidor: "¿ya existe alguien con este email?"
-    const respuestaEmail = await fetch(
-    `http://localhost:4000/users?Email=${encodeURIComponent(email.trim().toLowerCase())}`
-    );
-    const usuariosConEseEmail = await respuestaEmail.json();
+		// ------------------------------------------------------------------
+		// 2. Evitamos que se registre dos veces el mismo email o usuario
+		// ------------------------------------------------------------------
+		try {
+			// Preguntamos al servidor: "¿ya existe alguien con este email?"
+			const respuestaEmail = await fetch(
+				`http://localhost:4000/users?Email=${encodeURIComponent(email.trim().toLowerCase())}`
+			);
+			const usuariosConEseEmail = await respuestaEmail.json();
 
-    if (usuariosConEseEmail.length > 0) {
-    alert("Ese email ya está registrado");
-      return; // salimos, no seguimos creando la cuenta
-    }
+			if (usuariosConEseEmail.length > 0) {
+				alert("Ese email ya está registrado");
+				return; // salimos, no seguimos creando la cuenta
+			}
 
-    // Lo mismo pero con el nombre de usuario
-    const respuestaUsuario = await fetch(
-    `http://localhost:4000/users?Usuario=${encodeURIComponent(usuario.trim())}`
-    );
-    const usuariosConEseUsuario = await respuestaUsuario.json();
+			// Lo mismo pero con el nombre de usuario
+			const respuestaUsuario = await fetch(
+				`http://localhost:4000/users?Usuario=${encodeURIComponent(usuario.trim())}`
+			);
+			const usuariosConEseUsuario = await respuestaUsuario.json();
 
-    if (usuariosConEseUsuario.length > 0) {
-    alert("Ese nombre de usuario ya está en uso");
-    return;
-    }
-} catch (err) {
-    // Si por algún motivo falla esta parte, seguimos igual (es solo para el TP)
-    console.log("No se pudo verificar duplicados, seguimos...");
-}
+			if (usuariosConEseUsuario.length > 0) {
+				alert("Ese nombre de usuario ya está en uso");
+				return;
+			}
+		} catch (err) {
+			// Si por algún motivo falla esta parte, seguimos igual (es solo para el TP)
+			console.log("No se pudo verificar duplicados, seguimos...");
+		}
 
-  // ------------------------------------------------------------------
-  // 3. Armamos el objeto exactamente igual a los que ya están en db.json
-  // ------------------------------------------------------------------
-    const nuevoUsuario = {
-    id: Date.now().toString(),        // id único (número de milisegundos desde 1970 → siempre diferente)
-    Nombre: nombre.trim(),           // importante la mayúscula y sin espacios al principio/final
-    Usuario: usuario.trim(),
-    Email: email.trim().toLowerCase(),
-    Contraseña: contraseña           // solo para el trabajo práctico
-};
+		// ------------------------------------------------------------------
+		// 3. Armamos el objeto exactamente igual a los que ya están en db.json
+		// ------------------------------------------------------------------
+		const nuevoUsuario = {
+			id: Date.now().toString(),        // id único (número de milisegundos desde 1970 → siempre diferente)
+			Nombre: nombre.trim(),           // importante la mayúscula y sin espacios al principio/final
+			Usuario: usuario.trim(),
+			Email: email.trim().toLowerCase(),
+			Contraseña: contraseña           // solo para el trabajo práctico
+		};
 
-  // ------------------------------------------------------------------
-  // 4. Enviamos el nuevo usuario al json-server (es como un POST a una API)
-  // ------------------------------------------------------------------
-    try {
-    const respuesta = await fetch("http://localhost:4000/users", {
-      method: "POST",                                 // crear nuevo recurso
-        headers: {
-        "Content-Type": "application/json"              // le decimos que mandamos JSON
-    },
-      body: JSON.stringify(nuevoUsuario)               // convertimos el objeto a texto JSON
-    });
+		// ------------------------------------------------------------------
+		// 4. Enviamos el nuevo usuario al json-server (es como un POST a una API)
+		// ------------------------------------------------------------------
+		try {
+			const respuesta = await fetch("http://localhost:4000/users", {
+				method: "POST",                                 // crear nuevo recurso
+				headers: {
+					"Content-Type": "application/json"              // le decimos que mandamos JSON
+				},
+				body: JSON.stringify(nuevoUsuario)               // convertimos el objeto a texto JSON
+			});
 
-    // Si todo salió bien...
-    if (respuesta.ok) {
-    alert("¡Cuenta creada con éxito!");
+			// Si todo salió bien...
+			if (respuesta.ok) {
+				alert("¡Cuenta creada con éxito!");
 
-      // Limpiamos todos los campos
-    setNombre("");
-    setUsuario("");
-    setEmail("");
-    setContraseña("");
-    setConfirmar("");
-      setErrores({}); // quitamos cualquier mensaje rojo
+				// Limpiamos todos los campos
+				setNombre("");
+				setUsuario("");
+				setEmail("");
+				setContraseña("");
+				setConfirmar("");
+				setErrores({}); // quitamos cualquier mensaje rojo
 
-      // Lo mandamos al login (cambiá la ruta si tu página de login es otra)
-    navigate("/login");
-    } else {
-    alert("Hubo un error al guardar. Mirá la consola.");
-    }
-} catch (error) {
-    console.error(error);
-    alert("No se pudo conectar con la base de datos. ¿Tenés json-server corriendo?");
-}
-};
+				// Lo mandamos al login (cambiá la ruta si tu página de login es otra)
+				navigate("/login");
+			} else {
+				alert("Hubo un error al guardar. Mirá la consola.");
+			}
+		} catch (error) {
+			console.error(error);
+			alert("No se pudo conectar con la base de datos. ¿Tenés json-server corriendo?");
+		}
+	};
 
 	const handleVolver = () => {
 		navigate("/");
@@ -283,4 +283,4 @@ const Registro = () => {
 	);
 };
 
-export default Registro;
+export default PaginaRegistro;

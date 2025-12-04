@@ -1,9 +1,9 @@
 import React from "react";
-import "./AlimentadorCard.css";
-import configIcon from "../../assets/imagenes/Config_Icon.png";
-import mapIcon from "../../assets/imagenes/Mapeo_icon.png";
+import "./TarjetaAlimentador.css";
+import configIcon from "../../../../assets/imagenes/Config_Icon.png";
+import mapIcon from "../../../../assets/imagenes/Mapeo_icon.png";
 
-const AlimentadorCard = ({
+const TarjetaAlimentador = ({
 	nombre,
 	color,
 	onConfigClick,
@@ -208,4 +208,4 @@ const AlimentadorCard = ({
 	);
 };
 
-export default AlimentadorCard;
+export default TarjetaAlimentador;

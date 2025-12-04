@@ -1,9 +1,9 @@
-// src/lib/Login/login.jsx
+// src/paginas/PaginaLogin/PaginaLogin.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./login.css";
+import "./PaginaLogin.css";
 
-const Login = () => {
+const PaginaLogin = () => {
 	const [usuariosValidos, setUsuariosValidos] = useState([]);
 	const [usuario, setUsuario] = useState("");
 	const [contraseña, setContraseña] = useState("");
@@ -14,35 +14,35 @@ const Login = () => {
 	const navigate = useNavigate();
 	//Usuarios que usan recordarme
 	useEffect(() => {
-    const stored = localStorage.getItem("usuarioLogueado");
+		const stored = localStorage.getItem("usuarioLogueado");
 
-	if (stored) {
-    const parsed = JSON.parse(stored);
+		if (stored) {
+			const parsed = JSON.parse(stored);
 
-    if (parsed.recordarme) {
-        setUsuario(parsed.usuario || "");
-        setContraseña(parsed.contraseña || "");
-        setRecordarme(true);
-    }
-    }
-}, []);
-// ==== AUTOCOMPLETAR CONTRASEÑA ====
+			if (parsed.recordarme) {
+				setUsuario(parsed.usuario || "");
+				setContraseña(parsed.contraseña || "");
+				setRecordarme(true);
+			}
+		}
+	}, []);
+	// ==== AUTOCOMPLETAR CONTRASEÑA ====
 	useEffect(() => {
-  // Solo se ejecuta cuando el usuario cambia
-    if (usuario.trim() === "") {
-    setContraseña(""); // si borra el usuario, borra la contraseña también
-    return;
-    }
+		// Solo se ejecuta cuando el usuario cambia
+		if (usuario.trim() === "") {
+			setContraseña(""); // si borra el usuario, borra la contraseña también
+			return;
+		}
 
-  // Busco en la lista guardada si este usuario tiene contraseña guardada
-    const lista = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
-    const encontrado = lista.find(u => u.usuario === usuario);
+		// Busco en la lista guardada si este usuario tiene contraseña guardada
+		const lista = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+		const encontrado = lista.find(u => u.usuario === usuario);
 
-    if (encontrado) {
-    setContraseña(encontrado.contraseña);  // pone la contraseña automáticamente
-    setRecordarme(true);                   // marca el checkbox solo
-}
-}, [usuario]); // ← se ejecuta cada vez que cambie el campo usuario
+		if (encontrado) {
+			setContraseña(encontrado.contraseña);  // pone la contraseña automáticamente
+			setRecordarme(true);                   // marca el checkbox solo
+		}
+	}, [usuario]); // ← se ejecuta cada vez que cambie el campo usuario
 
 	// Cargar usuarios desde db.json (json-server en http://localhost:4000)
 	useEffect(() => {
@@ -58,14 +58,14 @@ const Login = () => {
 			});
 	}, []); // 👈 vacío para que se ejecute solo una vez
 
-	  // Función mágica que muestra la alerta y la borra sola
-    const mostrarAlerta = (mensaje, tipo = "error") => {
-    setAlerta({ mensaje: mensaje, tipo: tipo });
-    // después de 4 segundos la borra
-    setTimeout(() => {
-    setAlerta({ mensaje: "", tipo: "" });
-    }, 4000);
-};
+	// Función mágica que muestra la alerta y la borra sola
+	const mostrarAlerta = (mensaje, tipo = "error") => {
+		setAlerta({ mensaje: mensaje, tipo: tipo });
+		// después de 4 segundos la borra
+		setTimeout(() => {
+			setAlerta({ mensaje: "", tipo: "" });
+		}, 4000);
+	};
 
 	const handleSubmit = (event) => {
 		event.preventDefault();
@@ -92,30 +92,30 @@ const Login = () => {
 
 		// Si llega acá: login OK
 		if (recordarme) {
-		// 1. Leo la lista que ya tengo guardada (o creo una vacía)
-    let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+			// 1. Leo la lista que ya tengo guardada (o creo una vacía)
+			let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
 
-  // 2. Saco al usuario por si ya estaba (para no duplicar)
-    listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
+			// 2. Saco al usuario por si ya estaba (para no duplicar)
+			listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
 
-  // 3. Agrego el usuario actual con su contraseña
-    listaRecordados.push({
-    usuario: usuarioEncontrado.Usuario,
-    contraseña: contraseña   // sí, guardamos la contraseña en texto plano (los navegadores también lo hacen)
-});
+			// 3. Agrego el usuario actual con su contraseña
+			listaRecordados.push({
+				usuario: usuarioEncontrado.Usuario,
+				contraseña: contraseña   // sí, guardamos la contraseña en texto plano (los navegadores también lo hacen)
+			});
 
-  // 4. Guardo la lista actualizada
-    localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
-} else {
-  // Si NO marcó "Recordarme", lo sacamos de la lista
-    let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
-    listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
-    localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
+			// 4. Guardo la lista actualizada
+			localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
+		} else {
+			// Si NO marcó "Recordarme", lo sacamos de la lista
+			let listaRecordados = JSON.parse(localStorage.getItem("usuariosRecordados") || "[]");
+			listaRecordados = listaRecordados.filter(u => u.usuario !== usuarioEncontrado.Usuario);
+			localStorage.setItem("usuariosRecordados", JSON.stringify(listaRecordados));
 		}
-		
+
 		// Redirección directa a la página de alimentadores
 		setTimeout(() => {
-		navigate("/alimentadores");
+			navigate("/alimentadores");
 		}, 1200);
 	};
 
@@ -140,14 +140,14 @@ const Login = () => {
 							value={usuario}
 							onChange={(e) => setUsuario(e.target.value)}
 							autoComplete="username"
-                            list="lista-usuarios-recordados"
+							list="lista-usuarios-recordados"
 						/>
 						<datalist id="lista-usuarios-recordados">
-                            {JSON.parse(localStorage.getItem("usuariosRecordados") || "[]").map((u) => (
-                            <option key={u.usuario}
-						            value={u.usuario} />
-            ))}
-                        </datalist>
+							{JSON.parse(localStorage.getItem("usuariosRecordados") || "[]").map((u) => (
+								<option key={u.usuario}
+									value={u.usuario} />
+							))}
+						</datalist>
 						<h3 className="usuario">CONTRASEÑA</h3>
 						<input
 							className="input"
@@ -181,12 +181,12 @@ const Login = () => {
 				</div>
 			</div>
 			{alerta.mensaje && (
-        <div className={`alerta alerta-${alerta.tipo}`}>
-            {alerta.mensaje}
-        </div>
-    )}
+				<div className={`alerta alerta-${alerta.tipo}`}>
+					{alerta.mensaje}
+				</div>
+			)}
 		</form>
 	);
 };
 
-export default Login;
+export default PaginaLogin;

@@ -1,24 +1,10 @@
-// src/lib/Alimentadores/NuevoAlimentadorModal.jsx
+// src/paginas/PaginaAlimentadores/componentes/modales/ModalConfiguracionAlimentador.jsx
 import React, { useEffect, useState } from "react";
-import "./NuevoAlimentadorModal.css";
-import { leerRegistrosModbus } from "./modbusClient";
+import "./ModalConfiguracionAlimentador.css";
+import { leerRegistrosModbus } from "../../utilidades/clienteModbus";
+import { COLORES_SISTEMA } from "../../constantes/colores";
 
-const COLORES_ALIM = [
-	"#22c55e",
-	"#0ea5e9",
-	"#3b82f6",
-	"#a855f7",
-	"#ec4899",
-	"#f97316",
-	"#ef4444",
-	"#eab308",
-	"#14b8a6",
-	"#10b981",
-	"#6366f1",
-	"#64748b",
-];
-
-const NuevoAlimentadorModal = ({
+const ModalConfiguracionAlimentador = ({
 	abierto,
 	puestoNombre,
 	modo = "crear",
@@ -36,7 +22,7 @@ const NuevoAlimentadorModal = ({
 	registrosAnalizador = [],
 }) => {
 	const [nombre, setNombre] = useState("");
-	const [color, setColor] = useState(COLORES_ALIM[0]);
+	const [color, setColor] = useState(COLORES_SISTEMA[0]);
 	const [tab, setTab] = useState("rele");
 
 	// Config RELÉ
@@ -73,7 +59,7 @@ const NuevoAlimentadorModal = ({
 
 		if (initialData) {
 			setNombre(initialData.nombre || "");
-			setColor(initialData.color || COLORES_ALIM[0]);
+			setColor(initialData.color || COLORES_SISTEMA[0]);
 			setTab("rele");
 
 			setRele({
@@ -122,7 +108,7 @@ const NuevoAlimentadorModal = ({
 		} else {
 			// Nuevo alimentador
 			setNombre("");
-			setColor(COLORES_ALIM[0]);
+			setColor(COLORES_SISTEMA[0]);
 			setTab("rele");
 
 			setRele({
@@ -380,7 +366,7 @@ const NuevoAlimentadorModal = ({
 							{/* Paleta de colores */}
 							<div className="alim-color-picker">
 								<div className="alim-color-grid">
-									{COLORES_ALIM.map((c) => (
+									{COLORES_SISTEMA.map((c) => (
 										<button
 											key={c}
 											type="button"
@@ -798,4 +784,4 @@ const NuevoAlimentadorModal = ({
 	);
 };
 
-export default NuevoAlimentadorModal;
+export default ModalConfiguracionAlimentador;
