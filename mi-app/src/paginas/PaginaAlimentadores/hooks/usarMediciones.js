@@ -2,33 +2,56 @@ import { useState, useRef, useEffect } from 'react';
 import { leerRegistrosModbus } from '../utilidades/clienteModbus';
 
 /**
- * Hook personalizado para manejar mediciones de Modbus
- * Controla timers periódicos, lecturas y estado de mediciones activas
+ * ==============================================================================
+ * HOOK: usarMediciones
+ * ==============================================================================
  * 
- * @returns {Object} Estado y funciones para trabajar con mediciones
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Este hook es el encargado de realizar las lecturas de datos reales desde los
+ * equipos (Relés y Analizadores) utilizando el protocolo Modbus.
+ * Funciona como un "motor de encuestas" que pregunta periódicamente a los equipos
+ * por sus valores actuales.
+ * 
+ * ¿CÓMO SE VINCULA?
+ * - Se usa en "PaginaAlimentadores.jsx" para alimentar las tarjetas con datos vivos.
+ * - Utiliza "clienteModbus.js" para hacer la comunicación técnica de red.
+ * 
+ * FINALIDAD:
+ * Abstraer la complejidad de los timers (setInterval) y la gestión de estado
+ * de las mediciones, para que los componentes solo se preocupen por mostrar los datos.
  */
+
 export const usarMediciones = () => {
-	// Registros leídos en vivo por alimentador y equipoç
-	// Estructura: { [alimId]: { rele: [{index, address, value}], analizador: [...] } }
+	// ==========================================================================
+	// 1. ESTADOS (Memoria de mediciones)
+	// ==========================================================================
+
+	// Guarda los últimos valores leídos de cada equipo.
+	// Estructura: { [idAlimentador]: { rele: [datos...], analizador: [datos...] } }
 	const [registrosEnVivo, setRegistrosEnVivo] = useState({});
 
-	// Estados de mediciones activas por alimentador y equipo
-	// Estructura: { [alimId]: { rele: boolean, analizador: boolean } }
+	// Controla qué equipos se están midiendo actualmente (encendido/apagado).
+	// Estructura: { [idAlimentador]: { rele: true/false, analizador: true/false } }
 	const [medicionesActivas, setMedicionesActivas] = useState({});
 
-	// Timestamps de inicio de mediciones (para sincronizar animaciones)
-	// Estructura: { [alimId]: { rele: timestamp, analizador: timestamp } }
+	// Guarda la hora exacta (timestamp) de la última lectura exitosa.
+	// Se usa para sincronizar las animaciones de borde en las tarjetas.
 	const [timestampsInicio, setTimestampsInicio] = useState({});
 
-	// Contador de lecturas (se incrementa con cada nueva inserción de datos)
-	// Estructura: { [alimId]: { rele: number, analizador: number } }
+	// Cuenta cuántas lecturas han llegado.
+	// Útil para forzar el reinicio de animaciones cada vez que llega un dato nuevo.
 	const [contadorLecturas, setContadorLecturas] = useState({});
 
-	// Timers de setInterval (no genera re-render, por eso useRef)
-	// Estructura: { [alimId]: { rele: timerId, analizador: timerId } }
+	// Referencia para guardar los IDs de los timers (setInterval).
+	// Usamos useRef porque no queremos que el componente se renderice cada vez que guardamos un ID.
 	const timersRef = useRef({});
 
-	// Efecto: Limpiar todos los timers al desmontar el componente
+	// ==========================================================================
+	// 2. EFECTOS (Limpieza)
+	// ==========================================================================
+
+	// Cuando el usuario sale de la página, nos aseguramos de apagar todos los timers
+	// para que no sigan consumiendo recursos en segundo plano.
 	useEffect(() => {
 		return () => {
 			Object.values(timersRef.current).forEach((timersPorAlim) => {
@@ -39,27 +62,29 @@ export const usarMediciones = () => {
 		};
 	}, []);
 
+	// ==========================================================================
+	// 3. FUNCIONES INTERNAS (Helpers)
+	// ==========================================================================
+
 	/**
-	 * Hace una lectura única (tick) de Modbus
-	 * 
-	 * @param {Object} alimentador - Objeto alimentador completo
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @returns {Promise<Array|null>} Registros leídos o null si hay error
+	 * Realiza una única lectura técnica al equipo usando Modbus.
+	 * Maneja errores silenciosamente (solo loguea en consola) para no romper la app.
 	 */
 	const hacerLecturaModbus = async (alimentador, equipo) => {
 		if (!alimentador) return null;
 
-		// Obtener configuración según el equipo
+		// Elegir configuración según si es Relé o Analizador
 		const configuracion = equipo === "analizador"
 			? alimentador.analizador
 			: alimentador.rele;
 
-		// Validar que tenga los datos necesarios
+		// Si no tiene IP o puerto configurado, no podemos medir
 		if (!configuracion?.ip || !configuracion?.puerto) {
 			return null;
 		}
 
 		try {
+			// Llamada a la utilidad de bajo nivel
 			const registros = await leerRegistrosModbus({
 				ip: configuracion.ip.trim(),
 				puerto: configuracion.puerto,
@@ -74,11 +99,17 @@ export const usarMediciones = () => {
 		}
 	};
 
-	// Aplica nuevos registros y actualiza el timestamp de última lectura
+	/**
+	 * Función central para guardar nuevos datos.
+	 * Actualiza:
+	 * 1. Los valores leídos
+	 * 2. El timestamp (hora) de lectura
+	 * 3. El contador de lecturas (para animaciones)
+	 */
 	const aplicarRegistros = (alimId, equipo, registros) => {
 		const ahora = Date.now();
 
-		// Actualizar valores leídos
+		// 1. Guardar valores
 		setRegistrosEnVivo((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -87,7 +118,7 @@ export const usarMediciones = () => {
 			},
 		}));
 
-		// Actualizar timestamp de última lectura
+		// 2. Guardar hora
 		setTimestampsInicio((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -96,7 +127,7 @@ export const usarMediciones = () => {
 			},
 		}));
 
-		// Incrementar contador de lecturas
+		// 3. Incrementar contador
 		setContadorLecturas((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -107,67 +138,63 @@ export const usarMediciones = () => {
 	};
 
 
+	// ==========================================================================
+	// 4. FUNCIONES PÚBLICAS (Acciones)
+	// ==========================================================================
+
 	/**
-	 * Inicia medición periódica para un alimentador y equipo
+	 * Comienza el ciclo de medición periódica.
 	 * 
-	 * @param {Object} alimentador - Alimentador completo
+	 * @param {Object} alimentador - El objeto con la configuración
 	 * @param {string} equipo - "rele" o "analizador"
-	 * @param {Object} configuracionOverride - Configuración temporal (opcional)
+	 * @param {Object} configuracionOverride - (Opcional) Para probar configuraciones temporales
 	 */
 	const iniciarMedicion = async (alimentador, equipo, configuracionOverride) => {
 		const alimId = alimentador.id;
 
-		// Si hay override, mezclarlo con la config del alimentador
+		// Preparar configuración (mezclando la guardada con la temporal si existe)
 		let alimentadorConfig = { ...alimentador };
 		if (configuracionOverride) {
 			if (configuracionOverride.periodoSegundos != null) {
 				alimentadorConfig.periodoSegundos = configuracionOverride.periodoSegundos;
 			}
 			if (configuracionOverride.rele) {
-				alimentadorConfig.rele = {
-					...(alimentadorConfig.rele || {}),
-					...configuracionOverride.rele,
-				};
+				alimentadorConfig.rele = { ...(alimentadorConfig.rele || {}), ...configuracionOverride.rele };
 			}
 			if (configuracionOverride.analizador) {
-				alimentadorConfig.analizador = {
-					...(alimentadorConfig.analizador || {}),
-					...configuracionOverride.analizador,
-				};
+				alimentadorConfig.analizador = { ...(alimentadorConfig.analizador || {}), ...configuracionOverride.analizador };
 			}
 		}
 
-		// Lectura inmediata (primer tick)
+		// 1. Hacer una primera lectura inmediata (para no esperar al primer timer)
 		const registros = await hacerLecturaModbus(alimentadorConfig, equipo);
-
 		if (registros) {
 			aplicarRegistros(alimId, equipo, registros);
 		}
 
-		// Determinar período de actualización
-		let periodoSegundos = 60; // Por defecto
+		// 2. Configurar el intervalo de tiempo
+		let periodoSegundos = 60;
 		if (equipo === "rele") {
 			periodoSegundos = alimentadorConfig.periodoSegundos || 60;
 		} else {
 			periodoSegundos = alimentadorConfig.analizador?.periodoSegundos || 60;
 		}
 
-		// Configurar timer periódico
+		// 3. Iniciar el ciclo infinito de lecturas
 		const timerId = setInterval(async () => {
 			const regs = await hacerLecturaModbus(alimentadorConfig, equipo);
-
 			if (regs) {
 				aplicarRegistros(alimId, equipo, regs);
 			}
 		}, periodoSegundos * 1000);
 
-		// Guardar referencia al timer
+		// 4. Guardar referencia al timer para poder detenerlo después
 		timersRef.current[alimId] = {
 			...(timersRef.current[alimId] || {}),
 			[equipo]: timerId,
 		};
 
-		// Marcar como medición activa y guardar timestamp de inicio
+		// 5. Marcar estado como "midiendo"
 		const ahora = Date.now();
 		setMedicionesActivas((anteriores) => ({
 			...anteriores,
@@ -176,30 +203,26 @@ export const usarMediciones = () => {
 				[equipo]: true,
 			},
 		}));
-
 	};
 
 	/**
-	 * Detiene medición de un alimentador y equipo
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {string} equipo - "rele" o "analizador"
+	 * Detiene la medición y limpia los recursos.
 	 */
 	const detenerMedicion = (alimId, equipo) => {
 		const timers = timersRef.current[alimId];
 
-		// Limpiar el interval si existe
+		// Detener el intervalo
 		if (timers?.[equipo]) {
 			clearInterval(timers[equipo]);
 			delete timers[equipo];
 		}
 
-		// Si no quedan timers, eliminar entrada completa
+		// Limpiar referencia si ya no hay timers
 		if (timers && Object.keys(timers).length === 0) {
 			delete timersRef.current[alimId];
 		}
 
-		// Marcar como inactiva y limpiar timestamp
+		// Actualizar estado a "no midiendo"
 		setMedicionesActivas((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -208,6 +231,7 @@ export const usarMediciones = () => {
 			},
 		}));
 
+		// Limpiar timestamp
 		setTimestampsInicio((anteriores) => {
 			const nuevo = { ...anteriores };
 			if (nuevo[alimId]) {
@@ -221,11 +245,7 @@ export const usarMediciones = () => {
 	};
 
 	/**
-	 * Alterna medición (on/off) de un alimentador y equipo
-	 * 
-	 * @param {Object} alimentador - Alimentador completo
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @param {Object} configuracionOverride - Config temporal (opcional)
+	 * Interruptor simple: Si está midiendo lo apaga, si está apagado lo enciende.
 	 */
 	const alternarMedicion = (alimentador, equipo, configuracionOverride) => {
 		const alimId = alimentador.id;
@@ -239,54 +259,35 @@ export const usarMediciones = () => {
 	};
 
 	/**
-	 * Obtiene los registros de un alimentador y equipo
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @returns {Array} Lista de registros o array vacío
+	 * Devuelve los últimos registros leídos para un equipo.
 	 */
 	const obtenerRegistros = (alimId, equipo) => {
 		return registrosEnVivo[alimId]?.[equipo] || [];
 	};
 
 	/**
-	 * Verifica si un alimentador está midiendo
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @returns {boolean} true si está midiendo
+	 * Devuelve true si el equipo está midiendo actualmente.
 	 */
 	const estaMidiendo = (alimId, equipo) => {
 		return !!medicionesActivas[alimId]?.[equipo];
 	};
 
 	/**
-	 * Obtiene el timestamp de inicio de una medición
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @returns {number|null} Timestamp de inicio o null
+	 * Devuelve la hora de la última lectura.
 	 */
 	const obtenerTimestampInicio = (alimId, equipo) => {
 		return timestampsInicio[alimId]?.[equipo] || null;
 	};
 
 	/**
-	 * Obtiene el contador de lecturas de una medición
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {string} equipo - "rele" o "analizador"
-	 * @returns {number} Contador de lecturas
+	 * Devuelve el número de lecturas realizadas (contador).
 	 */
 	const obtenerContadorLecturas = (alimId, equipo) => {
 		return contadorLecturas[alimId]?.[equipo] || 0;
 	};
 
 	/**
-	 * Actualiza los registros directamente (útil para preview)
-	 * 
-	 * @param {number} alimId - ID del alimentador
-	 * @param {Object} nuevosDatos - { rele?: [...], analizador?: [...] }
+	 * Permite inyectar datos manualmente (útil para pruebas o simulación).
 	 */
 	const actualizarRegistros = (alimId, nuevosDatos) => {
 		setRegistrosEnVivo((anteriores) => ({

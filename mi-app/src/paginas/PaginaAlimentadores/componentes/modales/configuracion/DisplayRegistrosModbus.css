@@ -1,25 +1,40 @@
-/* Estilos para display de registros Modbus */
+/* 
+ * ==============================================================================
+ * ESTILOS: DisplayRegistrosModbus.css
+ * ==============================================================================
+ * 
+ * Estilos para el componente que muestra la lista de registros leídos
+ * (usado en los tests de conexión).
+ */
+
+/* Contenedor principal de la lista de registros */
 .alim-registros-display {
 	margin-top: 1rem;
 	padding: 1rem;
 	background-color: #f9fafb;
+	/* Fondo gris muy claro */
 	border-radius: 0.5rem;
 	border: 1px solid #e5e7eb;
 }
 
+/* Título de la sección ("Registros leídos") */
 .alim-registros-title {
 	margin: 0 0 0.75rem 0;
 	font-size: 0.875rem;
 	font-weight: 600;
 	color: #374151;
+	/* Gris oscuro */
 }
 
+/* Grilla responsive para los items */
 .alim-registros-grid {
 	display: grid;
+	/* Columnas que se ajustan automáticamente, mínimo 200px de ancho */
 	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 	gap: 0.5rem;
 }
 
+/* Cada tarjeta individual de registro */
 .alim-registro-item {
 	display: flex;
 	flex-direction: column;
@@ -29,15 +44,18 @@
 	border: 1px solid #e5e7eb;
 }
 
+/* Etiqueta pequeña (Índice X, Dir Y) */
 .alim-registro-label {
 	font-size: 0.75rem;
 	color: #6b7280;
 	margin-bottom: 0.25rem;
 }
 
+/* Valor del registro (número grande) */
 .alim-registro-value {
 	font-size: 0.875rem;
 	font-weight: 600;
 	color: #111827;
 	font-family: monospace;
+	/* Fuente tipo código para alinear números */
 }

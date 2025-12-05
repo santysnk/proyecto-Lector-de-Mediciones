@@ -1,3 +1,16 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados a la grilla de tarjetas */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas */
+/* 
+ * ==============================================================================
+ * ESTILOS: GrillaTarjetas.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos de la grilla principal (contenedor de tarjetas) se encuentran
+ * actualmente centralizados en "PaginaAlimentadores.css".
+ * 
+ * Esto incluye clases como:
+ * - .alim-cards-grid
+ * - .alim-empty-state
+ * - .alim-add-card
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */

@@ -1,2 +1,18 @@
-/* Estilos compartidos para tabs de configuración */
-/* Los estilos se mantendrán en ModalConfiguracionAlimentador.css por ahora */
+/* 
+ * ==============================================================================
+ * ESTILOS: TabConfiguracion.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos para los tabs de configuración (Relé / Analizador) se encuentran
+ * actualmente centralizados en "ModalConfiguracionAlimentador.css".
+ * 
+ * Esto incluye clases como:
+ * - .alim-modal-grid
+ * - .alim-field
+ * - .alim-test-row
+ * - .alim-test-table
+ * 
+ * Este archivo existe para permitir la modularización futura si se decide
+ * separar completamente los estilos de cada tab.
+ */

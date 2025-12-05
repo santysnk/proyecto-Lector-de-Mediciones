@@ -1,3 +1,17 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados a la barra de navegación */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas de BarraNavegacion */
+/* 
+ * ==============================================================================
+ * ESTILOS: BarraNavegacion.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos de la barra de navegación (header, título, botones de acción)
+ * se encuentran actualmente centralizados en "PaginaAlimentadores.css".
+ * 
+ * Esto incluye clases como:
+ * - .alim-header
+ * - .alim-title
+ * - .alim-controls
+ * - .alim-btn
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */

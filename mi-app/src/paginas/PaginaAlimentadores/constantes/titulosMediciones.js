@@ -1,7 +1,21 @@
 /**
- * Títulos descriptivos para cada tipo de medición
- * Aparecen en las tarjetas de alimentadores
+ * ==============================================================================
+ * CONSTANTE: titulosMediciones.js
+ * ==============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Centraliza todos los textos y etiquetas que se muestran en las tarjetas de
+ * los alimentadores.
+ * 
+ * CONTENIDO:
+ * 1. TITULOS_MEDICIONES: El texto largo que describe qué se está midiendo
+ *    (ej: "Tensión de línea (kV)").
+ * 2. ETIQUETAS_POR_DEFECTO: Las letritas que van arriba de cada cajita
+ *    (ej: "R", "S", "T" para corriente, o "L1", "L2", "L3" para potencia).
+ * 3. DISEÑO_TARJETA_POR_DEFECTO: La configuración inicial que tiene una tarjeta
+ *    nueva antes de que el usuario la personalice.
  */
+
 export const TITULOS_MEDICIONES = {
 	tension_linea: "Tensión de línea (kV)",
 	tension_entre_lineas: "Tensión entre líneas (kV)",
@@ -15,10 +29,6 @@ export const TITULOS_MEDICIONES = {
 	corriente_neutro: "Corriente de Neutro (A)",
 };
 
-/**
- * Etiquetas que aparecen en cada medidor (R, S, T, etc.)
- * Organizadas por tipo de medición
- */
 export const ETIQUETAS_POR_DEFECTO = {
 	corriente_132: ["R", "S", "T", "N"],
 	corriente_33: ["R", "S", "T", "N"],
@@ -32,10 +42,6 @@ export const ETIQUETAS_POR_DEFECTO = {
 	corriente_neutro: ["N", "", "", ""],
 };
 
-/**
- * Diseño por defecto de una tarjeta de alimentador
- * Define qué se muestra en la parte superior e inferior
- */
 export const DISEÑO_TARJETA_POR_DEFECTO = {
 	superior: {
 		tituloId: "corriente_132",

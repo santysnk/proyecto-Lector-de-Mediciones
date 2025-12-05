@@ -2,21 +2,38 @@ import React from "react";
 import "./TabConfiguracion.css";
 
 /**
- * Tab de configuración del Analizador
- * Formulario, test de conexión y control de mediciones
+ * ==============================================================================
+ * SUBCOMPONENTE: TabConfiguracionAnalizador
+ * ==============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Es el panel para configurar la conexión con el ANALIZADOR DE RED.
+ * Funciona igual que el del Relé, pero maneja sus propios datos (IP, puerto, etc.).
+ * 
+ * ¿CÓMO FUNCIONA?
+ * - Recibe la configuración actual del analizador.
+ * - Permite editarla, probar la conexión y ver datos en vivo.
+ * 
+ * NOTA:
+ * Aunque el código es muy parecido al del Relé, se mantiene separado para
+ * permitir que en el futuro tengan campos o comportamientos diferentes
+ * (ej: el analizador podría tener más opciones avanzadas).
  */
+
 const TabConfiguracionAnalizador = ({
-	config,
-	onChange,
-	onTestConexion,
-	isTesting,
-	testError,
-	testRows,
-	isMeasuring,
-	onToggleMedicion,
-	registrosMedicion,
-	disabled,
+	config, 			// Objeto con { ip, puerto, indiceInicial, cantRegistros }
+	onChange, 			// Función para actualizar campos
+	onTestConexion, 	// Función para probar conexión
+	isTesting, 			// Estado de "Probando..."
+	testError, 			// Error de prueba
+	testRows, 			// Resultados de prueba
+	isMeasuring, 		// Estado de "Midiendo..."
+	onToggleMedicion, 	// Iniciar/Detener medición
+	registrosMedicion, 	// Datos en vivo
+	disabled, 			// Bloquear formulario
 }) => {
+
+	// Lógica para decidir qué mostrar en la tabla (datos en vivo o test)
 	const rowsToShow =
 		isMeasuring && registrosMedicion && registrosMedicion.length > 0
 			? registrosMedicion
@@ -29,6 +46,7 @@ const TabConfiguracionAnalizador = ({
 
 	return (
 		<div className="alim-modal-grid">
+			{/* CAMPO: IP */}
 			<label className="alim-field">
 				<span className="alim-field-label">Dirección IP</span>
 				<input
@@ -41,6 +59,7 @@ const TabConfiguracionAnalizador = ({
 				/>
 			</label>
 
+			{/* CAMPO: PUERTO */}
 			<label className="alim-field">
 				<span className="alim-field-label">Puerto</span>
 				<input
@@ -53,6 +72,7 @@ const TabConfiguracionAnalizador = ({
 				/>
 			</label>
 
+			{/* CAMPO: ÍNDICE INICIAL */}
 			<label className="alim-field">
 				<span className="alim-field-label">Índice inicial</span>
 				<input
@@ -65,6 +85,7 @@ const TabConfiguracionAnalizador = ({
 				/>
 			</label>
 
+			{/* CAMPO: CANTIDAD DE REGISTROS */}
 			<label className="alim-field">
 				<span className="alim-field-label">Cant. registros</span>
 				<input
@@ -77,6 +98,7 @@ const TabConfiguracionAnalizador = ({
 				/>
 			</label>
 
+			{/* CAMPO: PERIODO DE ACTUALIZACIÓN */}
 			<label className="alim-field">
 				<span className="alim-field-label">
 					Período actualización (s)
@@ -94,6 +116,7 @@ const TabConfiguracionAnalizador = ({
 				/>
 			</label>
 
+			{/* Advertencia de rendimiento */}
 			{config.periodoSegundos &&
 				Number(config.periodoSegundos) > 0 &&
 				Number(config.periodoSegundos) < 60 && (
@@ -103,7 +126,7 @@ const TabConfiguracionAnalizador = ({
 					</p>
 				)}
 
-			{/* Botones de test y medición */}
+			{/* BOTONES DE ACCIÓN */}
 			<div className="alim-test-row">
 				<button
 					type="button"
@@ -133,6 +156,7 @@ const TabConfiguracionAnalizador = ({
 				</button>
 			</div>
 
+			{/* MENSAJES Y TABLA DE RESULTADOS */}
 			{testError && (
 				<div className="alim-test-message alim-test-error">
 					{testError}

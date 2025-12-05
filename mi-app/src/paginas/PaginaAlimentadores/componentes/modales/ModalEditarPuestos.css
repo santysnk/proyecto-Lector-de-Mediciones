@@ -1,3 +1,17 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados al modal de editar puestos */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas */
+/* 
+ * ==============================================================================
+ * ESTILOS: ModalEditarPuestos.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Al igual que con ModalNuevoPuesto, los estilos de este componente están
+ * actualmente centralizados en "PaginaAlimentadores.css".
+ * 
+ * Se mantienen las clases globales como:
+ * - .alim-modal
+ * - .alim-edit-list
+ * - .alim-edit-row
+ * 
+ * Este archivo queda reservado para estilos exclusivos de este modal si fuera
+ * necesario separarlos en el futuro.
+ */

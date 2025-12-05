@@ -2,36 +2,59 @@ import React from "react";
 import "./MenuLateral.css";
 
 /**
- * Menú lateral (drawer) para modo compacto
- * Muestra puestos y acciones en un panel deslizante
+ * ==============================================================================
+ * COMPONENTE: MenuLateral (Drawer)
+ * ==============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Es el menú deslizante que aparece en celulares y tablets cuando tocas el botón
+ * de las tres rayitas (hamburguesa).
+ * 
+ * ¿CÓMO FUNCIONA?
+ * - Se muestra solo cuando la propiedad "abierto" es true.
+ * - Tiene dos secciones principales:
+ *   1. Lista de Puestos: Para cambiar entre estaciones.
+ *   2. Acciones: Botones para crear, editar o salir.
+ * 
+ * FINALIDAD:
+ * Ofrecer una navegación cómoda en pantallas pequeñas donde no cabe la barra
+ * superior completa.
  */
+
 const MenuLateral = ({
-	abierto,
-	onCerrar,
-	puestos,
-	puestoSeleccionado,
-	onSeleccionarPuesto,
-	onAbrirModalNuevoPuesto,
-	onAbrirModalEditarPuestos,
-	onSalir,
-	coloresSistema,
+	abierto, 					// true = visible, false = oculto
+	onCerrar, 					// Función para cerrar el menú
+	puestos, 					// Lista de puestos a mostrar
+	puestoSeleccionado, 		// Cuál está activo ahora
+	onSeleccionarPuesto, 		// Función al hacer click en un puesto
+	onAbrirModalNuevoPuesto, 	// Función para crear nuevo
+	onAbrirModalEditarPuestos, 	// Función para editar
+	onSalir, 					// Función para salir
+	coloresSistema, 			// Colores para los botones
 }) => {
+
+	// Helper: Selecciona un puesto y cierra el menú automáticamente
 	const handleSeleccionarPuesto = (id) => {
 		onSeleccionarPuesto(id);
 		onCerrar();
 	};
 
+	// Helper: Ejecuta una acción (ej: abrir modal) y cierra el menú
 	const handleAccion = (accion) => {
 		onCerrar();
 		accion();
 	};
 
 	return (
+		// El overlay es el fondo oscuro semitransparente detrás del menú
 		<div
 			className={"alim-drawer-overlay" + (abierto ? " alim-drawer-open" : "")}
-			onClick={onCerrar}
+			onClick={onCerrar} // Si tocas el fondo oscuro, se cierra el menú
 		>
+			{/* El aside es el panel deslizante en sí */}
 			<aside className="alim-drawer" onClick={(e) => e.stopPropagation()}>
+
+				{/* Encabezado del menú */}
 				<header className="alim-drawer-header">
 					<h2 className="alim-drawer-title">Panel de Alimentadores</h2>
 					{puestoSeleccionado && (
@@ -41,6 +64,7 @@ const MenuLateral = ({
 					)}
 				</header>
 
+				{/* SECCIÓN 1: Lista de Puestos */}
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Puestos</h3>
 					<div className="alim-drawer-puestos">
@@ -50,7 +74,7 @@ const MenuLateral = ({
 								className={
 									"alim-btn alim-drawer-btn-puesto" +
 									(puestoSeleccionado && puestoSeleccionado.id === p.id
-										? " alim-btn-active"
+										? " alim-btn-active" // Resaltar si es el actual
 										: "")
 								}
 								style={{
@@ -64,6 +88,7 @@ const MenuLateral = ({
 					</div>
 				</section>
 
+				{/* SECCIÓN 2: Botones de Acción */}
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Acciones</h3>
 					<div className="alim-drawer-actions">

@@ -1,3 +1,17 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados al menú lateral */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas de MenuLateral */
+/* 
+ * ==============================================================================
+ * ESTILOS: MenuLateral.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos del menú lateral (drawer) se encuentran actualmente centralizados
+ * en "PaginaAlimentadores.css".
+ * 
+ * Esto incluye clases como:
+ * - .alim-drawer-overlay
+ * - .alim-drawer
+ * - .alim-drawer-header
+ * - .alim-drawer-list
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */

@@ -1,2 +1,17 @@
-/* Estilos para formulario de diseño de tarjeta */
-/* Los estilos se mantendrán en ModalMapeoMediciones.css por ahora */
+/* 
+ * ==============================================================================
+ * ESTILOS: FormularioDiseñoTarjeta.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos para el diseño de la tarjeta (partes superior e inferior)
+ * se encuentran actualmente centralizados en "ModalMapeoMediciones.css".
+ * 
+ * Esto incluye clases como:
+ * - .map-part
+ * - .map-part__title
+ * - .map-part__header
+ * - .map-box-list
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */

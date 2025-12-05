@@ -1,34 +1,45 @@
 /**
- * Cliente para comunicación con Modbus
- * Puede trabajar en modo simulado (para desarrollo) o real (con hardware)
+ * ==============================================================================
+ * UTILIDAD: clienteModbus
+ * ==============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Es el encargado de la comunicación técnica con los equipos físicos (Relés y Analizadores).
+ * Actúa como un "traductor" que envía peticiones en un formato que los equipos entienden
+ * y recibe sus respuestas.
+ * 
+ * ¿CÓMO FUNCIONA?
+ * Tiene dos modos de operación:
+ * 1. MODO SIMULADO: Genera números aleatorios. Útil cuando no estamos conectados a la red
+ *    de la planta y queremos probar que la interfaz gráfica funciona.
+ * 2. MODO REAL: Se conecta a un servidor intermediario (backend) que habla el protocolo Modbus real.
+ * 
+ * FINALIDAD:
+ * Aislar la complejidad de la red. El resto de la aplicación solo pide "leer registros"
+ * y no necesita saber si vienen de un simulador o de un cable Ethernet real.
  */
 
-/**
- * Modo de operación: "simulado" o "real"
- * En modo simulado genera datos aleatorios para pruebas
- */
+// Configuración del modo de operación
+// "simulado" = Genera datos falsos para desarrollo
+// "real"     = Intenta conectar a equipos reales
 export const MODO_MODBUS = "simulado";
 
-/**
- * Indica si se debe usar Modbus real
- */
+// Variable derivada para usar en condiciones (true/false)
 export const USAR_MODBUS_REAL = MODO_MODBUS === "real";
 
-/**
- * URL del servidor Modbus (Express backend)
- */
+// Dirección del servidor intermediario que hace el puente con Modbus
 const URL_BASE = "http://localhost:5000/api/modbus/test";
 
 /**
- * Lee registros desde un dispositivo Modbus
- * Puede trabajar en modo simulado o real
+ * Función principal para leer datos.
  * 
- * @param {Object} config - Configuración de lectura
- * @param {string} config.ip - Dirección IP del dispositivo
- * @param {number} config.puerto - Puerto Modbus (usualmente 502)
- * @param {number} config.indiceInicial - Primer registro a leer
- * @param {number} config.cantRegistros - Cantidad de registros a leer
- * @returns {Promise<Array>} Lista de registros [{index, address, value}, ...]
+ * @param {Object} config - Objeto con los detalles de conexión
+ * @param {string} config.ip - Dirección IP del equipo (ej: "192.168.1.10")
+ * @param {number} config.puerto - Puerto de red (estándar Modbus es 502)
+ * @param {number} config.indiceInicial - Número de registro donde empezar a leer
+ * @param {number} config.cantRegistros - Cuántos registros leer en total
+ * 
+ * @returns {Promise<Array>} Una lista de objetos con los valores leídos
  */
 export async function leerRegistrosModbus({
 	ip,
@@ -36,25 +47,33 @@ export async function leerRegistrosModbus({
 	indiceInicial,
 	cantRegistros,
 }) {
+	// Aseguramos que los números sean realmente números
 	const inicio = Number(indiceInicial);
 	const cantidad = Number(cantRegistros);
 	const puertoNum = Number(puerto);
 
-	// Validación básica de parámetros
+	// Validación de seguridad: Si falta algún dato importante, cancelamos
 	if (!ip || !puertoNum || Number.isNaN(inicio) || Number.isNaN(cantidad) || cantidad <= 0) {
 		return null;
 	}
 
-	// 🧪 MODO SIMULADO: Generar datos falsos para pruebas
+	// ==========================================================================
+	// CASO 1: MODO SIMULADO (Para pruebas)
+	// ==========================================================================
 	if (!USAR_MODBUS_REAL) {
+		// Creamos un array falso con números aleatorios
 		return Array.from({ length: cantidad }, (_, i) => ({
 			index: i,
 			address: inicio + i,
-			value: Math.floor(Math.random() * 501), // Valores entre 0 y 500
+			value: Math.floor(Math.random() * 501), // Genera un valor entre 0 y 500
 		}));
 	}
 
-	// 🌐 MODO REAL: Llamar al servidor Express que se comunica con Modbus
+	// ==========================================================================
+	// CASO 2: MODO REAL (Producción)
+	// ==========================================================================
+
+	// Hacemos una petición HTTP al servidor backend
 	const respuesta = await fetch(URL_BASE, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -66,13 +85,15 @@ export async function leerRegistrosModbus({
 		}),
 	});
 
-	const datos = await respuesta.json();
+	const datos = await respuesta.json(); // Convertimos la respuesta a JSON
 
+	// Si hubo un error en el servidor, lanzamos una excepción
 	if (!respuesta.ok || !datos.ok) {
 		throw new Error(datos.error || "Error en lectura Modbus");
 	}
 
-	// Convertir registros del servidor a nuestro formato
+	// Transformamos los datos crudos al formato que usa nuestra app
+	// Formato: { index: 0, address: 100, value: 230 }
 	return datos.registros.map((valorRegistro, indice) => ({
 		index: indice,
 		address: inicio + indice,

@@ -5,37 +5,49 @@
    ========================================================= */
 .alim-page {
 	min-height: 100vh;
+	/* Ocupa al menos toda la altura de la pantalla */
 	background-color: #f5f7fb;
+	/* Color de fondo suave (gris azulado muy claro) */
 	display: flex;
 	flex-direction: column;
+	/* Organiza los elementos en columna (arriba hacia abajo) */
 	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
 		sans-serif;
+	/* Fuente moderna del sistema */
 	color: #1e293b;
+	/* Color de texto principal (gris oscuro) */
 }
 
 .alim-main {
 	flex: 1;
+	/* Ocupa todo el espacio disponible restante */
 	padding: 1.5rem;
+	/* Espacio interior cómodo */
 }
 
 /* Grid de tarjetas en el main */
 .alim-cards-grid {
 	display: flex;
 	flex-wrap: wrap;
+	/* Permite que las tarjetas bajen a la siguiente línea si no caben */
 	row-gap: 1.8rem;
+	/* Espacio vertical entre filas */
 	column-gap: 2.4rem;
+	/* Espacio horizontal entre tarjetas */
 }
 
-/* Vista algo más compacta en pantallas chicas/medianas */
+/* Vista algo más compacta en pantallas chicas/medianas (Laptops) */
 @media (max-width: 1366px) {
 	.alim-main {
 		padding: 1rem 0.75rem;
+		/* Reducimos el padding */
 	}
 
 	.alim-cards-grid {
 		justify-content: center;
-		/* centramos las cards */
+		/* Centramos las cards para que se vea equilibrado */
 		column-gap: 1.4rem;
+		/* Juntamos un poco más las tarjetas */
 	}
 }
 
@@ -45,16 +57,22 @@
 .alim-navbar {
 	display: flex;
 	justify-content: space-between;
+	/* Separa contenido a los extremos (izq y der) */
 	align-items: center;
+	/* Centra verticalmente */
 	padding: 1rem 1.5rem;
 	background-color: #0f172a;
+	/* Fondo oscuro (azul noche) */
 	color: #e5e7eb;
+	/* Texto claro */
 	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.4);
+	/* Sombra suave abajo */
 }
 
 .alim-navbar-left {
 	display: flex;
 	flex-direction: column;
+	/* Título arriba, subtítulo abajo */
 }
 
 .alim-title {
@@ -73,7 +91,7 @@
 	display: flex;
 	align-items: center;
 	gap: 2rem;
-	/* separa bloque 2 y bloque 1 */
+	/* Separa el bloque de puestos del bloque de controles */
 }
 
 /* Bloque 2: botones de puestos */
@@ -81,7 +99,7 @@
 	display: flex;
 	align-items: center;
 	gap: 2rem;
-	/* separación entre cada botón de puesto */
+	/* Separación generosa entre cada botón de puesto */
 }
 
 /* Bloque 1: +, editar, salir */
@@ -89,12 +107,13 @@
 	display: flex;
 	align-items: center;
 	gap: 0.75rem;
-	/* más juntitos entre sí */
+	/* Controles más juntos entre sí */
 }
 
 /* Botón menú: oculto por defecto (solo se usa en modo compacto) */
 .alim-navbar-menu-btn {
 	display: none;
+	/* Invisible en escritorio */
 	border: none;
 	background: transparent;
 	color: #e5e7eb;
@@ -103,7 +122,7 @@
 }
 
 /* =========================================================
-   NAVBAR (MODO COMPACTO)
+   NAVBAR (MODO COMPACTO / TABLET / MÓVIL)
    ========================================================= */
 @media (max-width: 900px) {
 
@@ -115,6 +134,7 @@
 	.alim-navbar-compact {
 		justify-content: center;
 		position: relative;
+		/* Necesario para posicionar el menú absoluto */
 	}
 
 	/* Texto centrado con el nombre del puesto */
@@ -128,6 +148,7 @@
 	/* Mostramos el botón hamburguesa y lo posicionamos a la izquierda */
 	.alim-navbar-menu-btn {
 		display: block;
+		/* Ahora sí es visible */
 		background: none;
 		border: none;
 		color: #e5e7eb;
@@ -137,8 +158,11 @@
 
 	.alim-navbar-compact .alim-navbar-menu-btn {
 		position: absolute;
+		/* Lo sacamos del flujo normal */
 		left: 1rem;
+		/* Pegado a la izquierda */
 		top: 50%;
+		/* Centrado verticalmente */
 		transform: translateY(-50%);
 	}
 
@@ -149,6 +173,7 @@
 
 	.alim-nav-buttons {
 		display: none;
+		/* Ocultamos los botones normales (pasan al menú lateral) */
 	}
 }
 
@@ -160,14 +185,18 @@
 .alim-btn {
 	border: none;
 	border-radius: 10px;
+	/* Bordes redondeados */
 	padding: 0.45rem 1.2rem;
 	font-size: 0.9rem;
 	font-weight: 600;
 	cursor: pointer;
 	background-color: #22c55e;
+	/* Verde éxito */
 	color: #022c22;
+	/* Texto verde muy oscuro */
 	transition: transform 0.1s ease, box-shadow 0.1s ease,
 		background-color 0.15s ease;
+	/* Animaciones suaves al interactuar */
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -175,19 +204,25 @@
 
 .alim-btn:hover {
 	background-color: #16a34a;
+	/* Verde más oscuro al pasar el mouse */
 	box-shadow: 0 4px 10px rgba(21, 128, 61, 0.4);
+	/* Sombra verde */
 	transform: translateY(-1px);
+	/* Se levanta un poquito */
 }
 
 .alim-btn:active {
 	transform: translateY(0);
+	/* Vuelve a bajar al hacer click */
 	box-shadow: none;
 }
 
-/* Botón de puesto activo */
+/* Botón de puesto activo (el seleccionado) */
 .alim-btn-active {
 	background-color: #0ea5e9;
+	/* Azul celeste brillante */
 	color: #0f172a;
+	/* Texto oscuro */
 }
 
 /* Botón "+" para agregar puesto (nav y drawer) */
@@ -195,6 +230,7 @@
 	background-color: transparent;
 	color: #e5e7eb;
 	border: 1px dashed #9ca3af;
+	/* Borde punteado */
 	width: 2.5rem;
 	height: 2.5rem;
 	padding: 0;
@@ -205,15 +241,17 @@
 .alim-btn-add-icon {
 	display: block;
 	transform: translateY(-3px);
+	/* Ajuste fino visual */
 }
 
 .alim-btn-add:hover {
 	background-color: rgba(148, 163, 184, 0.2);
+	/* Fondo semitransparente */
 	box-shadow: none;
 	transform: none;
 }
 
-/* Botón salir */
+/* Botón salir (rojo) */
 .alim-btn-exit {
 	border: none;
 	border-radius: 10px;
@@ -222,6 +260,7 @@
 	font-weight: 600;
 	cursor: pointer;
 	background-color: #ef4444;
+	/* Rojo peligro */
 	color: #f9fafb;
 	transition: background-color 0.15s ease, transform 0.1s ease,
 		box-shadow 0.1s ease;
@@ -232,6 +271,7 @@
 
 .alim-btn-exit:hover {
 	background-color: #dc2626;
+	/* Rojo más oscuro */
 	box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
 	transform: translateY(-1px);
 }
@@ -246,8 +286,11 @@
    ========================================================= */
 .alim-card-add {
 	border: 1px dashed #374151;
+	/* Borde punteado oscuro */
 	background-color: #111827;
+	/* Fondo muy oscuro */
 	color: #9ca3af;
+	/* Texto gris */
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -256,6 +299,7 @@
 	cursor: pointer;
 	min-height: 230px;
 	flex: 0 0 304px;
+	/* Mismo tamaño que las tarjetas normales */
 	border-radius: 16px;
 }
 
@@ -270,10 +314,11 @@
 
 .alim-card-section-title {
 	text-transform: uppercase;
+	/* Todo en mayúsculas */
 }
 
 /* =========================================================
-   ESTADOS VACÍOS
+   ESTADOS VACÍOS (Cuando no hay datos)
    ========================================================= */
 .alim-empty {
 	height: 100%;
@@ -293,39 +338,52 @@
 }
 
 /* =========================================================
-   DRAWER LATERAL
+   DRAWER LATERAL (Menú móvil)
    ========================================================= */
 .alim-drawer-overlay {
 	position: fixed;
+	/* Fijo sobre toda la pantalla */
 	inset: 0;
 	background-color: rgba(15, 23, 42, 0.45);
+	/* Fondo semitransparente oscuro */
 	display: flex;
 	align-items: stretch;
 	justify-content: flex-start;
 	opacity: 0;
+	/* Invisible por defecto */
 	pointer-events: none;
+	/* No bloquea clicks cuando está invisible */
 	transition: opacity 0.22s ease;
+	/* Animación de aparición */
 	z-index: 60;
+	/* Por encima de todo */
 }
 
 .alim-drawer-overlay.alim-drawer-open {
 	opacity: 1;
+	/* Visible */
 	pointer-events: auto;
+	/* Captura clicks */
 }
 
 .alim-drawer {
 	width: 260px;
 	max-width: 80vw;
+	/* No más del 80% del ancho de pantalla */
 	background-color: #020617;
 	color: #e5e7eb;
 	padding: 1.4rem 1.1rem;
 	box-shadow: 8px 0 25px rgba(15, 23, 42, 0.6);
+	/* Sombra hacia la derecha */
 	transform: translateX(-100%);
+	/* Oculto a la izquierda */
 	transition: transform 0.22s ease-out;
+	/* Animación de deslizamiento */
 }
 
 .alim-drawer-overlay.alim-drawer-open .alim-drawer {
 	transform: translateX(0);
+	/* Se desliza hacia adentro */
 }
 
 .alim-drawer-header {
@@ -400,6 +458,7 @@
 	border-radius: 18px;
 	padding: 1.4rem 1.8rem;
 	box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+	/* Sombra grande y difusa */
 	max-width: 580px;
 	width: 100%;
 	box-sizing: border-box;
@@ -423,28 +482,30 @@
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
+	/* Permite que los elementos bajen si no hay espacio */
 	gap: 0.8rem;
 	padding: 0.8rem 1rem;
 	border-radius: 14px;
 	background: #f9fafb;
 	border: 1px solid #94a3b8;
-	/* borde más oscuro y visible */
+	/* Borde visible */
 	box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
 }
 
 .alim-edit-row:hover {
 	background: #f3f4f6;
 	border-color: #64748b;
-	/* hover más marcado */
 	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.09);
 }
 
 /* Input del nombre del puesto */
 .alim-edit-input {
 	flex: 1;
+	/* Ocupa todo el espacio disponible */
 	min-width: 180px;
 	padding: 0.55rem 0.9rem;
 	border-radius: 999px;
+	/* Bordes completamente redondos (pill shape) */
 	border: 1px solid #e2e8f0;
 	font-size: 0.9rem;
 }
@@ -452,6 +513,7 @@
 .alim-edit-input:focus {
 	outline: none;
 	border-color: #2563eb;
+	/* Azul al enfocar */
 	box-shadow: 0 0 0 1px #2563eb33;
 }
 
@@ -461,6 +523,7 @@
 	align-items: center;
 	gap: 0.8rem;
 	flex-shrink: 0;
+	/* Evita que se encoja */
 	justify-content: flex-end;
 }
 
@@ -505,6 +568,7 @@
 
 .alim-edit-color-input:hover {
 	transform: scale(1.05);
+	/* Crece un poquito al pasar el mouse */
 }
 
 /* Botón ELIMINAR */
@@ -513,7 +577,9 @@
 	border-radius: 12px;
 	border: none;
 	background-color: #fee2e2;
+	/* Rojo muy claro */
 	color: #b91c1c;
+	/* Rojo oscuro */
 	font-size: 0.8rem;
 	font-weight: 500;
 	cursor: pointer;
@@ -565,7 +631,7 @@
 }
 
 /* =========================================================
-   MODAL "EDITAR PUESTOS" RESPONSIVE
+   MODAL "EDITAR PUESTOS" RESPONSIVE (Móvil)
    ========================================================= */
 @media (max-width: 520px) {
 
@@ -580,6 +646,7 @@
 	.alim-edit-row {
 		flex-direction: column;
 		align-items: stretch;
+		/* Estira los elementos al ancho total */
 		gap: 0.7rem;
 		padding: 0.9rem 1rem;
 	}
@@ -596,6 +663,7 @@
 		width: 100%;
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+		/* 2 columnas iguales */
 		column-gap: 0.9rem;
 		row-gap: 0.5rem;
 		align-items: center;
@@ -616,6 +684,7 @@
 	/* Botón eliminar ocupa las 2 columnas (todo el ancho) */
 	.alim-edit-delete {
 		grid-column: 1 / -1;
+		/* Ocupa desde la columna 1 hasta el final */
 		width: 100%;
 		text-align: center;
 		justify-content: center;

@@ -2,6 +2,24 @@ import React from "react";
 import ConfiguradorBox from "./ConfiguradorBox.jsx";
 import "./FormularioDiseñoTarjeta.css";
 
+/**
+ * ==============================================================================
+ * SUBCOMPONENTE: FormularioDiseñoTarjeta
+ * ==============================================================================
+ * 
+ * ¿QUÉ HACE ESTE ARCHIVO?
+ * Es el panel donde configuras UNA de las mitades de la tarjeta (la de arriba o la de abajo).
+ * Aquí decides:
+ * 1. El título general de esa mitad (ej: "CONSUMO").
+ * 2. Cuántas cajitas de datos mostrar (1 a 4).
+ * 3. Qué mostrar en cada cajita (usando el subcomponente ConfiguradorBox).
+ * 
+ * ¿CÓMO FUNCIONA?
+ * Recibe la configuración actual de esa mitad ("design") y muestra los controles.
+ * Si cambias la cantidad de boxes, automáticamente agrega o quita elementos.
+ */
+
+// Opciones predefinidas para los títulos
 const OPCIONES_TITULO_CARD = [
 	{ id: "tension_linea", label: "Tensión de línea (kV)" },
 	{ id: "tension_entre_lineas", label: "Tensión entre líneas (kV)" },
@@ -16,6 +34,7 @@ const OPCIONES_TITULO_CARD = [
 	{ id: "custom", label: "Otro (personalizado)..." },
 ];
 
+// Textos de ayuda para las etiquetas de las cajas
 const PLACEHOLDERS_BOX = [
 	"Ej: R o L1",
 	"Ej: S o L2",
@@ -23,19 +42,15 @@ const PLACEHOLDERS_BOX = [
 	"Ej: Total",
 ];
 
-/**
- * Formulario para diseñar una parte de la tarjeta (superior o inferior)
- * Permite configurar título, cantidad de boxes y cada box individual
- */
 const FormularioDiseñoTarjeta = ({
-	zona,
-	tituloBloque,
-	placeholderTitulo,
-	design,
-	onChangeTitulo,
-	onChangeTituloCustom,
-	onChangeCantidad,
-	onChangeBox,
+	zona, 					// "superior" o "inferior" (solo informativo)
+	tituloBloque, 			// Título visual del formulario (ej: "Parte superior")
+	placeholderTitulo, 		// Ejemplo de título
+	design, 				// Objeto con la configuración actual
+	onChangeTitulo, 		// Función al cambiar el select de título
+	onChangeTituloCustom, 	// Función al escribir un título propio
+	onChangeCantidad, 		// Función al cambiar el número de boxes
+	onChangeBox, 			// Función al editar una caja específica
 }) => {
 	const cant = design.cantidad || 1;
 
@@ -43,9 +58,10 @@ const FormularioDiseñoTarjeta = ({
 		<section className="map-part">
 			<h4 className="map-part__title">{tituloBloque}</h4>
 
-			{/* Título + Cantidad de boxes */}
+			{/* CABECERA: Título y Cantidad */}
 			<div className="map-part__header">
-				{/* Campo Título */}
+
+				{/* SELECTOR DE TÍTULO */}
 				<div className="map-field map-field--grow">
 					<span className="map-field__label">Título</span>
 					<div className="map-field__inline">
@@ -61,6 +77,7 @@ const FormularioDiseñoTarjeta = ({
 							))}
 						</select>
 
+						{/* Input extra si elige "Personalizado" */}
 						{design.tituloId === "custom" && (
 							<input
 								type="text"
@@ -73,7 +90,7 @@ const FormularioDiseñoTarjeta = ({
 					</div>
 				</div>
 
-				{/* Campo Cantidad */}
+				{/* SELECTOR DE CANTIDAD */}
 				<div className="map-field map-field--small">
 					<span className="map-field__label">
 						Cantidad de boxes de medición
@@ -92,7 +109,7 @@ const FormularioDiseñoTarjeta = ({
 				</div>
 			</div>
 
-			{/* Lista de boxes */}
+			{/* LISTA DE CAJAS (Se generan dinámicamente según la cantidad elegida) */}
 			<div className="map-box-list">
 				{Array.from({ length: cant }).map((_, idx) => {
 					const box = design.boxes[idx] || {};

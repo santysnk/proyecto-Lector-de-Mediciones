@@ -1,3 +1,13 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados al modal de nuevo puesto */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas */
+/* 
+ * ==============================================================================
+ * ESTILOS: ModalNuevoPuesto.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Actualmente, los estilos de este modal se encuentran centralizados en el archivo
+ * principal "PaginaAlimentadores.css" para mantener la consistencia visual con
+ * el resto de la aplicación (clases .alim-modal, .alim-modal-overlay, etc.).
+ * 
+ * Este archivo se mantiene aquí para permitir futuras personalizaciones
+ * específicas de este componente sin afectar al resto.
+ */

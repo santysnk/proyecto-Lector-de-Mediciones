@@ -1,2 +1,16 @@
-/* Estilos para formulario de datos básicos */
-/* Los estilos se mantendrán en ModalConfiguracionAlimentador.css por ahora */
+/* 
+ * ==============================================================================
+ * ESTILOS: FormularioDatosBasicos.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos para este formulario (inputs, etiquetas, selector de color)
+ * se encuentran actualmente centralizados en "ModalConfiguracionAlimentador.css".
+ * 
+ * Se mantienen las clases globales como:
+ * - .alim-modal-label
+ * - .alim-modal-input
+ * - .alim-color-grid
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */

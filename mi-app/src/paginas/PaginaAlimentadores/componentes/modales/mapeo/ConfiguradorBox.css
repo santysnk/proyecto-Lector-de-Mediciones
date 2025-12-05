@@ -1,2 +1,19 @@
-/* Estilos para configurador de box */
-/* Los estilos se mantendrán en ModalMapeoMediciones.css por ahora */
+/* 
+ * ==============================================================================
+ * ESTILOS: ConfiguradorBox.css
+ * ==============================================================================
+ * 
+ * NOTA IMPORTANTE:
+ * Los estilos para cada fila de configuración de caja (checkbox, inputs, etc.)
+ * se encuentran actualmente centralizados en "ModalMapeoMediciones.css".
+ * 
+ * Esto incluye clases como:
+ * - .map-box
+ * - .map-box__check
+ * - .map-box__label
+ * - .map-box__registro
+ * - .map-box__origen
+ * - .map-box__formula
+ * 
+ * Este archivo existe para permitir la modularización futura.
+ */
