@@ -11,14 +11,12 @@
 	min-height: 230px;
 
 	/* 👇 importante para que flex calcule bien */
-	flex: 0 0 304px;
-	/* ancho "normal" de la tarjeta */
+	flex: 0 0 304px; 	/* ancho "normal" de la tarjeta */
 }
 
 /* Cuando hay 4 boxes en alguna fila, la hacemos más ancha */
 .alim-card-wide {
-	/* 👈 sin el segundo guión */
-	flex-basis: 420px;
+	flex-basis: 380px;
 }
 
 /* Header de la tarjeta */
@@ -104,21 +102,16 @@
 
 .alim-card-meters {
 	display: flex;
-	justify-content: space-evenly;
-	/* 👈 reparte espacios iguales */
-	gap: 15px;
-	/* con space-evenly no hace falta gap */
-	position: relative;
-	/* 👈 importante */
-	overflow: visible;
-	/* el borde puede sobresalir un poquito */
+	justify-content: space-evenly; 	/* 👈 reparte espacios iguales */
+	gap: 8px; 	/* con space-evenly no hace falta gap */
+	position: relative; 	/* 👈 importante */
+	overflow: visible; 	/* el borde puede sobresalir un poquito */
 }
 
 /* cada box con ancho fijo */
 .alim-card-meter {
 	position: relative;
-	flex: 0 0 80px;
-	/* ajustá 90–100px según cómo veas el tamaño ideal */
+	flex: 0 0 80px; 	/* ajustá 90–100px según cómo veas el tamaño ideal */
 	text-align: center;
 }
 
@@ -171,21 +164,11 @@
 }
 
 @keyframes rw-border-progress-rele {
-   0% {
-      background-size: 0 2px, 2px 0, 0 2px, 2px 0;
-   }
-   25% {
-      background-size: 100% 2px, 2px 0, 0 2px, 2px 0;
-   }
-   50% {
-      background-size: 100% 2px, 2px 100%, 0 2px, 2px 0;
-   }
-   75% {
-      background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0;
-   }
-   100% {
-      background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-   }
+   0% { background-size: 0 2px, 2px 0, 0 2px, 2px 0; }
+   25% { background-size: 100% 2px, 2px 0, 0 2px, 2px 0; }
+   50% { background-size: 100% 2px, 2px 100%, 0 2px, 2px 0; }
+   75% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0; }
+   100% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%; }
 }
 
 /* ===== BORDE PROGRESO PARA REGISTROS DEL ANALIZADOR ===== */
@@ -210,21 +193,11 @@
 }
 
 @keyframes rw-border-progress-analizador {
-   0% {
-      background-size: 0 2px, 2px 0, 0 2px, 2px 0;
-   }
-   25% {
-      background-size: 100% 2px, 2px 0, 0 2px, 2px 0;
-   }
-   50% {
-      background-size: 100% 2px, 2px 100%, 0 2px, 2px 0;
-   }
-   75% {
-      background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0;
-   }
-   100% {
-      background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
-   }
+   0% { background-size: 0 2px, 2px 0, 0 2px, 2px 0; }
+   25% { background-size: 100% 2px, 2px 0, 0 2px, 2px 0; }
+   50% { background-size: 100% 2px, 2px 100%, 0 2px, 2px 0; }
+   75% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0; }
+   100% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%; }
 }
 
 

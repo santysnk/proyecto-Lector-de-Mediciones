@@ -122,7 +122,7 @@
 
 	/* Mostramos el botón hamburguesa y lo posicionamos a la izquierda */
 	.alim-navbar-menu-btn {
-		display: block;              /* 👈 antes no lo activábamos */
+		display: block;
 		background: none;
 		border: none;
 		color: #e5e7eb;
@@ -387,12 +387,17 @@
 }
 
 /* =========================================================
-   MODALES (EDITAR / NUEVO PUESTO)
+   MODALES (NUEVO / EDITAR PUESTO)
    ========================================================= */
+
+/* Contenedor base del modal */
 .alim-modal {
 	border-radius: 18px;
 	padding: 1.4rem 1.8rem;
 	box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+	max-width: 480px;
+	width: 100%;
+	box-sizing: border-box;
 }
 
 /* Lista de puestos a editar */
@@ -403,21 +408,21 @@
 	margin-top: 0.9rem;
 }
 
-/* Cada fila de edición */
+/* Cada fila de edición (desktop) */
 .alim-edit-row {
 	display: flex;
 	align-items: center;
-	gap: 0.9rem;
-	padding: 0.6rem 0.8rem;
+	gap: 1.2rem;
+	padding: 0.8rem 1rem;
 	border-radius: 14px;
 	background: #f9fafb;
-	border: 1px solid #cbd5f5;
+	border: 1px solid #94a3b8;   /* borde más oscuro y visible */
 	box-shadow: 0 3px 8px rgba(15, 23, 42, 0.06);
 }
 
 .alim-edit-row:hover {
 	background: #f3f4f6;
-	border-color: #93c5fd;
+	border-color: #64748b;        /* hover más marcado */
 	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.09);
 }
 
@@ -436,20 +441,22 @@
 	box-shadow: 0 0 0 1px #2563eb33;
 }
 
-/* Contenedor derecho: colores + botón eliminar */
+/* Contenedor derecho: colores + botón eliminar (desktop) */
 .alim-edit-right {
 	display: flex;
 	align-items: center;
-	gap: 0.6rem;
+	gap: 1rem;
+	min-width: 240px;
+	justify-content: space-between;
 }
 
-/* Grupo Botón / Fondo */
+/* Grupo Botón / Fondo (desktop) */
 .alim-edit-color-group {
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 0.2rem;
-	font-size: 0.75rem;
+	gap: 0.25rem;
+	font-size: 0.8rem;
 	color: #6b7280;
 }
 
@@ -541,4 +548,73 @@
 
 .alim-modal-btn-guardar:hover {
 	background-color: #0284c7;
+}
+
+/* =========================================================
+   MODAL "EDITAR PUESTOS" RESPONSIVE
+   ========================================================= */
+@media (max-width: 520px) {
+	/* El modal ocupa casi todo el ancho de la pantalla */
+	.alim-modal {
+		max-width: 100vw;
+		margin: 0 0.5rem;
+		padding: 1rem 0.9rem;
+	}
+
+	/* Cada fila pasa a columna, con más aire */
+	.alim-edit-row {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.7rem;
+		padding: 0.9rem 1rem;
+	}
+
+	/* Input a lo ancho */
+	.alim-edit-input {
+		width: 100%;
+	}
+
+	/* Contenedor de colores + eliminar en GRID:
+	   fila 1 -> Botón | Fondo
+	   fila 2 -> Eliminar ocupando todo el ancho */
+	.alim-edit-right {
+		width: 100%;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		column-gap: 0.9rem;
+		row-gap: 0.5rem;
+		align-items: center;
+		margin-top: 0.2rem;
+	}
+
+	/* Grupos de color en fila, centrados */
+	.alim-edit-color-group {
+		flex-direction: row;
+		justify-content: center;
+		gap: 0.35rem;
+	}
+
+	.alim-edit-color-label {
+		font-size: 0.8rem;
+	}
+
+	/* Botón eliminar ocupa las 2 columnas (todo el ancho) */
+	.alim-edit-delete {
+		grid-column: 1 / -1;
+		width: 100%;
+		text-align: center;
+		justify-content: center;
+		margin-top: 0.1rem;
+	}
+
+	/* Botones inferiores un poco más anchos y separados */
+	.alim-modal-actions {
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.8rem;
+	}
+
+	.alim-modal-btn {
+		min-width: 120px;
+	}
 }
