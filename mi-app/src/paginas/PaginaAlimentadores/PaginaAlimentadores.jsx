@@ -1,5 +1,6 @@
 // src/paginas/PaginaAlimentadores/PaginaAlimentadores.jsx
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./PaginaAlimentadores.css";
 import TarjetaAlimentador from "./componentes/tarjetas/TarjetaAlimentador.jsx";
 import ModalConfiguracionAlimentador from "./componentes/modales/ModalConfiguracionAlimentador.jsx";
@@ -12,7 +13,7 @@ import { usarMediciones } from "./hooks/usarMediciones.js";
 import { usarArrastrarSoltar } from "./hooks/usarArrastrarSoltar.js";
 import {
 	obtenerDiseñoTarjeta,
-	calcularValoresLadoTarjeta
+	calcularValoresLadoTarjeta,
 } from "./utilidades/calculosMediciones.js";
 
 /**
@@ -20,6 +21,12 @@ import {
  * Gestiona puestos, alimentadores y mediciones en tiempo real
  */
 const PaginaAlimentadores = () => {
+	const navigate = useNavigate();
+
+	const handleSalir = () => {
+		navigate("/"); // tu login está en la ruta "/"
+	};
+
 	// ===== HOOKS PERSONALIZADOS =====
 	const {
 		puestos,
@@ -42,7 +49,7 @@ const PaginaAlimentadores = () => {
 		alternarMedicion,
 		obtenerRegistros,
 		estaMidiendo,
-		actualizarRegistros,
+		// actualizarRegistros   // ya no lo usamos
 	} = usarMediciones();
 
 	const {
@@ -55,8 +62,10 @@ const PaginaAlimentadores = () => {
 	} = usarArrastrarSoltar();
 
 	// ===== ESTADOS LOCALES PARA MODALES =====
-	const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
-	const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
+	const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] =
+		useState(false);
+	const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] =
+		useState(false);
 	const [mostrarModalNuevoAlim, setMostrarModalNuevoAlim] = useState(false);
 	const [mostrarModalMapeo, setMostrarModalMapeo] = useState(false);
 
@@ -100,6 +109,16 @@ const PaginaAlimentadores = () => {
 	const cerrarModalEditarPuestos = () => {
 		setMostrarModalEditarPuestos(false);
 		setPuestosEditados([]);
+	};
+
+	const cambiarNombreEditado = (id, nombreNuevo) => {
+		setPuestosEditados((prev) =>
+			prev.map((p) => (p.id === id ? { ...p, nombre: nombreNuevo } : p))
+		);
+	};
+
+	const eliminarEditado = (id) => {
+		setPuestosEditados((prev) => prev.filter((p) => p.id !== id));
 	};
 
 	const cambiarColorBotonEditado = (id, colorNuevo) => {
@@ -255,14 +274,14 @@ const PaginaAlimentadores = () => {
 	const iniciarMedicionConCalculo = async (alim, equipo, overrideConfig) => {
 		// Iniciar medición usando el hook
 		await iniciarMedicion(alim, equipo, overrideConfig);
-
-		// Suscribirse a cambios en registros para recalcular valores
-		// (El hook ya actualiza registrosEnVivo automáticamente)
+		// El hook ya actualiza registrosEnVivo automáticamente
 	};
 
 	// Recalcular valores cuando cambien los registros
 	React.useEffect(() => {
 		if (!puestoSeleccionado) return;
+
+		const nuevasLecturas = {};
 
 		puestoSeleccionado.alimentadores.forEach((alim) => {
 			const regsDelAlim = registrosEnVivo[alim.id];
@@ -270,14 +289,15 @@ const PaginaAlimentadores = () => {
 
 			const diseño = obtenerDiseñoTarjeta(alim.mapeoMediciones);
 
-			const parteSuperior = calcularValoresLadoTarjeta(regsDelAlim, diseño.superior);
-			const parteInferior = calcularValoresLadoTarjeta(regsDelAlim, diseño.inferior);
-
-			setLecturas((prev) => ({
-				...prev,
-				[alim.id]: { parteSuperior, parteInferior },
-			}));
+			nuevasLecturas[alim.id] = {
+				parteSuperior: calcularValoresLadoTarjeta(regsDelAlim, diseño.superior),
+				parteInferior: calcularValoresLadoTarjeta(regsDelAlim, diseño.inferior),
+			};
 		});
+
+		if (Object.keys(nuevasLecturas).length > 0) {
+			setLecturas((prev) => ({ ...prev, ...nuevasLecturas }));
+		}
 	}, [registrosEnVivo, puestoSeleccionado]);
 
 	// ===== DATOS PARA MODALES =====
@@ -304,43 +324,60 @@ const PaginaAlimentadores = () => {
 					<h1 className="alim-title">Panel de Alimentadores</h1>
 
 					{puestoSeleccionado && (
-						<div className="alim-current-puesto">{puestoSeleccionado.nombre}</div>
+						<div className="alim-current-puesto">
+							{puestoSeleccionado.nombre}
+						</div>
 					)}
 				</div>
 
+				{/* 👉 acá cambiamos */}
 				<div className="alim-nav-buttons">
-					{puestos.map((p) => (
+					{/* BLOQUE 2: botones de puestos (dinámicos) */}
+					<div className="alim-nav-bloque-puestos">
+						{puestos.map((p) => (
+							<button
+								key={p.id}
+								className={
+									"alim-btn" +
+									(puestoSeleccionado && puestoSeleccionado.id === p.id
+										? " alim-btn-active"
+										: "")
+								}
+								onClick={() => seleccionarPuesto(p.id)}
+								style={{ backgroundColor: p.color || COLORES_SISTEMA[0] }}
+							>
+								{p.nombre}
+							</button>
+						))}
+					</div>
+
+					{/* BLOQUE 1: botones fijos */}
+					<div className="alim-nav-bloque-controles">
 						<button
-							key={p.id}
-							className={
-								"alim-btn" +
-								(puestoSeleccionado && puestoSeleccionado.id === p.id
-									? " alim-btn-active"
-									: "")
-							}
-							onClick={() => seleccionarPuesto(p.id)}
-							style={{ backgroundColor: p.color || COLORES_SISTEMA[0] }}
+							type="button"
+							className="alim-btn alim-btn-add"
+							onClick={abrirModalNuevoPuesto}
 						>
-							{p.nombre}
+							<span className="alim-btn-add-icon">+</span>
 						</button>
-					))}
 
-					<button
-						type="button"
-						className="alim-btn alim-btn-add"
-						onClick={abrirModalNuevoPuesto}
-					>
-						<span className="alim-btn-add-icon">+</span>
-					</button>
+						<button
+							type="button"
+							className="alim-btn alim-btn-edit"
+							onClick={abrirModalEditarPuestos}
+							disabled={puestos.length === 0}
+						>
+							✎
+						</button>
 
-					<button
-						type="button"
-						className="alim-btn alim-btn-edit"
-						onClick={abrirModalEditarPuestos}
-						disabled={puestos.length === 0}
-					>
-						✎
-					</button>
+						<button
+							type="button"
+							className="alim-btn-exit"
+							onClick={handleSalir}
+						>
+							Salir
+						</button>
+					</div>
 				</div>
 			</nav>
 
@@ -353,21 +390,21 @@ const PaginaAlimentadores = () => {
 			>
 				{!puestoSeleccionado ? (
 					<div className="alim-empty-state">
-						<p>No hay puestos creados. Haz clic en el botón "+" para agregar uno.</p>
+						<p>
+							No hay puestos creados. Haz clic en el botón "+" para agregar uno.
+						</p>
 					</div>
 				) : (
 					<>
-						{/* Mensaje solo si no hay alimentadores */}
 						{puestoSeleccionado.alimentadores.length === 0 && (
 							<div className="alim-empty-state">
 								<p>
-									Este puesto no tiene alimentadores. Haz clic en el botón de abajo
-									para agregar.
+									Este puesto no tiene alimentadores. Haz clic en el botón de
+									abajo para agregar.
 								</p>
 							</div>
 						)}
 
-						{/* Siempre renderizamos la grid, tenga 0, 1 o muchos */}
 						<div className="alim-cards-grid">
 							{puestoSeleccionado.alimentadores.map((alim) => {
 								const lecturasAlim = lecturas[alim.id] || {};
@@ -420,7 +457,6 @@ const PaginaAlimentadores = () => {
 						</div>
 					</>
 				)}
-
 			</main>
 
 			{/* ===== MODALES ===== */}
@@ -468,7 +504,10 @@ const PaginaAlimentadores = () => {
 								>
 									Cancelar
 								</button>
-								<button type="submit" className="alim-modal-btn alim-modal-btn-aceptar">
+								<button
+									type="submit"
+									className="alim-modal-btn alim-modal-btn-aceptar"
+								>
 									Crear
 								</button>
 							</div>
@@ -486,17 +525,16 @@ const PaginaAlimentadores = () => {
 						<div className="alim-edit-list">
 							{puestosEditados.map((p) => (
 								<div key={p.id} className="alim-edit-row">
-									{/* Nombre del puesto */}
 									<input
 										type="text"
 										className="alim-edit-input"
 										value={p.nombre}
-										onChange={(e) => cambiarNombreEditado(p.id, e.target.value)}
+										onChange={(e) =>
+											cambiarNombreEditado(p.id, e.target.value)
+										}
 									/>
 
-									{/* Colores + botón eliminar */}
 									<div className="alim-edit-right">
-										{/* Color del botón */}
 										<div className="alim-edit-color-group">
 											<span className="alim-edit-color-label">Botón</span>
 											<input
@@ -509,7 +547,6 @@ const PaginaAlimentadores = () => {
 											/>
 										</div>
 
-										{/* Color de fondo */}
 										<div className="alim-edit-color-group">
 											<span className="alim-edit-color-label">Fondo</span>
 											<input
@@ -522,7 +559,6 @@ const PaginaAlimentadores = () => {
 											/>
 										</div>
 
-										{/* Botón eliminar */}
 										<button
 											type="button"
 											className="alim-edit-delete"
@@ -554,7 +590,6 @@ const PaginaAlimentadores = () => {
 					</div>
 				</div>
 			)}
-
 
 			{/* Modal Nuevo/Editar Alimentador */}
 			<ModalConfiguracionAlimentador

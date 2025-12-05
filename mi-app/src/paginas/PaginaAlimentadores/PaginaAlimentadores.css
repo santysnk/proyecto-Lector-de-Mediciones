@@ -30,7 +30,22 @@
 /* Contenedor de botones de la nav */
 .alim-nav-buttons {
 	display: flex;
-	gap: 2rem;
+	align-items: center;
+	gap: 2rem; /* separa bloque 2 y bloque 1 */
+}
+
+/* Bloque 2: botones de puestos */
+.alim-nav-bloque-puestos {
+	display: flex;
+	align-items: center;
+	gap: 2rem; /* separación entre cada botón de puesto */
+}
+
+/* Bloque 1: +, editar, salir */
+.alim-nav-bloque-controles {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem; /* más juntitos entre sí */
 }
 
 /* Botones de puesto */
@@ -320,4 +335,28 @@
 
 .alim-modal-btn-guardar:hover {
 	background-color: #0284c7;
+}
+
+.alim-btn-exit {
+	border: none;
+	border-radius: 10px;
+	padding: 0.45rem 1.2rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	background-color: #ef4444;
+	color: #f9fafb;
+	transition: background-color 0.15s ease, transform 0.1s ease,
+		box-shadow 0.1s ease;
+}
+
+.alim-btn-exit:hover {
+	background-color: #dc2626;
+	box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
+	transform: translateY(-1px);
+}
+
+.alim-btn-exit:active {
+	transform: translateY(0);
+	box-shadow: none;
 }
