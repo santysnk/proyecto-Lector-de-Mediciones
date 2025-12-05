@@ -16,6 +16,10 @@ export const usarMediciones = () => {
 	// Estructura: { [alimId]: { rele: boolean, analizador: boolean } }
 	const [medicionesActivas, setMedicionesActivas] = useState({});
 
+	// Timestamps de inicio de mediciones (para sincronizar animaciones)
+	// Estructura: { [alimId]: { rele: timestamp, analizador: timestamp } }
+	const [timestampsInicio, setTimestampsInicio] = useState({});
+
 	// Timers de setInterval (no genera re-render, por eso useRef)
 	// Estructura: { [alimId]: { rele: timerId, analizador: timerId } }
 	const timersRef = useRef({});
@@ -66,6 +70,30 @@ export const usarMediciones = () => {
 		}
 	};
 
+	// Aplica nuevos registros y actualiza el timestamp de última lectura
+	const aplicarRegistros = (alimId, equipo, registros) => {
+		const ahora = Date.now();
+
+		// Actualizar valores leídos
+		setRegistrosEnVivo((anteriores) => ({
+			...anteriores,
+			[alimId]: {
+				...(anteriores[alimId] || {}),
+				[equipo]: registros,
+			},
+		}));
+
+		// Actualizar timestamp de última lectura
+		setTimestampsInicio((anteriores) => ({
+			...anteriores,
+			[alimId]: {
+				...(anteriores[alimId] || {}),
+				[equipo]: ahora,
+			},
+		}));
+	};
+
+
 	/**
 	 * Inicia medición periódica para un alimentador y equipo
 	 * 
@@ -100,13 +128,7 @@ export const usarMediciones = () => {
 		const registros = await hacerLecturaModbus(alimentadorConfig, equipo);
 
 		if (registros) {
-			setRegistrosEnVivo((anteriores) => ({
-				...anteriores,
-				[alimId]: {
-					...(anteriores[alimId] || {}),
-					[equipo]: registros,
-				},
-			}));
+			aplicarRegistros(alimId, equipo, registros);
 		}
 
 		// Determinar período de actualización
@@ -122,13 +144,7 @@ export const usarMediciones = () => {
 			const regs = await hacerLecturaModbus(alimentadorConfig, equipo);
 
 			if (regs) {
-				setRegistrosEnVivo((anteriores) => ({
-					...anteriores,
-					[alimId]: {
-						...(anteriores[alimId] || {}),
-						[equipo]: regs,
-					},
-				}));
+				aplicarRegistros(alimId, equipo, regs);
 			}
 		}, periodoSegundos * 1000);
 
@@ -138,7 +154,8 @@ export const usarMediciones = () => {
 			[equipo]: timerId,
 		};
 
-		// Marcar como medición activa
+		// Marcar como medición activa y guardar timestamp de inicio
+		const ahora = Date.now();
 		setMedicionesActivas((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -146,6 +163,7 @@ export const usarMediciones = () => {
 				[equipo]: true,
 			},
 		}));
+	
 	};
 
 	/**
@@ -168,7 +186,7 @@ export const usarMediciones = () => {
 			delete timersRef.current[alimId];
 		}
 
-		// Marcar como inactiva
+		// Marcar como inactiva y limpiar timestamp
 		setMedicionesActivas((anteriores) => ({
 			...anteriores,
 			[alimId]: {
@@ -176,6 +194,17 @@ export const usarMediciones = () => {
 				[equipo]: false,
 			},
 		}));
+
+		setTimestampsInicio((anteriores) => {
+			const nuevo = { ...anteriores };
+			if (nuevo[alimId]) {
+				delete nuevo[alimId][equipo];
+				if (Object.keys(nuevo[alimId]).length === 0) {
+					delete nuevo[alimId];
+				}
+			}
+			return nuevo;
+		});
 	};
 
 	/**
@@ -219,6 +248,17 @@ export const usarMediciones = () => {
 	};
 
 	/**
+	 * Obtiene el timestamp de inicio de una medición
+	 * 
+	 * @param {number} alimId - ID del alimentador
+	 * @param {string} equipo - "rele" o "analizador"
+	 * @returns {number|null} Timestamp de inicio o null
+	 */
+	const obtenerTimestampInicio = (alimId, equipo) => {
+		return timestampsInicio[alimId]?.[equipo] || null;
+	};
+
+	/**
 	 * Actualiza los registros directamente (útil para preview)
 	 * 
 	 * @param {number} alimId - ID del alimentador
@@ -245,6 +285,7 @@ export const usarMediciones = () => {
 		alternarMedicion,
 		obtenerRegistros,
 		estaMidiendo,
+		obtenerTimestampInicio,
 		actualizarRegistros,
 	};
 };

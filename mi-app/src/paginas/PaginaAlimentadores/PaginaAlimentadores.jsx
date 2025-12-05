@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./PaginaAlimentadores.css";
-import TarjetaAlimentador from "./componentes/tarjetas/TarjetaAlimentador.jsx";
+
+// Componentes
+import BarraNavegacion from "./componentes/navegacion/BarraNavegacion.jsx";
+import MenuLateral from "./componentes/navegacion/MenuLateral.jsx";
+import ModalNuevoPuesto from "./componentes/modales/ModalNuevoPuesto.jsx";
+import ModalEditarPuestos from "./componentes/modales/ModalEditarPuestos.jsx";
+import GrillaTarjetas from "./componentes/tarjetas/GrillaTarjetas.jsx";
 import ModalConfiguracionAlimentador from "./componentes/modales/ModalConfiguracionAlimentador.jsx";
 import ModalMapeoMediciones from "./componentes/modales/ModalMapeoMediciones.jsx";
 
-// Imports de la nueva estructura modular
+// Hooks y utilidades
 import { COLORES_SISTEMA } from "./constantes/colores.js";
 import { usarPuestos } from "./hooks/usarPuestos.js";
 import { usarMediciones } from "./hooks/usarMediciones.js";
@@ -23,7 +29,7 @@ const PaginaAlimentadores = () => {
 	const navigate = useNavigate();
 
 	const handleSalir = () => {
-		navigate("/"); // tu login está en la ruta "/"
+		navigate("/");
 	};
 
 	// Estado del menú lateral + modo compacto
@@ -33,7 +39,7 @@ const PaginaAlimentadores = () => {
 	// Detectar cuándo pasamos a layout compacto (según ancho)
 	useEffect(() => {
 		const actualizarModo = () => {
-			setEsCompacto(window.innerWidth < 900); // ajustá 900 si querés
+			setEsCompacto(window.innerWidth < 900);
 		};
 
 		actualizarModo();
@@ -45,7 +51,6 @@ const PaginaAlimentadores = () => {
 	const {
 		puestos,
 		puestoSeleccionado,
-		puestoSeleccionadoId,
 		agregarPuesto,
 		seleccionarPuesto,
 		actualizarPuestos,
@@ -57,12 +62,11 @@ const PaginaAlimentadores = () => {
 
 	const {
 		registrosEnVivo,
-		medicionesActivas,
 		iniciarMedicion,
 		detenerMedicion,
-		alternarMedicion,
 		obtenerRegistros,
 		estaMidiendo,
+		obtenerTimestampInicio,
 	} = usarMediciones();
 
 	const {
@@ -75,16 +79,10 @@ const PaginaAlimentadores = () => {
 	} = usarArrastrarSoltar();
 
 	// ===== ESTADOS LOCALES PARA MODALES =====
-	const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] =
-		useState(false);
-	const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] =
-		useState(false);
+	const [mostrarModalNuevoPuesto, setMostrarModalNuevoPuesto] = useState(false);
+	const [mostrarModalEditarPuestos, setMostrarModalEditarPuestos] = useState(false);
 	const [mostrarModalNuevoAlim, setMostrarModalNuevoAlim] = useState(false);
 	const [mostrarModalMapeo, setMostrarModalMapeo] = useState(false);
-
-	const [nuevoNombrePuesto, setNuevoNombrePuesto] = useState("");
-	const [colorPuesto, setColorPuesto] = useState(COLORES_SISTEMA[0]);
-	const [puestosEditados, setPuestosEditados] = useState([]);
 
 	const [modoAlim, setModoAlim] = useState("crear"); // "crear" | "editar"
 	const [alimentadorEnEdicion, setAlimentadorEnEdicion] = useState(null);
@@ -95,58 +93,27 @@ const PaginaAlimentadores = () => {
 
 	// ===== FUNCIONES DE PUESTOS =====
 	const abrirModalNuevoPuesto = () => {
-		setNuevoNombrePuesto("");
-		setColorPuesto(COLORES_SISTEMA[0]);
 		setMostrarModalNuevoPuesto(true);
 	};
 
 	const cerrarModalNuevoPuesto = () => {
 		setMostrarModalNuevoPuesto(false);
-		setNuevoNombrePuesto("");
 	};
 
-	const handleCrearPuesto = (e) => {
-		e.preventDefault();
-		const nombre = nuevoNombrePuesto.trim();
-		if (!nombre) return;
-
-		agregarPuesto(nombre, colorPuesto);
+	const handleCrearPuesto = (nombre, color) => {
+		agregarPuesto(nombre, color);
 		cerrarModalNuevoPuesto();
 	};
 
 	const abrirModalEditarPuestos = () => {
-		setPuestosEditados(puestos.map((p) => ({ ...p })));
 		setMostrarModalEditarPuestos(true);
 	};
 
 	const cerrarModalEditarPuestos = () => {
 		setMostrarModalEditarPuestos(false);
-		setPuestosEditados([]);
 	};
 
-	const cambiarNombreEditado = (id, nombreNuevo) => {
-		setPuestosEditados((prev) =>
-			prev.map((p) => (p.id === id ? { ...p, nombre: nombreNuevo } : p))
-		);
-	};
-
-	const eliminarEditado = (id) => {
-		setPuestosEditados((prev) => prev.filter((p) => p.id !== id));
-	};
-
-	const cambiarColorBotonEditado = (id, colorNuevo) => {
-		setPuestosEditados((prev) =>
-			prev.map((p) => (p.id === id ? { ...p, color: colorNuevo } : p))
-		);
-	};
-
-	const cambiarColorFondoEditado = (id, colorNuevo) => {
-		setPuestosEditados((prev) =>
-			prev.map((p) => (p.id === id ? { ...p, bgColor: colorNuevo } : p))
-		);
-	};
-
-	const guardarCambiosPuestos = () => {
+	const handleGuardarPuestos = (puestosEditados) => {
 		actualizarPuestos(puestosEditados);
 		cerrarModalEditarPuestos();
 	};
@@ -321,202 +288,46 @@ const PaginaAlimentadores = () => {
 	const alimEnEdicion =
 		modoAlim === "editar" && alimentadorEnEdicion && puestoSeleccionado
 			? puestoSeleccionado.alimentadores.find(
-					(a) => a.id === alimentadorEnEdicion.alimId
-			  ) || null
+				(a) => a.id === alimentadorEnEdicion.alimId
+			) || null
 			: null;
 
 	const alimMapeoObj = alimentadorMapeo
 		? (() => {
-				const p = puestos.find((px) => px.id === alimentadorMapeo.puestoId);
-				if (!p) return null;
-				return p.alimentadores.find((a) => a.id === alimentadorMapeo.alimId) || null;
-		  })()
+			const p = puestos.find((px) => px.id === alimentadorMapeo.puestoId);
+			if (!p) return null;
+			return p.alimentadores.find((a) => a.id === alimentadorMapeo.alimId) || null;
+		})()
 		: null;
 
 	return (
 		<div className="alim-page">
 			{/* ===== NAV SUPERIOR ===== */}
-			<nav
-				className={
-					"alim-navbar" + (esCompacto ? " alim-navbar-compact" : "")
-				}
-			>
-				{esCompacto ? (
-					<>
-						{/* Botón menú en modo compacto */}
-						<button
-							type="button"
-							className="alim-navbar-menu-btn"
-							onClick={() => setMenuAbierto(true)}
-							aria-label="Abrir menú"
-						>
-							☰
-						</button>
-
-						{/* Título centrado */}
-						<div className="alim-navbar-compact-title">
-							{puestoSeleccionado
-								? puestoSeleccionado.nombre
-								: "Panel de Alimentadores"}
-						</div>
-					</>
-				) : (
-					<>
-						<div className="alim-navbar-left">
-							<h1 className="alim-title">Panel de Alimentadores</h1>
-
-							{puestoSeleccionado && (
-								<div className="alim-current-puesto">
-									{puestoSeleccionado.nombre}
-								</div>
-							)}
-						</div>
-
-						<div className="alim-nav-buttons">
-							{/* BLOQUE 2: botones de puestos (dinámicos) */}
-							<div className="alim-nav-bloque-puestos">
-								{puestos.map((p) => (
-									<button
-										key={p.id}
-										className={
-											"alim-btn" +
-											(puestoSeleccionado && puestoSeleccionado.id === p.id
-												? " alim-btn-active"
-												: "")
-										}
-										onClick={() => seleccionarPuesto(p.id)}
-										style={{
-											backgroundColor: p.color || COLORES_SISTEMA[0],
-										}}
-									>
-										{p.nombre}
-									</button>
-								))}
-							</div>
-
-							{/* BLOQUE 1: botones fijos */}
-							<div className="alim-nav-bloque-controles">
-								<button
-									type="button"
-									className="alim-btn alim-btn-add"
-									onClick={abrirModalNuevoPuesto}
-								>
-									<span className="alim-btn-add-icon">+</span>
-								</button>
-
-								<button
-									type="button"
-									className="alim-btn alim-btn-edit"
-									onClick={abrirModalEditarPuestos}
-									disabled={puestos.length === 0}
-								>
-									✎
-								</button>
-
-								<button
-									type="button"
-									className="alim-btn-exit"
-									onClick={handleSalir}
-								>
-									Salir
-								</button>
-							</div>
-						</div>
-					</>
-				)}
-			</nav>
+			<BarraNavegacion
+				esCompacto={esCompacto}
+				puestos={puestos}
+				puestoSeleccionado={puestoSeleccionado}
+				onSeleccionarPuesto={seleccionarPuesto}
+				onAbrirModalNuevoPuesto={abrirModalNuevoPuesto}
+				onAbrirModalEditarPuestos={abrirModalEditarPuestos}
+				onSalir={handleSalir}
+				onAbrirMenu={() => setMenuAbierto(true)}
+				coloresSistema={COLORES_SISTEMA}
+			/>
 
 			{/* ===== MENÚ LATERAL (solo en modo compacto) ===== */}
 			{esCompacto && (
-				<div
-					className={
-						"alim-drawer-overlay" +
-						(menuAbierto ? " alim-drawer-open" : "")
-					}
-					onClick={() => setMenuAbierto(false)}
-				>
-					<aside
-						className="alim-drawer"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<header className="alim-drawer-header">
-							<h2 className="alim-drawer-title">Panel de Alimentadores</h2>
-							{puestoSeleccionado && (
-								<p className="alim-drawer-subtitle">
-									Puesto actual:{" "}
-									<strong>{puestoSeleccionado.nombre}</strong>
-								</p>
-							)}
-						</header>
-
-						<section className="alim-drawer-section">
-							<h3 className="alim-drawer-section-title">Puestos</h3>
-							<div className="alim-drawer-puestos">
-								{puestos.map((p) => (
-									<button
-										key={p.id}
-										className={
-											"alim-btn alim-drawer-btn-puesto" +
-											(puestoSeleccionado &&
-											puestoSeleccionado.id === p.id
-												? " alim-btn-active"
-												: "")
-										}
-										style={{
-											backgroundColor: p.color || COLORES_SISTEMA[0],
-										}}
-										onClick={() => {
-											seleccionarPuesto(p.id);
-											setMenuAbierto(false);
-										}}
-									>
-										{p.nombre}
-									</button>
-								))}
-							</div>
-						</section>
-
-						<section className="alim-drawer-section">
-							<h3 className="alim-drawer-section-title">Acciones</h3>
-							<div className="alim-drawer-actions">
-								<button
-									type="button"
-									className="alim-btn alim-drawer-btn-action alim-drawer-btn-add"
-									onClick={() => {
-										setMenuAbierto(false);
-										abrirModalNuevoPuesto();
-									}}
-								>
-									<span className="alim-drawer-btn-add-icon">+</span>
-									<span>Nuevo puesto</span>
-								</button>
-
-								<button
-									type="button"
-									className="alim-btn alim-drawer-btn-action alim-btn-edit"
-									onClick={() => {
-										setMenuAbierto(false);
-										abrirModalEditarPuestos();
-									}}
-									disabled={puestos.length === 0}
-								>
-									✎ Editar puestos
-								</button>
-
-								<button
-									type="button"
-									className="alim-btn-exit alim-drawer-btn-action"
-									onClick={() => {
-										setMenuAbierto(false);
-										handleSalir();
-									}}
-								>
-									Salir
-								</button>
-							</div>
-						</section>
-					</aside>
-				</div>
+				<MenuLateral
+					abierto={menuAbierto}
+					onCerrar={() => setMenuAbierto(false)}
+					puestos={puestos}
+					puestoSeleccionado={puestoSeleccionado}
+					onSeleccionarPuesto={seleccionarPuesto}
+					onAbrirModalNuevoPuesto={abrirModalNuevoPuesto}
+					onAbrirModalEditarPuestos={abrirModalEditarPuestos}
+					onSalir={handleSalir}
+					coloresSistema={COLORES_SISTEMA}
+				/>
 			)}
 
 			{/* ===== MAIN ===== */}
@@ -544,82 +355,22 @@ const PaginaAlimentadores = () => {
 							</div>
 						)}
 
-						<div className="alim-cards-grid">
-							{puestoSeleccionado.alimentadores.map((alim) => {
-								const lecturasAlim = lecturas[alim.id] || {};
-								const mideRele = estaMidiendo(alim.id, "rele");
-								const mideAnalizador = estaMidiendo(
-									alim.id,
-									"analizador"
-								);
-
-								return (
-									<TarjetaAlimentador
-										key={alim.id}
-										nombre={alim.nombre}
-										color={alim.color}
-										onConfigClick={() =>
-											abrirModalEditarAlim(
-												puestoSeleccionado.id,
-												alim
-											)
-										}
-										onMapClick={() =>
-											abrirModalMapeo(
-												puestoSeleccionado.id,
-												alim
-											)
-										}
-										topSide={lecturasAlim.parteSuperior}
-										bottomSide={lecturasAlim.parteInferior}
-										draggable={true}
-										isDragging={
-											elementoArrastrandoId === alim.id
-										}
-										onDragStart={() =>
-											handleDragStartAlim(alim.id)
-										}
-										onDragOver={alPasarPorEncima}
-										onDrop={() => handleDropAlim(alim.id)}
-										onDragEnd={handleDragEndAlim}
-										mideRele={mideRele}
-										mideAnalizador={mideAnalizador}
-										periodoRele={alim.periodoSegundos || 60}
-										periodoAnalizador={
-											alim.analizador?.periodoSegundos ||
-											60
-										}
-									/>
-								);
-							})}
-
-							{elementoArrastrandoId ? (
-								<div
-									className="alim-card-add"
-									onDragOver={alPasarPorEncima}
-									onDrop={handleDropAlimAlFinal}
-								>
-									<span
-										style={{
-											textAlign: "center",
-											padding: "1rem",
-										}}
-									>
-										Soltar aquí para mover al final
-									</span>
-								</div>
-							) : (
-								<div
-									className="alim-card-add"
-									onClick={abrirModalNuevoAlim}
-								>
-									<span className="alim-card-add-plus">+</span>
-									<span className="alim-card-add-text">
-										Nuevo Registrador
-									</span>
-								</div>
-							)}
-						</div>
+						<GrillaTarjetas
+							alimentadores={puestoSeleccionado.alimentadores}
+							lecturas={lecturas}
+							puestoId={puestoSeleccionado.id}
+							elementoArrastrandoId={elementoArrastrandoId}
+							onAbrirConfiguracion={abrirModalEditarAlim}
+							onAbrirMapeo={abrirModalMapeo}
+							onDragStart={handleDragStartAlim}
+							onDragOver={alPasarPorEncima}
+							onDrop={handleDropAlim}
+							onDragEnd={handleDragEndAlim}
+							onDropAlFinal={handleDropAlimAlFinal}
+							onAgregarNuevo={abrirModalNuevoAlim}
+							estaMidiendo={estaMidiendo}
+							obtenerTimestampInicio={obtenerTimestampInicio}
+						/>
 					</>
 				)}
 			</main>
@@ -627,153 +378,20 @@ const PaginaAlimentadores = () => {
 			{/* ===== MODALES ===== */}
 
 			{/* Modal Nuevo Puesto */}
-			{mostrarModalNuevoPuesto && (
-				<div className="alim-modal-overlay">
-					<div className="alim-modal alim-modal-sm">
-						<h2>Nuevo Puesto</h2>
-						<form onSubmit={handleCrearPuesto}>
-							<label className="alim-modal-label">
-								Nombre del Puesto
-								<input
-									type="text"
-									className="alim-modal-input"
-									value={nuevoNombrePuesto}
-									onChange={(e) =>
-										setNuevoNombrePuesto(e.target.value)
-									}
-									placeholder="Ej: PUESTO 1"
-									autoFocus
-								/>
-							</label>
-
-							<div className="alim-color-picker">
-								<div className="alim-color-grid">
-									{COLORES_SISTEMA.map((c) => (
-										<button
-											key={c}
-											type="button"
-											className={
-												"alim-color-swatch" +
-												(colorPuesto === c
-													? " alim-color-swatch-selected"
-													: "")
-											}
-											style={{ backgroundColor: c }}
-											onClick={() => setColorPuesto(c)}
-										/>
-									))}
-								</div>
-							</div>
-
-							<div className="alim-modal-actions">
-								<button
-									type="button"
-									className="alim-modal-btn alim-modal-btn-cancelar"
-									onClick={cerrarModalNuevoPuesto}
-								>
-									Cancelar
-								</button>
-								<button
-									type="submit"
-									className="alim-modal-btn alim-modal-btn-aceptar"
-								>
-									Crear
-								</button>
-							</div>
-						</form>
-					</div>
-				</div>
-			)}
+			<ModalNuevoPuesto
+				abierto={mostrarModalNuevoPuesto}
+				onCerrar={cerrarModalNuevoPuesto}
+				onCrear={handleCrearPuesto}
+				coloresSistema={COLORES_SISTEMA}
+			/>
 
 			{/* Modal Editar Puestos */}
-			{mostrarModalEditarPuestos && (
-				<div className="alim-modal-overlay">
-					<div className="alim-modal">
-						<h2>Editar Puestos</h2>
-
-						<div className="alim-edit-list">
-							{puestosEditados.map((p) => (
-								<div key={p.id} className="alim-edit-row">
-									<input
-										type="text"
-										className="alim-edit-input"
-										value={p.nombre}
-										onChange={(e) =>
-											cambiarNombreEditado(
-												p.id,
-												e.target.value
-											)
-										}
-									/>
-
-									<div className="alim-edit-right">
-										<div className="alim-edit-color-group">
-											<span className="alim-edit-color-label">
-												Botón
-											</span>
-											<input
-												type="color"
-												className="alim-edit-color-input"
-												value={p.color}
-												onChange={(e) =>
-													cambiarColorBotonEditado(
-														p.id,
-														e.target.value
-													)
-												}
-											/>
-										</div>
-
-										<div className="alim-edit-color-group">
-											<span className="alim-edit-color-label">
-												Fondo
-											</span>
-											<input
-												type="color"
-												className="alim-edit-color-input"
-												value={p.bgColor || "#e5e7eb"}
-												onChange={(e) =>
-													cambiarColorFondoEditado(
-														p.id,
-														e.target.value
-													)
-												}
-											/>
-										</div>
-
-										<button
-											type="button"
-											className="alim-edit-delete"
-											onClick={() =>
-												eliminarEditado(p.id)
-											}
-										>
-											Eliminar
-										</button>
-									</div>
-								</div>
-							))}
-						</div>
-
-						<div className="alim-modal-actions">
-							<button
-								type="button"
-								className="alim-modal-btn alim-modal-btn-cancelar"
-								onClick={cerrarModalEditarPuestos}
-							>
-								Cancelar
-							</button>
-							<button
-								type="button"
-								className="alim-modal-btn alim-modal-btn-guardar"
-								onClick={guardarCambiosPuestos}
-							>
-								Guardar
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+			<ModalEditarPuestos
+				abierto={mostrarModalEditarPuestos}
+				puestos={puestos}
+				onCerrar={cerrarModalEditarPuestos}
+				onGuardar={handleGuardarPuestos}
+			/>
 
 			{/* Modal Nuevo/Editar Alimentador */}
 			<ModalConfiguracionAlimentador

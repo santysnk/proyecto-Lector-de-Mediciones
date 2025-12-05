@@ -4,6 +4,11 @@ import "./ModalConfiguracionAlimentador.css";
 import { leerRegistrosModbus } from "../../utilidades/clienteModbus";
 import { COLORES_SISTEMA } from "../../constantes/colores";
 
+// Subcomponentes
+import FormularioDatosBasicos from "./configuracion/FormularioDatosBasicos.jsx";
+import TabConfiguracionRele from "./configuracion/TabConfiguracionRele.jsx";
+import TabConfiguracionAnalizador from "./configuracion/TabConfiguracionAnalizador.jsx";
+
 const ModalConfiguracionAlimentador = ({
 	abierto,
 	puestoNombre,
@@ -40,9 +45,8 @@ const ModalConfiguracionAlimentador = ({
 		puerto: "",
 		indiceInicial: "",
 		cantRegistros: "",
+		periodoSegundos: "60",
 	});
-	const [periodoSegundosAnalizador, setPeriodoSegundosAnalizador] =
-		useState("60");
 
 	// Estado de TEST por equipo
 	const [isTestingRele, setIsTestingRele] = useState(false);
@@ -98,13 +102,11 @@ const ModalConfiguracionAlimentador = ({
 					initialData.analizador?.cantRegistros != null
 						? String(initialData.analizador.cantRegistros)
 						: "",
+				periodoSegundos:
+					initialData.analizador?.periodoSegundos != null
+						? String(initialData.analizador.periodoSegundos)
+						: "60",
 			});
-
-			setPeriodoSegundosAnalizador(
-				initialData.analizador?.periodoSegundos != null
-					? String(initialData.analizador.periodoSegundos)
-					: "60"
-			);
 		} else {
 			// Nuevo alimentador
 			setNombre("");
@@ -124,8 +126,8 @@ const ModalConfiguracionAlimentador = ({
 				puerto: "",
 				indiceInicial: "",
 				cantRegistros: "",
+				periodoSegundos: "60",
 			});
-			setPeriodoSegundosAnalizador("60");
 		}
 
 		// reset estado de tests
@@ -241,7 +243,7 @@ const ModalConfiguracionAlimentador = ({
 			},
 
 			analizador: {
-				...analizador,
+				ip: analizador.ip,
 				puerto: analizador.puerto ? Number(analizador.puerto) : null,
 				indiceInicial: analizador.indiceInicial
 					? Number(analizador.indiceInicial)
@@ -249,8 +251,8 @@ const ModalConfiguracionAlimentador = ({
 				cantRegistros: analizador.cantRegistros
 					? Number(analizador.cantRegistros)
 					: null,
-				periodoSegundos: periodoSegundosAnalizador
-					? Number(periodoSegundosAnalizador)
+				periodoSegundos: analizador.periodoSegundos
+					? Number(analizador.periodoSegundos)
 					: null,
 			},
 		};
@@ -268,39 +270,20 @@ const ModalConfiguracionAlimentador = ({
 		}
 	};
 
-	// Qué filas mostramos en cada tabla
-	const rowsToShowRele =
-		isMeasuringRele && registrosRele && registrosRele.length > 0
-			? registrosRele
-			: testRowsRele;
+	// === Handlers para cambios ===
+	const handleChangeDatosBasicos = (campo, valor) => {
+		if (campo === "nombre") setNombre(valor);
+		else if (campo === "color") setColor(valor);
+		else if (campo === "periodoSegundos") setPeriodoSegundos(valor);
+	};
 
-	const rowsToShowAnalizador =
-		isMeasuringAnalizador &&
-			registrosAnalizador &&
-			registrosAnalizador.length > 0
-			? registrosAnalizador
-			: testRowsAnalizador;
+	const handleChangeRele = (campo, valor) => {
+		setRele((prev) => ({ ...prev, [campo]: valor }));
+	};
 
-	const mensajeTablaRele =
-		isMeasuringRele && registrosRele && registrosRele.length > 0
-			? `Medición en curso. Registros en vivo: ${registrosRele.length}`
-			: `Test correcto. Registros leídos: ${testRowsRele.length}`;
-
-	const mensajeTablaAnalizador =
-		isMeasuringAnalizador &&
-			registrosAnalizador &&
-			registrosAnalizador.length > 0
-			? `Medición en curso. Registros en vivo: ${registrosAnalizador.length}`
-			: `Test correcto. Registros leídos: ${testRowsAnalizador.length}`;
-
-	// Habilitación de botones de medición por tab
-	const puedeMedirRele =
-		!!onToggleMedicionRele && !!rele.ip.trim() && !!rele.puerto;
-
-	const puedeMedirAnalizador =
-		!!onToggleMedicionAnalizador &&
-		!!analizador.ip.trim() &&
-		!!analizador.puerto;
+	const handleChangeAnalizador = (campo, valor) => {
+		setAnalizador((prev) => ({ ...prev, [campo]: valor }));
+	};
 
 	// === helpers para overrides de medición (sin guardar) ===
 	const buildOverrideRele = () => ({
@@ -320,21 +303,18 @@ const ModalConfiguracionAlimentador = ({
 	const buildOverrideAnalizador = () => ({
 		analizador: {
 			ip: analizador.ip.trim(),
-			puerto: analizador.puerto
-				? Number(analizador.puerto)
-				: undefined,
+			puerto: analizador.puerto ? Number(analizador.puerto) : undefined,
 			indiceInicial: analizador.indiceInicial
 				? Number(analizador.indiceInicial)
 				: undefined,
 			cantRegistros: analizador.cantRegistros
 				? Number(analizador.cantRegistros)
 				: undefined,
-			periodoSegundos: periodoSegundosAnalizador
-				? Number(periodoSegundosAnalizador)
+			periodoSegundos: analizador.periodoSegundos
+				? Number(analizador.periodoSegundos)
 				: undefined,
 		},
 	});
-
 
 	return (
 		<div className="alim-modal-overlay">
@@ -350,38 +330,13 @@ const ModalConfiguracionAlimentador = ({
 					<div className="alim-modal-layout">
 						{/* === COLUMNA IZQUIERDA: CONFIG BÁSICA === */}
 						<div className="alim-modal-left">
-							{/* Nombre */}
-							<label className="alim-modal-label">
-								Nombre
-								<input
-									type="text"
-									className="alim-modal-input"
-									value={nombre}
-									onChange={(e) => setNombre(e.target.value)}
-									placeholder="Ej: ALIMENTADOR 1"
-									autoFocus
-								/>
-							</label>
-
-							{/* Paleta de colores */}
-							<div className="alim-color-picker">
-								<div className="alim-color-grid">
-									{COLORES_SISTEMA.map((c) => (
-										<button
-											key={c}
-											type="button"
-											className={
-												"alim-color-swatch" +
-												(color === c
-													? " alim-color-swatch-selected"
-													: "")
-											}
-											style={{ backgroundColor: c }}
-											onClick={() => setColor(c)}
-										/>
-									))}
-								</div>
-							</div>
+							{/* Formulario de datos básicos */}
+							<FormularioDatosBasicos
+								nombre={nombre}
+								color={color}
+								periodoSegundos={periodoSegundos}
+								onChange={handleChangeDatosBasicos}
+							/>
 
 							{/* Tabs RELÉ / ANALIZADOR */}
 							<div className="alim-tabs">
@@ -409,344 +364,42 @@ const ModalConfiguracionAlimentador = ({
 
 							{/* === TAB RELÉ === */}
 							{tab === "rele" && (
-								<div className="alim-modal-grid">
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Dirección IP
-										</span>
-										<input
-											type="text"
-											className="alim-field-input"
-											value={rele.ip}
-											onChange={(e) =>
-												setRele({ ...rele, ip: e.target.value })
-											}
-											placeholder="Ej: 172.16.0.1"
-											disabled={isMeasuringRele}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">Puerto</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={rele.puerto}
-											onChange={(e) =>
-												setRele({ ...rele, puerto: e.target.value })
-											}
-											placeholder="Ej: 502"
-											disabled={isMeasuringRele}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Índice inicial
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={rele.indiceInicial}
-											onChange={(e) =>
-												setRele({
-													...rele,
-													indiceInicial: e.target.value,
-												})
-											}
-											placeholder="Ej: 137"
-											disabled={isMeasuringRele}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Cant. registros
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={rele.cantRegistros}
-											onChange={(e) =>
-												setRele({
-													...rele,
-													cantRegistros: e.target.value,
-												})
-											}
-											placeholder="Ej: 20"
-											disabled={isMeasuringRele}
-										/>
-									</label>
-
-									{/* Periodo actualización (usado por Alimentadores) */}
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Periodo actualización (s)
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={periodoSegundos}
-											onChange={(e) =>
-												setPeriodoSegundos(e.target.value)
-											}
-											placeholder="Ej: 60"
-											min={1}
-											disabled={isMeasuringRele}
-										/>
-									</label>
-
-									{periodoSegundos &&
-										Number(periodoSegundos) > 0 &&
-										Number(periodoSegundos) < 60 && (
-											<p className="alim-warning">
-												⚠️ Periodos menores a 60&nbsp;s pueden
-												recargar el sistema y la red de
-												comunicaciones.
-											</p>
-										)}
-
-									{/* Botones y tabla RELÉ */}
-									<div className="alim-test-row">
-										<button
-											type="button"
-											className="alim-test-btn"
-											onClick={handleTestConexionRele}
-											disabled={isTestingRele}
-										>
-											{isTestingRele
-												? "Probando..."
-												: "Test conexión"}
-										</button>
-
-										<button
-											type="button"
-											className={
-												"alim-test-btn" +
-												(isMeasuringRele
-													? " alim-test-btn-stop"
-													: " alim-test-btn-secondary")
-											}
-											onClick={() =>
-												onToggleMedicionRele &&
-												onToggleMedicionRele(buildOverrideRele())
-											}
-											disabled={isTestingRele || !puedeMedirRele}
-										>
-											{isMeasuringRele
-												? "Detener medición"
-												: "Iniciar medición"}
-										</button>
-									</div>
-
-									{testErrorRele && (
-										<div className="alim-test-message alim-test-error">
-											{testErrorRele}
-										</div>
-									)}
-
-									{!testErrorRele && rowsToShowRele.length > 0 && (
-										<div className="alim-test-table">
-											<div className="alim-test-message alim-test-ok">
-												{mensajeTablaRele}
-											</div>
-
-											<table>
-												<thead>
-													<tr>
-														<th>#</th>
-														<th>Dirección</th>
-														<th>Valor</th>
-													</tr>
-												</thead>
-												<tbody>
-													{rowsToShowRele.map((r) => (
-														<tr key={r.index}>
-															<td>{r.index}</td>
-															<td>{r.address}</td>
-															<td>{r.value}</td>
-														</tr>
-													))}
-												</tbody>
-											</table>
-										</div>
-									)}
-								</div>
+								<TabConfiguracionRele
+									config={rele}
+									periodoSegundos={periodoSegundos}
+									onChange={handleChangeRele}
+									onChangePeriodo={setPeriodoSegundos}
+									onTestConexion={handleTestConexionRele}
+									isTesting={isTestingRele}
+									testError={testErrorRele}
+									testRows={testRowsRele}
+									isMeasuring={isMeasuringRele}
+									onToggleMedicion={() =>
+										onToggleMedicionRele &&
+										onToggleMedicionRele(buildOverrideRele())
+									}
+									registrosMedicion={registrosRele}
+									disabled={isMeasuringRele}
+								/>
 							)}
 
 							{/* === TAB ANALIZADOR === */}
 							{tab === "analizador" && (
-								<div className="alim-modal-grid">
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Dirección IP
-										</span>
-										<input
-											type="text"
-											className="alim-field-input"
-											value={analizador.ip}
-											onChange={(e) =>
-												setAnalizador({
-													...analizador,
-													ip: e.target.value,
-												})
-											}
-											placeholder="Ej: 172.16.0.5"
-											disabled={isMeasuringAnalizador}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">Puerto</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={analizador.puerto}
-											onChange={(e) =>
-												setAnalizador({
-													...analizador,
-													puerto: e.target.value,
-												})
-											}
-											placeholder="Ej: 502"
-											disabled={isMeasuringAnalizador}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Índice inicial
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={analizador.indiceInicial}
-											onChange={(e) =>
-												setAnalizador({
-													...analizador,
-													indiceInicial: e.target.value,
-												})
-											}
-											placeholder="Ej: 200"
-											disabled={isMeasuringAnalizador}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Cant. registros
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={analizador.cantRegistros}
-											onChange={(e) =>
-												setAnalizador({
-													...analizador,
-													cantRegistros: e.target.value,
-												})
-											}
-											placeholder="Ej: 10"
-											disabled={isMeasuringAnalizador}
-										/>
-									</label>
-
-									<label className="alim-field">
-										<span className="alim-field-label">
-											Periodo actualización (s)
-										</span>
-										<input
-											type="number"
-											className="alim-field-input"
-											value={periodoSegundosAnalizador}
-											onChange={(e) =>
-												setPeriodoSegundosAnalizador(e.target.value)
-											}
-											placeholder="Ej: 60"
-											min={1}
-											disabled={isMeasuringAnalizador}
-										/>
-									</label>
-
-									{periodoSegundosAnalizador &&
-										Number(periodoSegundosAnalizador) > 0 &&
-										Number(periodoSegundosAnalizador) < 60 && (
-											<p className="alim-warning">
-												⚠️ Periodos menores a 60&nbsp;s pueden
-												recargar el sistema y la red de
-												comunicaciones.
-											</p>
-										)}
-
-									{/* Botones y tabla ANALIZADOR */}
-									<div className="alim-test-row">
-										<button
-											type="button"
-											className="alim-test-btn"
-											onClick={handleTestConexionAnalizador}
-											disabled={isTestingAnalizador}
-										>
-											{isTestingAnalizador
-												? "Probando..."
-												: "Test conexión"}
-										</button>
-
-										<button
-											type="button"
-											className={
-												"alim-test-btn" +
-												(isMeasuringAnalizador
-													? " alim-test-btn-stop"
-													: " alim-test-btn-secondary")
-											}
-											onClick={() =>
-												onToggleMedicionAnalizador &&
-												onToggleMedicionAnalizador(buildOverrideAnalizador())
-											}
-											disabled={
-												isTestingAnalizador || !puedeMedirAnalizador
-											}
-										>
-											{isMeasuringAnalizador
-												? "Detener medición"
-												: "Iniciar medición"}
-										</button>
-									</div>
-
-									{testErrorAnalizador && (
-										<div className="alim-test-message alim-test-error">
-											{testErrorAnalizador}
-										</div>
-									)}
-
-									{!testErrorAnalizador &&
-										rowsToShowAnalizador.length > 0 && (
-											<div className="alim-test-table">
-												<div className="alim-test-message alim-test-ok">
-													{mensajeTablaAnalizador}
-												</div>
-
-												<table>
-													<thead>
-														<tr>
-															<th>#</th>
-															<th>Dirección</th>
-															<th>Valor</th>
-														</tr>
-													</thead>
-													<tbody>
-														{rowsToShowAnalizador.map((r) => (
-															<tr key={r.index}>
-																<td>{r.index}</td>
-																<td>{r.address}</td>
-																<td>{r.value}</td>
-															</tr>
-														))}
-													</tbody>
-												</table>
-											</div>
-										)}
-								</div>
+								<TabConfiguracionAnalizador
+									config={analizador}
+									onChange={handleChangeAnalizador}
+									onTestConexion={handleTestConexionAnalizador}
+									isTesting={isTestingAnalizador}
+									testError={testErrorAnalizador}
+									testRows={testRowsAnalizador}
+									isMeasuring={isMeasuringAnalizador}
+									onToggleMedicion={() =>
+										onToggleMedicionAnalizador &&
+										onToggleMedicionAnalizador(buildOverrideAnalizador())
+									}
+									registrosMedicion={registrosAnalizador}
+									disabled={isMeasuringAnalizador}
+								/>
 							)}
 						</div>
 					</div>

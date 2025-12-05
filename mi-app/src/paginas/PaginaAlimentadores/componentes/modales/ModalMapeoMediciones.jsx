@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./ModalMapeoMediciones.css";
+import FormularioDiseñoTarjeta from "./mapeo/FormularioDiseñoTarjeta.jsx";
 
 const SECCIONES_MAPEO = [
 	{
@@ -49,29 +50,6 @@ const SECCIONES_MAPEO = [
 	},
 ];
 
-// Opciones para el título de la parte superior / inferior de la card
-const OPCIONES_TITULO_CARD = [
-	{ id: "tension_linea", label: "Tensión de línea (kV)" },
-	{ id: "tension_entre_lineas", label: "Tensión entre líneas (kV)" },
-	{ id: "corriente_132", label: "Corriente de línea (A) (en 13,2 kV)" },
-	{ id: "corriente_33", label: "Corriente de línea (A) (en 33 kV)" },
-	{ id: "potencia_activa", label: "Potencia activa (kW)" },
-	{ id: "potencia_reactiva", label: "Potencia reactiva (kVAr)" },
-	{ id: "potencia_aparente", label: "Potencia aparente (kVA)" },
-	{ id: "factor_potencia", label: "Factor de Potencia" },
-	{ id: "frecuencia", label: "Frecuencia (Hz)" },
-	{ id: "corriente_neutro", label: "Corriente de Neutro (A)" },
-	{ id: "custom", label: "Otro (personalizado)..." },
-];
-
-// Placeholders para las etiquetas de los 4 boxes
-const PLACEHOLDERS_BOX = [
-	"Ej: R o L1",
-	"Ej: S o L2",
-	"Ej: T o L3",
-	"Ej: Total",
-];
-
 // ---- helpers para diseño de card ----
 function crearSideDesignDefault(tituloIdPorDefecto) {
 	return {
@@ -111,7 +89,6 @@ function crearSideDesignDefault(tituloIdPorDefecto) {
 	};
 }
 
-
 function crearCardDesignDefault() {
 	return {
 		superior: crearSideDesignDefault("corriente_132"), // parecido a CONSUMO
@@ -138,12 +115,7 @@ function crearMapeoVacio() {
 	return base;
 }
 
-const ModalMapeoMediciones = ({
-	abierto,
-	alimentador,
-	onCerrar,
-	onGuardar,
-}) => {
+const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => {
 	const nombreAlimentador = alimentador?.nombre || "";
 	const initialMapeo = alimentador?.mapeoMediciones;
 	const [mapeo, setMapeo] = useState(crearMapeoVacio);
@@ -325,168 +297,6 @@ const ModalMapeoMediciones = ({
 
 	const cardDesign = mapeo.cardDesign || crearCardDesignDefault();
 
-	// Render de Parte superior / inferior
-	const renderSideDesign = (zona, tituloBloque, placeholderTitulo) => {
-		const side = cardDesign[zona];
-		const cant = side.cantidad || 1;
-
-		return (
-			<section className="map-part">
-				<h4 className="map-part__title">{tituloBloque}</h4>
-
-				{/* Título + Cantidad de boxes */}
-				<div className="map-part__header">
-					{/* Campo Título */}
-					<div className="map-field map-field--grow">
-						<span className="map-field__label">Título</span>
-						<div className="map-field__inline">
-							<select
-								className="map-select"
-								value={side.tituloId || "corriente_132"}
-								onChange={(e) =>
-									actualizarTituloSeleccionado(zona, e.target.value)
-								}
-							>
-								{OPCIONES_TITULO_CARD.map((op) => (
-									<option key={op.id} value={op.id}>
-										{op.label}
-									</option>
-								))}
-							</select>
-
-							{side.tituloId === "custom" && (
-								<input
-									type="text"
-									className="map-input map-input--full"
-									placeholder={placeholderTitulo}
-									value={side.tituloCustom || ""}
-									onChange={(e) =>
-										actualizarTituloCustom(zona, e.target.value)
-									}
-								/>
-							)}
-						</div>
-					</div>
-
-					{/* Campo Cantidad */}
-					<div className="map-field map-field--small">
-						<span className="map-field__label">
-							Cantidad de boxes de medición
-						</span>
-						<select
-							className="map-select"
-							value={cant}
-							onChange={(e) =>
-								actualizarCantidadBoxes(zona, Number(e.target.value))
-							}
-						>
-							{[1, 2, 3, 4].map((n) => (
-								<option key={n} value={n}>
-									{n}
-								</option>
-							))}
-						</select>
-					</div>
-				</div>
-
-				{/* Lista de boxes */}
-				<div className="map-box-list">
-					{Array.from({ length: cant }).map((_, idx) => {
-						const box = side.boxes[idx] || {};
-						const placeholderLabel =
-							PLACEHOLDERS_BOX[idx] || `Box ${idx + 1}`;
-
-						return (
-							<div key={idx} className="map-box">
-								{/* Checkbox + texto "Box N" */}
-								<label className="map-box__check">
-									<input
-										type="checkbox"
-										checked={!!box.enabled}
-										onChange={(e) =>
-											actualizarCardDesignCaja(
-												zona,
-												idx,
-												"enabled",
-												e.target.checked
-											)
-										}
-									/>
-									<span>Box {idx + 1}</span>
-								</label>
-
-								{/* Etiqueta visible en la card */}
-								<input
-									type="text"
-									className="map-input map-box__label"
-									placeholder={placeholderLabel}
-									value={box.label || ""}
-									onChange={(e) =>
-										actualizarCardDesignCaja(
-											zona,
-											idx,
-											"label",
-											e.target.value
-										)
-									}
-								/>
-
-								{/* Registro Modbus */}
-								<input
-									type="number"
-									className="map-input map-box__registro"
-									placeholder="Registro"
-									value={box.registro || ""}
-									onChange={(e) =>
-										actualizarCardDesignCaja(
-											zona,
-											idx,
-											"registro",
-											e.target.value
-										)
-									}
-								/>
-
-								{/* Origen: relé / analizador */}
-								<select
-									className="map-select map-box__origen"
-									value={box.origen || "rele"}
-									onChange={(e) =>
-										actualizarCardDesignCaja(
-											zona,
-											idx,
-											"origen",
-											e.target.value
-										)
-									}
-								>
-									<option value="rele">Relé</option>
-									<option value="analizador">Analizador</option>
-								</select>
-
-								{/* Fórmula */}
-								<input
-									type="text"
-									className="map-input map-box__formula"
-									placeholder="Fórmula (ej: x * 500 / 1000)"
-									value={box.formula || ""}
-									onChange={(e) =>
-										actualizarCardDesignCaja(
-											zona,
-											idx,
-											"formula",
-											e.target.value
-										)
-									}
-								/>
-							</div>
-						);
-					})}
-				</div>
-			</section>
-		);
-	};
-
 	return (
 		<div className="alim-modal-overlay">
 			<div className="map-modal">
@@ -504,16 +314,43 @@ const ModalMapeoMediciones = ({
 							más adelante.
 						</p>
 
-						{renderSideDesign(
-							"superior",
-							"Parte superior",
-							"CONSUMO (A)"
-						)}
-						{renderSideDesign(
-							"inferior",
-							"Parte inferior",
-							"TENSIÓN (kV)"
-						)}
+						<FormularioDiseñoTarjeta
+							zona="superior"
+							tituloBloque="Parte superior"
+							placeholderTitulo="CONSUMO (A)"
+							design={cardDesign.superior}
+							onChangeTitulo={(tituloId) =>
+								actualizarTituloSeleccionado("superior", tituloId)
+							}
+							onChangeTituloCustom={(texto) =>
+								actualizarTituloCustom("superior", texto)
+							}
+							onChangeCantidad={(cant) =>
+								actualizarCantidadBoxes("superior", cant)
+							}
+							onChangeBox={(index, campo, valor) =>
+								actualizarCardDesignCaja("superior", index, campo, valor)
+							}
+						/>
+
+						<FormularioDiseñoTarjeta
+							zona="inferior"
+							tituloBloque="Parte inferior"
+							placeholderTitulo="TENSIÓN (kV)"
+							design={cardDesign.inferior}
+							onChangeTitulo={(tituloId) =>
+								actualizarTituloSeleccionado("inferior", tituloId)
+							}
+							onChangeTituloCustom={(texto) =>
+								actualizarTituloCustom("inferior", texto)
+							}
+							onChangeCantidad={(cant) =>
+								actualizarCantidadBoxes("inferior", cant)
+							}
+							onChangeBox={(index, campo, valor) =>
+								actualizarCardDesignCaja("inferior", index, campo, valor)
+							}
+						/>
 					</div>
 
 					<div className="alim-modal-actions">
