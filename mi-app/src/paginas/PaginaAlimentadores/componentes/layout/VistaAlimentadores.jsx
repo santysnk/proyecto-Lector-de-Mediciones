@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../PaginaAlimentadores.css";
+import "./VistaAlimentadores.css";
 
 import BarraNavegacion from "../navegacion/BarraNavegacion.jsx";
 import MenuLateral from "../navegacion/MenuLateral.jsx";

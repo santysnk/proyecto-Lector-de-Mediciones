@@ -57,9 +57,9 @@ const ModalNuevoPuesto = ({
 
 	return (
 		// Fondo oscuro
-		<div className="alim-modal-overlay">
+		<div className="alim-modal-overlay modal-gestion-puestos">
 			{/* Ventana blanca */}
-			<div className="alim-modal alim-modal-sm">
+			<div className="alim-modal modal-gestion-puestos modal-gestion-puestos--sm">
 				<h2>Nuevo Puesto</h2>
 
 				<form onSubmit={handleSubmit}>

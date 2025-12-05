@@ -1,16 +1,37 @@
-/* 
- * ==============================================================================
- * ESTILOS: GrillaTarjetas.css
- * ==============================================================================
- * 
- * NOTA IMPORTANTE:
- * Los estilos de la grilla principal (contenedor de tarjetas) se encuentran
- * actualmente centralizados en "PaginaAlimentadores.css".
- * 
- * Esto incluye clases como:
- * - .alim-cards-grid
- * - .alim-empty-state
- * - .alim-add-card
- * 
- * Este archivo existe para permitir la modularización futura.
- */
+.alim-cards-grid {
+	display: flex;
+	flex-wrap: wrap;
+	row-gap: 1.8rem;
+	column-gap: 2.4rem;
+}
+
+.alim-card-add {
+	border: 1px dashed #374151;
+	background-color: #111827;
+	color: #9ca3af;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.25rem;
+	cursor: pointer;
+	min-height: 230px;
+	flex: 0 0 304px;
+	border-radius: 16px;
+}
+
+.alim-card-add-plus {
+	font-size: 2rem;
+	line-height: 1;
+}
+
+.alim-card-add-text {
+	font-size: 0.85rem;
+}
+
+@media (max-width: 1366px) {
+	.alim-cards-grid {
+		justify-content: center;
+		column-gap: 1.4rem;
+	}
+}

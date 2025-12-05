@@ -75,8 +75,8 @@ const ModalEditarPuestos = ({
 	if (!abierto) return null;
 
 	return (
-		<div className="alim-modal-overlay">
-			<div className="alim-modal">
+		<div className="alim-modal-overlay modal-gestion-puestos">
+			<div className="alim-modal modal-gestion-puestos">
 				<h2>Editar Puestos</h2>
 
 				{/* Lista scrolleable de puestos */}

@@ -1,17 +1,102 @@
-/* 
- * ==============================================================================
- * ESTILOS: MenuLateral.css
- * ==============================================================================
- * 
- * NOTA IMPORTANTE:
- * Los estilos del menú lateral (drawer) se encuentran actualmente centralizados
- * en "PaginaAlimentadores.css".
- * 
- * Esto incluye clases como:
- * - .alim-drawer-overlay
- * - .alim-drawer
- * - .alim-drawer-header
- * - .alim-drawer-list
- * 
- * Este archivo existe para permitir la modularización futura.
- */
+.alim-drawer-overlay {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(15, 23, 42, 0.45);
+	display: flex;
+	align-items: stretch;
+	justify-content: flex-start;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 0.22s ease;
+	z-index: 60;
+}
+
+.alim-drawer-overlay.alim-drawer-open {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.alim-drawer {
+	width: 260px;
+	max-width: 80vw;
+	background-color: #020617;
+	color: #e5e7eb;
+	padding: 1.4rem 1.1rem;
+	box-shadow: 8px 0 25px rgba(15, 23, 42, 0.6);
+	transform: translateX(-100%);
+	transition: transform 0.22s ease-out;
+}
+
+.alim-drawer-overlay.alim-drawer-open .alim-drawer {
+	transform: translateX(0);
+}
+
+.alim-drawer-header {
+	margin-bottom: 1rem;
+}
+
+.alim-drawer-title {
+	margin: 0;
+	font-size: 1.1rem;
+}
+
+.alim-drawer-subtitle {
+	margin: 0.25rem 0 0;
+	font-size: 0.85rem;
+	color: #9ca3af;
+}
+
+.alim-drawer-section {
+	margin-top: 1.1rem;
+}
+
+.alim-drawer-section-title {
+	margin: 0 0 0.5rem;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #9ca3af;
+}
+
+.alim-drawer-puestos,
+.alim-drawer-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 0.45rem;
+}
+
+.alim-drawer .alim-btn,
+.alim-drawer .alim-btn-exit {
+	width: 100%;
+	justify-content: center;
+}
+
+.alim-drawer-btn-puesto {
+	text-align: center;
+}
+
+.alim-drawer-btn-action {
+	width: 100%;
+	justify-content: center;
+}
+
+.alim-drawer-btn-add {
+	background-color: transparent;
+	border: 1px dashed #9ca3af;
+	color: #e5e7eb;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.35rem;
+	font-weight: 500;
+}
+
+.alim-drawer-btn-add:hover {
+	background-color: rgba(148, 163, 184, 0.2);
+}
+
+.alim-drawer-btn-add-icon {
+	font-size: 1.1rem;
+	line-height: 1;
+	transform: translateY(-1px);
+}

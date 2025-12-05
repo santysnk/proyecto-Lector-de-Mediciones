@@ -1,13 +1,114 @@
-/* 
- * ==============================================================================
- * ESTILOS: ModalNuevoPuesto.css
- * ==============================================================================
- * 
- * NOTA IMPORTANTE:
- * Actualmente, los estilos de este modal se encuentran centralizados en el archivo
- * principal "PaginaAlimentadores.css" para mantener la consistencia visual con
- * el resto de la aplicación (clases .alim-modal, .alim-modal-overlay, etc.).
- * 
- * Este archivo se mantiene aquí para permitir futuras personalizaciones
- * específicas de este componente sin afectar al resto.
- */
+.alim-modal-overlay.modal-gestion-puestos {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(15, 23, 42, 0.55);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 50;
+}
+
+.modal-gestion-puestos.alim-modal {
+	border-radius: 18px;
+	padding: 1.4rem 1.8rem;
+	box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+	max-width: 580px;
+	width: 100%;
+	box-sizing: border-box;
+	background-color: #ffffff;
+}
+
+.modal-gestion-puestos--sm {
+	max-width: 420px;
+}
+
+.modal-gestion-puestos .alim-modal-label {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	font-size: 0.95rem;
+	font-weight: 600;
+	margin-bottom: 0.85rem;
+	color: #111827;
+}
+
+.modal-gestion-puestos .alim-modal-input {
+	width: 100%;
+	padding: 0.6rem 0.85rem;
+	border-radius: 10px;
+	border: 1px solid #e2e8f0;
+	font-size: 0.95rem;
+	box-sizing: border-box;
+}
+
+.modal-gestion-puestos .alim-modal-input:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 1px #2563eb33;
+}
+
+.modal-gestion-puestos .alim-color-picker {
+	margin: 1rem 0 0.5rem;
+}
+
+.modal-gestion-puestos .alim-color-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+	gap: 0.55rem;
+}
+
+.modal-gestion-puestos .alim-color-swatch {
+	width: 100%;
+	aspect-ratio: 1;
+	border-radius: 10px;
+	border: 2px solid transparent;
+	cursor: pointer;
+	transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-gestion-puestos .alim-color-swatch:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+}
+
+.modal-gestion-puestos .alim-color-swatch-selected {
+	border-color: #0ea5e9;
+	box-shadow: 0 0 0 3px #0ea5e91f;
+}
+
+.modal-gestion-puestos .alim-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.6rem;
+	margin-top: 1.2rem;
+	flex-wrap: wrap;
+}
+
+.modal-gestion-puestos .alim-modal-btn {
+	min-width: 96px;
+	padding: 0.5rem 1.1rem;
+	border-radius: 12px;
+	border: none;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+}
+
+.modal-gestion-puestos .alim-modal-btn-cancelar {
+	background-color: #e5e7eb;
+	color: #111827;
+}
+
+.modal-gestion-puestos .alim-modal-btn-cancelar:hover {
+	background-color: #d1d5db;
+}
+
+.modal-gestion-puestos .alim-modal-btn-aceptar {
+	background-color: #0ea5e9;
+	color: #ffffff;
+	box-shadow: 0 10px 22px rgba(14, 165, 233, 0.1);
+}
+
+.modal-gestion-puestos .alim-modal-btn-aceptar:hover {
+	background-color: #0284c7;
+}

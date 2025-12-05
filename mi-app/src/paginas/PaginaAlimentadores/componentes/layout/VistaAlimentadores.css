@@ -1,0 +1,29 @@
+/* Estilos base para la vista principal de alimentadores */
+
+.alim-page {
+	min-height: 100vh;
+	background-color: #f5f7fb;
+	display: flex;
+	flex-direction: column;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	color: #1e293b;
+}
+
+.alim-main {
+	flex: 1;
+	padding: 1.5rem;
+}
+
+.alim-empty-state {
+	margin: 0 auto;
+	padding: 2rem 1rem;
+	color: #020202;
+	font-size: 0.95rem;
+	text-align: center;
+}
+
+@media (max-width: 1366px) {
+	.alim-main {
+		padding: 1rem 0.75rem;
+	}
+}

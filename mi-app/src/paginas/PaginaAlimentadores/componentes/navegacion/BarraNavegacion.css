@@ -1,17 +1,94 @@
-/* 
- * ==============================================================================
- * ESTILOS: BarraNavegacion.css
- * ==============================================================================
- * 
- * NOTA IMPORTANTE:
- * Los estilos de la barra de navegación (header, título, botones de acción)
- * se encuentran actualmente centralizados en "PaginaAlimentadores.css".
- * 
- * Esto incluye clases como:
- * - .alim-header
- * - .alim-title
- * - .alim-controls
- * - .alim-btn
- * 
- * Este archivo existe para permitir la modularización futura.
- */
+.alim-navbar {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 1rem 1.5rem;
+	background-color: #0f172a;
+	color: #e5e7eb;
+	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.4);
+}
+
+.alim-navbar-left {
+	display: flex;
+	flex-direction: column;
+}
+
+.alim-title {
+	margin: 0;
+	font-size: 1.3rem;
+}
+
+.alim-current-puesto {
+	margin-top: 0.15rem;
+	font-size: 0.9rem;
+	color: #e5e7eb;
+}
+
+.alim-nav-buttons {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+}
+
+.alim-nav-bloque-puestos {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+}
+
+.alim-nav-bloque-controles {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.alim-navbar-menu-btn {
+	display: none;
+	border: none;
+	background: transparent;
+	color: #e5e7eb;
+	font-size: 1.4rem;
+	cursor: pointer;
+}
+
+@media (max-width: 900px) {
+	.alim-navbar {
+		justify-content: center;
+	}
+
+	.alim-navbar-compact {
+		justify-content: center;
+		position: relative;
+	}
+
+	.alim-navbar-compact-title {
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		text-align: center;
+		width: 100%;
+	}
+
+	.alim-navbar-menu-btn {
+		display: block;
+		background: none;
+		border: none;
+		color: #e5e7eb;
+		font-size: 1.3rem;
+		cursor: pointer;
+	}
+
+	.alim-navbar-compact .alim-navbar-menu-btn {
+		position: absolute;
+		left: 1rem;
+		top: 50%;
+		transform: translateY(-50%);
+	}
+
+	.alim-title {
+		display: none;
+	}
+
+	.alim-nav-buttons {
+		display: none;
+	}
+}

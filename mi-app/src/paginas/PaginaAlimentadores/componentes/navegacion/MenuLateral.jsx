@@ -1,5 +1,6 @@
 import React from "react";
 import "./MenuLateral.css";
+import "./BotonesComunes.css";
 
 /**
  * ==============================================================================
