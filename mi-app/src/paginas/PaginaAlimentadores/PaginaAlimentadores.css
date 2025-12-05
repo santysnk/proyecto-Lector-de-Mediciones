@@ -115,6 +115,18 @@
 	column-gap: 2.4rem;
 }
 
+/* ----- VISTA MÓVIL / TABLET ----- */
+@media (max-width: 1366px) {
+	.alim-main {
+		padding: 1rem 0.75rem;      /* opcional: un poco menos de padding lateral */
+	}
+
+	.alim-cards-grid {
+		justify-content: center;    /* 👉 centramos las cards */
+		column-gap: 1.4rem;         /* opcional: un gap un poco menor en móvil */
+	}
+}
+
 /* Tarjeta "+" para crear alimentador */
 .alim-card-add {
 	border: 1px dashed #374151;
