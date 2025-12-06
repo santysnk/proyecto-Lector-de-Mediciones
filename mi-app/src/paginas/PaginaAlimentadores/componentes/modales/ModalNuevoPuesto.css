@@ -1,3 +1,56 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados al modal de nuevo puesto */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas */
+/* Estilos base de modales de puestos (movidos desde PaginaAlimentadores.css) */
+
+/* Contenedor base del modal */
+.alim-modal {
+   border-radius: 18px;
+   padding: 1.4rem 1.8rem;
+   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+   max-width: 580px;
+   width: 100%;
+   box-sizing: border-box;
+}
+
+/* Tamaño compacto para modales pequeños */
+.alim-modal-sm {
+   max-width: 420px;
+}
+
+/* Zona de botones Cancelar / Guardar */
+.alim-modal-actions {
+   display: flex;
+   justify-content: flex-end;
+   gap: 0.6rem;
+   margin-top: 1.4rem;
+}
+
+/* Botones del modal */
+.alim-modal-btn {
+   min-width: 96px;
+   padding: 0.5rem 1.1rem;
+   border-radius: 12px;
+   border: none;
+   font-size: 0.9rem;
+   font-weight: 500;
+   cursor: pointer;
+}
+
+/* Cancelar: gris suave */
+.alim-modal-btn-cancelar {
+   background-color: #e5e7eb;
+   color: #111827;
+}
+
+.alim-modal-btn-cancelar:hover {
+   background-color: #d1d5db;
+}
+
+/* Guardar: celeste */
+.alim-modal-btn-guardar {
+   background-color: #0ea5e9;
+   color: #ffffff;
+   box-shadow: 0 10px 22px rgba(14, 165, 233, 0.1);
+}
+
+.alim-modal-btn-guardar:hover {
+   background-color: #0284c7;
+}
