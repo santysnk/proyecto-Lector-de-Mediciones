@@ -1,5 +1,4 @@
-
-/* Overlay compartido por todos los modales */
+/* Overlay compartido por todos los modales de configuracion */
 .alim-modal-overlay {
    position: fixed;
    inset: 0;
@@ -10,13 +9,13 @@
    z-index: 50;
 }
 
-/* ===== MODAL BASE (Nuevo / Editar registrador) ===== */
+/* ===== MODAL BASE (Configuracion alimentador) ===== */
 .alim-modal {
    background-color: #ffffff;
    border-radius: 12px;
    padding: 1.3rem 1.3rem;
    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.3);
-   width: min(440px, 95vw);   /* 480px en desktop, hasta 95% del ancho en chico */
+   width: min(440px, 95vw);
    max-height: 90vh;
    overflow-y: auto;
    box-sizing: border-box;
@@ -29,12 +28,11 @@
    }
 
    .alim-modal-left {
-      max-height: calc(90vh - 120px);  /* un poco más de aire */
+      max-height: calc(90vh - 120px);
    }
 }
 
-
-/* Layout interno (solo columna izquierda, pero lo dejamos por si luego agregás algo más) */
+/* Layout interno */
 .alim-modal-layout {
    display: flex;
    align-items: flex-start;
@@ -119,7 +117,7 @@
    background: #dc2626;
 }
 
-/* Paleta de colores en los modales a */
+/* Paleta de colores */
 .alim-color-picker {
    margin-top: 0.5rem;
    display: flex;
@@ -155,38 +153,6 @@
    box-shadow: 0 0 0 2px #2563eb33;
 }
 
-/* Grid de campos técnicos dentro del modal de alimentador */
-.alim-modal-grid {
-   display: grid;
-   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-   gap: 0.75rem 1rem;
-   margin-top: 1rem;
-}
-
-.alim-field {
-   display: flex;
-   flex-direction: column;
-}
-
-.alim-field-label {
-   font-size: 0.8rem;
-   color: #6b7280;
-   margin-bottom: 0.25rem;
-}
-
-.alim-field-input {
-   padding: 0.35rem 0.5rem;
-   border-radius: 0.5rem;
-   border: 1px solid #cbd5e1;
-   font-size: 0.9rem;
-}
-
-.alim-field-input:focus {
-   outline: none;
-   border-color: #2563eb;
-   box-shadow: 0 0 0 1px #2563eb33;
-}
-
 /* Tabs RELÉ / ANALIZADOR */
 .alim-tabs {
    margin-top: 1rem;
@@ -211,132 +177,4 @@
    background-color: #ffffff;
    color: #111827;
    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
-}
-
-/* Fila botón Test conexión */
-.alim-test-row {
-   display: flex;
-   gap: 12px;
-   margin-top: 12px;
-   margin-bottom: 8px;
-
-   /* 👉 que ocupe todas las columnas del grid */
-   grid-column: 1 / -1;
-}
-
-.alim-test-btn-secondary {
-   background-color: #e5e7eb;
-   color: #111827;
-}
-
-.alim-test-btn-stop {
-   background-color: #ef4444;
-   color: #f9fafb;
-}
-
-.alim-test-btn {
-   padding: 8px 16px;
-   border-radius: 999px;
-   border: none;
-   font-size: 0.9rem;
-   cursor: pointer;
-   background: #2563eb;
-   color: #fff;
-   white-space: nowrap;   /* 👈 clave para que no se corte en 2 líneas */
-}
-
-.alim-test-btn:disabled {
-   opacity: 0.5;
-   cursor: default;
-}
-
-/* Mensajes test */
-.alim-test-message {
-   font-size: 0.85rem;
-   margin-bottom: 6px;
-   padding: 6px 10px;
-   border-radius: 8px;
-
-   /* 👉 ocupar todo el ancho del grid */
-   grid-column: 1 / -1;
-}
-
-.alim-test-error {
-   background: #fef2f2;
-   color: #b91c1c;
-}
-
-.alim-test-ok {
-   background: #ecfdf3;
-   color: #166534;
-}
-
-/* Contenedor de la tabla de test */
-.alim-test-table {
-   grid-column: 1 / -1;      /* ocupar todo el ancho del grid */
-   margin-top: 4px;
-   margin-bottom: 0.5rem;
-   padding: 8px 10px;
-   border-radius: 8px;
-   background: #f9fafb;
-   border: 1px solid rgba(148, 163, 184, 0.4);
-}
-
-/* Tabla interna */
-.alim-test-table table {
-   width: 100%;
-   border-collapse: collapse;
-   font-size: 0.8rem;
-}
-
-/* Cabecera */
-.alim-test-table thead {
-   background-color: #e5e7eb;
-}
-
-.alim-test-table th {
-   font-weight: 600;
-   color: #374151;
-   padding: 4px 6px;
-   text-align: right;
-}
-
-/* Celdas del cuerpo */
-.alim-test-table td {
-   padding: 4px 6px;
-   text-align: right;
-   font-family: "SF Mono", "Menlo", "Consolas", monospace;
-}
-
-/* Primera columna (#) alineada a la izquierda */
-.alim-test-table th:first-child,
-.alim-test-table td:first-child {
-   text-align: left;
-}
-
-/* Líneas divisorias suaves */
-.alim-test-table tbody tr + tr td {
-   border-top: 1px solid rgba(148, 163, 184, 0.25);
-}
-
-/* Filas tipo zebra */
-.alim-test-table tbody tr:nth-child(odd) {
-   background-color: #f9fafb;
-}
-
-.alim-test-table tbody tr:nth-child(even) {
-   background-color: #f3f4f6;
-}
-
-.alim-test-table {
-   max-height: 180px;
-   overflow: auto;
-}
-
-/* Warning periodo < 60 */
-.alim-warning {
-   grid-column: 1 / -1;
-   margin-top: 4px;
-   font-size: 0.8rem;
-   color: #f97316;
 }
