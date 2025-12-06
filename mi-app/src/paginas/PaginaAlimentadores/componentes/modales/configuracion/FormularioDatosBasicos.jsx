@@ -19,11 +19,13 @@ const FormularioDatosBasicos = ({ nombre, color, onChange }) => {
                onChange={(e) => onChange("nombre", e.target.value)}
                placeholder="Ej: ALIMENTADOR 1"
                required
+               autoComplete="off"
+               autoCorrect="off"
+               spellCheck={false}
             />
          </label>
 
          <label className="alim-modal-label">
-            
             <div className="alim-color-grid">
                {COLORES_SISTEMA.map((c) => (
                   <button
