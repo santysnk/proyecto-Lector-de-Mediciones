@@ -1,3 +1,16 @@
+/* src/paginas/PaginaRegistro/PaginaRegistro.css */
+/*
+   NOTA PERSONAL SOBRE ESTE ARCHIVO (PaginaRegistro.css)
+   - Extiende los estilos de PaginaLogin.css para adaptar el panel celeste
+     a la pantalla de registro (más compacto y con títulos/labels propios).
+   - Ajusta tamaños y márgenes de `titulo-registro`, `label-registro` e `input`
+     para que el formulario de registro se vea más denso que el login.
+   - Posiciona el botón `.btn-volver` dentro del padding de `.derecha`, en la
+     esquina superior izquierda del panel.
+   - Define el estilo de los mensajes de error (`.error-text`) que se muestran
+     debajo de cada input, incluyendo el asterisco automático con `::before`.
+*/
+
 /* Estilos específicos de la pantalla de registro */
 
 /* Título "REGISTRO" */
@@ -12,40 +25,32 @@
 .registro-page .label-registro {
 	text-align: left;
 	color: #ffffff;
-	font-size: 22px;
-	/* un poco más chico */
-	margin: 10px 0 2px 0;
-	/* menos espacio vertical */
+	font-size: 22px;          /* un poco más chico */
+	margin: 10px 0 2px 0;     /* menos espacio vertical */
 }
 
 /* Panel celeste un poco más compacto en REGISTRO */
 .registro-page .derecha {
 	position: relative;
-	padding: 24px 32px 24px;
-	/* antes 40px */
-	margin: 10px;
-	/* menos margen vertical */
+	padding: 24px 32px 24px;  /* antes 40px */
+	margin: 10px;             /* menos margen vertical */
 }
 
 .registro-page .input {
-	padding: 14px 16px;
-	/* antes 18px 20px */
-	margin-bottom: 10px;
-	/* menos separación entre campos */
+	padding: 14px 16px;       /* antes 18px 20px */
+	margin-bottom: 10px;      /* menos separación entre campos */
 }
 
 .registro-page .acciones {
-	margin-top: 20px;
-	/* antes 38px */
+	margin-top: 20px;         /* antes 38px */
 	align-items: center;
 }
-
 
 /* Botón volver colocado en el área del padding de .derecha */
 .registro-page .btn-volver {
   position: absolute;
-  top: 24px;     /* el mismo padding-top que uses en .derecha */
-  left: 32px;    /* el mismo padding-left que uses en .derecha */
+  top: 24px;     /* el mismo padding-top que se usa en .derecha */
+  left: 32px;    /* el mismo padding-left que se usa en .derecha */
 
   padding: 8px 20px;
   border-radius: 999px;
@@ -66,7 +71,7 @@
 .registro-page .error-text {
   color: #9c0a0a;        /* rojo más intenso */
   font-size: 16px;
-   font-weight: 500;
+  font-weight: 500;
   margin: 4px 0 0 4px;
 }
 
@@ -75,3 +80,4 @@
   content: "* ";
   font-weight: bold;
 }
+
