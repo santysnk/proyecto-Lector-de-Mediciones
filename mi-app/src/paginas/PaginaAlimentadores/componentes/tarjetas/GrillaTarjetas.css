@@ -1,3 +1,46 @@
-/* Estilos movidos desde PaginaAlimentadores.css - relacionados a la grilla de tarjetas */
-/* Los estilos se mantendrán en PaginaAlimentadores.css por ahora para evitar romper el diseño */
-/* Este archivo está preparado para futuras personalizaciones específicas */
+/* Estilos de la grilla de tarjetas y la tarjeta "+" */
+
+.alim-cards-grid {
+   display: flex;
+   flex-wrap: wrap;
+   row-gap: 1.8rem;
+   column-gap: 2.4rem;
+   justify-content: left; /* filas con margen simetrico */
+   padding-left: 1.2rem;
+}
+
+@media (max-width: 982px) {
+   .alim-cards-grid {
+      justify-content: center;
+      column-gap: 1.4rem;
+      padding-left: 0;
+   }
+}
+
+.alim-card-add {
+   border: 1px dashed #374151;
+   background-color: #111827;
+   color: #9ca3af;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 0.25rem;
+   cursor: pointer;
+   min-height: 230px;
+   flex: 0 0 304px;
+   border-radius: 16px;
+}
+
+.alim-card-add-plus {
+   font-size: 2rem;
+   line-height: 1;
+}
+
+.alim-card-add-text {
+   font-size: 0.85rem;
+}
+
+.alim-card-section-title {
+   text-transform: uppercase;
+}

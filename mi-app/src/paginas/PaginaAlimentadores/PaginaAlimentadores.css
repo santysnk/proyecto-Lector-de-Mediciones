@@ -18,29 +18,13 @@
    padding: 1.5rem;
 }
 
-/* Grid de tarjetas en el main */
-.alim-cards-grid {
-   display: flex;
-   flex-wrap: wrap;
-   row-gap: 1.8rem;
-   column-gap: 2.4rem;
-	justify-content: left; /* centrar las filas para que los márgenes sean simétricos */
-	padding-left: 1.2rem;
-}
-
-/* Vista algo más compacta en pantallas chicas/medianas */
+/* Ajuste de paddings en pantallas chicas/medianas */
 @media (max-width: 982px) {
    .alim-main {
       padding: 1rem 0.75rem;
    }
-
-   .alim-cards-grid {
-      justify-content: center;
-      /* centramos las cards */
-      column-gap: 1.4rem;
-		padding-left: 0rem;
-   }
 }
+
 
 
 /* =========================================================
@@ -132,36 +116,6 @@
    box-shadow: none;
 }
 
-/* =========================================================
-   TARJETA "+" DE ALIMENTADORES
-   ========================================================= */
-.alim-card-add {
-   border: 1px dashed #374151;
-   background-color: #111827;
-   color: #9ca3af;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   gap: 0.25rem;
-   cursor: pointer;
-   min-height: 230px;
-   flex: 0 0 304px;
-   border-radius: 16px;
-}
-
-.alim-card-add-plus {
-   font-size: 2rem;
-   line-height: 1;
-}
-
-.alim-card-add-text {
-   font-size: 0.85rem;
-}
-
-.alim-card-section-title {
-   text-transform: uppercase;
-}
 
 /* =========================================================
    ESTADOS VACÍOS
