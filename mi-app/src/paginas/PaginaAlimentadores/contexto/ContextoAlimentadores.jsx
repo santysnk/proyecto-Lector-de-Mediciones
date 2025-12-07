@@ -36,20 +36,26 @@ export const ProveedorAlimentadores = ({ children }) => {
       const nuevo = {};
 
       puestoSeleccionado.alimentadores.forEach((alim) => {
-        const regsDelAlim = registrosEnVivo[alim.id] || null;       // registros crudos para este alimentador
-        const diseno = obtenerDisenoTarjeta(alim.mapeoMediciones);  // diseño (qué se muestra arriba/abajo)
+		  // registros crudos para este alimentador	
+        const regsDelAlim = registrosEnVivo[alim.id] || null;
+		  
+		  // diseño (qué se muestra arriba/abajo)
+        const diseno = obtenerDisenoTarjeta(alim.mapeoMediciones);  
 
+		  // valores + etiquetas para la parte superior
         const parteSuperior = calcularValoresLadoTarjeta(
           regsDelAlim,
           diseno.superior
         );        
-		                                                    // valores + etiquetas para la parte superior
+        
+		  // valores + etiquetas para la parte inferior
         const parteInferior = calcularValoresLadoTarjeta(
           regsDelAlim,
           diseno.inferior
-        );                                                          // valores + etiquetas para la parte inferior
+        );                                                          
 
-        nuevo[alim.id] = { parteSuperior, parteInferior };          // guardo el resultado por id de alimentador
+		  // guardo el resultado por id de alimentador
+        nuevo[alim.id] = { parteSuperior, parteInferior };          
       });
 
       return nuevo;
