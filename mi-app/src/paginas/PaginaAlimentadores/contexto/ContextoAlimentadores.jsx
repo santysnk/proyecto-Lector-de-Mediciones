@@ -1,111 +1,160 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { usarPuestos } from "../hooks/usarPuestos";
-import { usarMediciones } from "../hooks/usarMediciones";
-import {
-	obtenerDisenoTarjeta,
-	calcularValoresLadoTarjeta,
-} from "../utilidades/calculosMediciones";
+// src/paginas/PaginaAlimentadores/contexto/ContextoAlimentadores.jsx
 
-const ContextoAlimentadores = createContext(null);
+// herramientas de React para contextos, estado y efectos
+import React, {createContext, useContext, useMemo, useEffect, useState} from "react"; 
+import { usarPuestos } from "../hooks/usarPuestos";          // hook que maneja puestos y alimentadores (alta, baja, orden, selección)
+import { usarMediciones } from "../hooks/usarMediciones";    // hook que maneja lecturas Modbus y timers de medición
+import {
+  obtenerDisenoTarjeta,
+  calcularValoresLadoTarjeta,
+} from "../utilidades/calculosMediciones";                   // helpers que traducen registros crudos a valores para las tarjetas
+
+const ContextoAlimentadores = createContext(null);           // contexto compartido para toda la página de alimentadores
 
 export const ProveedorAlimentadores = ({ children }) => {
-	const puestosHook = usarPuestos();
-	const medicionesHook = usarMediciones();
-	const { registrosEnVivo } = medicionesHook;
-	const { puestoSeleccionado } = puestosHook;
+  const puestosHook = usarPuestos();                         // "módulo" de gestión de puestos y alimentadores
+  const medicionesHook = usarMediciones();                   // "módulo" de gestión de mediciones en vivo
 
-	const [lecturasTarjetas, setLecturasTarjetas] = useState({});
+  const { registrosEnVivo } = medicionesHook;                // lecturas crudas por alimentador/equipo
+  const { puestoSeleccionado } = puestosHook;                // puesto actualmente activo en la vista
 
-	// Recalcula los valores a mostrar en cada tarjeta cuando cambian registros o mapeos
-	useEffect(() => {
-		if (!puestoSeleccionado) {
-			setLecturasTarjetas({});
-			return;
-		}
+  const [lecturasTarjetas, setLecturasTarjetas] = useState({}); // valores ya calculados para mostrar en cada tarjeta
 
-		setLecturasTarjetas(() => {
-			const nuevo = {};
+  // ----------------------------------------------------------------
+  // Recalcula los valores a mostrar en cada tarjeta cuando cambian:
+  // - el puesto seleccionado
+  // - los registros en vivo (Modbus) de sus alimentadores
+  // - el mapeo/diseño de tarjetas de cada alimentador
+  // ----------------------------------------------------------------
+  useEffect(() => {
+    if (!puestoSeleccionado) {
+      setLecturasTarjetas({});                                      // si no hay puesto activo, no mostramos nada
+      return;
+    }
 
-			puestoSeleccionado.alimentadores.forEach((alim) => {
-				const regsDelAlim = registrosEnVivo[alim.id] || null;
-				const diseno = obtenerDisenoTarjeta(alim.mapeoMediciones);
+    setLecturasTarjetas(() => {
+      const nuevo = {};
 
-				const parteSuperior = calcularValoresLadoTarjeta(
-					regsDelAlim,
-					diseno.superior
-				);
-				const parteInferior = calcularValoresLadoTarjeta(
-					regsDelAlim,
-					diseno.inferior
-				);
+      puestoSeleccionado.alimentadores.forEach((alim) => {
+        const regsDelAlim = registrosEnVivo[alim.id] || null;       // registros crudos para este alimentador
+        const diseno = obtenerDisenoTarjeta(alim.mapeoMediciones);  // diseño (qué se muestra arriba/abajo)
 
-				nuevo[alim.id] = { parteSuperior, parteInferior };
-			});
+        const parteSuperior = calcularValoresLadoTarjeta(
+          regsDelAlim,
+          diseno.superior
+        );        
+		                                                    // valores + etiquetas para la parte superior
+        const parteInferior = calcularValoresLadoTarjeta(
+          regsDelAlim,
+          diseno.inferior
+        );                                                          // valores + etiquetas para la parte inferior
 
-			return nuevo;
-		});
-	}, [puestoSeleccionado, registrosEnVivo]);
+        nuevo[alim.id] = { parteSuperior, parteInferior };          // guardo el resultado por id de alimentador
+      });
 
-	// Helper: arranca una medicion con los calculos que ya hace el hook
-	const iniciarMedicionConCalculo = async (alimentador, equipo, override) => {
-		await medicionesHook.iniciarMedicion(alimentador, equipo, override);
-	};
+      return nuevo;
+    });
+  }, [puestoSeleccionado, registrosEnVivo]);
 
-	// Helper: alterna una medicion sin repetir logica en la vista
-	const alternarMedicion = (alimentador, equipo, override) => {
-		if (medicionesHook.estaMidiendo(alimentador.id, equipo)) {
-			medicionesHook.detenerMedicion(alimentador.id, equipo);
-		} else {
-			iniciarMedicionConCalculo(alimentador, equipo, override);
-		}
-	};
+  // ----------------------------------------------------------------
+  // Helpers sobre mediciones
+  // ----------------------------------------------------------------
 
-	const valorContexto = useMemo(
-		() => ({
-			// Datos de puestos
-			puestos: puestosHook.puestos,
-			puestoSeleccionado: puestosHook.puestoSeleccionado,
-			puestoSeleccionadoId: puestosHook.puestoSeleccionadoId,
-			agregarPuesto: puestosHook.agregarPuesto,
-			eliminarPuesto: puestosHook.eliminarPuesto,
-			seleccionarPuesto: puestosHook.seleccionarPuesto,
-			actualizarPuestos: puestosHook.actualizarPuestos,
-			setPuestos: puestosHook.setPuestos,
+  // Inicia una medición usando la lógica del hook, pero permite pasar overrides
+  // de configuración (útil desde los modales de configuración).
+  const iniciarMedicionConCalculo = async (alimentador, equipo, override) => {
+    await medicionesHook.iniciarMedicion(alimentador, equipo, override);
+  };
 
-			// Alimentadores
-			agregarAlimentador: puestosHook.agregarAlimentador,
-			actualizarAlimentador: puestosHook.actualizarAlimentador,
-			eliminarAlimentador: puestosHook.eliminarAlimentador,
-			reordenarAlimentadores: puestosHook.reordenarAlimentadores,
+  // Alterna una medición (start/stop) sin repetir lógica en la vista
+  const alternarMedicion = (alimentador, equipo, override) => {
+    if (medicionesHook.estaMidiendo(alimentador.id, equipo)) {
+      medicionesHook.detenerMedicion(alimentador.id, equipo);
+    } else {
+      iniciarMedicionConCalculo(alimentador, equipo, override);
+    }
+  };
 
-			// Mediciones y lecturas
-			lecturasTarjetas,
-			registrosEnVivo: medicionesHook.registrosEnVivo,
-			iniciarMedicion: medicionesHook.iniciarMedicion,
-			detenerMedicion: medicionesHook.detenerMedicion,
-			iniciarMedicionConCalculo,
-			alternarMedicion,
-			obtenerRegistros: medicionesHook.obtenerRegistros,
-			estaMidiendo: medicionesHook.estaMidiendo,
-			obtenerTimestampInicio: medicionesHook.obtenerTimestampInicio,
-			obtenerContadorLecturas: medicionesHook.obtenerContadorLecturas,
-		}),
-		[puestosHook, medicionesHook, lecturasTarjetas]
-	);
+  // ----------------------------------------------------------------
+  // Objeto de contexto: empaqueta todo lo que la UI necesita
+  // ----------------------------------------------------------------
+  const valorContexto = useMemo(
+    () => ({
+      // Datos de puestos
+      puestos: puestosHook.puestos,
+      puestoSeleccionado: puestosHook.puestoSeleccionado,
+      puestoSeleccionadoId: puestosHook.puestoSeleccionadoId,
+      agregarPuesto: puestosHook.agregarPuesto,
+      eliminarPuesto: puestosHook.eliminarPuesto,
+      seleccionarPuesto: puestosHook.seleccionarPuesto,
+      actualizarPuestos: puestosHook.actualizarPuestos,
+      setPuestos: puestosHook.setPuestos,
 
-	return (
-		<ContextoAlimentadores.Provider value={valorContexto}>
-			{children}
-		</ContextoAlimentadores.Provider>
-	);
+      // Alimentadores
+      agregarAlimentador: puestosHook.agregarAlimentador,
+      actualizarAlimentador: puestosHook.actualizarAlimentador,
+      eliminarAlimentador: puestosHook.eliminarAlimentador,
+      reordenarAlimentadores: puestosHook.reordenarAlimentadores,
+
+      // Mediciones y lecturas
+      lecturasTarjetas,                                   // valores ya procesados listos para pintar en las tarjetas
+      registrosEnVivo: medicionesHook.registrosEnVivo,    // registros crudos (por si alguna vista los necesita directo)
+      iniciarMedicion: medicionesHook.iniciarMedicion,
+      detenerMedicion: medicionesHook.detenerMedicion,
+      iniciarMedicionConCalculo,
+      alternarMedicion,
+      obtenerRegistros: medicionesHook.obtenerRegistros,
+      estaMidiendo: medicionesHook.estaMidiendo,
+      obtenerTimestampInicio: medicionesHook.obtenerTimestampInicio,
+      obtenerContadorLecturas: medicionesHook.obtenerContadorLecturas,
+    }),
+    [puestosHook, medicionesHook, lecturasTarjetas]
+  );
+
+  return (
+    <ContextoAlimentadores.Provider value={valorContexto}>
+      {children}
+    </ContextoAlimentadores.Provider>
+  );
 };
 
 export const usarContextoAlimentadores = () => {
-	const contexto = useContext(ContextoAlimentadores);
-	if (!contexto) {
-		throw new Error(
-			"usarContextoAlimentadores debe usarse dentro de ProveedorAlimentadores"
-		);
-	}
-	return contexto;
+  const contexto = useContext(ContextoAlimentadores);      // leo el contexto actual
+
+  if (!contexto) {
+    // ayuda a detectar usos fuera del provider
+    throw new Error(
+      "usarContextoAlimentadores debe usarse dentro de ProveedorAlimentadores"
+    );
+  }
+
+  return contexto;
 };
+
+{/*---------------------------------------------------------------------------
+ NOTA PERSONAL SOBRE ESTE ARCHIVO (ContextoAlimentadores.jsx)
+
+ - Este archivo es el "cerebro compartido" de la página de alimentadores:
+   junta lo que hacen `usarPuestos` y `usarMediciones` y lo expone por context.
+
+ - `usarPuestos` maneja toda la parte estructural:
+   puestos, lista de alimentadores, selección, altas/bajas y reordenamiento.
+
+ - `usarMediciones` maneja la parte dinámica:
+   timers, lecturas Modbus en vivo y estados de medición por alimentador/equipo.
+
+ - El `useEffect` central recorre los alimentadores del puesto seleccionado,
+   toma sus registros en vivo y el mapeo configurado, y genera `lecturasTarjetas`
+   ya listas para que las tarjetas solo tengan que mostrarlas (sin recalcular).
+
+ - `valorContexto` es un "paquete" con datos + funciones que consumen
+   `VistaAlimentadores` y sus hijos mediante `usarContextoAlimentadores()`,
+   evitando pasar props en cadena.
+
+ - La regla mental:
+   * ProveedorAlimentadores = orquestador (combina hooks y cálculos).
+   * usarContextoAlimentadores = enchufe que cualquier componente puede usar
+     para conectarse a ese orquestador.
+-------------------------------------------------------------------------------
+*/}
+
