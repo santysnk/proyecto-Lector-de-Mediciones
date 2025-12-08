@@ -1,4 +1,12 @@
-/* Estilos base de modales de puestos (movidos desde PaginaAlimentadores.css) */
+/* src/paginas/PaginaAlimentadores/componentes/modales/ModalNuevoPuesto.css */
+/*
+   NOTA PERSONAL SOBRE ESTE ARCHIVO (ModalNuevoPuesto.css)
+   - Estilos compartidos para los modales de puestos (nuevo / editar).
+   - `.alim-modal` define el contenedor blanco con sombra; `.alim-modal-sm`
+     solo ajusta el ancho máximo para modales pequeños como "Nuevo puesto".
+   - `.alim-modal-actions` y las clases de botones controlan el layout y los
+     colores de los botones "Cancelar" y "Guardar/Crear".
+*/
 
 /* Contenedor base del modal */
 .alim-modal {

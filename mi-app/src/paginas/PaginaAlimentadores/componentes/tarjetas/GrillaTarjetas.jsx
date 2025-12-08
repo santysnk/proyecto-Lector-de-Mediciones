@@ -172,20 +172,26 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (GrillaTarjetas.jsx)
    - Callbacks de interacción:
        • `onAbrirConfiguracion(puestoId, alimentador)`:
            - abre el modal de configuración del registrador.
+
        • `onAbrirMapeo(puestoId, alimentador)`:
            - abre el modal de mapeo de mediciones.
+
        • `onDragStart(alimId)`, `onDragOver`, `onDrop(alimId)`, `onDragEnd`:
            - funciones que vienen del hook de drag & drop y de la vista padre.
+
        • `onDropAlFinal()`:
            - se llama cuando se suelta una tarjeta en el área “mover al final”.
+
        • `onAgregarNuevo()`:
            - se llama al hacer clic en la tarjeta “+ Nuevo Registrador”.
 
    - Funciones de medición:
        • `estaMidiendo(alimId, equipo)`:
            - devuelve true/false según si el alimentador/equipo está midiendo.
+
        • `obtenerTimestampInicio(alimId, equipo)`:
            - timestamp de la última medición (reservado para futuras animaciones).
+
        • `obtenerContadorLecturas(alimId, equipo)`:
            - cuántas lecturas se hicieron desde que se inició la medición.
 
@@ -200,7 +206,9 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (GrillaTarjetas.jsx)
    );
 
    - El contenedor principal es un `<div>` con clase `"alim-cards-grid"`.
+
    - Dentro, primero se pintan todas las tarjetas de alimentadores.
+
    - Luego, se pinta:
        • el área de drop para “mover al final” si hay drag activo,
        • o la tarjeta “+” si no lo hay.
@@ -273,10 +281,13 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (GrillaTarjetas.jsx)
        • Estado de medición:
            - `mideRele`, `mideAnalizador`:
                · booleans para estilos y animaciones.
+
            - `periodoRele`, `periodoAnalizador`:
                · se obtienen de la config del alimentador o 60s por defecto.
+
            - `timestampInicioRele`, `timestampInicioAnalizador`:
                · se pasan por si se usan en animaciones/indicadores.
+					
            - `contadorRele`, `contadorAnalizador`:
                · se usan dentro de `TarjetaAlimentador` / `CajaMedicion`
                  para reiniciar animaciones cuando llegan nuevas lecturas.
