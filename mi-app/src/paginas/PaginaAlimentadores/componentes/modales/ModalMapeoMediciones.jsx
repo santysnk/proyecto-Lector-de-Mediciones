@@ -4,57 +4,6 @@ import React, { useEffect, useState } from "react";              // React + hook
 import "./ModalMapeoMediciones.css";                             // estilos específicos del modal de mapeo
 import FormularioDiseñoTarjeta from "./mapeo/FormularioDiseñoTarjeta.jsx"; // subformulario para configurar cada lado de la tarjeta
 
-// Secciones "clásicas" de mapeo (corriente, tensión, potencias, etc.)
-// Aunque ya no se usan directamente en la UI, se preservan para mantener compatibilidad
-// con mapeos antiguos y posibles extensiones futuras.
-const SECCIONES_MAPEO = [
-	{
-		id: "tension_linea",
-		titulo: "Tensión de línea (kV)",
-		items: ["L1", "L2", "L3"],
-	},
-	{
-		id: "tension_entre_lineas",
-		titulo: "Tensión entre líneas (kV)",
-		items: ["L1-L2", "L2-L3", "L1-L3"],
-	},
-	{
-		id: "corriente_linea",
-		titulo: "Corriente de línea (A)",
-		items: ["L1", "L2", "L3"],
-	},
-	{
-		id: "potencia_activa",
-		titulo: "Potencia activa (kW)",
-		items: ["L1", "L2", "L3", "Total"],
-	},
-	{
-		id: "potencia_reactiva",
-		titulo: "Potencia reactiva (kVAr)",
-		items: ["L1", "L2", "L3", "Total"],
-	},
-	{
-		id: "potencia_aparente",
-		titulo: "Potencia aparente (kVA)",
-		items: ["L1", "L2", "L3", "Total"],
-	},
-	{
-		id: "factor_potencia",
-		titulo: "Factor de Potencia",
-		items: ["L1", "L2", "L3"],
-	},
-	{
-		id: "frecuencia",
-		titulo: "Frecuencia (Hz)",
-		items: ["L1", "L2", "L3"],
-	},
-	{
-		id: "corriente_neutro",
-		titulo: "Corriente de Neutro (A)",
-		items: ["N"],
-	},
-];
-
 // ---- helpers para diseño de card ----
 function crearSideDesignDefault(tituloIdPorDefecto) {
 	return {
@@ -102,114 +51,83 @@ function crearCardDesignDefault() {
 	};
 }
 
-// ---- mapeo vacío: secciones clásicas + diseño de tarjeta ----
+// ---- mapeo vacío: sólo diseño de tarjeta ----
+// Como no usamos más las "secciones clásicas", el mapeo se reduce a `cardDesign`.
 function crearMapeoVacio() {
-	const base = {};
-	SECCIONES_MAPEO.forEach((sec) => {
-		base[sec.id] = {};
-		sec.items.forEach((item) => {
-			base[sec.id][item] = {
-				enabled: false,
-				registro: "",
-				formula: "",
-				origen: "",
-			};
-		});
-	});
-
-	base.cardDesign = crearCardDesignDefault();
-	return base;
+	return {
+		cardDesign: crearCardDesignDefault(),
+	};
 }
 
 const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => {
 	const nombreAlimentador = alimentador?.nombre || "";          // solo para mostrar en el título
 	const initialMapeo = alimentador?.mapeoMediciones;            // mapeo previamente guardado (si existe)
-	const [mapeo, setMapeo] = useState(crearMapeoVacio);          // estado completo del mapeo
+	const [mapeo, setMapeo] = useState(crearMapeoVacio);          // estado completo del mapeo (por ahora, sólo cardDesign)
 
-	// Al abrir el modal, mezclamos el mapeo anterior con la estructura base
+	// Al abrir el modal, mezclamos el mapeo anterior con la estructura base del cardDesign
 	useEffect(() => {
 		if (!abierto) return;
 
-		const base = crearMapeoVacio();
+		const baseCardDesign = crearCardDesignDefault();
 
-		if (!initialMapeo) {
-			setMapeo(base);
+		// Si nunca se configuró, arrancamos con el diseño por defecto
+		if (!initialMapeo || !initialMapeo.cardDesign) {
+			setMapeo({ cardDesign: baseCardDesign });
 			return;
 		}
 
-		// Mezcla mapeo guardado (viejo) con el esqueleto vacío
-		const combinado = { ...base };
+		// Mezcla cardDesign guardado con el esqueleto por defecto
+		const defCD = baseCardDesign;
+		const guardCD = initialMapeo.cardDesign;
 
-		// 1) secciones clásicas (las preservamos para compatibilidad)
-		SECCIONES_MAPEO.forEach((sec) => {
-			sec.items.forEach((item) => {
-				const guardado = initialMapeo[sec.id]?.[item] || {};
-				combinado[sec.id][item] = {
-					...base[sec.id][item],
-					...guardado,
-					origen: guardado.origen || "rele", // por defecto, datos del relé
+		const mergeSide = (sideName) => {
+			const defSide = defCD[sideName];
+			const guardSide = guardCD[sideName] || {};
+
+			const boxesDef = defSide.boxes || [];
+			const boxesGuard = guardSide.boxes || [];
+
+			const mergedBoxes = boxesDef.map((bDef, idx) => {
+				const bGuard = boxesGuard[idx] || {};
+				return {
+					...bDef,
+					...bGuard,
+					origen: bGuard.origen || bDef.origen || "rele",
 				};
 			});
-		});
 
-		// 2) diseño de tarjeta (cardDesign)
-		if (initialMapeo.cardDesign) {
-			const defCD = base.cardDesign;
-			const guardCD = initialMapeo.cardDesign;
+			const cantGuard = guardSide.cantidad;
+			const cantidad =
+				typeof cantGuard === "number" &&
+				cantGuard >= 1 &&
+				cantGuard <= 4
+					? cantGuard
+					: defSide.cantidad;
 
-			const mergeSide = (sideName) => {
-				const defSide = defCD[sideName];
-				const guardSide = guardCD[sideName] || {};
-
-				const boxesDef = defSide.boxes || [];
-				const boxesGuard = guardSide.boxes || [];
-
-				const mergedBoxes = boxesDef.map((bDef, idx) => {
-					const bGuard = boxesGuard[idx] || {};
-					return {
-						...bDef,
-						...bGuard,
-						origen: bGuard.origen || bDef.origen || "rele",
-					};
-				});
-
-				const cantGuard = guardSide.cantidad;
-				const cantidad =
-					typeof cantGuard === "number" &&
-					cantGuard >= 1 &&
-					cantGuard <= 4
-						? cantGuard
-						: defSide.cantidad;
-
-				return {
-					...defSide,
-					...guardSide,
-					boxes: mergedBoxes,
-					cantidad,
-					tituloId: guardSide.tituloId || defSide.tituloId,
-					tituloCustom: guardSide.tituloCustom || "",
-				};
+			return {
+				...defSide,
+				...guardSide,
+				boxes: mergedBoxes,
+				cantidad,
+				tituloId: guardSide.tituloId || defSide.tituloId,
+				tituloCustom: guardSide.tituloCustom || "",
 			};
+		};
 
-			combinado.cardDesign = {
+		setMapeo({
+			cardDesign: {
 				superior: mergeSide("superior"),
 				inferior: mergeSide("inferior"),
-			};
-		} else {
-			combinado.cardDesign = base.cardDesign;
-		}
-
-		setMapeo(combinado);
+			},
+		});
 	}, [abierto, initialMapeo]);
 
 	if (!abierto) return null;
 
 	// --- helpers actualización cardDesign ---
 	const asegurarCardDesign = (prev) => {
-		if (!prev.cardDesign) {
-			return crearCardDesignDefault();
-		}
-		const cd = { ...prev.cardDesign };
+		const base = prev.cardDesign || crearCardDesignDefault();
+		const cd = { ...base };
 		if (!cd.superior)
 			cd.superior = crearSideDesignDefault("corriente_132");
 		if (!cd.inferior)
@@ -320,9 +238,9 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 					<div className="map-design">
 						<h3 className="map-design__title">Diseño de la tarjeta</h3>
 						<p className="map-design__help">
-							Eligí qué magnitudes se muestran en la parte superior e
+							Elegí qué magnitudes se muestran en la parte superior e
 							inferior de la tarjeta y cómo se alimentan los boxes de
-							medición. Podés preparar boxes deshabilitados para usarlos
+							medición. Podés dejar boxes deshabilitados listos para usarlos
 							más adelante.
 						</p>
 
@@ -390,27 +308,28 @@ export default ModalMapeoMediciones;
 export { crearMapeoVacio };
 
 {/*---------------------------------------------------------------------------
- NOTA PERSONAL SOBRE ESTE ARCHIVO (ModalMapeoMediciones.jsx)
+ NOTA SOBRE ESTE ARCHIVO (ModalMapeoMediciones.jsx)
 
- - Este modal permite configurar "qué" se muestra en cada lado de la tarjeta de
-   un alimentador y "de dónde" salen esos valores (registro Modbus, origen,
-   fórmula, etc.).
+ - Este modal permite configurar "qué" se muestra en cada lado de la tarjeta
+   de un alimentador y "de dónde" salen esos valores (registro Modbus, origen,
+   fórmula, etc.), usando `cardDesign.superior` e `inferior`.
 
- - `crearMapeoVacio` genera una estructura completa de mapeo con todas las
-   secciones clásicas + un `cardDesign` por defecto. Se usa tanto para iniciar
-   un mapeo nuevo como para rellenar huecos de uno viejo.
+ - `crearMapeoVacio` ahora sólo genera un objeto con `cardDesign` por defecto,
+   porque las viejas secciones de mapeo (tensión, corriente, potencias, etc.)
+   ya no se usan en la UI ni en los cálculos.
 
- - Cuando se abre el modal, el efecto mezcla `initialMapeo` (si existe) con el
-   esqueleto vacío para asegurar que siempre haya campos coherentes, incluso si
-   el formato evolucionó.
+ - El `useEffect` toma cualquier `mapeoMediciones` guardado, extrae su
+   `cardDesign` (si existe) y lo mezcla con el diseño por defecto para asegurar
+   que siempre haya 4 boxes potenciales y valores coherentes.
 
- - Las funciones `actualizarCantidadBoxes`, `actualizarTituloSeleccionado`,
-   `actualizarTituloCustom` y `actualizarCardDesignCaja` se encargan de modificar
-   solo la parte correspondiente del `cardDesign` sin romper el resto.
+ - Los helpers `actualizarCantidadBoxes`, `actualizarTituloSeleccionado`,
+   `actualizarTituloCustom` y `actualizarCardDesignCaja` modifican sólo la
+   parte correspondiente del `cardDesign`, manteniendo inmutabilidad del
+   estado y evitando nulls con `asegurarCardDesign`.
 
- - Al guardar, se devuelve el objeto `mapeo` completo al padre, que luego lo
-   persiste dentro del alimentador para usarlo al calcular las lecturas de la
-   tarjeta.
+ - Al guardar, se devuelve el objeto `mapeo` completo al padre, que lo guarda
+   dentro del alimentador para que `calculosMediciones.js` pueda construir las
+   lecturas que se muestran en cada tarjeta.
 ---------------------------------------------------------------------------*/}
 
 /*---------------------------------------------------------------------------
@@ -418,236 +337,253 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (ModalMapeoMediciones.jsx)
 
 0) Visión general del componente
 
-   `ModalMapeoMediciones` es el modal donde se define el “diseño lógico” de una
-   tarjeta de alimentador:
+   `ModalMapeoMediciones` es el editor del “diseño visual” de la tarjeta de un
+   alimentador. Acá no se decide cómo se calcula cada valor, sino:
 
-   - Qué título tiene cada lado (superior / inferior).
+   - qué título tiene cada mitad de la tarjeta (superior / inferior),
+   - cuántos boxes se muestran (1 a 4),
+   - y cómo está configurado cada box (etiqueta, registro, origen, fórmula).
 
-   - Cuántos boxes se muestran en cada lado (1 a 4).
-	
-   - Para cada box:
-       • si está habilitado,
-       • qué etiqueta muestra,
-       • qué registro alimenta el valor,
-       • de qué origen viene (relé / analizador),
-       • qué fórmula se aplica (si aplica).
-
-   El resultado es un objeto `mapeo` que el contexto guarda dentro del
-   alimentador y que luego se usa para calcular `lecturasTarjetas`.
+   Toda esa información queda guardada dentro de `alimentador.mapeoMediciones`
+   en la propiedad `cardDesign`, que luego usan otros módulos para construir
+   las lecturas que se ven en la UI.
 
 
-1) Constante SECCIONES_MAPEO: compatibilidad con mapeos “clásicos”
+1) Helpers de diseño: `crearSideDesignDefault`, `crearCardDesignDefault`, `crearMapeoVacio`
 
-   const SECCIONES_MAPEO = [ ... ];
+   function crearSideDesignDefault(tituloIdPorDefecto) {
+     return {
+       tituloId: tituloIdPorDefecto,
+       tituloCustom: "",
+       cantidad: 3,
+       boxes: [ { ... }, { ... }, { ... }, { ... } ],
+     };
+   }
 
-   - Representa secciones antiguas / tradicionales de mapeo:
-       • tensiones, corrientes, potencias, factor de potencia, frecuencia, etc.
+   - Representa la configuración de UN lado de la tarjeta:
+       • `tituloId`        → id de magnitud predefinida (corriente_132, tension_linea, etc.).
+       • `tituloCustom`    → texto libre si se elige un título personalizado.
+       • `cantidad`        → cuántos boxes se mostrarán (1..4).
+       • `boxes`           → array fijo de 4 posiciones potenciales, cada una con:
+                               { enabled, label, registro, origen, formula }.
 
-   - Hoy la UI trabaja principalmente con `cardDesign`, pero estas secciones se
-     mantienen para:
-       • no romper mapeos ya guardados en versiones anteriores,
-       • tener un andamiaje si más adelante se quiere usar una vista avanzada de
-         mapeo por secciones.
+   - El hecho de tener siempre 4 posiciones facilita luego:
+       • limitar visualmente a 1..4 boxes,
+       • pero conservar configuraciones parciales para “boxes futuros”.
 
-   - Cada sección tiene:
-       • `id`: clave interna,
-       • `titulo`: descripción legible,
-       • `items`: subcampos (L1, L2, Total, etc.) que pueden mapearse.
+   function crearCardDesignDefault() {
+     return {
+       superior: crearSideDesignDefault("corriente_132"),
+       inferior: crearSideDesignDefault("tension_linea"),
+     };
+   }
 
+   - Construye el diseño completo de la tarjeta:
+       • lado superior por defecto orientado a corrientes (“CONSUMO (A)”),
+       • lado inferior por defecto orientado a tensiones (“TENSIÓN (kV)”).
 
-2) Helpers de diseño base: crearSideDesignDefault / crearCardDesignDefault
+   function crearMapeoVacio() {
+     return {
+       cardDesign: crearCardDesignDefault(),
+     };
+   }
 
-   2.1) crearSideDesignDefault(tituloIdPorDefecto)
-
-   - Construye un “molde” para un lado de la tarjeta (sup/inf) con:
-
-       • `tituloId`: identifica qué magnitud representa
-         (corriente_132, tension_linea, etc.).
-       • `tituloCustom`: texto libre para el caso “custom”.
-       • `cantidad`: cuántos boxes mostrar por defecto (3).
-       • `boxes`: array de 4 posiciones posibles, todas deshabilitadas.
-
-   - La idea es tener siempre una estructura conocida, aunque el usuario no
-     haya configurado nada todavía.
-
-   2.2) crearCardDesignDefault()
-
-   - Devuelve un “cardDesign” inicial:
-
-       • `superior`: configurado con “corriente_132”
-         (equivalente a un “CONSUMO (A)”).
-       • `inferior`: configurado con “tension_linea”
-         (equivalente a una “TENSIÓN (kV)”).
-
-   - Es lo que se usa si nunca hubo mapeo guardado para ese alimentador.
+   - Estructura mínima de `mapeoMediciones` en esta versión:
+       • ya no hay secciones clásicas, sólo `cardDesign`.
+       • se usa para inicializar estado cuando nunca se configuró el mapeo.
 
 
-3) crearMapeoVacio: esqueleto completo de mapeo
+2) Estado inicial y props
 
-   function crearMapeoVacio() { ... }
+   const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => {
+     const nombreAlimentador = alimentador?.nombre || "";
+     const initialMapeo = alimentador?.mapeoMediciones;
+     const [mapeo, setMapeo] = useState(crearMapeoVacio);
+     ...
+   }
 
-   - Crea un objeto con dos partes:
+   - `abierto`:
+       • controla si el modal está visible; si es `false`, el componente devuelve `null`.
 
-       1) Secciones clásicas (SECCIONES_MAPEO):
-            • para cada sección (corriente, tensión, etc.),
-            • para cada item (L1, L2, Total, etc.),
-            • crea una celda:
-                { enabled: false, registro: "", formula: "", origen: "" }
+   - `alimentador`:
+       • objeto con la configuración del alimentador actual,
+       • de él se toma `nombre` para el título y `mapeoMediciones` (si existe).
 
-       2) `cardDesign`:
-            • usando `crearCardDesignDefault()`.
+   - `initialMapeo`:
+       • referencia al mapeo guardado anteriormente, para poder mezclarlo
+         con la estructura por defecto.
 
-   - Este objeto se usa:
-       • como estado inicial,
-       • y como “base” sobre la que se mezclan mapeos antiguos guardados.
+   - `mapeo`:
+       • estado local que contiene al menos `{ cardDesign }`,
+       • es lo que finalmente se devuelve al padre en `onGuardar(mapeo)`.
 
 
-4) Estado y efecto principal al abrir el modal
+3) useEffect de apertura: mezclar diseño guardado con el default
 
-   const [mapeo, setMapeo] = useState(crearMapeoVacio);
+   useEffect(() => {
+     if (!abierto) return;
 
-   - `mapeo` representa la configuración completa de mapeo que se está
-     editando en el modal.
+     const baseCardDesign = crearCardDesignDefault();
 
-   useEffect(() => { ... }, [abierto, initialMapeo]);
+     if (!initialMapeo || !initialMapeo.cardDesign) {
+       setMapeo({ cardDesign: baseCardDesign });
+       return;
+     }
 
-   - Se dispara cuando:
+     const defCD = baseCardDesign;
+     const guardCD = initialMapeo.cardDesign;
+
+     const mergeSide = (sideName) => { ... };
+
+     setMapeo({
+       cardDesign: {
+         superior: mergeSide("superior"),
+         inferior: mergeSide("inferior"),
+       },
+     });
+   }, [abierto, initialMapeo]);
+
+   - Se ejecuta cada vez que:
        • el modal se abre (`abierto` pasa a true),
-       • o cambia `initialMapeo` (nuevo alimentador o recarga).
+       • o cambia `initialMapeo` (por ejemplo, si se cargara otro alimentador).
 
-   Pasos dentro del efecto:
+   - Comportamiento:
 
-   4.1) Si el modal no está abierto → no hace nada.
+       a) Si no hay nada guardado:
+          → se usa `crearCardDesignDefault()` y listo.
 
-   4.2) Crea `base = crearMapeoVacio()`:
-        • esqueleto con todas las secciones + cardDesign por defecto.
-
-   4.3) Si NO hay `initialMapeo`:
-        • simplemente usa la base (es un mapeo nuevo).
-
-   4.4) Si hay `initialMapeo`:
-        a) Clona `base` en `combinado`.
-        b) Recorre todas las secciones e items:
-           - toma lo guardado en `initialMapeo[sec.id][item]` si existe,
-           - lo mezcla sobre la celda de base,
-           - asegura `origen: guardado.origen || "rele"` (default: relé).
-        c) Si existe `initialMapeo.cardDesign`:
-           - combina lado por lado (`superior` / `inferior`) con `mergeSide`:
-               • mezcla cajas por índice,
-               • conserva defaults,
-               • asegura `origen` y `cantidad` válidos (1..4),
-               • decide `tituloId` / `tituloCustom`.
-           - si no existiera, se queda con `base.cardDesign`.
-
-        d) Finalmente hace `setMapeo(combinado)`.
-
-   - Resultado:
-       • siempre se trabaja con un `mapeo` que tiene todas las llaves necesarias,
-       • aunque el formato haya evolucionado entre versiones.
+       b) Si sí hay `initialMapeo.cardDesign`:
+          → se llama a `mergeSide("superior")` y `mergeSide("inferior")` para
+            combinar lo guardado con el esqueleto por defecto.
 
 
-5) Helpers de actualización del cardDesign
+4) `mergeSide`: combinación segura de un lado de la tarjeta
 
-   5.1) asegurarCardDesign(prev)
+   const mergeSide = (sideName) => {
+     const defSide = defCD[sideName];
+     const guardSide = guardCD[sideName] || {};
 
-   - Recibe un estado previo y garantiza que:
+     const boxesDef = defSide.boxes || [];
+     const boxesGuard = guardSide.boxes || [];
 
-       • exista `prev.cardDesign`,
-       • exista `cardDesign.superior`,
-       • exista `cardDesign.inferior`.
+     const mergedBoxes = boxesDef.map((bDef, idx) => {
+       const bGuard = boxesGuard[idx] || {};
+       return {
+         ...bDef,
+         ...bGuard,
+         origen: bGuard.origen || bDef.origen || "rele",
+       };
+     });
 
-   - Si algo falta, lo rellena con los defaults apropiados.
+     const cantGuard = guardSide.cantidad;
+     const cantidad =
+       typeof cantGuard === "number" && cantGuard >= 1 && cantGuard <= 4
+         ? cantGuard
+         : defSide.cantidad;
 
-   - Se usa en todos los setters para no tener que validar nulls cada vez.
+     return {
+       ...defSide,
+       ...guardSide,
+       boxes: mergedBoxes,
+       cantidad,
+       tituloId: guardSide.tituloId || defSide.tituloId,
+       tituloCustom: guardSide.tituloCustom || "",
+     };
+   };
 
-   5.2) actualizarCantidadBoxes(zona, nuevaCant)
+   - Objetivo:
+       • permitir que el formato de `cardDesign` evolucione sin romper mapeos viejos.
 
-   - `zona` es "superior" o "inferior".
-   - `nuevaCant` es lo que el usuario eligió en el formulario.
-
-   - Normaliza `nuevaCant` a un rango seguro [1, 4] y actualiza solo
-     `cardDesign[zona].cantidad`, sin tocar el resto del estado.
-
-   5.3) actualizarTituloSeleccionado(zona, tituloId)
-
-   - Cambia `cardDesign[zona].tituloId` al valor elegido en un select
-     (por ejemplo, corriente_132, tension_linea, etc.).
-
-   5.4) actualizarTituloCustom(zona, texto)
-
-   - Se usa cuando el usuario selecciona un título “custom” y escribe texto
-     libre.
-
-   - Fuerza:
-       • `tituloId: "custom"`,
-       • `tituloCustom: texto`.
-
-   5.5) actualizarCardDesignCaja(zona, index, campo, valor)
-
-   - Modifica un campo puntual de una de las cajas del lado indicado:
-
-       • `zona`: "superior" / "inferior".
-       • `index`: índice de la caja (0 a 3).
-       • `campo`: nombre de la propiedad a cambiar (enabled, label, registro,
-         origen, formula).
-       • `valor`: nuevo valor.
-
-   - Asegura siempre tener al menos 4 posiciones en `boxes` (rellena con
-     objetos por defecto si falta alguna).
-
-   - Luego:
-       • clona `boxes`,
-       • modifica `boxes[index][campo]`,
-       • vuelve a guardar el array dentro de `cardDesign[zona]`.
-
-   - De este modo se evita mutar directamente el estado y se conserva
-     inmutabilidad.
+   - Detalles importantes:
+       • Siempre parte de `defSide` (estructura completa por defecto).
+       • Mezcla cada box por índice:
+           - si hay datos guardados, los sobreescribe encima del default,
+           - si falta el `origen`, cae a `bDef.origen` o `"rele"`.
+       • Normaliza `cantidad` para que siempre esté entre 1 y 4.
+       • Asegura que `tituloId` y `tituloCustom` tengan valores coherentes.
 
 
-6) handleSubmit y guardado
+5) Helper `asegurarCardDesign` y funciones de actualización
+
+   const asegurarCardDesign = (prev) => {
+     const base = prev.cardDesign || crearCardDesignDefault();
+     const cd = { ...base };
+     if (!cd.superior) cd.superior = crearSideDesignDefault("corriente_132");
+     if (!cd.inferior) cd.inferior = crearSideDesignDefault("tension_linea");
+     return cd;
+   };
+
+   - Garantiza que, al actualizar el estado:
+       • siempre exista `cardDesign`,
+       • y que tenga ambos lados (`superior` e `inferior`) con estructura válida.
+
+   a) `actualizarCantidadBoxes(zona, nuevaCant)`
+
+      - Recorta `nuevaCant` al rango [1, 4].
+      - Usa `setMapeo` y `asegurarCardDesign` para modificar sólo:
+          `cardDesign[zona].cantidad`.
+
+   b) `actualizarTituloSeleccionado(zona, tituloId)`
+
+      - Cambia el `tituloId` del lado superior o inferior sin tocar el resto
+        de la configuración.
+
+   c) `actualizarTituloCustom(zona, texto)`
+
+      - Fuerza `tituloId: "custom"` y guarda el texto en `tituloCustom`.
+
+   d) `actualizarCardDesignCaja(zona, index, campo, valor)`
+
+      - Se asegura de que el array `boxes` tenga siempre 4 posiciones.
+      - Actualiza sólo el campo indicado de la box `index`:
+          • `enabled`, `label`, `registro`, `origen` o `formula`.
+      - Devuelve un nuevo objeto `cardDesign` inmutable.
+
+
+6) Submit del formulario
 
    const handleSubmit = (e) => {
      e.preventDefault();
      onGuardar(mapeo);
    };
 
-   - Evita el submit tradicional del `<form>`.
-
-   - Entrega al padre el `mapeo` completo tal como quedó en el estado.
-
-   - El padre (VistaAlimentadores) lo usa para actualizar el alimentador:
-
-       • `actualizarAlimentador(..., { mapeoMediciones: mapeo })`.
+   - No hace validaciones complejas: asume que el diseño siempre es consistente.
+   - Entrega al padre el objeto `mapeo` completo (hoy sólo `cardDesign`), para
+     que se guarde dentro del alimentador.
 
 
-7) Estructura JSX del modal
+7) Render del modal
 
-   - El componente solo se dibuja si `abierto` es true.
+   - Estructura general:
 
-   - Usa:
-       • `<div className="alim-modal-overlay">` como overlay,
-       • `<div className="map-modal">` como contenedor del contenido.
+       <div className="alim-modal-overlay">
+         <div className="map-modal">
+           <h2>Mapeo de mediciones – {nombreAlimentador}</h2>
 
-   - Dentro del `<form>`:
+           <form onSubmit={handleSubmit} className="map-form">
+             <div className="map-design">
+               <h3>Diseño de la tarjeta</h3>
+               <p>Texto de ayuda...</p>
 
-       7.1) Encabezado:
-           • título “Mapeo de mediciones – {nombreAlimentador}”.
+               <FormularioDiseñoTarjeta ... zona="superior" ... />
+               <FormularioDiseñoTarjeta ... zona="inferior" ... />
+             </div>
 
-       7.2) Bloque de diseño de tarjeta (`map-design`):
-           • texto de ayuda explicando el propósito,
-           • dos `FormularioDiseñoTarjeta`:
-               - uno para la parte superior,
-               - otro para la parte inferior.
+             <div className="alim-modal-actions">
+               <button type="button" onClick={onCerrar}>Cancelar</button>
+               <button type="submit">Guardar</button>
+             </div>
+           </form>
+         </div>
+       </div>
 
-           • A cada subformulario se le pasan:
-               - `design={cardDesign.superior/inferior}`,
-               - callbacks para título, título custom, cantidad y cada box,
-               - placeholders para títulos por defecto.
+   - `FormularioDiseñoTarjeta` se llama dos veces:
+       • una para la parte superior (placeholder "CONSUMO (A)"),
+       • otra para la parte inferior (placeholder "TENSIÓN (kV)").
 
-       7.3) Acciones:
-           • botón “Cancelar” → llama a `onCerrar` (no guarda cambios),
-           • botón “Guardar” → submit del formulario → `handleSubmit` →
-             `onGuardar(mapeo)`.
+   - Cada formulario hijo recibe:
+       • el objeto `design` correspondiente (`cardDesign.superior` / `inferior`),
+       • callbacks específicos para cambiar título, cantidad y boxes.
 
 
 8) Export
@@ -655,11 +591,12 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (ModalMapeoMediciones.jsx)
    export default ModalMapeoMediciones;
    export { crearMapeoVacio };
 
-   - `ModalMapeoMediciones`: se usa en `VistaAlimentadores` como uno de los
-     modales principales.
+   - `ModalMapeoMediciones`:
+       • se usa dentro de la vista principal de alimentadores,
+       • recibe el alimentador actual y devuelve el nuevo `mapeo`.
 
-   - `crearMapeoVacio` se exporta también para:
-       • reutilizar la misma estructura base desde otros módulos,
-       • tests, inicialización externa, etc.
+   - `crearMapeoVacio`:
+       • se expone por separado para que otros módulos puedan crear un
+         mapeo por defecto (por ejemplo, al inicializar nuevos alimentadores).
 
 ---------------------------------------------------------------------------*/

@@ -4,8 +4,10 @@
    - Estilos específicos del modal para editar puestos: define el contenedor
      blanco, la lista de filas editables, los pickers de color y el botón
      "Eliminar".
+
    - Reutiliza la convención `.alim-modal*` para mantener una estética común
      entre todos los modales de la pantalla de alimentadores.
+	  
    - Incluye una sección `@media (max-width: 520px)` que reorganiza los
      controles en columna y en grid para que sea cómodo usarlo en pantallas
      chicas (celular / tablet).

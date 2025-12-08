@@ -3,8 +3,10 @@
    NOTA SOBRE ESTE ARCHIVO (ModalConfiguracionAlimentador.css)
    - Estilos específicos del modal donde configuro cada registrador
      (alimentador): overlay oscuro, tarjeta blanca y layout interno.
+
    - `.alim-modal-left` es la columna que contiene los formularios de datos
      básicos y las tabs RELÉ / ANALIZADOR, con scroll propio si hace falta.
+	  
    - La paleta `.alim-color-*` define los cuadrados de color que elijo para
      el alimentador, y `.alim-tabs` controla la pastilla de selección de tab.
 */

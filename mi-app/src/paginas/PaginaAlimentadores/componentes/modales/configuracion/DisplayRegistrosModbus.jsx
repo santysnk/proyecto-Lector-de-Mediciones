@@ -30,7 +30,7 @@ const DisplayRegistrosModbus = ({ registros, titulo = "Registros leídos" }) => 
 export default DisplayRegistrosModbus;
 
 {/*---------------------------------------------------------------------------
- NOTA PERSONAL SOBRE ESTE ARCHIVO (DisplayRegistrosModbus.jsx)
+ NOTA SOBRE ESTE ARCHIVO (DisplayRegistrosModbus.jsx)
 
  - Este componente es una vista compacta para listar registros Modbus:
    se le pasa un array de objetos `{ index, address, value }` y los dibuja

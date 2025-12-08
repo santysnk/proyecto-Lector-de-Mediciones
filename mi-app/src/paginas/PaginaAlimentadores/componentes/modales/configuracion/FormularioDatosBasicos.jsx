@@ -48,7 +48,7 @@ const FormularioDatosBasicos = ({ nombre, color, onChange }) => {
 export default FormularioDatosBasicos;
 
 {/*---------------------------------------------------------------------------
- NOTA PERSONAL SOBRE ESTE ARCHIVO (FormularioDatosBasicos.jsx)
+ NOTA SOBRE ESTE ARCHIVO (FormularioDatosBasicos.jsx)
 
  - Este formulario sólo se ocupa de los datos "humanos" del alimentador:
    el nombre que se muestra en la tarjeta y el color visual que lo distingue.

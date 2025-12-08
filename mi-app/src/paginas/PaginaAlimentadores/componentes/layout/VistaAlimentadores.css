@@ -1,4 +1,16 @@
 /* src/paginas/PaginaAlimentadores/componentes/layout/VistaAlimentadores.css */
+/*
+   NOTA SOBRE ESTE ARCHIVO (VistaAlimentadores.css)
+   - Define el layout general de la pantalla de alimentadores (`.alim-page`
+     y `.alim-main`), incluyendo paddings, fondo y tipografía base.
+
+   - Centraliza estilos de botones genéricos (`.alim-btn`, `.alim-btn-add`,
+     `.alim-btn-exit`) que se usan tanto en la barra superior como en el menú
+     lateral y otros componentes.
+
+   - También maneja los estados vacíos (`.alim-empty`, `.alim-empty-state`)
+     que se muestran cuando todavía no hay puestos o tarjetas configuradas.
+*/
 
 /* =========================================================
    LAYOUT GENERAL
@@ -14,7 +26,7 @@
 }
 
 .alim-main {
-   flex: 1;
+   flex: 1;	
    padding: 1.5rem;
 }
 

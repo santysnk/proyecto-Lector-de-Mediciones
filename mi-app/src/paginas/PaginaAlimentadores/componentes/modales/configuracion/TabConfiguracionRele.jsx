@@ -1,6 +1,6 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/configuracion/TabConfiguracionRele.jsx
 
-import React from "react";                                   // componente de presentación (sin estado interno)
+import React from "react";                                   
 import "./TabConfiguracion.css";                             // estilos compartidos entre las tabs de configuración
 
 // Tab de configuración del RELÉ:

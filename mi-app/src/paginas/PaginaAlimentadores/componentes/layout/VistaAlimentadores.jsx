@@ -330,7 +330,7 @@ const {
 export default VistaAlimentadores;
 
 {/*---------------------------------------------------------------------------
- NOTA PERSONAL SOBRE ESTE ARCHIVO (VistaAlimentadores.jsx)
+ NOTA SOBRE ESTE ARCHIVO (VistaAlimentadores.jsx)
 
  - Es el "tablero de control" visual de los alimentadores: aquí se ensamblan
    la barra de navegación, el menú lateral, la grilla de tarjetas y todos los

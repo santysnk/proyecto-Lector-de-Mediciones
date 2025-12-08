@@ -1,11 +1,13 @@
 /* src/paginas/PaginaAlimentadores/componentes/modales/ModalMapeoMediciones.css */
 /*
-   NOTA PERSONAL SOBRE ESTE ARCHIVO (ModalMapeoMediciones.css)
+   NOTA SOBRE ESTE ARCHIVO (ModalMapeoMediciones.css)
    - Estilos específicos del modal que configura el mapeo de mediciones
      de cada alimentador.
+
    - Controla el overlay oscuro de fondo, el contenedor blanco `.map-modal`
      y el layout del formulario de diseño de tarjeta (títulos, campos y lista
      de boxes).
+	  
    - Todas las clases que empiezan con `.map-` se usan solo en este modal
      para no mezclar estilos con otros modales de la app.
 */

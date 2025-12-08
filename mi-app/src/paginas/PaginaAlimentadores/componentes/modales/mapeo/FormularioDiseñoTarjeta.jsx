@@ -1,6 +1,6 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/mapeo/FormularioDiseñoTarjeta.jsx
 
-import React from "react";                          // componente de React simple (sin estado propio)
+import React from "react";                          
 import ConfiguradorBox from "./ConfiguradorBox.jsx"; // subcomponente que configura cada "box" individual
 
 // Opciones predefinidas para el título del bloque (magnitudes típicas)
