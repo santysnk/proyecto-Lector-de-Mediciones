@@ -20,7 +20,7 @@
 /* La caja negra que contiene todo el formulario */
 .recuperar-caja {
     background: rgb(8, 8, 8);                             /* negro casi puro */
-    padding: 50px 40px;                                   /* espacio interno (arriba/abajo - izquierda/derecha) */
+    padding: 20px 40px;                                   /* espacio interno (arriba/abajo - izquierda/derecha) */
     border-radius: 20px;                                  /* bordes bien redondeados */
     /* Sombra celeste suave + glow sutil para que parezca que flota */
     box-shadow: 0 20px 40px #e0f7fa;                      /* sombra celeste claro (tu color principal) */
@@ -34,13 +34,15 @@
 .btn-volver {
     position: absolute;                                   /* se sale del flujo normal */
     top: 20px;                                            /* distancia desde arriba */
-    left: 20px;                                           /* distancia desde la izquierda */
+    left: 40px;                                           /* distancia desde la izquierda */
     background: none;                                     /* sin fondo */
     border: none;                                         /* sin borde */
-    font-size: 28px;                                      /* tamaño grande */
+    font-size: 18px;                                      /* tamaño grande */
     cursor: pointer;                                      /* manito al pasar el mouse */
-    color: #e0f7fa;                                       /* celeste claro (el mismo que usás en texto) */
+    color: #e0f7fa;                                     /* celeste claro (el mismo que usás en texto) */
+	 
 }
+
 
 /* ====================== LOGO ====================== */
 .logo-recuperar {
@@ -49,13 +51,14 @@
 
 /* ====================== TÍTULOS Y TEXTO ====================== */
 h2 {
+	 color: #e0f7fa; 
     margin: 0 0 15px 0;                                   /* quita margen arriba, deja abajo
     color: #e0f7fa;                                       /* celeste claro para que se lea bien */
     font-size: 26px;                                      /* título grande */
 }
 
 .texto-ayuda {
-    color: #e0f7fa;                                       /* mismo celeste claro */
+    color: #e0f7fa;                                     /* mismo celeste claro */
     margin-bottom: 30px;                                  /* espacio antes del input */
     line-height: 1.5;                                     /* más legible */
     font-size: 15px;
@@ -65,10 +68,10 @@ h2 {
 .input-recuperar {
     width: 100%;                                          /* ocupa todo el ancho */
     padding: 16px;                                        /* espacio interno cómodo */
-    background: #111111;                                  /* fondo casi negro (modo oscuro) */
-    border: 2px solid rgba(0, 255, 255, 0.4);              /* borde cyan neon tenue */
+    background: #111111;                                /* fondo casi negro (modo oscuro) */
+    border: 2px solid rgba(0, 255, 255, 0.4);           /* borde cyan neon tenue */
     border-radius: 12px;                                  /* bordes redondeados */
-    color: #ffffff;                                       /* texto blanco → SE VE PERFECTO */
+    color: #ffffff;                                     /* texto blanco → SE VE PERFECTO */
     font-size: 16px;
     margin-bottom: 25px;                                  /* espacio debajo */
     box-sizing: border-box;                               /* el padding no rompe el ancho */
@@ -105,13 +108,6 @@ h2 {
 /* Efecto al pasar el mouse por el botón */
 .btn-enviar:hover {
     background: #06a1e3;                                  /* cyan más fuerte */
-}
-
-/* ====================== LINK "VOLVER AL INICIO" ====================== */
-.link-volver-login {
-    color: #e0f7fa;                                       /* celeste claro */
-    text-decoration: none;                                /* sin subrayado */
-    font-size: 15px;
 }
 
 /* ====================== ALERTA PERSONALIZADA ====================== */
