@@ -1,8 +1,22 @@
-/* Estilos del menu lateral (drawer) movidos desde PaginaAlimentadores.css */
+/* src/paginas/PaginaAlimentadores/componentes/navegacion/MenuLateral.css */
+/*
+   NOTA PERSONAL SOBRE ESTE ARCHIVO (MenuLateral.css)
+   - Define el estilo del drawer lateral usado en modo compacto: overlay oscuro,
+     panel deslizante, cabecera, lista de puestos y botones de acciones.
+
+   - `.alim-drawer-overlay` controla la animación de aparición/desaparición
+     (opacity + pointer-events) y `.alim-drawer` maneja el slide desde la izquierda.
+	  
+   - Los botones dentro del drawer (`.alim-drawer .alim-btn`) se estiran a todo
+     el ancho para que sean fáciles de tocar en pantallas táctiles.
+*/
+
 
 /* =========================================================
-   DRAWER LATERAL
+   CONTENEDOR OSCURO (OVERLAY) + PANEL
    ========================================================= */
+
+/* Capa oscura que cubre la pantalla cuando el drawer está abierto */
 .alim-drawer-overlay {
    position: fixed;
    inset: 0;
@@ -16,11 +30,13 @@
    z-index: 60;
 }
 
+/* Cuando el drawer está abierto: overlay visible y clickeable */
 .alim-drawer-overlay.alim-drawer-open {
    opacity: 1;
    pointer-events: auto;
 }
 
+/* Panel lateral que se desliza desde la izquierda */
 .alim-drawer {
    width: 260px;
    max-width: 80vw;
@@ -32,10 +48,14 @@
    transition: transform 0.22s ease-out;
 }
 
+/* Posición final del panel cuando el overlay está abierto */
 .alim-drawer-overlay.alim-drawer-open .alim-drawer {
    transform: translateX(0);
 }
 
+/* =========================================================
+   CABECERA DEL DRAWER
+   ========================================================= */
 .alim-drawer-header {
    margin-bottom: 1rem;
 }
@@ -51,6 +71,9 @@
    color: #9ca3af;
 }
 
+/* =========================================================
+   SECCIONES DE LISTAS (PUESTOS / ACCIONES)
+   ========================================================= */
 .alim-drawer-section {
    margin-top: 1.1rem;
 }
@@ -77,7 +100,7 @@
    justify-content: center;
 }
 
-/* Boton "+ Nuevo puesto" dentro del drawer */
+/* Botón "+ Nuevo puesto" dentro del drawer */
 .alim-drawer-btn-add {
    background-color: transparent;
    border: 1px dashed #9ca3af;
@@ -89,10 +112,12 @@
    font-weight: 500;
 }
 
+/* Hover del botón "+ Nuevo puesto" */
 .alim-drawer-btn-add:hover {
    background-color: rgba(148, 163, 184, 0.2);
 }
 
+/* Icono "+" dentro del botón de nuevo puesto */
 .alim-drawer-btn-add-icon {
    font-size: 1.1rem;
    line-height: 1;
