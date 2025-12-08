@@ -1,14 +1,24 @@
-/* Estilos de la grilla de tarjetas y la tarjeta "+" */
+/* src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetas.css */
+/*
+   NOTA PERSONAL SOBRE ESTE ARCHIVO (GrillaTarjetas.css)
+   - Estilos para la grilla de tarjetas y la tarjeta especial "+" / zona de drop.
+	
+   - `.alim-cards-grid` define el layout tipo flex con múltiples columnas, mientras
+     que `.alim-card-add` reutiliza el tamaño/forma de una tarjeta para el botón
+     de "Nuevo registrador" o el mensaje de "mover al final".
+*/
 
+/* Contenedor de la grilla de tarjetas */
 .alim-cards-grid {
    display: flex;
    flex-wrap: wrap;
    row-gap: 1.8rem;
    column-gap: 2.4rem;
-   justify-content: left; /* filas con margen simetrico */
+   justify-content: left; /* filas alineadas a la izquierda */
    padding-left: 1.2rem;
 }
 
+/* En pantallas más angostas, centramos la grilla y ajustamos espaciado */
 @media (max-width: 982px) {
    .alim-cards-grid {
       justify-content: center;
@@ -17,6 +27,7 @@
    }
 }
 
+/* Tarjeta especial: botón "+" o zona de drop al final */
 .alim-card-add {
    border: 1px dashed #374151;
    background-color: #111827;
@@ -28,7 +39,7 @@
    gap: 0.25rem;
    cursor: pointer;
    min-height: 230px;
-   flex: 0 0 304px;
+   flex: 0 0 304px;      /* mismo ancho que una tarjeta normal */
    border-radius: 16px;
 }
 
@@ -41,6 +52,7 @@
    font-size: 0.85rem;
 }
 
+/* Título de cada bloque de medidores dentro de la tarjeta */
 .alim-card-section-title {
    text-transform: uppercase;
 }
