@@ -1,6 +1,18 @@
-/* src/lib/Alimentadores/AlimentadorCard.css */
+/* src/paginas/PaginaAlimentadores/componentes/tarjetas/TarjetaAlimentador.css */
+/*
+   NOTA PERSONAL SOBRE ESTE ARCHIVO (TarjetaAlimentador.css)
+   - Define el aspecto visual de cada tarjeta de alimentador: marco, header con
+     botones, cuerpo con medidores y estados especiales (drag & drop, progreso).
 
-/* Tarjeta base */
+   - `.alim-card` es el contenedor base; `.alim-card-wide` se usa cuando hay
+     muchas cajas para ensanchar la tarjeta.
+
+   - `.alim-card-meter-value` aplica la fuente digital y los colores del display,
+     mientras que `.alim-meter-progress-*` dibuja el borde animado según el
+     periodo de medición configurado.
+*/
+
+/* Tarjeta base (card de alimentador) */
 .alim-card {
 	background-color: #111827;
 	border-radius: 16px;
@@ -10,8 +22,8 @@
 	border: 1px solid #1f2937;
 	min-height: 230px;
 
-	/* 👇 importante para que flex calcule bien */
-	flex: 0 0 304px; 	/* ancho "normal" de la tarjeta */
+	/* importante para que flex calcule bien el ancho */
+	flex: 0 0 304px; /* ancho "normal" de la tarjeta */
 }
 
 /* Cuando hay 4 boxes en alguna fila, la hacemos más ancha */
@@ -65,15 +77,12 @@
 	text-align: left;
 	font-weight: 700;
 	padding-left: 0.4rem;
-	white-space: nowrap;
-	/* 👈 no permitir salto de línea */
-	overflow: hidden;
-	/* 👈 cortar lo que sobra */
-	text-overflow: ellipsis;
-	/* 👈 poner "..." al final */
+	white-space: nowrap;        /* no permitir salto de línea */
+	overflow: hidden;           /* cortar lo que sobra */
+	text-overflow: ellipsis;    /* poner "..." al final */
 }
 
-/* Botón específico de mapeo */
+/* Botón específico de mapeo (tiene un poco más de padding) */
 .alim-card-map-btn {
 	padding-right: 10px;
 }
@@ -102,16 +111,16 @@
 
 .alim-card-meters {
 	display: flex;
-	justify-content: space-evenly; 	/* 👈 reparte espacios iguales */
-	gap: 8px; 	/* con space-evenly no hace falta gap */
-	position: relative; 	/* 👈 importante */
-	overflow: visible; 	/* el borde puede sobresalir un poquito */
+	justify-content: space-evenly; /* reparte espacios iguales entre cajas */
+	gap: 8px;
+	position: relative;            /* necesario para posicionar el borde animado */
+	overflow: visible;             /* el borde puede sobresalir un poquito */
 }
 
-/* cada box con ancho fijo */
+/* Cada box con ancho fijo */
 .alim-card-meter {
 	position: relative;
-	flex: 0 0 80px; 	/* ajustá 90–100px según cómo veas el tamaño ideal */
+	flex: 0 0 80px;                /* ancho aproximado de cada box */
 	text-align: center;
 }
 
@@ -122,7 +131,7 @@
 }
 
 .alim-card-meter-value {
-	position: relative;	/* 👈 nuevo */
+	position: relative;            /* necesario para dibujar el borde animado con ::before */
 	display: block;
 	font-family: "DS-Digital", "Courier New", monospace;
 	font-size: 1.3rem;
@@ -136,7 +145,7 @@
 	box-shadow: inset 0 0 6px rgba(250, 204, 21, 0.4);
 }
 
-/* Estado arrastrando */
+/* Estado cuando la tarjeta está siendo arrastrada */
 .alim-card-dragging {
 	opacity: 0.35;
 	transform: scale(0.98);
@@ -145,59 +154,74 @@
 
 /* ===== BORDE PROGRESO PARA REGISTROS DEL RELÉ ===== */
 .alim-meter-progress-rele::before {
-   content: "";
-   position: absolute;
-   inset: -2px;
-   border-radius: 3px;
-   pointer-events: none;
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: 3px;
+	pointer-events: none;
 
-   background:
-      linear-gradient(#ece4b3e7 0 0) 0% 0 / 0 4px no-repeat,           /* arriba */
-      linear-gradient(#ece4b3e7 0 0) 100% 0 / 4px 0 no-repeat,        /* derecha */
-      linear-gradient(#ece4b3e7 0 0) 100% 100% / 0 4px no-repeat,     /* abajo */
-      linear-gradient(#ece4b3e7 0 0) 0% 100% / 4px 0 no-repeat;       /* izquierda */
+	background:
+		linear-gradient(#ece4b3e7 0 0) 0% 0 / 0 4px no-repeat,      /* arriba */
+		linear-gradient(#ece4b3e7 0 0) 100% 0 / 4px 0 no-repeat,    /* derecha */
+		linear-gradient(#ece4b3e7 0 0) 100% 100% / 0 4px no-repeat, /* abajo */
+		linear-gradient(#ece4b3e7 0 0) 0% 100% / 4px 0 no-repeat;   /* izquierda */
 
-   animation: rw-border-progress-rele
-      var(--rw-progress-duration-rele, 60s)
-      linear
-      infinite;
+	animation: rw-border-progress-rele var(--rw-progress-duration-rele, 60s)
+		linear infinite;
 }
 
 @keyframes rw-border-progress-rele {
-   0% { background-size: 0 2px, 2px 0, 0 2px, 2px 0; }
-   25% { background-size: 100% 2px, 2px 0, 0 2px, 2px 0; }
-   50% { background-size: 100% 2px, 2px 100%, 0 2px, 2px 0; }
-   75% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0; }
-   100% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%; }
+	0% {
+		background-size: 0 2px, 2px 0, 0 2px, 2px 0;
+	}
+	25% {
+		background-size: 100% 2px, 2px 0, 0 2px, 2px 0;
+	}
+	50% {
+		background-size: 100% 2px, 2px 100%, 0 2px, 2px 0;
+	}
+	75% {
+		background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0;
+	}
+	100% {
+		background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+	}
 }
 
 /* ===== BORDE PROGRESO PARA REGISTROS DEL ANALIZADOR ===== */
 .alim-meter-progress-analizador::before {
-   content: "";
-   position: absolute;
-   inset: -2px;
-   border-radius: 3px;
-   pointer-events: none;
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border-radius: 3px;
+	pointer-events: none;
 
-   /* Podés usar el mismo color o cambiarlo si querés distinguirlos */
-   background:
-      linear-gradient(#ece4b3e7 0 0) 0% 0 / 0 4px no-repeat,
-      linear-gradient(#ece4b3e7 0 0) 100% 0 / 4px 0 no-repeat,
-      linear-gradient(#ece4b3e7 0 0) 100% 100% / 0 4px no-repeat,
-      linear-gradient(#ece4b3e7 0 0) 0% 100% / 4px 0 no-repeat;
+	/* Podés usar el mismo color o cambiarlo si querés distinguirlos */
+	background:
+		linear-gradient(#ece4b3e7 0 0) 0% 0 / 0 4px no-repeat,
+		linear-gradient(#ece4b3e7 0 0) 100% 0 / 4px 0 no-repeat,
+		linear-gradient(#ece4b3e7 0 0) 100% 100% / 0 4px no-repeat,
+		linear-gradient(#ece4b3e7 0 0) 0% 100% / 4px 0 no-repeat;
 
-   animation: rw-border-progress-analizador
-      var(--rw-progress-duration-analizador, 60s)
-      linear
-      infinite;
+	animation: rw-border-progress-analizador
+		var(--rw-progress-duration-analizador, 60s) linear infinite;
 }
 
 @keyframes rw-border-progress-analizador {
-   0% { background-size: 0 2px, 2px 0, 0 2px, 2px 0; }
-   25% { background-size: 100% 2px, 2px 0, 0 2px, 2px 0; }
-   50% { background-size: 100% 2px, 2px 100%, 0 2px, 2px 0; }
-   75% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0; }
-   100% { background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%; }
+	0% {
+		background-size: 0 2px, 2px 0, 0 2px, 2px 0;
+	}
+	25% {
+		background-size: 100% 2px, 2px 0, 0 2px, 2px 0;
+	}
+	50% {
+		background-size: 100% 2px, 2px 100%, 0 2px, 2px 0;
+	}
+	75% {
+		background-size: 100% 2px, 2px 100%, 100% 2px, 2px 0;
+	}
+	100% {
+		background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+	}
 }
-
 
