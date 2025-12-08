@@ -50,7 +50,7 @@
 }
 
 /* ====================== TÍTULOS Y TEXTO ====================== */
-h2 {
+.h2-Recuperar {
 	 color: #e0f7fa; 
     margin: 0 0 15px 0;                                   /* quita margen arriba, deja abajo
     color: #e0f7fa;                                       /* celeste claro para que se lea bien */

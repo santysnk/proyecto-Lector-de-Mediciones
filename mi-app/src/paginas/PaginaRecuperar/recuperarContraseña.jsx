@@ -48,13 +48,13 @@ const RecuperarContrasena = () => {
                className="logo-recuperar"
             />{" "}                                      {/* Logo de la app */}
             
-            <h2>Recuperar contraseña</h2>
+            <h2 className="h2-Recuperar">Recuperar contraseña</h2>
 
             <p className="texto-ayuda">
                Ingresá tu email y te enviaremos un enlace para crear una nueva
                contraseña
             </p>
-				
+
             <form onSubmit={handleSubmit}>
                {" "}
                {/* Input de email */}
