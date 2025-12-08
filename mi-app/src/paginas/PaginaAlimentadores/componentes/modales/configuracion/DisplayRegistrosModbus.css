@@ -1,4 +1,15 @@
-/* Estilos para display de registros Modbus */
+/* src/paginas/PaginaAlimentadores/componentes/modales/configuracion/DisplayRegistrosModbus.css */
+/*
+   NOTA SOBRE ESTE ARCHIVO (DisplayRegistrosModbus.css)
+   - Estilos específicos del pequeño panel que muestra los registros Modbus
+     (índice, dirección y valor) cuando se usa el componente
+     `DisplayRegistrosModbus.jsx`.
+	  
+   - `.alim-registros-display` dibuja la tarjeta contenedora; la grilla
+     `.alim-registros-grid` reparte los ítems en columnas, y cada registro
+     individual se estiliza con `.alim-registro-item`, label y value.
+*/
+
 .alim-registros-display {
 	margin-top: 1rem;
 	padding: 1rem;
