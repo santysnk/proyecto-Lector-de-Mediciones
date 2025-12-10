@@ -1,3 +1,4 @@
+
 // src/paginas/PaginaLogin/PaginaLogin.jsx
 
 import React, { useEffect, useState } from "react";      // React y hooks de estado/efectos
@@ -16,29 +17,7 @@ const PaginaLogin = () => {
    const navigate = useNavigate();                                    // hook para navegar programáticamente
 
    // ----------------------------------------------------------------
-   // 1) Inicializar usuario/contraseña si hay un "usuarioLogueado"
-   //    guardado en localStorage con recordarme=true
-   // ----------------------------------------------------------------
-   useEffect(() => {
-      const stored = localStorage.getItem("usuarioLogueado");         // intento leer el último usuario logueado
-
-      if (!stored) return;
-
-      try {
-         const parsed = JSON.parse(stored);                           // parseo JSON guardado
-
-         if (parsed.recordarme) {
-            setUsuario(parsed.usuario || "");                         // precargo usuario
-            setContrasena(parsed.contrasena || "");                   // precargo contraseña
-            setRecordarme(true);                                      // dejo el checkbox tildado
-         }
-      } catch (e) {
-         console.error("Error al leer usuarioLogueado:", e);
-      }
-   }, []);
-
-   // ----------------------------------------------------------------
-   // 2) Autocompletar contraseña si el usuario ya fue recordado antes
+   // 1) Autocompletar contraseña si el usuario ya fue recordado antes
    //    usando la lista "usuariosRecordados" en localStorage
    // ----------------------------------------------------------------
    useEffect(() => {
@@ -61,7 +40,7 @@ const PaginaLogin = () => {
    }, [usuario]);
 
    // ----------------------------------------------------------------
-   // 3) Cargar lista de usuarios desde json-server (db.json)
+   // 2) Cargar lista de usuarios desde json-server (db.json)
    //    en http://localhost:4000/users
    // ----------------------------------------------------------------
    useEffect(() => {
@@ -78,7 +57,7 @@ const PaginaLogin = () => {
    }, []);                                                            // solo una vez al montar el componente
 
    // ----------------------------------------------------------------
-   // 4) Helper para mostrar una alerta temporal en pantalla
+   // 3) Helper para mostrar una alerta temporal en pantalla
    // ----------------------------------------------------------------
    const mostrarAlerta = (mensaje, tipo = "error") => {
       setAlerta({ mensaje, tipo });                                   // seteo el texto y tipo de alerta
@@ -88,7 +67,7 @@ const PaginaLogin = () => {
    };
 
    // ----------------------------------------------------------------
-   // 5) Manejo del submit del formulario de login
+   // 4) Manejo del submit del formulario de login
    // ----------------------------------------------------------------
    const handleSubmit = (event) => {
       event.preventDefault();                                         // evito recarga completa de la página
@@ -115,7 +94,7 @@ const PaginaLogin = () => {
       mostrarAlerta(`Bienvenido, ${usuarioEncontrado.Nombre}!`, "exito"); // mensaje de bienvenida
 
       // ----------------------------------------------------------------
-      // 5.1) Gestionar "Recordarme" con la lista usuariosRecordados
+      // 4.1) Gestionar "Recordarme" con la lista usuariosRecordados
       // ----------------------------------------------------------------
       if (recordarme) {
          let listaRecordados = JSON.parse(
@@ -150,7 +129,7 @@ const PaginaLogin = () => {
       }
 
       // ----------------------------------------------------------------
-      // 5.2) Navegar a la pantalla de alimentadores después de un breve delay
+      // 4.2) Navegar a la pantalla de alimentadores despu�s de un breve delay
       // ----------------------------------------------------------------
       setTimeout(() => {
          navigate("/alimentadores");                                  // redirige al panel principal
@@ -158,7 +137,7 @@ const PaginaLogin = () => {
    };
 
    // ----------------------------------------------------------------
-   // 6) Render del formulario de login
+   // 5) Render del formulario de login
    // ----------------------------------------------------------------
    return (
       <form onSubmit={handleSubmit} className="login-form">
@@ -253,15 +232,11 @@ export default PaginaLogin;      // componente exportado para usarlo en App.jsx
  NOTA SOBRE ESTE ARCHIVO (PaginaLogin.jsx)
 
  - Pantalla de login con soporte de "recordarme" y autocompletado de usuario
-   y contraseña usando localStorage (`usuarioLogueado` + `usuariosRecordados`).
+   y contraseña usando localStorage (`usuariosRecordados`).
 
  - Al montar, carga la lista de usuarios desde json-server (db.json en
    http://localhost:4000/users) y la guarda en `usuariosValidos` para validar
    las credenciales localmente sin otra llamada.
-
- - El primer useEffect revisa si hay un usuario previo en `usuarioLogueado` y,
-   si marcó "recordarme", completa usuario/contraseña y deja tildado el
-   checkbox.
 
  - El segundo useEffect usa `usuariosRecordados` para autocompletar la
    contraseña cuando escribo un usuario que ya estuvo guardado antes.
@@ -321,24 +296,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
          "Bienvenido, ...").
 
 
-2) useEffect #1 – usuarioLogueado inicial
-
-   useEffect(() => {
-     const stored = localStorage.getItem("usuarioLogueado");
-     ...
-   }, []);
-
-   - Se ejecuta una sola vez al montar el componente.
-   - Busca en localStorage un objeto JSON bajo la clave "usuarioLogueado".
-   - Si existe y tiene recordarme === true:
-       • precarga campo usuario,
-       • precarga campo contrasena,
-       • marca el checkbox "Recordarme".
-   - Esto permite que, tras un login anterior donde se marcó "Recordarme",
-     el formulario aparezca ya completo la próxima vez que se abre la app.
-
-
-3) useEffect #2 – autocompletar desde usuariosRecordados
+2) useEffect – autocompletar desde usuariosRecordados
 
    useEffect(() => {
      if (usuario.trim() === "") { ... }
@@ -348,17 +306,21 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
    }, [usuario]);
 
    - Se ejecuta cada vez que cambia el campo usuario.
+
    - Si el input queda vacío, también se limpia la contraseña.
+
    - Si hay texto, se busca ese usuario en la lista "usuariosRecordados"
      almacenada en localStorage (es un array con objetos { usuario, contrasena }).
+
    - Si se encuentra:
        • autocompleta el campo contrasena,
        • marca el checkbox "Recordarme".
+
    - Este mecanismo permite que, escribiendo sólo el usuario (o eligiéndolo
      desde el datalist), se rellene automáticamente la contraseña asociada.
 
 
-4) useEffect #3 – carga de usuarios desde json-server
+3) useEffect #2 – carga de usuarios desde json-server
 
    useEffect(() => {
      fetch("http://localhost:4000/users")
@@ -383,7 +345,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
          debajo del formulario.
 
 
-5) mostrarAlerta(mensaje, tipo)
+4) mostrarAlerta(mensaje, tipo)
 
    const mostrarAlerta = (mensaje, tipo = "error") => {
      setAlerta({ mensaje, tipo });
@@ -399,14 +361,14 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
    - Luego de 4 segundos, la alerta se limpia sola, dejando de mostrarse.
 
 
-6) handleSubmit – flujo principal de login
+5) handleSubmit – flujo principal de login
 
    const handleSubmit = (event) => {
      event.preventDefault();
      ...
    };
 
-   6.1) Validación de usuario y contraseña
+   5.1) Validación de usuario y contraseña
 
    - Normaliza el usuario a minúsculas (usuarioLimpio).
    - Busca en usuariosValidos un registro cuyo campo Usuario coincida
@@ -418,7 +380,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
        • si no coinciden, alerta "Contraseña incorrecta";
        • si coinciden, alerta de bienvenida y continúa el flujo.
 
-   6.2) Gestión de la lista usuariosRecordados
+   5.2) Gestión de la lista usuariosRecordados
 
    - Si recordarme === true:
        • lee la lista existente de usuariosRecordados desde localStorage
@@ -436,7 +398,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
      pidieron ser recordados, junto con su contraseña (en texto plano en
      este trabajo práctico, sabiendo que en producción se debería cifrar).
 
-   6.3) Navegación hacia /alimentadores
+   5.3) Navegación hacia /alimentadores
 
    - Tras un pequeño delay (1200 ms), llama a navigate("/alimentadores").
 	
@@ -444,7 +406,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
      antes de redirigir al usuario al panel principal de la app.
 
 
-7) Render del formulario y estructura visual
+6) Render del formulario y estructura visual
 
    return (
      <form onSubmit={handleSubmit} className="login-form">
@@ -489,3 +451,6 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (PaginaLogin.jsx)
          errores o mensajes de éxito de forma destacada sobre la pantalla.
 
 ---------------------------------------------------------------------------*/
+
+
+
