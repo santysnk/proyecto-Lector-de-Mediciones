@@ -1,7 +1,8 @@
 // src/paginas/PaginaAlimentadores/componentes/navegacion/BarraNavegacion.jsx
 
-import React from "react";                 
+import React, { useState } from "react";
 import "./BarraNavegacion.css";            // estilos específicos de la barra superior
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadores";
 
 /**
  * Barra de navegación superior.
@@ -14,11 +15,78 @@ const BarraNavegacion = ({
 	onSeleccionarPuesto,                    // callback al hacer clic en un botón de puesto
 	onAbrirModalNuevoPuesto,                // callback para abrir modal "Nuevo puesto"
 	onAbrirModalEditarPuestos,              // callback para abrir modal "Editar puestos"
+	onAbrirModalConfigPuesto,               // callback para abrir modal de configuración del puesto
 	onSalir,                                // callback para cerrar sesión / volver al inicio
 	onAbrirMenu,                            // callback para abrir el menú lateral en modo compacto
 	coloresSistema,                         // paleta de colores para botones de puesto
 }) => {
+	const { estaMidiendo, alternarMedicion, detenerMedicion } = usarContextoAlimentadores();
+
+	// Estado para el diálogo de confirmación
+	const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
+
+	// ===== LÓGICA DEL BOTÓN MAESTRO GLOBAL =====
+	const calcularEstadoGlobal = () => {
+		if (!puestoSeleccionado) {
+			return { infoAlimentadores: [], hayAlgunaCardDisponible: false, algunaCardMidiendo: false };
+		}
+
+		const alimentadores = puestoSeleccionado.alimentadores || [];
+
+		const infoAlimentadores = alimentadores.map((alim) => {
+			const releConfigValida = alim.rele?.ip?.trim() && alim.rele?.puerto;
+			const analizadorConfigValida = alim.analizador?.ip?.trim() && alim.analizador?.puerto;
+			const hayAlgunaConfigValida = releConfigValida || analizadorConfigValida;
+
+			const releMidiendo = estaMidiendo(alim.id, "rele");
+			const analizadorMidiendo = estaMidiendo(alim.id, "analizador");
+
+			const algunoMidiendo = (releConfigValida && releMidiendo) || (analizadorConfigValida && analizadorMidiendo);
+
+			return {
+				alim,
+				releConfigValida,
+				analizadorConfigValida,
+				hayAlgunaConfigValida,
+				releMidiendo,
+				analizadorMidiendo,
+				algunoMidiendo,
+			};
+		});
+
+		const hayAlgunaCardDisponible = infoAlimentadores.some((info) => info.hayAlgunaConfigValida);
+		const algunaCardMidiendo = infoAlimentadores.some((info) => info.hayAlgunaConfigValida && info.algunoMidiendo);
+
+		return { infoAlimentadores, hayAlgunaCardDisponible, algunaCardMidiendo };
+	};
+
+	const { infoAlimentadores, hayAlgunaCardDisponible, algunaCardMidiendo } = calcularEstadoGlobal();
+
+	// Abre el diálogo de confirmación
+	const handleClickMaestro = () => {
+		if (!hayAlgunaCardDisponible) return;
+		setMostrarConfirmacion(true);
+	};
+
+	// Ejecuta la acción después de confirmar
+	const ejecutarMaestroGlobal = () => {
+		setMostrarConfirmacion(false);
+
+		if (algunaCardMidiendo) {
+			infoAlimentadores.forEach(({ alim, releMidiendo, analizadorMidiendo }) => {
+				if (releMidiendo) detenerMedicion(alim.id, "rele");
+				if (analizadorMidiendo) detenerMedicion(alim.id, "analizador");
+			});
+		} else {
+			infoAlimentadores.forEach(({ alim, releConfigValida, analizadorConfigValida, releMidiendo, analizadorMidiendo }) => {
+				if (releConfigValida && !releMidiendo) alternarMedicion(alim, "rele");
+				if (analizadorConfigValida && !analizadorMidiendo) alternarMedicion(alim, "analizador");
+			});
+		}
+	};
+
 	return (
+		<>
 		<nav
 			className={
 				"alim-navbar" + (esCompacto ? " alim-navbar-compact" : "")
@@ -36,12 +104,34 @@ const BarraNavegacion = ({
 						☰
 					</button>
 
-					{/* Título centrado: muestra el nombre del puesto o texto genérico */}
-					<div className="alim-navbar-compact-title">
-						{puestoSeleccionado
-							? puestoSeleccionado.nombre
-							: "Panel de Alimentadores"}
-					</div>
+					{/* Centro: nombre del puesto o texto genérico */}
+					{puestoSeleccionado ? (
+						<button
+							type="button"
+							className="alim-current-puesto-btn"
+							onClick={onAbrirModalConfigPuesto}
+							title="Configurar puesto"
+						>
+							{puestoSeleccionado.nombre}
+						</button>
+					) : (
+						<div className="alim-navbar-compact-title">
+							Panel de Alimentadores
+						</div>
+					)}
+
+					{/* Botón maestro a la derecha (solo si hay puesto seleccionado) */}
+					{puestoSeleccionado && (
+						<button
+							type="button"
+							className={`alim-maestro-btn ${algunaCardMidiendo ? "alim-maestro-btn--stop" : ""} ${!hayAlgunaCardDisponible ? "alim-maestro-btn--disabled" : ""}`}
+							onClick={handleClickMaestro}
+							disabled={!hayAlgunaCardDisponible}
+							title={!hayAlgunaCardDisponible ? "Sin registradores con configuración válida" : algunaCardMidiendo ? "Detener todas las mediciones" : "Iniciar todas las mediciones"}
+						>
+							{!hayAlgunaCardDisponible ? "⊘" : algunaCardMidiendo ? "⏹" : "▶"}
+						</button>
+					)}
 				</>
 			) : (
 				<>
@@ -50,8 +140,24 @@ const BarraNavegacion = ({
 						<h1 className="alim-title">Panel de Alimentadores</h1>
 
 						{puestoSeleccionado && (
-							<div className="alim-current-puesto">
-								{puestoSeleccionado.nombre}
+							<div className="alim-puesto-row">
+								<button
+									type="button"
+									className="alim-puesto-nombre-btn"
+									onClick={onAbrirModalConfigPuesto}
+									title="Configurar puesto"
+								>
+									{puestoSeleccionado.nombre}
+								</button>
+								<button
+									type="button"
+									className={`alim-maestro-btn-texto ${algunaCardMidiendo ? "alim-maestro-btn-texto--stop" : ""} ${!hayAlgunaCardDisponible ? "alim-maestro-btn-texto--disabled" : ""}`}
+									onClick={handleClickMaestro}
+									disabled={!hayAlgunaCardDisponible}
+									title={!hayAlgunaCardDisponible ? "Sin registradores con configuración válida" : algunaCardMidiendo ? "Detener todas las mediciones" : "Iniciar todas las mediciones"}
+								>
+									{!hayAlgunaCardDisponible ? "⊘" : algunaCardMidiendo ? "PARAR MEDICIONES" : "INICIAR MEDICIONES"}
+								</button>
 							</div>
 						)}
 					</div>
@@ -112,6 +218,42 @@ const BarraNavegacion = ({
 				</>
 			)}
 		</nav>
+
+		{/* Diálogo de confirmación para el botón maestro */}
+		{mostrarConfirmacion && (
+			<div className="alim-confirmacion-overlay">
+				<div className="alim-confirmacion">
+					<div className="alim-confirmacion__icono">
+						{algunaCardMidiendo ? "⏹️" : "▶️"}
+					</div>
+					<h3 className="alim-confirmacion__titulo">
+						{algunaCardMidiendo ? "¿Detener todas las mediciones?" : "¿Iniciar todas las mediciones?"}
+					</h3>
+					<p className="alim-confirmacion__mensaje">
+						{algunaCardMidiendo
+							? "Se detendrán las mediciones de todos los registradores activos en este puesto."
+							: "Se iniciarán las mediciones de todos los registradores con configuración válida en este puesto."}
+					</p>
+					<div className="alim-confirmacion__botones">
+						<button
+							type="button"
+							className="alim-confirmacion__btn alim-confirmacion__btn--cancelar"
+							onClick={() => setMostrarConfirmacion(false)}
+						>
+							Cancelar
+						</button>
+						<button
+							type="button"
+							className={`alim-confirmacion__btn ${algunaCardMidiendo ? "alim-confirmacion__btn--detener" : "alim-confirmacion__btn--iniciar"}`}
+							onClick={ejecutarMaestroGlobal}
+						>
+							{algunaCardMidiendo ? "Detener" : "Iniciar"}
+						</button>
+					</div>
+				</div>
+			</div>
+		)}
+		</>
 	);
 };
 

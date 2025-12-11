@@ -11,6 +11,7 @@ import ModalNuevoPuesto from "../modales/ModalNuevoPuesto.jsx";     // modal par
 import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal para editar/renombrar/eliminar puestos
 import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
 import ModalMapeoMediciones from "../modales/ModalMapeoMediciones.jsx";                   // modal de mapeo de mediciones
+import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -67,6 +68,7 @@ const {
 	const estadoModalEditarPuestos = obtenerEstado("editarPuestos"); // idem para modal de edición de puestos
 	const estadoModalAlimentador = obtenerEstado("alimentador");     // idem para modal de configuración de alimentador
 	const estadoModalMapeo = obtenerEstado("mapeo");                 // idem para modal de mapeo de mediciones
+	const estadoModalConfigPuesto = obtenerEstado("configPuesto");   // idem para modal de configuración global del puesto
 
 	const buscarAlimentador = (alimId) =>
 		puestoSeleccionado?.alimentadores.find((a) => a.id === alimId) || null; // helper para obtener el alimentador por id
@@ -87,6 +89,7 @@ const {
 	// ===== MODALES PUESTOS =====
 	const abrirModalNuevoPuesto = () => abrirModal("nuevoPuesto");    // abre modal para crear puesto
 	const abrirModalEditarPuestos = () => abrirModal("editarPuestos");// abre modal para editar lista de puestos
+	const abrirModalConfigPuesto = () => abrirModal("configPuesto");  // abre modal de configuración global del puesto
 
 	const handleCrearPuesto = (nombre, color) => {
 		agregarPuesto(nombre, color);                                 // crea el puesto vía contexto
@@ -96,6 +99,21 @@ const {
 	const handleGuardarPuestos = (puestosEditados) => {
 		actualizarPuestos(puestosEditados);                           // guarda cambios masivos (nombres/colores)
 		cerrarModal("editarPuestos");
+	};
+
+	const handleGuardarConfigPuesto = (alimentadoresActualizados) => {
+		if (!puestoSeleccionado) return;
+		// Actualizar el puesto con los alimentadores modificados
+		const puestoActualizado = {
+			...puestoSeleccionado,
+			alimentadores: alimentadoresActualizados,
+		};
+		// Actualizar la lista de puestos
+		const nuevaListaPuestos = puestos.map((p) =>
+			p.id === puestoSeleccionado.id ? puestoActualizado : p
+		);
+		actualizarPuestos(nuevaListaPuestos);
+		// No cerrar el modal - los cambios se guardan automáticamente
 	};
 
 	// ===== MODALES ALIMENTADORES =====
@@ -200,6 +218,7 @@ const {
 				onSeleccionarPuesto={seleccionarPuesto}
 				onAbrirModalNuevoPuesto={abrirModalNuevoPuesto}
 				onAbrirModalEditarPuestos={abrirModalEditarPuestos}
+				onAbrirModalConfigPuesto={abrirModalConfigPuesto}
 				onSalir={handleSalir}
 				onAbrirMenu={() => setMenuAbierto(true)}
 				coloresSistema={COLORES_SISTEMA}
@@ -322,6 +341,13 @@ const {
 				alimentador={alimentadorParaMapeo}
 				onCerrar={() => cerrarModal("mapeo")}
 				onGuardar={handleGuardarMapeo}
+			/>
+
+			<ModalConfiguracionPuesto
+				abierto={estadoModalConfigPuesto.abierto}
+				puesto={puestoSeleccionado}
+				onCerrar={() => cerrarModal("configPuesto")}
+				onGuardar={handleGuardarConfigPuesto}
 			/>
 		</div>
 	);

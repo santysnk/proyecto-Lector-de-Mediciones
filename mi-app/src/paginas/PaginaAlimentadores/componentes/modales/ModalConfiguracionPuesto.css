@@ -1,0 +1,552 @@
+/* ModalConfiguracionPuesto.css */
+
+/* ===== OVERLAY ===== */
+.puesto-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.6);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	padding: 1rem;
+	pointer-events: none;
+}
+
+/* ===== MODAL CONTAINER ===== */
+.puesto-modal {
+	background: #1e293b;
+	border-radius: 12px;
+	width: fit-content;
+	max-width: 95vw;
+	max-height: 90vh;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+	overflow: hidden;
+	pointer-events: auto;
+	transition: box-shadow 0.2s;
+}
+
+.puesto-modal--arrastrando {
+	box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.7);
+	user-select: none;
+}
+
+/* ===== HEADER ===== */
+.puesto-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 1.5rem;
+	background: #0f172a;
+	border-bottom: 1px solid #334155;
+}
+
+.puesto-modal__title {
+	margin: 0;
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #f1f5f9;
+}
+
+.puesto-modal__close {
+	background: none;
+	border: none;
+	color: #94a3b8;
+	font-size: 1.5rem;
+	cursor: pointer;
+	padding: 0.25rem 0.5rem;
+	line-height: 1;
+	transition: color 0.2s;
+}
+
+.puesto-modal__close:hover {
+	color: #f1f5f9;
+}
+
+/* Header Actions Container */
+.puesto-modal__header-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+/* ===== CONTENT ===== */
+.puesto-modal__content {
+	flex: 1;
+	overflow: auto;
+	padding: 1rem;
+}
+
+.puesto-modal__empty {
+	text-align: center;
+	color: #94a3b8;
+	padding: 2rem;
+	font-size: 0.95rem;
+}
+
+/* ===== CARDS CONTAINER ===== */
+.puesto-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+/* ===== CARD ===== */
+.puesto-card {
+	background: #0f172a;
+	border: 1px solid #475569;
+	border-left: 4px solid #475569;
+	border-bottom: 2px solid #475569;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+/* Card Header */
+.puesto-card__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.5rem 1rem;
+	background: #0f172a;
+}
+
+/* Master Play/Stop Button (Global - Header) */
+.puesto-card__master-btn {
+	padding: 0.5rem 0.75rem;
+	background: #1e3a5f;
+	border: 1px solid #3b82f6;
+	border-radius: 4px;
+	color: #60a5fa;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+	line-height: 1;
+}
+
+.puesto-card__master-btn:hover {
+	background: #2563eb;
+	color: #fff;
+}
+
+.puesto-card__master-btn:active {
+	transform: scale(0.95);
+}
+
+.puesto-card__master-btn--stop {
+	background: #5f1e1e;
+	border-color: #ef4444;
+	color: #f87171;
+}
+
+.puesto-card__master-btn--stop:hover {
+	background: #dc2626;
+	color: #fff;
+}
+
+.puesto-card__master-btn--disabled {
+	background: #374151;
+	border-color: #4b5563;
+	color: #ef4444;
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+/* Master Text Button (Card - INICIAR/PARAR) */
+.puesto-card__master-btn-text {
+	padding: 0.25rem 0.6rem;
+	background: #1e3a5f;
+	border: 1px solid #3b82f6;
+	border-radius: 4px;
+	color: #60a5fa;
+	font-size: 0.65rem;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+	line-height: 1;
+}
+
+.puesto-card__master-btn-text:hover {
+	background: #2563eb;
+	color: #fff;
+}
+
+.puesto-card__master-btn-text:active {
+	transform: scale(0.95);
+}
+
+.puesto-card__master-btn-text--stop {
+	background: #5f1e1e;
+	border-color: #ef4444;
+	color: #f87171;
+}
+
+.puesto-card__master-btn-text--stop:hover {
+	background: #dc2626;
+	color: #fff;
+}
+
+.puesto-card__master-btn-text--disabled {
+	background: #374151;
+	border-color: #4b5563;
+	color: #6b7280;
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.puesto-card__master-btn-text--disabled:hover {
+	background: #374151;
+	color: #6b7280;
+}
+
+.puesto-card__master-btn--disabled:hover {
+	background: #374151;
+	color: #ef4444;
+}
+
+.puesto-card__nombre {
+	font-weight: 600;
+	font-size: 0.9rem;
+	color: #f1f5f9;
+}
+
+/* Card Body */
+.puesto-card__body {
+	padding: 0.6rem 0.8rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	background-color: #1e293b;
+}
+
+/* Row (Relé / Analizador) */
+.puesto-card__row {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.75rem;
+}
+
+.puesto-card__field--tipo {
+	flex: 0 0 85px;
+}
+
+.puesto-card__tipo-input {
+	font-size: 0.7rem;
+	font-weight: 600;
+	text-align: center;
+	cursor: default;
+}
+
+.puesto-card__tipo-input--rele {
+	background: #1e3a5f !important;
+	color: #60a5fa !important;
+	border-color: #1e3a5f !important;
+}
+
+.puesto-card__tipo-input--analizador {
+	background: #3d1e5f !important;
+	color: #c084fc !important;
+	border-color: #3d1e5f !important;
+}
+
+/* Fields container */
+.puesto-card__fields {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.5rem;
+}
+
+/* Field */
+.puesto-card__field {
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+}
+
+.puesto-card__field--ip {
+	flex: 0 0 120px;
+}
+
+.puesto-card__field--small {
+	flex: 0 0 75px;
+}
+
+.puesto-card__field--action {
+	flex: 0 0 40px;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+}
+
+.puesto-card__field label {
+	font-size: 0.65rem;
+	color: #e2e8f0;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	text-align: center;
+}
+
+.puesto-card__field input {
+	width: 100%;
+	padding: 0.4rem 0.5rem;
+	background: #1e293b;
+	border: 1px solid #475569;
+	border-radius: 4px;
+	color: #f1f5f9;
+	font-size: 0.8rem;
+	text-align: center;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.puesto-card__field input:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.puesto-card__field input::placeholder {
+	color: #475569;
+}
+
+/* Remove spinner from number inputs */
+.puesto-card__field input[type="number"]::-webkit-outer-spin-button,
+.puesto-card__field input[type="number"]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.puesto-card__field input[type="number"] {
+	-moz-appearance: textfield;
+}
+
+/* ===== PLAY/STOP BUTTON ===== */
+.puesto-card__play-btn {
+	width: 100%;
+	padding: 0.4rem 0.3rem;
+	background: #1e3a5f;
+	border: 1px solid #3b82f6;
+	border-radius: 4px;
+	color: #60a5fa;
+	font-size: 0.9rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+}
+
+.puesto-card__play-btn:hover {
+	background: #2563eb;
+	color: #fff;
+}
+
+.puesto-card__play-btn:active {
+	transform: scale(0.95);
+}
+
+.puesto-card__play-btn--stop {
+	background: #5f1e1e;
+	border-color: #ef4444;
+	color: #f87171;
+}
+
+.puesto-card__play-btn--stop:hover {
+	background: #dc2626;
+	color: #fff;
+}
+
+.puesto-card__play-btn--disabled {
+	background: #374151;
+	border-color: #4b5563;
+	color: #ef4444;
+	cursor: not-allowed;
+	opacity: 0.7;
+}
+
+.puesto-card__play-btn--disabled:hover {
+	background: #374151;
+	color: #ef4444;
+}
+
+/* ===== FOOTER ===== */
+.puesto-modal__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 0.75rem;
+	padding: 1rem 1.5rem;
+	background: #0f172a;
+	border-top: 1px solid #334155;
+}
+
+.puesto-modal__btn {
+	padding: 0.6rem 1.25rem;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s;
+}
+
+.puesto-modal__btn:active {
+	transform: scale(0.98);
+}
+
+.puesto-modal__btn--cancelar {
+	background: #475569;
+	color: #f1f5f9;
+}
+
+.puesto-modal__btn--cancelar:hover {
+	background: #64748b;
+}
+
+.puesto-modal__btn--descartar {
+	background: #dc2626;
+	color: #fff;
+}
+
+.puesto-modal__btn--descartar:hover {
+	background: #b91c1c;
+}
+
+.puesto-modal__btn--disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.puesto-modal__btn--disabled:hover {
+	background: #dc2626;
+}
+
+/* ===== CONFIRMATION DIALOG ===== */
+.puesto-confirmacion-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.75);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1100;
+}
+
+.puesto-confirmacion {
+	background: #1e293b;
+	border-radius: 12px;
+	padding: 1.5rem;
+	max-width: 400px;
+	width: 90%;
+	text-align: center;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+	border: 1px solid #334155;
+}
+
+.puesto-confirmacion__icono {
+	font-size: 2.5rem;
+	margin-bottom: 0.75rem;
+}
+
+.puesto-confirmacion__titulo {
+	margin: 0 0 0.5rem 0;
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #f1f5f9;
+}
+
+.puesto-confirmacion__mensaje {
+	margin: 0 0 1.25rem 0;
+	font-size: 0.9rem;
+	color: #94a3b8;
+	line-height: 1.5;
+}
+
+.puesto-confirmacion__botones {
+	display: flex;
+	justify-content: center;
+	gap: 0.75rem;
+}
+
+.puesto-confirmacion__btn {
+	padding: 0.6rem 1.25rem;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s;
+}
+
+.puesto-confirmacion__btn:active {
+	transform: scale(0.98);
+}
+
+.puesto-confirmacion__btn--cancelar {
+	background: #475569;
+	color: #f1f5f9;
+}
+
+.puesto-confirmacion__btn--cancelar:hover {
+	background: #64748b;
+}
+
+.puesto-confirmacion__btn--aceptar {
+	background: #dc2626;
+	color: #fff;
+}
+
+.puesto-confirmacion__btn--aceptar:hover {
+	background: #b91c1c;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 700px) {
+	.puesto-modal {
+		max-width: 100%;
+		max-height: 100vh;
+		border-radius: 0;
+	}
+
+	.puesto-modal__header {
+		padding: 0.75rem 1rem;
+	}
+
+	.puesto-modal__title {
+		font-size: 1rem;
+	}
+
+	.puesto-modal__content {
+		padding: 0.5rem;
+	}
+
+	.puesto-card__row {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0.4rem;
+	}
+
+	.puesto-card__tipo {
+		align-self: flex-start;
+	}
+
+	.puesto-card__fields {
+		flex-wrap: wrap;
+	}
+
+	.puesto-card__field {
+		flex: 1 1 45%;
+		min-width: 80px;
+	}
+
+	.puesto-card__field--small {
+		flex: 1 1 60px;
+	}
+
+	.puesto-modal__footer {
+		padding: 0.75rem 1rem;
+	}
+
+	.puesto-modal__btn {
+		padding: 0.5rem 1rem;
+		font-size: 0.85rem;
+	}
+}
