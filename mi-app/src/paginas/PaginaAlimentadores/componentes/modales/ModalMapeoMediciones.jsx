@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";              // React + hooks para estado y efectos
 import "./ModalMapeoMediciones.css";                             // estilos específicos del modal de mapeo
 import FormularioDiseñoTarjeta from "./mapeo/FormularioDiseñoTarjeta.jsx"; // subformulario para configurar cada lado de la tarjeta
+import { leerRegistrosModbus } from "../../utilidades/clienteModbus";     // cliente Modbus para cargar registros
+import { COLORES_SISTEMA } from "../../constantes/colores";               // paleta de colores para fallback
 
 // ---- helpers para diseño de card ----
 function crearSideDesignDefault(tituloIdPorDefecto) {
@@ -64,9 +66,25 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 	const initialMapeo = alimentador?.mapeoMediciones;            // mapeo previamente guardado (si existe)
 	const [mapeo, setMapeo] = useState(crearMapeoVacio);          // estado completo del mapeo (por ahora, sólo cardDesign)
 
+	// Estado para la carga de registros Modbus
+	const [registrosRele, setRegistrosRele] = useState([]);           // registros cargados del relé
+	const [registrosAnalizador, setRegistrosAnalizador] = useState([]); // registros cargados del analizador
+	const [cargandoRele, setCargandoRele] = useState(false);          // loading del relé
+	const [cargandoAnalizador, setCargandoAnalizador] = useState(false); // loading del analizador
+	const [errorRele, setErrorRele] = useState("");                   // error al cargar relé
+	const [errorAnalizador, setErrorAnalizador] = useState("");       // error al cargar analizador
+	const [registrosColapsados, setRegistrosColapsados] = useState(false); // toggle para colapsar vista previa
+
+
 	// Al abrir el modal, mezclamos el mapeo anterior con la estructura base del cardDesign
 	useEffect(() => {
 		if (!abierto) return;
+
+		// Resetear registros cargados al abrir
+		setRegistrosRele([]);
+		setRegistrosAnalizador([]);
+		setErrorRele("");
+		setErrorAnalizador("");
 
 		const baseCardDesign = crearCardDesignDefault();
 
@@ -123,6 +141,61 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 	}, [abierto, initialMapeo]);
 
 	if (!abierto) return null;
+
+	// --- funciones para cargar registros Modbus ---
+	const cargarRegistrosRele = async () => {
+		const config = alimentador?.rele;
+		if (!config?.ip || !config?.puerto || config?.indiceInicial == null || !config?.cantRegistros) {
+			setErrorRele("El relé no tiene configuración completa (IP, puerto, índice, cantidad).");
+			return;
+		}
+
+		setCargandoRele(true);
+		setErrorRele("");
+
+		try {
+			const registros = await leerRegistrosModbus({
+				ip: config.ip,
+				puerto: config.puerto,
+				indiceInicial: config.indiceInicial,
+				cantRegistros: config.cantRegistros,
+			});
+			setRegistrosRele(registros || []);
+		} catch (err) {
+			console.error("Error cargando registros del relé:", err);
+			setErrorRele(err?.message || "Error al leer registros del relé.");
+			setRegistrosRele([]);
+		} finally {
+			setCargandoRele(false);
+		}
+	};
+
+	const cargarRegistrosAnalizador = async () => {
+		const config = alimentador?.analizador;
+		if (!config?.ip || !config?.puerto || config?.indiceInicial == null || !config?.cantRegistros) {
+			setErrorAnalizador("El analizador no tiene configuración completa (IP, puerto, índice, cantidad).");
+			return;
+		}
+
+		setCargandoAnalizador(true);
+		setErrorAnalizador("");
+
+		try {
+			const registros = await leerRegistrosModbus({
+				ip: config.ip,
+				puerto: config.puerto,
+				indiceInicial: config.indiceInicial,
+				cantRegistros: config.cantRegistros,
+			});
+			setRegistrosAnalizador(registros || []);
+		} catch (err) {
+			console.error("Error cargando registros del analizador:", err);
+			setErrorAnalizador(err?.message || "Error al leer registros del analizador.");
+			setRegistrosAnalizador([]);
+		} finally {
+			setCargandoAnalizador(false);
+		}
+	};
 
 	// --- helpers actualización cardDesign ---
 	const asegurarCardDesign = (prev) => {
@@ -227,24 +300,211 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 
 	const cardDesign = mapeo.cardDesign || crearCardDesignDefault();
 
+	// --- Detectar registros duplicados ---
+	const detectarRegistrosDuplicados = () => {
+		const registrosUsados = [];
+		const duplicados = [];
+
+		// Recolectar registros de parte superior
+		const boxesSuperior = cardDesign.superior?.boxes || [];
+		boxesSuperior.forEach((box, idx) => {
+			if (box.registro && box.registro.toString().trim() !== "") {
+				const clave = `${box.origen || "rele"}-${box.registro}`;
+				const info = { zona: "superior", boxNum: idx + 1, registro: box.registro, origen: box.origen || "rele" };
+
+				const existente = registrosUsados.find(r => r.clave === clave);
+				if (existente) {
+					duplicados.push({ ...info, duplicadoCon: existente.info });
+				} else {
+					registrosUsados.push({ clave, info });
+				}
+			}
+		});
+
+		// Recolectar registros de parte inferior
+		const boxesInferior = cardDesign.inferior?.boxes || [];
+		boxesInferior.forEach((box, idx) => {
+			if (box.registro && box.registro.toString().trim() !== "") {
+				const clave = `${box.origen || "rele"}-${box.registro}`;
+				const info = { zona: "inferior", boxNum: idx + 1, registro: box.registro, origen: box.origen || "rele" };
+
+				const existente = registrosUsados.find(r => r.clave === clave);
+				if (existente) {
+					duplicados.push({ ...info, duplicadoCon: existente.info });
+				} else {
+					registrosUsados.push({ clave, info });
+				}
+			}
+		});
+
+		return duplicados;
+	};
+
+	const registrosDuplicados = detectarRegistrosDuplicados();
+
+	// Crear set de claves duplicadas para pasar a los ConfiguradorBox
+	const clavesDuplicadas = new Set();
+	registrosDuplicados.forEach((dup) => {
+		// Agregar tanto el duplicado como el original
+		clavesDuplicadas.add(`${dup.zona}-${dup.boxNum - 1}-${dup.origen}-${dup.registro}`);
+		clavesDuplicadas.add(`${dup.duplicadoCon.zona}-${dup.duplicadoCon.boxNum - 1}-${dup.duplicadoCon.origen}-${dup.duplicadoCon.registro}`);
+	});
+
+	// Verificar si un registro específico está duplicado
+	const estaRegistroDuplicado = (zona, index, origen, registro) => {
+		if (!registro || registro.toString().trim() === "") return false;
+		const clave = `${zona}-${index}-${origen || "rele"}-${registro}`;
+		return clavesDuplicadas.has(clave);
+	};
+
+	// Obtener mensaje de duplicado para tooltip
+	const obtenerMensajeDuplicado = (zona, index, origen, registro) => {
+		if (!registro || registro.toString().trim() === "") return "";
+		const dup = registrosDuplicados.find(
+			(d) => d.zona === zona && d.boxNum === index + 1 && d.registro === registro
+		);
+		if (dup) {
+			return `Este registro ya está usado en ${dup.duplicadoCon.zona} Box ${dup.duplicadoCon.boxNum}`;
+		}
+		// También puede ser el registro original que tiene duplicados
+		const original = registrosDuplicados.find(
+			(d) => d.duplicadoCon.zona === zona && d.duplicadoCon.boxNum === index + 1 && d.duplicadoCon.registro === registro
+		);
+		if (original) {
+			return `Este registro también se usa en ${original.zona} Box ${original.boxNum}`;
+		}
+		return "";
+	};
+
+	// Color del header: usa el color del alimentador o el primer color del sistema como fallback
+	const colorHeader = alimentador?.color || COLORES_SISTEMA[0];
+
 	return (
 		<div className="alim-modal-overlay">
 			<div className="map-modal">
-				<h2 className="map-modal__title">
-					Mapeo de mediciones – {nombreAlimentador}
-				</h2>
+				{/* Header con fondo del color de la tarjeta del alimentador */}
+				<div className="map-modal__header" style={{ backgroundColor: colorHeader }}>
+					<h2 className="map-modal__title">
+						Mapeo de mediciones – {nombreAlimentador}
+					</h2>
+				</div>
 
-				<form onSubmit={handleSubmit} className="map-form">
-					<div className="map-design">
-						<h3 className="map-design__title">Diseño de la tarjeta</h3>
-						<p className="map-design__help">
-							Elegí qué magnitudes se muestran en la parte superior e
-							inferior de la tarjeta y cómo se alimentan los boxes de
-							medición. Podés dejar boxes deshabilitados listos para usarlos
-							más adelante.
-						</p>
+				{/* Contenido con scroll */}
+				<div className="map-modal__content">
+					<form onSubmit={handleSubmit} className="map-form">
+						<div className="map-design">
+							<p className="map-design__help">
+								Elegí qué magnitudes se muestran en la parte superior e
+								inferior de la tarjeta y cómo se alimentan los boxes de
+								medición. Podés dejar boxes deshabilitados listos para usarlos
+								más adelante.
+							</p>
 
-						<FormularioDiseñoTarjeta
+							{/* === SECCIÓN DE CARGA DE REGISTROS === */}
+							<div className="map-registros">
+								{/* Header clickeable para colapsar/expandir */}
+								<div
+									className="map-registros__header"
+									onClick={() => setRegistrosColapsados(!registrosColapsados)}
+								>
+									<h4 className="map-registros__title">Vista previa de registros</h4>
+									<span className={`map-registros__toggle ${registrosColapsados ? "map-registros__toggle--collapsed" : ""}`}>
+										▲
+									</span>
+								</div>
+
+								{/* Body colapsable */}
+								<div className={`map-registros__body ${registrosColapsados ? "map-registros__body--collapsed" : ""}`}>
+									<p className="map-registros__help">
+										Cargá los registros del relé o analizador y <strong>arrastralos</strong> hasta
+										los campos de registro de cada box para completarlos automáticamente.
+									</p>
+
+									<div className="map-registros__botones">
+										<button
+											type="button"
+											className="map-registros__btn"
+											onClick={cargarRegistrosRele}
+											disabled={cargandoRele}
+										>
+											{cargandoRele ? "Cargando..." : "Cargar Relé"}
+										</button>
+										<button
+											type="button"
+											className="map-registros__btn"
+											onClick={cargarRegistrosAnalizador}
+											disabled={cargandoAnalizador}
+										>
+											{cargandoAnalizador ? "Cargando..." : "Cargar Analizador"}
+										</button>
+									</div>
+
+									{/* Errores */}
+									{errorRele && <p className="map-registros__error">{errorRele}</p>}
+									{errorAnalizador && <p className="map-registros__error">{errorAnalizador}</p>}
+
+									{/* Tablas de registros */}
+									<div className="map-registros__tablas">
+										{registrosRele.length > 0 && (
+											<div className="map-registros__tabla-container">
+												<span className="map-registros__tabla-titulo">Relé</span>
+												<div className="map-registros__tabla">
+													{registrosRele.map((reg) => (
+														<div
+															key={`rele-${reg.address}`}
+															className="map-registros__chip"
+															draggable
+															onDragStart={(e) => {
+																e.dataTransfer.setData("application/json", JSON.stringify({
+																	address: reg.address,
+																	origen: "rele"
+																}));
+																e.dataTransfer.effectAllowed = "copy";
+																e.currentTarget.classList.add("dragging");
+															}}
+															onDragEnd={(e) => {
+																e.currentTarget.classList.remove("dragging");
+															}}
+														>
+															{reg.address}
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+
+										{registrosAnalizador.length > 0 && (
+											<div className="map-registros__tabla-container">
+												<span className="map-registros__tabla-titulo">Analizador</span>
+												<div className="map-registros__tabla">
+													{registrosAnalizador.map((reg) => (
+														<div
+															key={`analizador-${reg.address}`}
+															className="map-registros__chip"
+															draggable
+															onDragStart={(e) => {
+																e.dataTransfer.setData("application/json", JSON.stringify({
+																	address: reg.address,
+																	origen: "analizador"
+																}));
+																e.dataTransfer.effectAllowed = "copy";
+																e.currentTarget.classList.add("dragging");
+															}}
+															onDragEnd={(e) => {
+																e.currentTarget.classList.remove("dragging");
+															}}
+														>
+															{reg.address}
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+									</div>
+								</div>
+							</div>
+
+							<FormularioDiseñoTarjeta
 							zona="superior"
 							tituloBloque="Parte superior"
 							placeholderTitulo="CONSUMO (A)"
@@ -260,6 +520,12 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 							}
 							onChangeBox={(index, campo, valor) =>
 								actualizarCardDesignCaja("superior", index, campo, valor)
+							}
+							estaRegistroDuplicado={(index, origen, registro) =>
+								estaRegistroDuplicado("superior", index, origen, registro)
+							}
+							obtenerMensajeDuplicado={(index, origen, registro) =>
+								obtenerMensajeDuplicado("superior", index, origen, registro)
 							}
 						/>
 
@@ -280,25 +546,33 @@ const ModalMapeoMediciones = ({ abierto, alimentador, onCerrar, onGuardar }) => 
 							onChangeBox={(index, campo, valor) =>
 								actualizarCardDesignCaja("inferior", index, campo, valor)
 							}
+							estaRegistroDuplicado={(index, origen, registro) =>
+								estaRegistroDuplicado("inferior", index, origen, registro)
+							}
+							obtenerMensajeDuplicado={(index, origen, registro) =>
+								obtenerMensajeDuplicado("inferior", index, origen, registro)
+							}
 						/>
-					</div>
 
-					<div className="alim-modal-actions">
-						<button
-							type="button"
-							className="alim-modal-btn alim-modal-btn-cancelar"
-							onClick={onCerrar}
-						>
-							Cancelar
-						</button>
-						<button
-							type="submit"
-							className="alim-modal-btn alim-modal-btn-aceptar"
-						>
-							Guardar
-						</button>
-					</div>
-				</form>
+						</div>
+
+						<div className="alim-modal-actions">
+							<button
+								type="button"
+								className="alim-modal-btn alim-modal-btn-cancelar"
+								onClick={onCerrar}
+							>
+								Cancelar
+							</button>
+							<button
+								type="submit"
+								className="alim-modal-btn alim-modal-btn-aceptar"
+							>
+								Guardar
+							</button>
+						</div>
+					</form>
+				</div>
 			</div>
 		</div>
 	);

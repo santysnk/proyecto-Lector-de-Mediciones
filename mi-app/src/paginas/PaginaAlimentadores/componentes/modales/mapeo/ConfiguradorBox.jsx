@@ -1,10 +1,68 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/mapeo/ConfiguradorBox.jsx
 
-import React from "react"; 
+import React, { useState, useRef, useEffect } from "react";
 
 // Configurador individual de cada box de medición
 // Permite habilitar/deshabilitar y definir etiqueta, registro, origen y fórmula.
-const ConfiguradorBox = ({ index, box, onChange, placeholder }) => {
+// Soporta drag & drop de registros desde la vista previa.
+const ConfiguradorBox = ({
+	index,
+	box,
+	onChange,
+	placeholder,
+	esDuplicado,           // boolean: indica si este registro está duplicado
+	mensajeDuplicado,      // string: mensaje para el tooltip
+}) => {
+	const [isDragOver, setIsDragOver] = useState(false);
+	const [mostrarTooltip, setMostrarTooltip] = useState(false);
+	const [mostrarToastLocal, setMostrarToastLocal] = useState(false);  // toast local debajo del input
+
+	// Maneja cuando se arrastra algo sobre el input de registro
+	const handleDragOver = (e) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+		setIsDragOver(true);
+	};
+
+	const handleDragLeave = () => {
+		setIsDragOver(false);
+	};
+
+	// Maneja cuando se suelta un registro sobre el input
+	const handleDrop = (e) => {
+		e.preventDefault();
+		setIsDragOver(false);
+
+		try {
+			const data = JSON.parse(e.dataTransfer.getData("application/json"));
+			if (data.address !== undefined) {
+				// Actualizar el registro con el address del registro arrastrado
+				onChange(index, "registro", String(data.address));
+				// Actualizar el origen según de dónde viene el registro
+				if (data.origen) {
+					onChange(index, "origen", data.origen);
+				}
+			}
+		} catch (err) {
+			console.error("Error al procesar el drop:", err);
+		}
+	};
+
+	// Efecto para mostrar toast local cuando se detecta duplicado
+	const prevEsDuplicado = useRef(esDuplicado);
+	useEffect(() => {
+		// Solo mostrar toast si pasó de no-duplicado a duplicado
+		if (esDuplicado && !prevEsDuplicado.current) {
+			setMostrarToastLocal(true);
+			// Ocultar después de 3 segundos
+			const timer = setTimeout(() => {
+				setMostrarToastLocal(false);
+			}, 3000);
+			return () => clearTimeout(timer);
+		}
+		prevEsDuplicado.current = esDuplicado;
+	}, [esDuplicado]);
+
 	return (
 		<div className="map-box">
 			{/* Checkbox + texto "Box N" */}
@@ -26,14 +84,41 @@ const ConfiguradorBox = ({ index, box, onChange, placeholder }) => {
 				onChange={(e) => onChange(index, "label", e.target.value)}
 			/>
 
-			{/* Registro Modbus que se leerá para esta magnitud */}
-			<input
-				type="number"
-				className="map-input map-box__registro"
-				placeholder="Registro"
-				value={box.registro || ""}                             // número de registro como string
-				onChange={(e) => onChange(index, "registro", e.target.value)}
-			/>
+			{/* Registro Modbus que se leerá para esta magnitud - acepta drop */}
+			<div className="map-box__registro-wrapper">
+				<input
+					type="number"
+					className={`map-input map-box__registro ${isDragOver ? "drop-over" : ""} ${esDuplicado ? "duplicado" : ""}`}
+					placeholder="Registro"
+					value={box.registro || ""}                             // número de registro como string
+					onChange={(e) => onChange(index, "registro", e.target.value)}
+					onDragOver={handleDragOver}
+					onDragLeave={handleDragLeave}
+					onDrop={handleDrop}
+				/>
+				{/* Icono de advertencia para registros duplicados */}
+				{esDuplicado && (
+					<span
+						className="map-box__warning-icon"
+						onMouseEnter={() => setMostrarTooltip(true)}
+						onMouseLeave={() => setMostrarTooltip(false)}
+					>
+						⚠️
+						{/* Tooltip con mensaje */}
+						{mostrarTooltip && mensajeDuplicado && (
+							<div className="map-box__warning-tooltip">
+								{mensajeDuplicado}
+							</div>
+						)}
+					</span>
+				)}
+				{/* Toast local que aparece debajo del input */}
+				{mostrarToastLocal && (
+					<div className="map-box__toast-local">
+						⚠️ Registro duplicado
+					</div>
+				)}
+			</div>
 
 			{/* Origen: de qué equipo viene el dato (relé o analizador) */}
 			<select

@@ -37,6 +37,8 @@ const FormularioDiseñoTarjeta = ({
 	onChangeTituloCustom,                            // callback cuando se edita el título personalizado
 	onChangeCantidad,                                // callback para la cantidad de boxes (1..4)
 	onChangeBox,                                     // callback que actualiza un box puntual
+	estaRegistroDuplicado,                           // (index, origen, registro) => boolean
+	obtenerMensajeDuplicado,                         // (index, origen, registro) => string
 }) => {
 	const cant = design.cantidad || 1;               // cantidad de boxes activos (por defecto 1)
 
@@ -107,6 +109,8 @@ const FormularioDiseñoTarjeta = ({
 							box={box}
 							onChange={onChangeBox}
 							placeholder={placeholderLabel}
+							esDuplicado={estaRegistroDuplicado?.(idx, box.origen, box.registro)}
+							mensajeDuplicado={obtenerMensajeDuplicado?.(idx, box.origen, box.registro)}
 						/>
 					);
 				})}
