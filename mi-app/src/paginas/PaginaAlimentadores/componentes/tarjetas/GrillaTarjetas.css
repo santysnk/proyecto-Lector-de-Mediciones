@@ -12,17 +12,16 @@
 .alim-cards-grid {
    display: flex;
    flex-wrap: wrap;
-   row-gap: 1.8rem;
-   column-gap: 2.4rem;
+   /* row-gap y column-gap ahora se aplican inline via style */
    justify-content: left; /* filas alineadas a la izquierda */
    padding-left: 1.2rem;
+   align-items: stretch; /* para que GapResizer tenga la misma altura */
 }
 
-/* En pantallas más angostas, centramos la grilla y ajustamos espaciado */
+/* En pantallas más angostas, centramos la grilla */
 @media (max-width: 982px) {
    .alim-cards-grid {
       justify-content: center;
-      column-gap: 1.4rem;
       padding-left: 0;
    }
 }

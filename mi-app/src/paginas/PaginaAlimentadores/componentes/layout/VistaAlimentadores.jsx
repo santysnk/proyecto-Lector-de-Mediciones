@@ -17,6 +17,7 @@ import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadores"; // contexto con datos y acciones
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
+import { usarPreferenciasUI } from "../../hooks/usarPreferenciasUI"; // hook para preferencias de UI (gap, etc.)
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -52,6 +53,8 @@ const {
 
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
+
+	const { gapTarjetas, setGapTarjetas } = usarPreferenciasUI();    // preferencias de UI (espaciado entre tarjetas)
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
@@ -278,6 +281,8 @@ const {
 							estaMidiendo={estaMidiendo}
 							obtenerTimestampInicio={obtenerTimestampInicio}
 							obtenerContadorLecturas={obtenerContadorLecturas}
+							gapTarjetas={gapTarjetas}
+							onGapChange={setGapTarjetas}
 						/>
 					</>
 				)}

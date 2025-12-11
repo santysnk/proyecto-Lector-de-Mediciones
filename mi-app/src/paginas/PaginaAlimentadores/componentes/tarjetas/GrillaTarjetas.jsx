@@ -1,7 +1,8 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetas.jsx
 
-import React from "react";                                 
+import React from "react";
 import TarjetaAlimentador from "./TarjetaAlimentador.jsx"; // tarjeta individual de alimentador
+import GapResizer from "./GapResizer.jsx";                 // control para ajustar espaciado entre tarjetas
 import "./GrillaTarjetas.css";                             // estilos de la grilla + tarjeta "+" de nuevo
 
 /**
@@ -24,44 +25,69 @@ const GrillaTarjetas = ({
 	estaMidiendo,                     // función (alimId, equipo) => boolean
 	obtenerTimestampInicio,           // función (alimId, equipo) => timestamp
 	obtenerContadorLecturas,          // función (alimId, equipo) => número de lecturas
+	gapTarjetas,                      // gap en px entre tarjetas
+	onGapChange,                      // función (nuevoGap) para cambiar el gap
 }) => {
+	// Determinar si mostrar el resizer (solo después de la primera tarjeta, no durante drag & drop)
+	const mostrarResizer = !elementoArrastrandoId && alimentadores.length > 1;
+
 	return (
-		<div className="alim-cards-grid">
-			{alimentadores.map((alim) => {
+		<div
+			className="alim-cards-grid"
+			style={{
+				rowGap: "20px" // gap vertical fijo entre filas
+			}}
+		>
+			{alimentadores.map((alim, index) => {
 				const lecturasAlim = lecturas[alim.id] || {};                 // lecturas calculadas para este alimentador
 				const mideRele = estaMidiendo(alim.id, "rele");               // estado de medición del relé
 				const mideAnalizador = estaMidiendo(alim.id, "analizador");   // estado de medición del analizador
 
+				// Mostrar GapResizer solo después de la primera tarjeta
+				const esPrimeraTarjeta = index === 0;
+
 				return (
-					<TarjetaAlimentador
-						key={alim.id}
-						nombre={alim.nombre}
-						color={alim.color}
-						onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
-						onMapClick={() => onAbrirMapeo(puestoId, alim)}
-						topSide={lecturasAlim.parteSuperior}
-						bottomSide={lecturasAlim.parteInferior}
-						draggable={true}
-						isDragging={elementoArrastrandoId === alim.id}
-						onDragStart={() => onDragStart(alim.id)}
-						onDragOver={onDragOver}
-						onDrop={() => onDrop(alim.id)}
-						onDragEnd={onDragEnd}
-						mideRele={mideRele}
-						mideAnalizador={mideAnalizador}
-						periodoRele={alim.periodoSegundos || 60}
-						periodoAnalizador={alim.analizador?.periodoSegundos || 60}
-						timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
-						timestampInicioAnalizador={obtenerTimestampInicio(
-							alim.id,
-							"analizador"
+					<React.Fragment key={alim.id}>
+						<TarjetaAlimentador
+							nombre={alim.nombre}
+							color={alim.color}
+							onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
+							onMapClick={() => onAbrirMapeo(puestoId, alim)}
+							topSide={lecturasAlim.parteSuperior}
+							bottomSide={lecturasAlim.parteInferior}
+							draggable={true}
+							isDragging={elementoArrastrandoId === alim.id}
+							onDragStart={() => onDragStart(alim.id)}
+							onDragOver={onDragOver}
+							onDrop={(e) => {
+								e.preventDefault();
+								onDrop(alim.id);
+							}}
+							onDragEnd={onDragEnd}
+							mideRele={mideRele}
+							mideAnalizador={mideAnalizador}
+							periodoRele={alim.periodoSegundos || 60}
+							periodoAnalizador={alim.analizador?.periodoSegundos || 60}
+							timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
+							timestampInicioAnalizador={obtenerTimestampInicio(
+								alim.id,
+								"analizador"
+							)}
+							contadorRele={obtenerContadorLecturas(alim.id, "rele")}
+							contadorAnalizador={obtenerContadorLecturas(
+								alim.id,
+								"analizador"
+							)}
+						/>
+						{/* Temporalmente deshabilitado para probar drag & drop
+						{mostrarResizer && esPrimeraTarjeta && (
+							<GapResizer
+								gap={gapTarjetas}
+								onGapChange={onGapChange}
+							/>
 						)}
-						contadorRele={obtenerContadorLecturas(alim.id, "rele")}
-						contadorAnalizador={obtenerContadorLecturas(
-							alim.id,
-							"analizador"
-						)}
-					/>
+						*/}
+					</React.Fragment>
 				);
 			})}
 
@@ -70,7 +96,10 @@ const GrillaTarjetas = ({
 				<div
 					className="alim-card-add"
 					onDragOver={onDragOver}
-					onDrop={onDropAlFinal}
+					onDrop={(e) => {
+						e.preventDefault();
+						onDropAlFinal();
+					}}
 				>
 					<span
 						style={{
