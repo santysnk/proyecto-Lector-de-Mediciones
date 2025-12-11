@@ -6,7 +6,13 @@ import "./GapResizer.css";
 /**
  * Componente que permite ajustar el gap entre tarjetas.
  * Aparece como una línea con un círculo al hacer hover entre tarjetas.
- * Se puede arrastrar para ajustar el espaciado o escribir un valor manualmente.
+ *
+ * Comportamiento:
+ * - Al hacer hover sobre el handle: aparece la barra de gap con el valor actual
+ * - Al arrastrar con click izquierdo: ajusta el gap visualmente
+ * - Al hacer doble click: se habilita la edición manual del input
+ * - Enter o click fuera del input: confirma el valor y oculta la barra
+ * - Escape: cancela y oculta la barra
  *
  * @param {number} gap - Gap actual en píxeles
  * @param {function} onGapChange - Callback (nuevoGap)
@@ -14,21 +20,49 @@ import "./GapResizer.css";
 const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 	const [isHovered, setIsHovered] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
-	const [showInput, setShowInput] = useState(false);
+	const [isEditing, setIsEditing] = useState(false); // true = input editable
 	const [inputValue, setInputValue] = useState(gap);
-	const handleRef = useRef(null);
+	const inputRef = useRef(null);
+	const containerRef = useRef(null);
+	const hitboxRef = useRef(null);
 	const startXRef = useRef(0);
 	const startGapRef = useRef(gap);
 
-	// Actualizar inputValue cuando cambia el gap desde afuera
+	// Actualizar inputValue cuando cambia el gap desde afuera (pero no durante edición)
 	useEffect(() => {
-		if (!isDragging) {
+		if (!isEditing) {
 			setInputValue(gap);
 		}
-	}, [gap, isDragging]);
+	}, [gap, isEditing]);
 
+	// Detectar clicks fuera del componente para cerrar
+	// NOTA: No cerrar si está en modo edición (solo Enter/Escape cierran)
+	useEffect(() => {
+		const handleClickOutside = (e) => {
+			if (containerRef.current && !containerRef.current.contains(e.target)) {
+				// Solo ocultar si NO está editando
+				if (!isEditing) {
+					setIsHovered(false);
+				}
+			}
+		};
+
+		// Solo escuchar si está activo y no editando
+		if (isHovered && !isEditing) {
+			document.addEventListener('mousedown', handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, [isHovered, isEditing]);
+
+	// ===== DRAG HANDLERS =====
 	const handleMouseDown = useCallback((e) => {
+		// Solo drag con click izquierdo (button 0)
+		if (e.button !== 0) return;
 		e.preventDefault();
+		e.stopPropagation();
 		setIsDragging(true);
 		startXRef.current = e.clientX;
 		startGapRef.current = gap;
@@ -46,9 +80,34 @@ const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 		setInputValue(clampedGap);
 	}, [isDragging, minGap, maxGap, onGapChange]);
 
-	const handleMouseUp = useCallback(() => {
+	const handleMouseUp = useCallback((e) => {
 		setIsDragging(false);
-	}, []);
+
+		// Verificar si el mouse está fuera del hitbox al soltar
+		// Si está fuera, ocultar la barra
+		if (hitboxRef.current) {
+			const rect = hitboxRef.current.getBoundingClientRect();
+			const mouseX = e.clientX;
+			const mouseY = e.clientY;
+			const isOutside =
+				mouseX < rect.left ||
+				mouseX > rect.right ||
+				mouseY < rect.top ||
+				mouseY > rect.bottom;
+
+			if (isOutside && !isEditing) {
+				setIsHovered(false);
+			}
+		}
+	}, [isEditing]);
+
+	// Doble click para activar modo edición
+	const handleDoubleClick = useCallback((e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		setIsEditing(true);
+		setInputValue(gap);
+	}, [gap]);
 
 	// Agregar/remover listeners globales para el drag
 	useEffect(() => {
@@ -62,12 +121,29 @@ const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 		};
 	}, [isDragging, handleMouseMove, handleMouseUp]);
 
-	const handleInputChange = (e) => {
-		const value = e.target.value;
-		setInputValue(value);
+	// ===== INPUT HANDLERS =====
+	// Click en el valor para habilitar edición
+	const handleValueClick = (e) => {
+		e.stopPropagation();
+		if (!isDragging) {
+			setIsEditing(true);
+			setInputValue(gap);
+		}
 	};
 
-	const handleInputBlur = () => {
+	// Enfocar el input cuando se activa la edición
+	useEffect(() => {
+		if (isEditing && inputRef.current) {
+			inputRef.current.focus();
+			inputRef.current.select();
+		}
+	}, [isEditing]);
+
+	const handleInputChange = (e) => {
+		setInputValue(e.target.value);
+	};
+
+	const confirmarValor = () => {
 		const numValue = parseInt(inputValue, 10);
 		if (!isNaN(numValue)) {
 			const clampedGap = Math.max(minGap, Math.min(maxGap, numValue));
@@ -76,50 +152,65 @@ const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 		} else {
 			setInputValue(gap);
 		}
-		setShowInput(false);
+		setIsEditing(false);
+	};
+
+	const handleInputBlur = () => {
+		// Al perder foco (click fuera), confirmar valor y cerrar igual que Enter
+		confirmarValor();
+		setIsHovered(false);
 	};
 
 	const handleInputKeyDown = (e) => {
 		if (e.key === "Enter") {
-			handleInputBlur();
+			e.preventDefault();
+			confirmarValor();
+			// También ocultar la barra de gap completamente
+			setIsHovered(false);
 		} else if (e.key === "Escape") {
 			setInputValue(gap);
-			setShowInput(false);
+			setIsEditing(false);
+			// También ocultar la barra de gap completamente
+			setIsHovered(false);
 		}
 	};
 
-	const handleHandleClick = () => {
-		if (!isDragging) {
-			setShowInput(true);
-		}
-	};
-
-	const isActive = isHovered || isDragging || showInput;
+	const isActive = isHovered || isDragging || isEditing;
 
 	return (
 		<div
+			ref={containerRef}
 			className={`gap-resizer ${isActive ? "gap-resizer--active" : ""}`}
-			onMouseEnter={() => setIsHovered(true)}
-			onMouseLeave={() => !isDragging && !showInput && setIsHovered(false)}
 			style={{ width: `${gap}px` }}
 		>
 			<div className="gap-resizer__track">
-				<div
-					ref={handleRef}
-					className={`gap-resizer__handle ${isDragging ? "gap-resizer__handle--dragging" : ""}`}
-					onMouseDown={handleMouseDown}
-					onClick={handleHandleClick}
-					title="Arrastra para ajustar el espaciado"
-				>
-					<div className="gap-resizer__line" />
-					<div className="gap-resizer__circle" />
-					<div className="gap-resizer__line" />
+				{/* Wrapper que contiene hitbox + handle en la misma posición */}
+				<div className="gap-resizer__handle-wrapper">
+					{/* Zona de hitbox invisible que siempre detecta el mouse */}
+					<div
+						ref={hitboxRef}
+						className="gap-resizer__hitbox"
+						onMouseEnter={() => setIsHovered(true)}
+						onMouseLeave={() => !isDragging && !isEditing && setIsHovered(false)}
+						onMouseDown={handleMouseDown}
+						onDoubleClick={handleDoubleClick}
+					/>
+					{/* Handle visual (solo decorativo, los eventos van al hitbox) */}
+					<div
+						className={`gap-resizer__handle ${isDragging ? "gap-resizer__handle--dragging" : ""}`}
+						title="Arrastra para ajustar el espaciado"
+					>
+						<div className="gap-resizer__line" />
+						<div className="gap-resizer__circle" />
+						<div className="gap-resizer__line" />
+					</div>
 				</div>
 
-				{(isActive || showInput) && (
+				{isActive && (
 					<div className="gap-resizer__input-container">
-						{showInput ? (
+						{isEditing ? (
 							<input
+								ref={inputRef}
 								type="number"
 								className="gap-resizer__input"
 								value={inputValue}
@@ -128,10 +219,15 @@ const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 								onKeyDown={handleInputKeyDown}
 								min={minGap}
 								max={maxGap}
-								autoFocus
 							/>
 						) : (
-							<span className="gap-resizer__value">{gap}px</span>
+							<span
+								className="gap-resizer__value"
+								onClick={handleValueClick}
+								title="Click para editar"
+							>
+								{gap}px
+							</span>
 						)}
 					</div>
 				)}

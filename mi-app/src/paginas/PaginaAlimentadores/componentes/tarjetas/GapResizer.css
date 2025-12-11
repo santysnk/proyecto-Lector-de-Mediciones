@@ -20,6 +20,28 @@
 	width: 100%;
 }
 
+/* Contenedor del handle + hitbox, siempre centrado */
+.gap-resizer__handle-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* Hitbox invisible que siempre captura eventos del mouse */
+/* Está encima del handle visual, misma posición */
+.gap-resizer__hitbox {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 30px;
+	height: 120px;
+	cursor: ew-resize;
+	z-index: 2;
+	/* background: rgba(255,0,0,0.2); */ /* descomentar para debug */
+}
+
 .gap-resizer__handle {
 	display: flex;
 	flex-direction: column;
@@ -31,15 +53,12 @@
 	opacity: 0;
 	transition: opacity 0.2s ease;
 	border-radius: 8px;
+	pointer-events: none; /* El hitbox maneja los eventos */
 }
 
-.gap-resizer--active .gap-resizer__handle,
-.gap-resizer:hover .gap-resizer__handle {
+/* Solo mostrar el handle cuando está activo via React (no CSS :hover) */
+.gap-resizer--active .gap-resizer__handle {
 	opacity: 1;
-}
-
-.gap-resizer__handle:hover {
-	background: rgba(59, 130, 246, 0.1);
 }
 
 .gap-resizer__handle--dragging {
@@ -82,8 +101,8 @@
 	transition: opacity 0.2s ease;
 }
 
-.gap-resizer--active .gap-resizer__input-container,
-.gap-resizer:hover .gap-resizer__input-container {
+/* Solo mostrar el input cuando está activo via React */
+.gap-resizer--active .gap-resizer__input-container {
 	opacity: 1;
 }
 
@@ -95,6 +114,13 @@
 	border-radius: 4px;
 	border: 1px solid #374151;
 	white-space: nowrap;
+	cursor: pointer;
+	transition: border-color 0.2s, color 0.2s;
+}
+
+.gap-resizer__value:hover {
+	border-color: #3b82f6;
+	color: #e5e7eb;
 }
 
 .gap-resizer__input {

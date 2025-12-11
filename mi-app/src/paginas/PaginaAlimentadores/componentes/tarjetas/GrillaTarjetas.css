@@ -26,6 +26,13 @@
    }
 }
 
+/* Wrapper que contiene tarjeta + gap resizer */
+.alim-card-wrapper {
+   display: flex;
+   align-items: stretch;
+   flex-shrink: 0;
+}
+
 /* Tarjeta especial: botón "+" o zona de drop al final */
 .alim-card-add {
    border: 1px dashed #374151;

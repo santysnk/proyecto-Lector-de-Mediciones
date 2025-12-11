@@ -54,7 +54,13 @@ const {
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
 
-	const { gapTarjetas, setGapTarjetas } = usarPreferenciasUI();    // preferencias de UI (espaciado entre tarjetas)
+	// Preferencias de UI (gaps individuales por tarjeta)
+	const {
+		obtenerGap,
+		establecerGap,
+		resetearGap,
+		GAP_DEFAULT,
+	} = usarPreferenciasUI();
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
@@ -195,6 +201,9 @@ const {
 			targetAlimId
 		);                                                             // calcula nuevo orden interno
 
+		// Resetear el gap de la tarjeta movida al valor por defecto
+		resetearGap(elementoArrastrandoId);
+
 		reordenarAlimentadores(puestoSeleccionado.id, nuevaLista);     // guarda el nuevo orden en el contexto
 		alTerminarArrastre();
 	};
@@ -206,6 +215,9 @@ const {
 			puestoSeleccionado.alimentadores,
 			elementoArrastrandoId
 		);                                                             // mueve la tarjeta arrastrada al final
+
+		// Resetear el gap de la tarjeta movida al valor por defecto
+		resetearGap(elementoArrastrandoId);
 
 		reordenarAlimentadores(puestoSeleccionado.id, nuevaLista);
 		alTerminarArrastre();
@@ -281,8 +293,8 @@ const {
 							estaMidiendo={estaMidiendo}
 							obtenerTimestampInicio={obtenerTimestampInicio}
 							obtenerContadorLecturas={obtenerContadorLecturas}
-							gapTarjetas={gapTarjetas}
-							onGapChange={setGapTarjetas}
+							obtenerGap={obtenerGap}
+							onGapChange={establecerGap}
 						/>
 					</>
 				)}

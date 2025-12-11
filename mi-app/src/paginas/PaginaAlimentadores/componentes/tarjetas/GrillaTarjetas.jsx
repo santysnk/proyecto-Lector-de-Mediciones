@@ -1,6 +1,6 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetas.jsx
 
-import React from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import TarjetaAlimentador from "./TarjetaAlimentador.jsx"; // tarjeta individual de alimentador
 import GapResizer from "./GapResizer.jsx";                 // control para ajustar espaciado entre tarjetas
 import "./GrillaTarjetas.css";                             // estilos de la grilla + tarjeta "+" de nuevo
@@ -8,6 +8,10 @@ import "./GrillaTarjetas.css";                             // estilos de la gril
 /**
  * Grilla de tarjetas de alimentadores.
  * Maneja el display de tarjetas y la tarjeta de agregar nuevo.
+ *
+ * Cada tarjeta tiene su propio GapResizer a la derecha con gap individual.
+ * El GapResizer se oculta automáticamente si la tarjeta está al final de una
+ * fila visual (detectado comparando posiciones Y de tarjetas consecutivas).
  */
 const GrillaTarjetas = ({
 	alimentadores,                     // lista de alimentadores del puesto actual
@@ -25,29 +29,113 @@ const GrillaTarjetas = ({
 	estaMidiendo,                     // función (alimId, equipo) => boolean
 	obtenerTimestampInicio,           // función (alimId, equipo) => timestamp
 	obtenerContadorLecturas,          // función (alimId, equipo) => número de lecturas
-	gapTarjetas,                      // gap en px entre tarjetas
-	onGapChange,                      // función (nuevoGap) para cambiar el gap
+	obtenerGap,                       // función (alimId) => gap en px para esa tarjeta
+	onGapChange,                      // función (alimId, nuevoGap) para cambiar el gap de una tarjeta
 }) => {
-	// Determinar si mostrar el resizer (solo después de la primera tarjeta, no durante drag & drop)
-	const mostrarResizer = !elementoArrastrandoId && alimentadores.length > 1;
+	// Refs para detectar qué tarjetas están al final de su fila
+	const gridRef = useRef(null);
+	const [tarjetasAlFinalDeFila, setTarjetasAlFinalDeFila] = useState(new Set());
+
+	// Detectar qué tarjetas están al final de su fila visual
+	// Comparando la posición Y de cada tarjeta con la siguiente
+	const detectarTarjetasAlFinal = useCallback(() => {
+		if (!gridRef.current) return;
+
+		const nuevasTarjetasAlFinal = new Set();
+
+		// Obtener todas las tarjetas y sus posiciones
+		const tarjetas = Array.from(gridRef.current.querySelectorAll('.alim-card-wrapper'));
+
+		// Para cada tarjeta, comparar su posición Y con la siguiente
+		tarjetas.forEach((wrapper, index) => {
+			const alimId = wrapper.dataset.alimId;
+			const rect = wrapper.getBoundingClientRect();
+
+			// Si es la última tarjeta o su siguiente tarjeta está en otra fila
+			const siguienteTarjeta = tarjetas[index + 1];
+			if (!siguienteTarjeta) {
+				// La última tarjeta siempre está al final de su fila
+				nuevasTarjetasAlFinal.add(alimId);
+			} else {
+				const siguienteRect = siguienteTarjeta.getBoundingClientRect();
+				// Si la siguiente tarjeta tiene un top diferente (con tolerancia),
+				// significa que esta tarjeta está al final de su fila
+				if (Math.abs(siguienteRect.top - rect.top) > 10) {
+					nuevasTarjetasAlFinal.add(alimId);
+				}
+			}
+		});
+
+		// Solo actualizar si cambió
+		setTarjetasAlFinalDeFila(prev => {
+			const prevArray = Array.from(prev).sort();
+			const newArray = Array.from(nuevasTarjetasAlFinal).sort();
+			if (JSON.stringify(prevArray) !== JSON.stringify(newArray)) {
+				return nuevasTarjetasAlFinal;
+			}
+			return prev;
+		});
+	}, []);
+
+	// Ejecutar detección cuando cambian los alimentadores o el tamaño de ventana
+	useEffect(() => {
+		detectarTarjetasAlFinal();
+
+		// También detectar en resize
+		const handleResize = () => detectarTarjetasAlFinal();
+		window.addEventListener('resize', handleResize);
+
+		// Usar ResizeObserver para detectar cambios en el contenedor
+		const resizeObserver = new ResizeObserver(() => {
+			detectarTarjetasAlFinal();
+		});
+
+		if (gridRef.current) {
+			resizeObserver.observe(gridRef.current);
+		}
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			resizeObserver.disconnect();
+		};
+	}, [alimentadores, detectarTarjetasAlFinal]);
+
+	// Re-detectar cuando cambia algún gap (puede afectar el layout)
+	useEffect(() => {
+		// Pequeño delay para que el DOM se actualice primero
+		const timer = setTimeout(detectarTarjetasAlFinal, 50);
+		return () => clearTimeout(timer);
+	}, [obtenerGap, detectarTarjetasAlFinal]);
 
 	return (
 		<div
+			ref={gridRef}
 			className="alim-cards-grid"
 			style={{
 				rowGap: "20px" // gap vertical fijo entre filas
 			}}
 		>
-			{alimentadores.map((alim, index) => {
+			{alimentadores.map((alim) => {
 				const lecturasAlim = lecturas[alim.id] || {};                 // lecturas calculadas para este alimentador
 				const mideRele = estaMidiendo(alim.id, "rele");               // estado de medición del relé
 				const mideAnalizador = estaMidiendo(alim.id, "analizador");   // estado de medición del analizador
 
-				// Mostrar GapResizer solo después de la primera tarjeta
-				const esPrimeraTarjeta = index === 0;
+				// Determinar si esta tarjeta está al final de su fila visual
+				const estaAlFinalDeFila = tarjetasAlFinalDeFila.has(alim.id);
+
+				// Gap individual de esta tarjeta
+				const gapTarjeta = obtenerGap(alim.id);
+
+				// Mostrar GapResizer solo si no está al final de fila y no hay drag activo
+				const mostrarGapResizer = !estaAlFinalDeFila && !elementoArrastrandoId;
 
 				return (
-					<React.Fragment key={alim.id}>
+					<div
+						key={alim.id}
+						className="alim-card-wrapper"
+						data-alim-id={alim.id}
+						style={{ display: 'flex', alignItems: 'stretch' }}
+					>
 						<TarjetaAlimentador
 							nombre={alim.nombre}
 							color={alim.color}
@@ -79,15 +167,17 @@ const GrillaTarjetas = ({
 								"analizador"
 							)}
 						/>
-						{/* Temporalmente deshabilitado para probar drag & drop
-						{mostrarResizer && esPrimeraTarjeta && (
+						{/* GapResizer individual para cada tarjeta */}
+						{mostrarGapResizer ? (
 							<GapResizer
-								gap={gapTarjetas}
-								onGapChange={onGapChange}
+								gap={gapTarjeta}
+								onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
 							/>
+						) : (
+							// Espacio mínimo cuando no se muestra el resizer
+							<div style={{ width: estaAlFinalDeFila ? 0 : gapTarjeta }} />
 						)}
-						*/}
-					</React.Fragment>
+					</div>
 				);
 			})}
 
