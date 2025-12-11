@@ -1,6 +1,6 @@
 // src/paginas/PaginaRegistro/PaginaRegistro.jsx
 
-import React, { useState, useEffect } from "react";                  // React y hooks de estado/efectos
+import React, { useState } from "react";                             // React y hook de estado
 import { useNavigate } from "react-router-dom";                      // navegación programática entre rutas
 import "../PaginaLogin/PaginaLogin.css";                             // reutiliza el layout base del login
 import "./PaginaRegistro.css";                                       // ajustes visuales específicos de la pantalla de registro
