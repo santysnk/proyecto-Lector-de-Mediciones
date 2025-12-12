@@ -7,6 +7,7 @@ import "./VistaAlimentadores.css";                                  // estilos e
 import BarraNavegacion from "../navegacion/BarraNavegacion.jsx";    // barra superior (título + botones de puestos)
 import MenuLateral from "../navegacion/MenuLateral.jsx";            // menú lateral en modo compacto (mobile)
 import GrillaTarjetas from "../tarjetas/GrillaTarjetas.jsx";        // grilla de tarjetas de alimentadores
+import SkeletonCard from "../tarjetas/SkeletonCard.jsx";            // skeleton de tarjeta (loading state)
 import ModalNuevoPuesto from "../modales/ModalNuevoPuesto.jsx";     // modal para crear puestos
 import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal para editar/renombrar/eliminar puestos
 import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
@@ -69,6 +70,7 @@ const {
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
+	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -139,20 +141,38 @@ const {
 	const abrirModalMapeo = (_puestoId, alimentador) =>
 		abrirModal("mapeo", { alimentadorId: alimentador.id });
 
-	const handleGuardarAlimentador = (datos) => {
+	const handleGuardarAlimentador = async (datos) => {
 		if (!datos || !datos.nombre || !puestoSeleccionado) return;
 
+		// Solo mostrar skeleton si estamos creando (no al editar)
 		if (modoAlimentador === "crear") {
-			agregarAlimentador(datos);                                // alta de nuevo alimentador
-		} else if (alimentadorEnEdicion) {
-			actualizarAlimentador(
-				puestoSeleccionado.id,
-				alimentadorEnEdicion.id,
-				datos
-			);                                                        // edición de alimentador existente
+			setGuardandoAlimentador(true);                        // activar skeleton
+			cerrarModal("alimentador");                           // cerrar modal INMEDIATAMENTE para ver el skeleton
 		}
 
-		cerrarModal("alimentador");
+		try {
+			if (modoAlimentador === "crear") {
+				await agregarAlimentador(datos);                      // alta de nuevo alimentador
+			} else if (alimentadorEnEdicion) {
+				await actualizarAlimentador(
+					puestoSeleccionado.id,
+					alimentadorEnEdicion.id,
+					datos
+				);                                                    // edición de alimentador existente
+				cerrarModal("alimentador");                           // en edición, cerrar después de guardar
+			}
+		} catch (error) {
+			console.error("Error guardando alimentador:", error);
+			setGuardandoAlimentador(false);                       // desactivar skeleton si hay error
+			// Aquí podrías mostrar un toast de error
+		} finally {
+			// Desactivar skeleton después de un pequeño delay para que se vea la transición
+			if (modoAlimentador === "crear") {
+				setTimeout(() => {
+					setGuardandoAlimentador(false);
+				}, 300);
+			}
+		}
 	};
 
 	const handleEliminarAlimentador = () => {
@@ -308,6 +328,7 @@ const {
 							onDragOver={alPasarPorEncima}
 							onDrop={handleDropAlim}
 							onDragEnd={handleDragEndAlim}
+							skeletonCard={guardandoAlimentador ? <SkeletonCard /> : null}
 							onDropAlFinal={handleDropAlimAlFinal}
 							onAgregarNuevo={abrirModalNuevoAlim}
 							estaMidiendo={estaMidiendo}

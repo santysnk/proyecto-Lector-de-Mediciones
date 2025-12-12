@@ -1,5 +1,7 @@
 # Environment variables
-.env
+# TEMPORAL: .env está incluido para sincronización entre PCs
+# TODO: Descomentar estas líneas cuando estés en tu PC principal
+# .env
 .env.local
 .env.*.local
 

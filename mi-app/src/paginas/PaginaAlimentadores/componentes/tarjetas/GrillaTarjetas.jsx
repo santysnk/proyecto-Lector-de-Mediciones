@@ -47,6 +47,8 @@ const GrillaTarjetas = ({
 	// Gaps verticales (entre filas)
 	obtenerRowGap,
 	onRowGapChange,
+	// Skeleton card (opcional, se muestra mientras se guarda)
+	skeletonCard = null,
 }) => {
 	const gridRef = useRef(null);
 	// Posiciones Y de los espacios entre filas (para posicionar los RowGapResizers)
@@ -327,6 +329,15 @@ const GrillaTarjetas = ({
 						</div>
 					);
 				})}
+
+				{/* Skeleton card (se muestra mientras se guarda un nuevo alimentador) */}
+				{skeletonCard && (
+					<div className="alim-card-wrapper" style={{ display: 'flex', alignItems: 'stretch' }}>
+						{skeletonCard}
+						{/* Spacer para simular gap */}
+						<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : 10 }} />
+					</div>
+				)}
 
 				{/* Tarjeta "Nuevo Registrador" o zona de drop */}
 				{(() => {
