@@ -45,8 +45,13 @@ const GrillaTarjetas = ({
 	const [posicionesEntreFilas, setPosicionesEntreFilas] = useState([]);
 	// Mapa de filas por tarjeta para detectar cambios de fila
 	const filasAnterioresRef = useRef({});
+	// Snapshot de TODOS los gaps cuando se detecta un cambio de layout por resize
+	// Se guarda una vez y se restaura cuando se vuelve a la configuración original
+	const snapshotGapsRef = useRef(null);
+	// Número de filas en el snapshot (para saber cuándo restaurar)
+	const numFilasSnapshotRef = useRef(null);
 
-	// Detectar las posiciones entre filas y resetear gaps de tarjetas que bajaron de fila
+	// Detectar las posiciones entre filas y manejar gaps de tarjetas que cambian de fila
 	const detectarFilasYFinales = useCallback(() => {
 		if (!gridRef.current) return;
 
@@ -82,18 +87,47 @@ const GrillaTarjetas = ({
 			ultimoBottom = rect.bottom;
 		});
 
-		// Detectar tarjetas que bajaron de fila y resetear su gap
+		const numFilasActual = filaIndex + 1; // Número total de filas
 		const filasAnteriores = filasAnterioresRef.current;
-		Object.keys(nuevasFilasPorTarjeta).forEach((alimId) => {
-			if (alimId === 'nuevo-registrador') return;
-			const filaAnterior = filasAnteriores[alimId];
-			const filaNueva = nuevasFilasPorTarjeta[alimId];
-			// Si la tarjeta bajó de fila (está en una fila mayor que antes)
-			if (filaAnterior !== undefined && filaNueva > filaAnterior) {
-				// Resetear su gap al valor por defecto (10px)
-				onGapChange(alimId, 10);
+		const numFilasAnterior = Object.keys(filasAnteriores).length > 0
+			? Math.max(...Object.values(filasAnteriores)) + 1
+			: numFilasActual;
+
+		// Detectar si aumentó el número de filas (se achicó la pantalla)
+		if (numFilasActual > numFilasAnterior) {
+			// Si no hay snapshot, guardar todos los gaps actuales
+			if (snapshotGapsRef.current === null) {
+				const snapshot = {};
+				alimentadores.forEach((alim) => {
+					snapshot[alim.id] = obtenerGap(alim.id);
+				});
+				snapshotGapsRef.current = snapshot;
+				numFilasSnapshotRef.current = numFilasAnterior;
 			}
-		});
+
+			// Resetear gaps de tarjetas que bajaron de fila
+			Object.keys(nuevasFilasPorTarjeta).forEach((alimId) => {
+				if (alimId === 'nuevo-registrador') return;
+				const filaAnterior = filasAnteriores[alimId];
+				const filaNueva = nuevasFilasPorTarjeta[alimId];
+
+				if (filaAnterior !== undefined && filaNueva > filaAnterior) {
+					onGapChange(alimId, 10);
+				}
+			});
+		}
+		// Detectar si disminuyó el número de filas (se ensanchó la pantalla)
+		else if (numFilasActual < numFilasAnterior) {
+			// Si volvimos al número de filas del snapshot (o menos), restaurar todos los gaps
+			if (snapshotGapsRef.current !== null && numFilasActual <= numFilasSnapshotRef.current) {
+				Object.keys(snapshotGapsRef.current).forEach((alimId) => {
+					onGapChange(alimId, snapshotGapsRef.current[alimId]);
+				});
+				// Limpiar el snapshot
+				snapshotGapsRef.current = null;
+				numFilasSnapshotRef.current = null;
+			}
+		}
 
 		// Actualizar referencia de filas anteriores
 		filasAnterioresRef.current = nuevasFilasPorTarjeta;
@@ -107,7 +141,7 @@ const GrillaTarjetas = ({
 			}
 			return prev;
 		});
-	}, [onGapChange]);
+	}, [onGapChange, obtenerGap, alimentadores]);
 
 	// Ejecutar detección después del primer render y cuando cambian dependencias
 	useEffect(() => {
