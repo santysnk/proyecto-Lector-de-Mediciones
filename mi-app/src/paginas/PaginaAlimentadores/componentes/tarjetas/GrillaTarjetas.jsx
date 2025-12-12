@@ -6,6 +6,13 @@ import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
 import "./GrillaTarjetas.css";
 
+// Breakpoint para desactivar los controles de gap en móviles/tablets
+const BREAKPOINT_MOBILE = 982;
+
+// Gaps fijos para modo móvil
+const GAP_FIJO_MOBILE = 10;
+const ROW_GAP_FIJO_MOBILE = 20;
+
 /**
  * Grilla de tarjetas de alimentadores.
  *
@@ -16,6 +23,7 @@ import "./GrillaTarjetas.css";
  * - Los RowGapResizers se posicionan con position: absolute sobre los espacios entre filas
  * - Cada tarjeta tiene un GapResizer a la derecha para controlar el espaciado horizontal
  * - Los GapResizers se ocultan durante drag & drop
+ * - En pantallas pequeñas (< 982px) los controles de gap se desactivan y se usan valores fijos
  */
 const GrillaTarjetas = ({
 	alimentadores,
@@ -50,6 +58,15 @@ const GrillaTarjetas = ({
 	const snapshotGapsRef = useRef(null);
 	// Número de filas en el snapshot (para saber cuándo restaurar)
 	const numFilasSnapshotRef = useRef(null);
+	// Estado para detectar si estamos en modo móvil (< 982px)
+	const [esModoMobile, setEsModoMobile] = useState(() =>
+		typeof window !== 'undefined' ? window.innerWidth < BREAKPOINT_MOBILE : false
+	);
+
+	// Mapa de fila por tarjeta (para aplicar margin-top individual)
+	const [filasPorTarjeta, setFilasPorTarjeta] = useState({});
+	// Primera tarjeta de cada fila (para saber dónde poner el RowGapResizer)
+	const [primerasTarjetasPorFila, setPrimerasTarjetasPorFila] = useState({});
 
 	// Detectar las posiciones entre filas y manejar gaps de tarjetas que cambian de fila
 	const detectarFilasYFinales = useCallback(() => {
@@ -57,7 +74,8 @@ const GrillaTarjetas = ({
 
 		const nuevasPosiciones = [];
 		const nuevasFilasPorTarjeta = {};
-		let ultimoTop = null;
+		const nuevasPrimerasPorFila = {}; // { filaIndex: alimId }
+		let ultimoLeft = null;
 		let ultimoBottom = null;
 		let filaIndex = 0;
 
@@ -65,12 +83,14 @@ const GrillaTarjetas = ({
 		const tarjetas = Array.from(gridRef.current.querySelectorAll('.alim-card-wrapper, .alim-card-add'));
 		const gridRect = gridRef.current.getBoundingClientRect();
 
-		tarjetas.forEach((wrapper) => {
+		tarjetas.forEach((wrapper, index) => {
 			const alimId = wrapper.dataset.alimId || 'nuevo-registrador';
 			const rect = wrapper.getBoundingClientRect();
 
-			// Detectar cambio de fila comparando posición vertical
-			if (ultimoTop !== null && Math.abs(rect.top - ultimoTop) > 10) {
+			// Detectar cambio de fila: si esta tarjeta está más a la izquierda que la anterior,
+			// significa que saltó a una nueva fila (flex-wrap)
+			// Usamos left en lugar de top porque top se ve afectado por margin-top
+			if (ultimoLeft !== null && rect.left < ultimoLeft) {
 				// Guardar la posición Y entre filas (relativa al grid)
 				const posY = ultimoBottom - gridRect.top;
 				nuevasPosiciones.push({
@@ -78,12 +98,17 @@ const GrillaTarjetas = ({
 					top: posY
 				});
 				filaIndex++;
+				// Esta tarjeta es la primera de la nueva fila
+				nuevasPrimerasPorFila[filaIndex] = alimId;
+			} else if (index === 0) {
+				// La primera tarjeta es la primera de la fila 0
+				nuevasPrimerasPorFila[0] = alimId;
 			}
 
 			// Guardar en qué fila está cada tarjeta
 			nuevasFilasPorTarjeta[alimId] = filaIndex;
 
-			ultimoTop = rect.top;
+			ultimoLeft = rect.left;
 			ultimoBottom = rect.bottom;
 		});
 
@@ -141,6 +166,24 @@ const GrillaTarjetas = ({
 			}
 			return prev;
 		});
+
+		// Actualizar mapa de filas por tarjeta
+		const filasStr = JSON.stringify(nuevasFilasPorTarjeta);
+		setFilasPorTarjeta(prev => {
+			if (JSON.stringify(prev) !== filasStr) {
+				return nuevasFilasPorTarjeta;
+			}
+			return prev;
+		});
+
+		// Actualizar primeras tarjetas por fila
+		const primerasStr = JSON.stringify(nuevasPrimerasPorFila);
+		setPrimerasTarjetasPorFila(prev => {
+			if (JSON.stringify(prev) !== primerasStr) {
+				return nuevasPrimerasPorFila;
+			}
+			return prev;
+		});
 	}, [onGapChange, obtenerGap, alimentadores]);
 
 	// Ejecutar detección después del primer render y cuando cambian dependencias
@@ -182,21 +225,44 @@ const GrillaTarjetas = ({
 		return () => clearTimeout(timer);
 	}, [obtenerRowGap, detectarFilasYFinales]);
 
-	// Calcular el row-gap general (usamos el de fila 1)
-	const rowGapGeneral = obtenerRowGap(1);
+	// Detectar modo móvil al cambiar el tamaño de ventana
+	useEffect(() => {
+		const handleResize = () => {
+			const nuevoEsMobile = window.innerWidth < BREAKPOINT_MOBILE;
+			setEsModoMobile(nuevoEsMobile);
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	// En modo móvil, usar gaps fijos; en desktop, usar los configurados
+	const rowGapPrimero = esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(0);
+
+	// Función para obtener el margin-top de una tarjeta según su fila
+	const obtenerMarginTop = (alimId) => {
+		const fila = filasPorTarjeta[alimId];
+		if (fila === undefined || fila === 0) return 0; // Primera fila no tiene margin
+		// Buscar si esta tarjeta es la primera de su fila
+		if (primerasTarjetasPorFila[fila] === alimId) {
+			return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(fila);
+		}
+		return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(fila);
+	};
 
 	return (
 		<div className="grilla-con-row-gaps">
-			{/* RowGapResizer para la primera fila (separación del menú) */}
-			{!elementoArrastrandoId && (
+			{/* RowGapResizer para la primera fila (separación del menú) - solo en desktop */}
+			{!elementoArrastrandoId && !esModoMobile && (
 				<RowGapResizer
 					gap={obtenerRowGap(0)}
 					onGapChange={(nuevoGap) => onRowGapChange(0, nuevoGap)}
 					rowIndex={0}
 				/>
 			)}
-			{elementoArrastrandoId && (
-				<div style={{ height: obtenerRowGap(0) }} />
+			{/* Spacer fijo durante drag o en modo móvil */}
+			{(elementoArrastrandoId || esModoMobile) && (
+				<div style={{ height: rowGapPrimero }} />
 			)}
 
 			{/* Mensaje cuando no hay alimentadores */}
@@ -209,20 +275,20 @@ const GrillaTarjetas = ({
 			<div
 				ref={gridRef}
 				className="alim-cards-grid"
-				style={{ rowGap: `${rowGapGeneral}px` }}
 			>
 				{alimentadores.map((alim) => {
 					const lecturasAlim = lecturas[alim.id] || {};
 					const mideRele = estaMidiendo(alim.id, "rele");
 					const mideAnalizador = estaMidiendo(alim.id, "analizador");
 					const gapTarjeta = obtenerGap(alim.id);
+					const marginTop = obtenerMarginTop(alim.id);
 
 					return (
 						<div
 							key={alim.id}
 							className="alim-card-wrapper"
 							data-alim-id={alim.id}
-							style={{ display: 'flex', alignItems: 'stretch' }}
+							style={{ display: 'flex', alignItems: 'stretch', marginTop: marginTop > 0 ? `${marginTop}px` : undefined }}
 						>
 							<TarjetaAlimentador
 								nombre={alim.nombre}
@@ -249,47 +315,55 @@ const GrillaTarjetas = ({
 								contadorRele={obtenerContadorLecturas(alim.id, "rele")}
 								contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
 							/>
-							{/* Siempre mostrar GapResizer o spacer fijo */}
-							{!elementoArrastrandoId ? (
+							{/* GapResizer solo en desktop y sin drag; spacer fijo en móvil o durante drag */}
+							{!elementoArrastrandoId && !esModoMobile ? (
 								<GapResizer
 									gap={gapTarjeta}
 									onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
 								/>
 							) : (
-								<div style={{ width: gapTarjeta }} />
+								<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : gapTarjeta }} />
 							)}
 						</div>
 					);
 				})}
 
 				{/* Tarjeta "Nuevo Registrador" o zona de drop */}
-				{elementoArrastrandoId ? (
-					<div
-						className="alim-card-add"
-						style={{ width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279 }}
-						onDragOver={onDragOver}
-						onDrop={(e) => {
-							e.preventDefault();
-							onDropAlFinal();
-						}}
-					>
-						<span style={{ textAlign: "center", padding: "1rem" }}>
-							Soltar aquí para mover al final
-						</span>
-					</div>
-				) : (
-					<div
-						className="alim-card-add"
-						style={{ width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279 }}
-						onClick={onAgregarNuevo}
-					>
-						<span className="alim-card-add-plus">+</span>
-						<span className="alim-card-add-text">Nuevo Registrador</span>
-					</div>
-				)}
+				{(() => {
+					const marginTopNuevo = obtenerMarginTop('nuevo-registrador');
+					const styleNuevo = {
+						width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279,
+						...(marginTopNuevo > 0 && { marginTop: `${marginTopNuevo}px` })
+					};
 
-				{/* RowGapResizers posicionados absolutamente sobre los espacios entre filas */}
-				{!elementoArrastrandoId && posicionesEntreFilas.map((pos) => (
+					return elementoArrastrandoId ? (
+						<div
+							className="alim-card-add"
+							style={styleNuevo}
+							onDragOver={onDragOver}
+							onDrop={(e) => {
+								e.preventDefault();
+								onDropAlFinal();
+							}}
+						>
+							<span style={{ textAlign: "center", padding: "1rem" }}>
+								Soltar aquí para mover al final
+							</span>
+						</div>
+					) : (
+						<div
+							className="alim-card-add"
+							style={styleNuevo}
+							onClick={onAgregarNuevo}
+						>
+							<span className="alim-card-add-plus">+</span>
+							<span className="alim-card-add-text">Nuevo Registrador</span>
+						</div>
+					);
+				})()}
+
+				{/* RowGapResizers posicionados absolutamente sobre los espacios entre filas - solo en desktop */}
+				{!elementoArrastrandoId && !esModoMobile && posicionesEntreFilas.map((pos) => (
 					<div
 						key={`row-gap-${pos.filaIndex}`}
 						className="row-gap-resizer-overlay"
