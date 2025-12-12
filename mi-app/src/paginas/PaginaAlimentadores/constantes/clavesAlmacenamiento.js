@@ -7,6 +7,7 @@
 export const CLAVES_STORAGE = {
 	PUESTOS: "rw-puestos",                    // lista completa de puestos configurados
 	PUESTO_SELECCIONADO: "rw-puesto-seleccionado", // id del puesto que quedó seleccionado
+	CONFIGURACION_SELECCIONADA: "rw-configuracion-seleccionada", // id de la configuración activa
 	USUARIOS_RECORDADOS: "usuariosRecordados",     // lista de usuarios recordados (login)
 	GAP_TARJETAS: "rw-gap-tarjetas",          // espaciado horizontal entre tarjetas (en px)
 	GAP_FILAS: "rw-gap-filas",                // espaciado vertical entre filas (en px)

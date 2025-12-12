@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import "./ModalConfiguracionPuesto.css";
-import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadores";
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
 
 /**
  * Modal de configuración global del puesto.

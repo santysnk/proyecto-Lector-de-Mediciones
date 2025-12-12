@@ -2,13 +2,16 @@
 import React from "react";                         // librería principal de React para componentes
 import ReactDOM from "react-dom/client";           // API moderna de renderizado en el navegador
 import { BrowserRouter } from "react-router-dom";  // enrutador basado en historial del navegador
+import { AuthProvider } from "./contextos/AuthContext"; // contexto de autenticación con Supabase
 import App from "./App.jsx";                       // componente raíz de la aplicación (define las rutas)
 import "./index.css";                              // estilos globales (tailwind + tema general)
 
 ReactDOM.createRoot(document.getElementById("root")).render(   // crea la raíz de React sobre el div#root
    <React.StrictMode>                   {/* modo estricto: ayuda a detectar problemas en desarrollo */}
       <BrowserRouter>                   {/* provee contexto de rutas a toda la app */}
-         <App />                        {/* componente principal que contiene las páginas/rutas */}
+         <AuthProvider>                 {/* provee contexto de autenticación a toda la app */}
+            <App />                     {/* componente principal que contiene las páginas/rutas */}
+         </AuthProvider>
       </BrowserRouter>
    </React.StrictMode>
 );

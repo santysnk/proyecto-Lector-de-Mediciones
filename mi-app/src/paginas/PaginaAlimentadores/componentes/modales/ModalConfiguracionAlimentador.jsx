@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";                 // React + hooks para estado y efectos
 import "./ModalConfiguracionAlimentador.css";                       // estilos específicos de este modal
-import { leerRegistrosModbus } from "../../utilidades/clienteModbus"; // helper que hace la llamada Modbus vía backend
+import { leerRegistrosModbus } from "../../utilidades/clienteModbus"; // helper que hace la llamada Modbus vía backend (para medición)
+import { testConexionModbus } from "../../../../servicios/apiService"; // test real via backend → agente
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para los alimentadores
 
 // Subcomponentes de configuración
@@ -54,10 +55,12 @@ const ModalConfiguracionAlimentador = ({
 	const [isTestingRele, setIsTestingRele] = useState(false);
 	const [testErrorRele, setTestErrorRele] = useState("");
 	const [testRowsRele, setTestRowsRele] = useState([]);
+	const [testTiempoMsRele, setTestTiempoMsRele] = useState(null);
 
 	const [isTestingAnalizador, setIsTestingAnalizador] = useState(false);
 	const [testErrorAnalizador, setTestErrorAnalizador] = useState("");
 	const [testRowsAnalizador, setTestRowsAnalizador] = useState([]);
+	const [testTiempoMsAnalizador, setTestTiempoMsAnalizador] = useState(null);
 
 	// === Cargar datos al abrir ===
 	useEffect(() => {
@@ -137,10 +140,12 @@ const ModalConfiguracionAlimentador = ({
 		setIsTestingRele(false);
 		setTestErrorRele("");
 		setTestRowsRele([]);
+		setTestTiempoMsRele(null);
 
 		setIsTestingAnalizador(false);
 		setTestErrorAnalizador("");
 		setTestRowsAnalizador([]);
+		setTestTiempoMsAnalizador(null);
 	}, [abierto, initialData]);
 
 	if (!abierto) return null;                            // si el modal está cerrado, no renderizo nada
@@ -149,12 +154,12 @@ const ModalConfiguracionAlimentador = ({
 	const handleTestConexionRele = async () => {
 		const ip = rele.ip.trim();
 		const puerto = Number(rele.puerto);
-		const inicio = Number(rele.indiceInicial);
-		const cantidad = Number(rele.cantRegistros);
+		const indiceInicial = Number(rele.indiceInicial) || 0;
+		const cantRegistros = Number(rele.cantRegistros) || 10;
 
-		if (!ip || !puerto || isNaN(inicio) || isNaN(cantidad) || cantidad <= 0) {
+		if (!ip || !puerto) {
 			setTestErrorRele(
-				"Completa IP, puerto, indice inicial y cantidad de registros antes de probar."
+				"Completa IP y puerto antes de probar."
 			);
 			setTestRowsRele([]);
 			return;
@@ -163,20 +168,47 @@ const ModalConfiguracionAlimentador = ({
 		setIsTestingRele(true);
 		setTestErrorRele("");
 		setTestRowsRele([]);
+		setTestTiempoMsRele(null);
 
 		try {
-			const fetched = await leerRegistrosModbus({
-				ip,
-				puerto,
-				indiceInicial: inicio,
-				cantRegistros: cantidad,
-			});
+			// Llamar al backend → agente para test real de conexión con lectura de registros
+			const resultado = await testConexionModbus(ip, puerto, 1, indiceInicial, cantRegistros);
 
-			setTestRowsRele(fetched || []);               // guardo las filas de prueba
+			if (resultado.cacheado) {
+				// La IP fue testeada recientemente, mostrar mensaje
+				setTestTiempoMsRele(null);
+				setTestRowsRele([{
+					index: 0,
+					address: '-',
+					value: `Conexión verificada (caché: ${resultado.tiempoRestante}s)`,
+				}]);
+			} else if (resultado.exito) {
+				// Conexión exitosa - guardar tiempo y mostrar los registros leídos
+				setTestTiempoMsRele(resultado.tiempoMs);
+				if (resultado.registros && resultado.registros.length > 0) {
+					setTestRowsRele(resultado.registros.map(reg => ({
+						index: reg.indice,
+						address: reg.direccion,
+						value: reg.valor,
+					})));
+				} else {
+					setTestRowsRele([{
+						index: 0,
+						address: '-',
+						value: resultado.mensaje || `Conexión exitosa (${resultado.tiempoMs}ms)`,
+					}]);
+				}
+			} else {
+				// Conexión fallida
+				setTestTiempoMsRele(null);
+				setTestErrorRele(resultado.error || "No se pudo conectar al dispositivo.");
+				setTestRowsRele([]);
+			}
 		} catch (err) {
 			console.error(err);
+			setTestTiempoMsRele(null);
 			setTestErrorRele(
-				err?.message || "Error de red o al intentar leer los registros."
+				err?.message || "Error de red o al intentar conectar."
 			);
 			setTestRowsRele([]);
 		} finally {
@@ -188,12 +220,12 @@ const ModalConfiguracionAlimentador = ({
 	const handleTestConexionAnalizador = async () => {
 		const ip = analizador.ip.trim();
 		const puerto = Number(analizador.puerto);
-		const inicio = Number(analizador.indiceInicial);
-		const cantidad = Number(analizador.cantRegistros);
+		const indiceInicial = Number(analizador.indiceInicial) || 0;
+		const cantRegistros = Number(analizador.cantRegistros) || 10;
 
-		if (!ip || !puerto || isNaN(inicio) || isNaN(cantidad) || cantidad <= 0) {
+		if (!ip || !puerto) {
 			setTestErrorAnalizador(
-				"Completa IP, puerto, indice inicial y cantidad de registros antes de probar."
+				"Completa IP y puerto antes de probar."
 			);
 			setTestRowsAnalizador([]);
 			return;
@@ -202,20 +234,47 @@ const ModalConfiguracionAlimentador = ({
 		setIsTestingAnalizador(true);
 		setTestErrorAnalizador("");
 		setTestRowsAnalizador([]);
+		setTestTiempoMsAnalizador(null);
 
 		try {
-			const fetched = await leerRegistrosModbus({
-				ip,
-				puerto,
-				indiceInicial: inicio,
-				cantRegistros: cantidad,
-			});
+			// Llamar al backend → agente para test real de conexión con lectura de registros
+			const resultado = await testConexionModbus(ip, puerto, 2, indiceInicial, cantRegistros);
 
-			setTestRowsAnalizador(fetched || []);
+			if (resultado.cacheado) {
+				// La IP fue testeada recientemente, mostrar mensaje
+				setTestTiempoMsAnalizador(null);
+				setTestRowsAnalizador([{
+					index: 0,
+					address: '-',
+					value: `Conexión verificada (caché: ${resultado.tiempoRestante}s)`,
+				}]);
+			} else if (resultado.exito) {
+				// Conexión exitosa - guardar tiempo y mostrar los registros leídos
+				setTestTiempoMsAnalizador(resultado.tiempoMs);
+				if (resultado.registros && resultado.registros.length > 0) {
+					setTestRowsAnalizador(resultado.registros.map(reg => ({
+						index: reg.indice,
+						address: reg.direccion,
+						value: reg.valor,
+					})));
+				} else {
+					setTestRowsAnalizador([{
+						index: 0,
+						address: '-',
+						value: resultado.mensaje || `Conexión exitosa (${resultado.tiempoMs}ms)`,
+					}]);
+				}
+			} else {
+				// Conexión fallida
+				setTestTiempoMsAnalizador(null);
+				setTestErrorAnalizador(resultado.error || "No se pudo conectar al dispositivo.");
+				setTestRowsAnalizador([]);
+			}
 		} catch (err) {
 			console.error(err);
+			setTestTiempoMsAnalizador(null);
 			setTestErrorAnalizador(
-				err?.message || "Error de red o al intentar leer los registros."
+				err?.message || "Error de red o al intentar conectar."
 			);
 			setTestRowsAnalizador([]);
 		} finally {
@@ -377,6 +436,7 @@ const ModalConfiguracionAlimentador = ({
 									isTesting={isTestingRele}
 									testError={testErrorRele}
 									testRows={testRowsRele}
+									testTiempoMs={testTiempoMsRele}
 									isMeasuring={isMeasuringRele}
 									onToggleMedicion={() =>
 										onToggleMedicionRele &&
@@ -396,6 +456,7 @@ const ModalConfiguracionAlimentador = ({
 									isTesting={isTestingAnalizador}
 									testError={testErrorAnalizador}
 									testRows={testRowsAnalizador}
+									testTiempoMs={testTiempoMsAnalizador}
 									isMeasuring={isMeasuringAnalizador}
 									onToggleMedicion={() =>
 										onToggleMedicionAnalizador &&

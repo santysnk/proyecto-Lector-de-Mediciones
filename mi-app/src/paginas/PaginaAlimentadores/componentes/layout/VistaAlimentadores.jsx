@@ -15,7 +15,7 @@ import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx"; 
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
-import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadores"; // contexto con datos y acciones
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
 import { usarPreferenciasUI } from "../../hooks/usarPreferenciasUI"; // hook para preferencias de UI (gap, etc.)
 
@@ -34,11 +34,13 @@ const VistaAlimentadores = () => {
    reordenarAlimentadores,                // guarda el nuevo orden de alimentadores tras el drag & drop
    lecturasTarjetas,                      // lecturas ya procesadas listas para mostrar en las tarjetas
    estaMidiendo,                          // indica si un alimentador/equipo está midiendo (true/false)
-   obtenerRegistros,                      // obtiene los registros crudos de un alimentador (“rele” / “analizador”)
+   obtenerRegistros,                      // obtiene los registros crudos de un alimentador ("rele" / "analizador")
    obtenerTimestampInicio,                // devuelve el timestamp de la última lectura (para animaciones/tiempos)
    obtenerContadorLecturas,               // cuántas lecturas se hicieron desde que arrancó la medición
    alternarMedicion,                      // prende/apaga la medición de un alimentador/equipo (toggle)
    detenerMedicion,                       // detiene explícitamente la medición de un alimentador/equipo
+   cargando,                              // estado de carga (Supabase)
+   error,                                 // error si hubo problema cargando datos
 } = usarContextoAlimentadores();          // hook que conecta esta vista con el contexto global de alimentadores
 
 
@@ -225,6 +227,30 @@ const {
 		reordenarAlimentadores(puestoSeleccionado.id, nuevaLista);
 		alTerminarArrastre();
 	};
+
+	// Estado de carga
+	if (cargando) {
+		return (
+			<div className="alim-page alim-page--cargando">
+				<div className="alim-loading">
+					<div className="alim-loading__spinner"></div>
+					<p>Cargando configuración...</p>
+				</div>
+			</div>
+		);
+	}
+
+	// Estado de error
+	if (error) {
+		return (
+			<div className="alim-page alim-page--error">
+				<div className="alim-error">
+					<p>Error: {error}</p>
+					<button onClick={() => window.location.reload()}>Reintentar</button>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="alim-page">

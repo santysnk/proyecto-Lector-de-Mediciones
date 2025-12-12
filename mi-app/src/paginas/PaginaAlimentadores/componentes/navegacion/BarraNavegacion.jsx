@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import "./BarraNavegacion.css";            // estilos específicos de la barra superior
-import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadores";
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
+import SelectorConfiguracion from "./SelectorConfiguracion.jsx";
 
 /**
  * Barra de navegación superior.
@@ -187,7 +188,7 @@ const BarraNavegacion = ({
 							))}
 						</div>
 
-						{/* Bloque 1: botones de control fijo (nuevo, editar, salir) */}
+						{/* Bloque 1: botones de control fijo (nuevo, editar, config, salir) */}
 						<div className="alim-nav-bloque-controles">
 							<button
 								type="button"
@@ -201,10 +202,12 @@ const BarraNavegacion = ({
 								type="button"
 								className="alim-btn alim-btn-edit"
 								onClick={onAbrirModalEditarPuestos}
-								disabled={puestos.length === 0} // deshabilitado si aún no hay puestos
+								disabled={puestos.length === 0}
 							>
 								✎
 							</button>
+
+							<SelectorConfiguracion />
 
 							<button
 								type="button"

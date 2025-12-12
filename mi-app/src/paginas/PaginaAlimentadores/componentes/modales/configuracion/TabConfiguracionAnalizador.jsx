@@ -12,6 +12,7 @@ const TabConfiguracionAnalizador = ({
 	isTesting,                            // flag mientras se ejecuta el test
 	testError,                            // mensaje de error del test
 	testRows,                             // registros obtenidos en el test
+	testTiempoMs,                         // tiempo de respuesta del test en ms
 	isMeasuring,                          // si el analizador está midiendo en forma continua
 	onToggleMedicion,                     // arranca/detiene la medición continua
 	registrosMedicion,                    // registros en vivo de la medición
@@ -22,10 +23,18 @@ const TabConfiguracionAnalizador = ({
 			? registrosMedicion
 			: testRows;                    // si hay medición en curso, priorizo los registros en vivo
 
-	const mensajeTabla =
-		isMeasuring && registrosMedicion && registrosMedicion.length > 0
-			? `Medición en curso. Registros en vivo: ${registrosMedicion.length}`
-			: `Test correcto. Registros leídos: ${testRows.length}`;
+	// Construir mensaje según el estado
+	const esCacheado = testRows.length === 1 && testRows[0]?.address === '-';
+	const tiempoInfo = testTiempoMs != null ? ` (${testTiempoMs}ms)` : '';
+
+	let mensajeTabla;
+	if (isMeasuring && registrosMedicion && registrosMedicion.length > 0) {
+		mensajeTabla = `Medición en curso. Registros en vivo: ${registrosMedicion.length}`;
+	} else if (esCacheado) {
+		mensajeTabla = `Conexión verificada. Esperá 60s para volver a testear.`;
+	} else {
+		mensajeTabla = `Conexión exitosa${tiempoInfo}. Registros leídos: ${testRows.length}`;
+	}
 
 	return (
 		<div className="alim-modal-grid">
@@ -46,7 +55,7 @@ const TabConfiguracionAnalizador = ({
 				<input
 					type="number"
 					className="alim-field-input"
-					value={config.puerto}
+					value={config.puerto ?? ""}
 					onChange={(e) => onChange("puerto", e.target.value)} // puerto Modbus (típicamente 502)
 					placeholder="Ej: 502"
 					disabled={disabled}
@@ -58,9 +67,9 @@ const TabConfiguracionAnalizador = ({
 				<input
 					type="number"
 					className="alim-field-input"
-					value={config.indiceInicial}
+					value={config.indiceInicial ?? ""}
 					onChange={(e) => onChange("indiceInicial", e.target.value)} // primer registro a leer
-					placeholder="Ej: 200"
+					placeholder="Ej: 137"
 					disabled={disabled}
 				/>
 			</label>
@@ -70,9 +79,9 @@ const TabConfiguracionAnalizador = ({
 				<input
 					type="number"
 					className="alim-field-input"
-					value={config.cantRegistros}
+					value={config.cantRegistros ?? ""}
 					onChange={(e) => onChange("cantRegistros", e.target.value)} // cuántos registros seguidos leer
-					placeholder="Ej: 10"
+					placeholder="Ej: 20"
 					disabled={disabled}
 				/>
 			</label>

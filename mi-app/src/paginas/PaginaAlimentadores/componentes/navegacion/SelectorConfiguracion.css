@@ -1,0 +1,255 @@
+/* src/paginas/PaginaAlimentadores/componentes/navegacion/SelectorConfiguracion.css */
+
+.selector-config {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.selector-config--cargando,
+.selector-config--error {
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.selector-config--error {
+  color: #ef4444;
+}
+
+.selector-config__spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Botón trigger - tema oscuro para navbar */
+.selector-config__trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.selector-config__trigger:hover {
+  background: #334155;
+  border-color: #64748b;
+}
+
+.selector-config__icono {
+  font-size: 1rem;
+  color: #94a3b8;
+}
+
+.selector-config__nombre {
+  font-weight: 600;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f1f5f9;
+}
+
+.selector-config__flecha {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+/* Overlay */
+.selector-config__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
+}
+
+/* Menú dropdown - tema oscuro */
+.selector-config__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 240px;
+  max-width: 320px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* Lista de configuraciones */
+.selector-config__lista {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.selector-config__item {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.selector-config__item-btn {
+  flex: 1;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.selector-config__item-btn:hover {
+  background: #334155;
+}
+
+.selector-config__item--activo .selector-config__item-btn {
+  background: #1e3a5f;
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+.selector-config__eliminar {
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  transition: all 0.15s ease;
+}
+
+.selector-config__eliminar:hover {
+  background: #5f1e1e;
+  color: #f87171;
+}
+
+/* Estado vacío */
+.selector-config__vacio {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.875rem;
+}
+
+/* Separador */
+.selector-config__separador {
+  height: 1px;
+  background: #334155;
+  margin: 4px 0;
+}
+
+/* Botón nueva configuración */
+.selector-config__nueva {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #60a5fa;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.selector-config__nueva:hover {
+  background: #334155;
+}
+
+/* Form para crear nueva */
+.selector-config__form {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #0f172a;
+  border-top: 1px solid #334155;
+}
+
+.selector-config__input {
+  padding: 8px 12px;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.selector-config__input::placeholder {
+  color: #64748b;
+}
+
+.selector-config__input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.selector-config__form-btns {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.selector-config__btn-cancelar,
+.selector-config__btn-crear {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.813rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selector-config__btn-cancelar {
+  background: #475569;
+  border: 1px solid #475569;
+  color: #f1f5f9;
+}
+
+.selector-config__btn-cancelar:hover {
+  background: #64748b;
+}
+
+.selector-config__btn-crear {
+  background: #1e3a5f;
+  border: 1px solid #3b82f6;
+  color: #60a5fa;
+}
+
+.selector-config__btn-crear:hover:not(:disabled) {
+  background: #2563eb;
+  color: #fff;
+}
+
+.selector-config__btn-crear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

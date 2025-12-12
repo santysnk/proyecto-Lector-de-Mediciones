@@ -25,6 +25,54 @@
    color: #1e293b;
 }
 
+/* Estados de carga y error */
+.alim-page--cargando,
+.alim-page--error {
+   justify-content: center;
+   align-items: center;
+}
+
+.alim-loading,
+.alim-error {
+   text-align: center;
+   padding: 2rem;
+}
+
+.alim-loading__spinner {
+   width: 40px;
+   height: 40px;
+   margin: 0 auto 1rem;
+   border: 3px solid #e2e8f0;
+   border-top-color: #3b82f6;
+   border-radius: 50%;
+   animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+.alim-loading p,
+.alim-error p {
+   color: #64748b;
+   margin-bottom: 1rem;
+}
+
+.alim-error button {
+   padding: 8px 16px;
+   background: #3b82f6;
+   color: white;
+   border: none;
+   border-radius: 6px;
+   cursor: pointer;
+}
+
+.alim-error button:hover {
+   background: #2563eb;
+}
+
 .alim-main {
    flex: 1;
    padding: 0 1.5rem 1.5rem 1.5rem;

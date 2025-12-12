@@ -1,9 +1,9 @@
 // src/App.jsx
-import React from "react";                                          
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";                // componentes de enrutado declarativo
 import PaginaLogin from "./paginas/PaginaLogin/PaginaLogin.jsx";           // pantalla de login (ruta "/")
 import PaginaRegistro from "./paginas/PaginaRegistro/PaginaRegistro.jsx";  // pantalla de registro (ruta "/registro")
-import PaginaAlimentadores from "./paginas/PaginaAlimentadores/PaginaAlimentadores.jsx"; // panel principal de alimentadores (ruta "/alimentadores")
+import PaginaAlimentadoresSupabase from "./paginas/PaginaAlimentadores/PaginaAlimentadoresSupabase.jsx"; // panel principal conectado a Supabase
 import RecuperarContrasena from "./paginas/PaginaRecuperar/recuperarContraseña.jsx"; // pantalla de recupero de contraseña (ruta "/recuperarContraseña")
 
 function App() {                                         // componente raíz que define el mapa de rutas
@@ -24,9 +24,9 @@ function App() {                                         // componente raíz que
 				element={<RecuperarContrasena/>}            // ruta para recuperar contraseña
 			/>
 
-			<Route                                           
-				path="/alimentadores"                       
-				element={<PaginaAlimentadores />}            // ruta del panel de alimentadores (después de loguearse)
+			<Route
+				path="/alimentadores"
+				element={<PaginaAlimentadoresSupabase />}    // ruta del panel de alimentadores conectado a Supabase
 			/>
 
 			<Route                                           
