@@ -54,12 +54,15 @@ const {
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
 
-	// Preferencias de UI (gaps individuales por tarjeta)
+	// Preferencias de UI (gaps individuales por tarjeta y gaps verticales entre filas)
 	const {
 		obtenerGap,
 		establecerGap,
 		resetearGap,
 		GAP_DEFAULT,
+		// Gaps verticales
+		obtenerRowGap,
+		establecerRowGap,
 	} = usarPreferenciasUI();
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
@@ -268,15 +271,6 @@ const {
 					</div>
 				) : (
 					<>
-						{puestoSeleccionado.alimentadores.length === 0 && (
-							<div className="alim-empty-state">
-								<p>
-									Este puesto no tiene alimentadores. Haz clic en el boton de
-									abajo para agregar.
-								</p>
-							</div>
-						)}
-
 						<GrillaTarjetas
 							alimentadores={puestoSeleccionado.alimentadores}
 							lecturas={lecturasTarjetas}
@@ -295,6 +289,8 @@ const {
 							obtenerContadorLecturas={obtenerContadorLecturas}
 							obtenerGap={obtenerGap}
 							onGapChange={establecerGap}
+							obtenerRowGap={obtenerRowGap}
+							onRowGapChange={establecerRowGap}
 						/>
 					</>
 				)}

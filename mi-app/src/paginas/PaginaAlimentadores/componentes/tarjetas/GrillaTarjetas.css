@@ -2,17 +2,25 @@
 /*
    NOTA SOBRE ESTE ARCHIVO (GrillaTarjetas.css)
    - Estilos para la grilla de tarjetas y la tarjeta especial "+" / zona de drop.
-	
+
    - `.alim-cards-grid` define el layout tipo flex con múltiples columnas, mientras
      que `.alim-card-add` reutiliza el tamaño/forma de una tarjeta para el botón
      de "Nuevo registrador" o el mensaje de "mover al final".
 */
 
+/* Contenedor principal que incluye row gaps y la grilla */
+.grilla-con-row-gaps {
+   display: flex;
+   flex-direction: column;
+   width: 100%;
+}
+
 /* Contenedor de la grilla de tarjetas */
 .alim-cards-grid {
+   position: relative; /* para posicionar los RowGapResizers absolutamente */
    display: flex;
    flex-wrap: wrap;
-   /* row-gap y column-gap ahora se aplican inline via style */
+   /* row-gap se aplica inline via style */
    justify-content: left; /* filas alineadas a la izquierda */
    padding-left: 1.2rem;
    align-items: stretch; /* para que GapResizer tenga la misma altura */
@@ -35,6 +43,7 @@
 
 /* Tarjeta especial: botón "+" o zona de drop al final */
 .alim-card-add {
+   box-sizing: border-box;
    border: 1px dashed #374151;
    background-color: #111827;
    color: #9ca3af;
@@ -44,9 +53,9 @@
    justify-content: center;
    gap: 0.25rem;
    cursor: pointer;
-   min-height: 230px;
-   flex: 0 0 304px;      /* mismo ancho que una tarjeta normal */
    border-radius: 16px;
+   flex-shrink: 0;
+   flex-grow: 0;
 }
 
 .alim-card-add-plus {
@@ -61,4 +70,26 @@
 /* Título de cada bloque de medidores dentro de la tarjeta */
 .alim-card-section-title {
    text-transform: uppercase;
+}
+
+/* RowGapResizer posicionado absolutamente sobre el espacio entre filas */
+.row-gap-resizer-overlay {
+   position: absolute;
+   left: 0;
+   right: 0;
+   display: flex;
+   justify-content: center;
+   z-index: 10;
+   pointer-events: none; /* El overlay no captura eventos, solo el RowGapResizer interno */
+}
+
+.row-gap-resizer-overlay > * {
+   pointer-events: auto; /* El RowGapResizer interno sí captura eventos */
+}
+
+/* Mensaje cuando no hay alimentadores */
+.alim-empty-message {
+   color: #020202;
+   font-size: 0.95rem;
+   margin: 0 0 1rem 1.2rem;
 }

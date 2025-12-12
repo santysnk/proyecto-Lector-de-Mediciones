@@ -1,93 +1,133 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetas.jsx
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
-import TarjetaAlimentador from "./TarjetaAlimentador.jsx"; // tarjeta individual de alimentador
-import GapResizer from "./GapResizer.jsx";                 // control para ajustar espaciado entre tarjetas
-import "./GrillaTarjetas.css";                             // estilos de la grilla + tarjeta "+" de nuevo
+import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
+import GapResizer from "./GapResizer.jsx";
+import RowGapResizer from "./RowGapResizer.jsx";
+import "./GrillaTarjetas.css";
 
 /**
  * Grilla de tarjetas de alimentadores.
- * Maneja el display de tarjetas y la tarjeta de agregar nuevo.
  *
- * Cada tarjeta tiene su propio GapResizer a la derecha con gap individual.
- * El GapResizer se oculta automáticamente si la tarjeta está al final de una
- * fila visual (detectado comparando posiciones Y de tarjetas consecutivas).
+ * Estructura:
+ * - El primer RowGapResizer controla la separación del menú (está fuera del grid)
+ * - Las tarjetas se renderizan en un flex container con flex-wrap
+ * - El row-gap del grid se controla via CSS
+ * - Los RowGapResizers se posicionan con position: absolute sobre los espacios entre filas
+ * - Cada tarjeta tiene un GapResizer a la derecha para controlar el espaciado horizontal
+ * - Los GapResizers se ocultan durante drag & drop
  */
 const GrillaTarjetas = ({
-	alimentadores,                     // lista de alimentadores del puesto actual
-	lecturas,                          // mapa { alimId: { parteSuperior, parteInferior } }
-	puestoId,                          // id del puesto al que pertenecen
-	elementoArrastrandoId,            // id del alimentador que se está arrastrando (o null)
-	onAbrirConfiguracion,             // callback para abrir modal de configuración
-	onAbrirMapeo,                     // callback para abrir modal de mapeo
+	alimentadores,
+	lecturas,
+	puestoId,
+	elementoArrastrandoId,
+	onAbrirConfiguracion,
+	onAbrirMapeo,
 	onDragStart,
 	onDragOver,
 	onDrop,
 	onDragEnd,
-	onDropAlFinal,                    // callback cuando se suelta en la tarjeta "mover al final"
-	onAgregarNuevo,                   // callback para crear un nuevo registrador
-	estaMidiendo,                     // función (alimId, equipo) => boolean
-	obtenerTimestampInicio,           // función (alimId, equipo) => timestamp
-	obtenerContadorLecturas,          // función (alimId, equipo) => número de lecturas
-	obtenerGap,                       // función (alimId) => gap en px para esa tarjeta
-	onGapChange,                      // función (alimId, nuevoGap) para cambiar el gap de una tarjeta
+	onDropAlFinal,
+	onAgregarNuevo,
+	estaMidiendo,
+	obtenerTimestampInicio,
+	obtenerContadorLecturas,
+	// Gaps horizontales (entre tarjetas)
+	obtenerGap,
+	onGapChange,
+	// Gaps verticales (entre filas)
+	obtenerRowGap,
+	onRowGapChange,
 }) => {
-	// Refs para detectar qué tarjetas están al final de su fila
 	const gridRef = useRef(null);
-	const [tarjetasAlFinalDeFila, setTarjetasAlFinalDeFila] = useState(new Set());
+	// Posiciones Y de los espacios entre filas (para posicionar los RowGapResizers)
+	const [posicionesEntreFilas, setPosicionesEntreFilas] = useState([]);
+	// Mapa de filas por tarjeta para detectar cambios de fila
+	const filasAnterioresRef = useRef({});
 
-	// Detectar qué tarjetas están al final de su fila visual
-	// Comparando la posición Y de cada tarjeta con la siguiente
-	const detectarTarjetasAlFinal = useCallback(() => {
+	// Detectar las posiciones entre filas y resetear gaps de tarjetas que bajaron de fila
+	const detectarFilasYFinales = useCallback(() => {
 		if (!gridRef.current) return;
 
-		const nuevasTarjetasAlFinal = new Set();
+		const nuevasPosiciones = [];
+		const nuevasFilasPorTarjeta = {};
+		let ultimoTop = null;
+		let ultimoBottom = null;
+		let filaIndex = 0;
 
-		// Obtener todas las tarjetas y sus posiciones
-		const tarjetas = Array.from(gridRef.current.querySelectorAll('.alim-card-wrapper'));
+		// Incluir todos los wrappers de alimentadores y la tarjeta "Nuevo Registrador"
+		const tarjetas = Array.from(gridRef.current.querySelectorAll('.alim-card-wrapper, .alim-card-add'));
+		const gridRect = gridRef.current.getBoundingClientRect();
 
-		// Para cada tarjeta, comparar su posición Y con la siguiente
-		tarjetas.forEach((wrapper, index) => {
-			const alimId = wrapper.dataset.alimId;
+		tarjetas.forEach((wrapper) => {
+			const alimId = wrapper.dataset.alimId || 'nuevo-registrador';
 			const rect = wrapper.getBoundingClientRect();
 
-			// Si es la última tarjeta o su siguiente tarjeta está en otra fila
-			const siguienteTarjeta = tarjetas[index + 1];
-			if (!siguienteTarjeta) {
-				// La última tarjeta siempre está al final de su fila
-				nuevasTarjetasAlFinal.add(alimId);
-			} else {
-				const siguienteRect = siguienteTarjeta.getBoundingClientRect();
-				// Si la siguiente tarjeta tiene un top diferente (con tolerancia),
-				// significa que esta tarjeta está al final de su fila
-				if (Math.abs(siguienteRect.top - rect.top) > 10) {
-					nuevasTarjetasAlFinal.add(alimId);
-				}
+			// Detectar cambio de fila comparando posición vertical
+			if (ultimoTop !== null && Math.abs(rect.top - ultimoTop) > 10) {
+				// Guardar la posición Y entre filas (relativa al grid)
+				const posY = ultimoBottom - gridRect.top;
+				nuevasPosiciones.push({
+					filaIndex: filaIndex + 1,
+					top: posY
+				});
+				filaIndex++;
+			}
+
+			// Guardar en qué fila está cada tarjeta
+			nuevasFilasPorTarjeta[alimId] = filaIndex;
+
+			ultimoTop = rect.top;
+			ultimoBottom = rect.bottom;
+		});
+
+		// Detectar tarjetas que bajaron de fila y resetear su gap
+		const filasAnteriores = filasAnterioresRef.current;
+		Object.keys(nuevasFilasPorTarjeta).forEach((alimId) => {
+			if (alimId === 'nuevo-registrador') return;
+			const filaAnterior = filasAnteriores[alimId];
+			const filaNueva = nuevasFilasPorTarjeta[alimId];
+			// Si la tarjeta bajó de fila (está en una fila mayor que antes)
+			if (filaAnterior !== undefined && filaNueva > filaAnterior) {
+				// Resetear su gap al valor por defecto (10px)
+				onGapChange(alimId, 10);
 			}
 		});
 
-		// Solo actualizar si cambió
-		setTarjetasAlFinalDeFila(prev => {
-			const prevArray = Array.from(prev).sort();
-			const newArray = Array.from(nuevasTarjetasAlFinal).sort();
-			if (JSON.stringify(prevArray) !== JSON.stringify(newArray)) {
-				return nuevasTarjetasAlFinal;
+		// Actualizar referencia de filas anteriores
+		filasAnterioresRef.current = nuevasFilasPorTarjeta;
+
+		// Solo actualizar posiciones si realmente cambió
+		const posicionesStr = JSON.stringify(nuevasPosiciones);
+		setPosicionesEntreFilas(prev => {
+			const prevStr = JSON.stringify(prev);
+			if (prevStr !== posicionesStr) {
+				return nuevasPosiciones;
 			}
 			return prev;
 		});
-	}, []);
+	}, [onGapChange]);
 
-	// Ejecutar detección cuando cambian los alimentadores o el tamaño de ventana
+	// Ejecutar detección después del primer render y cuando cambian dependencias
 	useEffect(() => {
-		detectarTarjetasAlFinal();
+		const raf = requestAnimationFrame(() => {
+			detectarFilasYFinales();
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [alimentadores, detectarFilasYFinales]);
 
-		// También detectar en resize
-		const handleResize = () => detectarTarjetasAlFinal();
+	// Re-detectar en resize
+	useEffect(() => {
+		const handleResize = () => {
+			requestAnimationFrame(detectarFilasYFinales);
+		};
+
 		window.addEventListener('resize', handleResize);
 
-		// Usar ResizeObserver para detectar cambios en el contenedor
+		// ResizeObserver para el grid
 		const resizeObserver = new ResizeObserver(() => {
-			detectarTarjetasAlFinal();
+			requestAnimationFrame(detectarFilasYFinales);
 		});
 
 		if (gridRef.current) {
@@ -98,367 +138,139 @@ const GrillaTarjetas = ({
 			window.removeEventListener('resize', handleResize);
 			resizeObserver.disconnect();
 		};
-	}, [alimentadores, detectarTarjetasAlFinal]);
+	}, [detectarFilasYFinales]);
 
-	// Re-detectar cuando cambia algún gap (puede afectar el layout)
+	// Re-detectar cuando cambian los row gaps
 	useEffect(() => {
-		// Pequeño delay para que el DOM se actualice primero
-		const timer = setTimeout(detectarTarjetasAlFinal, 50);
+		const timer = setTimeout(() => {
+			requestAnimationFrame(detectarFilasYFinales);
+		}, 50);
 		return () => clearTimeout(timer);
-	}, [obtenerGap, detectarTarjetasAlFinal]);
+	}, [obtenerRowGap, detectarFilasYFinales]);
+
+	// Calcular el row-gap general (usamos el de fila 1)
+	const rowGapGeneral = obtenerRowGap(1);
 
 	return (
-		<div
-			ref={gridRef}
-			className="alim-cards-grid"
-			style={{
-				rowGap: "20px" // gap vertical fijo entre filas
-			}}
-		>
-			{alimentadores.map((alim) => {
-				const lecturasAlim = lecturas[alim.id] || {};                 // lecturas calculadas para este alimentador
-				const mideRele = estaMidiendo(alim.id, "rele");               // estado de medición del relé
-				const mideAnalizador = estaMidiendo(alim.id, "analizador");   // estado de medición del analizador
+		<div className="grilla-con-row-gaps">
+			{/* RowGapResizer para la primera fila (separación del menú) */}
+			{!elementoArrastrandoId && (
+				<RowGapResizer
+					gap={obtenerRowGap(0)}
+					onGapChange={(nuevoGap) => onRowGapChange(0, nuevoGap)}
+					rowIndex={0}
+				/>
+			)}
+			{elementoArrastrandoId && (
+				<div style={{ height: obtenerRowGap(0) }} />
+			)}
 
-				// Determinar si esta tarjeta está al final de su fila visual
-				const estaAlFinalDeFila = tarjetasAlFinalDeFila.has(alim.id);
+			{/* Mensaje cuando no hay alimentadores */}
+			{alimentadores.length === 0 && (
+				<p className="alim-empty-message">
+					Este puesto no tiene alimentadores. Haz clic en el botón de abajo para agregar.
+				</p>
+			)}
 
-				// Gap individual de esta tarjeta
-				const gapTarjeta = obtenerGap(alim.id);
+			<div
+				ref={gridRef}
+				className="alim-cards-grid"
+				style={{ rowGap: `${rowGapGeneral}px` }}
+			>
+				{alimentadores.map((alim) => {
+					const lecturasAlim = lecturas[alim.id] || {};
+					const mideRele = estaMidiendo(alim.id, "rele");
+					const mideAnalizador = estaMidiendo(alim.id, "analizador");
+					const gapTarjeta = obtenerGap(alim.id);
 
-				// Mostrar GapResizer solo si no está al final de fila y no hay drag activo
-				const mostrarGapResizer = !estaAlFinalDeFila && !elementoArrastrandoId;
-
-				return (
-					<div
-						key={alim.id}
-						className="alim-card-wrapper"
-						data-alim-id={alim.id}
-						style={{ display: 'flex', alignItems: 'stretch' }}
-					>
-						<TarjetaAlimentador
-							nombre={alim.nombre}
-							color={alim.color}
-							onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
-							onMapClick={() => onAbrirMapeo(puestoId, alim)}
-							topSide={lecturasAlim.parteSuperior}
-							bottomSide={lecturasAlim.parteInferior}
-							draggable={true}
-							isDragging={elementoArrastrandoId === alim.id}
-							onDragStart={() => onDragStart(alim.id)}
-							onDragOver={onDragOver}
-							onDrop={(e) => {
-								e.preventDefault();
-								onDrop(alim.id);
-							}}
-							onDragEnd={onDragEnd}
-							mideRele={mideRele}
-							mideAnalizador={mideAnalizador}
-							periodoRele={alim.periodoSegundos || 60}
-							periodoAnalizador={alim.analizador?.periodoSegundos || 60}
-							timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
-							timestampInicioAnalizador={obtenerTimestampInicio(
-								alim.id,
-								"analizador"
-							)}
-							contadorRele={obtenerContadorLecturas(alim.id, "rele")}
-							contadorAnalizador={obtenerContadorLecturas(
-								alim.id,
-								"analizador"
-							)}
-						/>
-						{/* GapResizer individual para cada tarjeta */}
-						{mostrarGapResizer ? (
-							<GapResizer
-								gap={gapTarjeta}
-								onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
+					return (
+						<div
+							key={alim.id}
+							className="alim-card-wrapper"
+							data-alim-id={alim.id}
+							style={{ display: 'flex', alignItems: 'stretch' }}
+						>
+							<TarjetaAlimentador
+								nombre={alim.nombre}
+								color={alim.color}
+								onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
+								onMapClick={() => onAbrirMapeo(puestoId, alim)}
+								topSide={lecturasAlim.parteSuperior}
+								bottomSide={lecturasAlim.parteInferior}
+								draggable={true}
+								isDragging={elementoArrastrandoId === alim.id}
+								onDragStart={() => onDragStart(alim.id)}
+								onDragOver={onDragOver}
+								onDrop={(e) => {
+									e.preventDefault();
+									onDrop(alim.id);
+								}}
+								onDragEnd={onDragEnd}
+								mideRele={mideRele}
+								mideAnalizador={mideAnalizador}
+								periodoRele={alim.periodoSegundos || 60}
+								periodoAnalizador={alim.analizador?.periodoSegundos || 60}
+								timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
+								timestampInicioAnalizador={obtenerTimestampInicio(alim.id, "analizador")}
+								contadorRele={obtenerContadorLecturas(alim.id, "rele")}
+								contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
 							/>
-						) : (
-							// Espacio mínimo cuando no se muestra el resizer
-							<div style={{ width: estaAlFinalDeFila ? 0 : gapTarjeta }} />
-						)}
-					</div>
-				);
-			})}
+							{/* Siempre mostrar GapResizer o spacer fijo */}
+							{!elementoArrastrandoId ? (
+								<GapResizer
+									gap={gapTarjeta}
+									onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
+								/>
+							) : (
+								<div style={{ width: gapTarjeta }} />
+							)}
+						</div>
+					);
+				})}
 
-			{elementoArrastrandoId ? (
-				// Área de drop especial para mandar una tarjeta al final del listado
-				<div
-					className="alim-card-add"
-					onDragOver={onDragOver}
-					onDrop={(e) => {
-						e.preventDefault();
-						onDropAlFinal();
-					}}
-				>
-					<span
-						style={{
-							textAlign: "center",
-							padding: "1rem",
+				{/* Tarjeta "Nuevo Registrador" o zona de drop */}
+				{elementoArrastrandoId ? (
+					<div
+						className="alim-card-add"
+						style={{ width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279 }}
+						onDragOver={onDragOver}
+						onDrop={(e) => {
+							e.preventDefault();
+							onDropAlFinal();
 						}}
 					>
-						Soltar aquí para mover al final
-					</span>
-				</div>
-			) : (
-				// Tarjeta "+" para crear un nuevo registrador
-				<div className="alim-card-add" onClick={onAgregarNuevo}>
-					<span className="alim-card-add-plus">+</span>
-					<span className="alim-card-add-text">Nuevo Registrador</span>
-				</div>
-			)}
+						<span style={{ textAlign: "center", padding: "1rem" }}>
+							Soltar aquí para mover al final
+						</span>
+					</div>
+				) : (
+					<div
+						className="alim-card-add"
+						style={{ width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279 }}
+						onClick={onAgregarNuevo}
+					>
+						<span className="alim-card-add-plus">+</span>
+						<span className="alim-card-add-text">Nuevo Registrador</span>
+					</div>
+				)}
+
+				{/* RowGapResizers posicionados absolutamente sobre los espacios entre filas */}
+				{!elementoArrastrandoId && posicionesEntreFilas.map((pos) => (
+					<div
+						key={`row-gap-${pos.filaIndex}`}
+						className="row-gap-resizer-overlay"
+						style={{ top: `${pos.top}px` }}
+					>
+						<RowGapResizer
+							gap={obtenerRowGap(pos.filaIndex)}
+							onGapChange={(nuevoGap) => onRowGapChange(pos.filaIndex, nuevoGap)}
+							rowIndex={pos.filaIndex}
+						/>
+					</div>
+				))}
+			</div>
 		</div>
 	);
 };
 
 export default GrillaTarjetas;
-
-{/*---------------------------------------------------------------------------
- NOTA SOBRE ESTE ARCHIVO (GrillaTarjetas.jsx)
-
- - Este componente se encarga de recorrer la lista de `alimentadores` del puesto
-   actual y dibujar una `TarjetaAlimentador` para cada uno, pasándole lecturas,
-   estado de medición y props de drag & drop.
-
- - Además, al final de la grilla agrega una tarjeta especial:
-   * Si hay un elemento arrastrándose (`elementoArrastrandoId`), muestra un área
-     de drop con el mensaje "Soltar aquí para mover al final".
-   * Si no hay drag activo, muestra la tarjeta "+" para crear un nuevo registrador.
-
- - De esta forma la lógica de layout de tarjetas queda concentrada acá y la
-   tarjeta individual (`TarjetaAlimentador`) se mantiene enfocada solo en su
-   propio contenido y aspecto.
----------------------------------------------------------------------------*/}
-
-;
-
-/*---------------------------------------------------------------------------
-CÓDIGO + EXPLICACIÓN DE CADA PARTE (GrillaTarjetas.jsx)
-
-0) Visión general del componente
-
-   `GrillaTarjetas` es el componente que organiza visualmente todas las tarjetas
-   de alimentadores de un puesto.
-
-   - Se encarga de:
-       • recorrer la lista de `alimentadores`,
-       • crear una `TarjetaAlimentador` por cada uno,
-       • pasarle lecturas y estado de medición,
-       • manejar el soporte de drag & drop,
-       • y mostrar al final:
-           - o un área de “soltar para mover al final” (cuando hay drag activo),
-           - o la tarjeta “+ Nuevo Registrador” (cuando no hay drag).
-
-
-1) Props principales
-
-   const GrillaTarjetas = ({
-     alimentadores,
-     lecturas,
-     puestoId,
-     elementoArrastrandoId,
-     onAbrirConfiguracion,
-     onAbrirMapeo,
-     onDragStart,
-     onDragOver,
-     onDrop,
-     onDragEnd,
-     onDropAlFinal,
-     onAgregarNuevo,
-     estaMidiendo,
-     obtenerTimestampInicio,
-     obtenerContadorLecturas,
-   }) => { ... }
-
-   - `alimentadores`:
-       • array con los alimentadores del puesto seleccionado,
-       • cada elemento incluye datos como id, nombre, color, config de relé/analizador, etc.
-
-   - `lecturas`:
-       • objeto con la forma:
-           { [alimId]: { parteSuperior, parteInferior } }
-       • viene ya procesado desde el contexto (`lecturasTarjetas`),
-       • cada lado (`parteSuperior` / `parteInferior`) trae título y lista de cajas.
-
-   - `puestoId`:
-       • id del puesto actual,
-       • se pasa a los callbacks de configuración/mapeo para saber a qué puesto pertenece el alimentador.
-
-   - `elementoArrastrandoId`:
-       • id del alimentador que se está arrastrando en este momento,
-       • si es `null`, no hay drag activo.
-
-   - Callbacks de interacción:
-       • `onAbrirConfiguracion(puestoId, alimentador)`:
-           - abre el modal de configuración del registrador.
-
-       • `onAbrirMapeo(puestoId, alimentador)`:
-           - abre el modal de mapeo de mediciones.
-
-       • `onDragStart(alimId)`, `onDragOver`, `onDrop(alimId)`, `onDragEnd`:
-           - funciones que vienen del hook de drag & drop y de la vista padre.
-
-       • `onDropAlFinal()`:
-           - se llama cuando se suelta una tarjeta en el área “mover al final”.
-
-       • `onAgregarNuevo()`:
-           - se llama al hacer clic en la tarjeta “+ Nuevo Registrador”.
-
-   - Funciones de medición:
-       • `estaMidiendo(alimId, equipo)`:
-           - devuelve true/false según si el alimentador/equipo está midiendo.
-
-       • `obtenerTimestampInicio(alimId, equipo)`:
-           - timestamp de la última medición (reservado para futuras animaciones).
-
-       • `obtenerContadorLecturas(alimId, equipo)`:
-           - cuántas lecturas se hicieron desde que se inició la medición.
-
-
-2) Render principal de la grilla
-
-   return (
-     <div className="alim-cards-grid">
-       {alimentadores.map((alim) => { ... return <TarjetaAlimentador ... /> })}
-       {elementoArrastrandoId ? ( ... ) : ( ... )}
-     </div>
-   );
-
-   - El contenedor principal es un `<div>` con clase `"alim-cards-grid"`.
-
-   - Dentro, primero se pintan todas las tarjetas de alimentadores.
-
-   - Luego, se pinta:
-       • el área de drop para “mover al final” si hay drag activo,
-       • o la tarjeta “+” si no lo hay.
-
-
-3) Mapeo de alimentadores → TarjetaAlimentador
-
-   {alimentadores.map((alim) => {
-     const lecturasAlim = lecturas[alim.id] || {};
-     const mideRele = estaMidiendo(alim.id, "rele");
-     const mideAnalizador = estaMidiendo(alim.id, "analizador");
-
-     return (
-       <TarjetaAlimentador
-         key={alim.id}
-         nombre={alim.nombre}
-         color={alim.color}
-         onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
-         onMapClick={() => onAbrirMapeo(puestoId, alim)}
-         topSide={lecturasAlim.parteSuperior}
-         bottomSide={lecturasAlim.parteInferior}
-         draggable={true}
-         isDragging={elementoArrastrandoId === alim.id}
-         onDragStart={() => onDragStart(alim.id)}
-         onDragOver={onDragOver}
-         onDrop={() => onDrop(alim.id)}
-         onDragEnd={onDragEnd}
-         mideRele={mideRele}
-         mideAnalizador={mideAnalizador}
-         periodoRele={alim.periodoSegundos || 60}
-         periodoAnalizador={alim.analizador?.periodoSegundos || 60}
-         timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
-         timestampInicioAnalizador={obtenerTimestampInicio(alim.id, "analizador")}
-         contadorRele={obtenerContadorLecturas(alim.id, "rele")}
-         contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
-       />
-     );
-   })}
-
-   - `lecturasAlim`:
-       • se extrae `lecturas[alim.id]` o `{}` si no hay lecturas aún.
-
-   - `mideRele` / `mideAnalizador`:
-       • se calculan consultando el contexto via `estaMidiendo`.
-
-   - Props clave que se pasan a `TarjetaAlimentador`:
-
-       • Identidad y apariencia:
-           - `key={alim.id}`: clave única para React.
-           - `nombre={alim.nombre}` y `color={alim.color}`.
-
-       • Acciones:
-           - `onConfigClick` y `onMapClick`:
-               · envuelven los callbacks de la vista para pasar puesto + alimentador.
-
-       • Diseño/lecturas:
-           - `topSide={lecturasAlim.parteSuperior}`,
-           - `bottomSide={lecturasAlim.parteInferior}`.
-
-       • Drag & drop:
-           - `draggable={true}`: permite arrastrar la tarjeta.
-           - `isDragging={elementoArrastrandoId === alim.id}`:
-               · true si esta es la tarjeta actualmente en movimiento.
-           - `onDragStart={() => onDragStart(alim.id)}`:
-               · marca qué tarjeta se empezó a arrastrar.
-           - `onDragOver={onDragOver}`, `onDrop={() => onDrop(alim.id)}`,
-             `onDragEnd={onDragEnd}`:
-               · se delegan al hook de drag & drop enlazado en la vista.
-
-       • Estado de medición:
-           - `mideRele`, `mideAnalizador`:
-               · booleans para estilos y animaciones.
-
-           - `periodoRele`, `periodoAnalizador`:
-               · se obtienen de la config del alimentador o 60s por defecto.
-
-           - `timestampInicioRele`, `timestampInicioAnalizador`:
-               · se pasan por si se usan en animaciones/indicadores.
-					
-           - `contadorRele`, `contadorAnalizador`:
-               · se usan dentro de `TarjetaAlimentador` / `CajaMedicion`
-                 para reiniciar animaciones cuando llegan nuevas lecturas.
-
-
-4) Tarjeta final: drop para “mover al final” o “Nuevo Registrador”
-
-   {elementoArrastrandoId ? (
-     <div
-       className="alim-card-add"
-       onDragOver={onDragOver}
-       onDrop={onDropAlFinal}
-     >
-       <span style={{ textAlign: "center", padding: "1rem" }}>
-         Soltar aquí para mover al final
-       </span>
-     </div>
-   ) : (
-     <div className="alim-card-add" onClick={onAgregarNuevo}>
-       <span className="alim-card-add-plus">+</span>
-       <span className="alim-card-add-text">Nuevo Registrador</span>
-     </div>
-   )}
-
-   - Si `elementoArrastrandoId` tiene un valor (hay tarjeta en drag):
-
-       • se muestra un `<div className="alim-card-add">` que funciona como zona
-         de drop especial.
-
-       • `onDragOver={onDragOver}`:
-           - permite que la tarjeta se pueda soltar encima.
-
-       • `onDrop={onDropAlFinal}`:
-           - cuando se suelta, la vista calcula el nuevo orden moviendo
-             ese alimentador al final de la lista.
-
-       • Texto:
-           - “Soltar aquí para mover al final”.
-
-   - Si NO hay drag activo (`elementoArrastrandoId` es null):
-
-       • se dibuja la tarjeta "+" clásica para crear un nuevo registrador.
-
-       • `onClick={onAgregarNuevo}`:
-           - dispara la acción que abre el modal de alta de alimentador.
-
-
-5) Export
-
-   export default GrillaTarjetas;
-
-   - Se exporta como componente por defecto para que `VistaAlimentadores`
-     lo utilice como cuerpo principal de la sección de tarjetas.
-
----------------------------------------------------------------------------*/

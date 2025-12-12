@@ -26,14 +26,17 @@
 }
 
 .alim-main {
-   flex: 1;	
-   padding: 1.5rem;
+   flex: 1;
+   padding: 0 1.5rem 1.5rem 1.5rem;
+   width: 100%;
+   min-width: 0; /* Permite que flex shrink funcione correctamente */
+   overflow-x: hidden; /* Evita scroll horizontal no deseado */
 }
 
 /* Ajuste de paddings en pantallas chicas/medianas */
 @media (max-width: 982px) {
    .alim-main {
-      padding: 1rem 0.75rem;
+      padding: 0 0.75rem 1rem 0.75rem;
    }
 }
 
