@@ -274,6 +274,7 @@ export const usarPuestosSupabase = (configuracionId) => {
     // Actualizar cada puesto en el backend
     try {
       setError(null);
+
       for (const puesto of sinVacios) {
         await actualizarPuesto(puesto.id, {
           nombre: puesto.nombre,

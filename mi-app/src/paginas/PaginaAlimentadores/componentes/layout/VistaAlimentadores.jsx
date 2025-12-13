@@ -112,9 +112,13 @@ const {
 		cerrarModal("nuevoPuesto");
 	};
 
-	const handleGuardarPuestos = (puestosEditados) => {
-		actualizarPuestos(puestosEditados);                           // guarda cambios masivos (nombres/colores)
-		cerrarModal("editarPuestos");
+	const handleGuardarPuestos = async (puestosEditados) => {
+		try {
+			await actualizarPuestos(puestosEditados);                           // guarda cambios masivos (nombres/colores)
+			cerrarModal("editarPuestos");
+		} catch (error) {
+			console.error('Error guardando puestos:', error);
+		}
 	};
 
 	const handleGuardarConfigPuesto = (alimentadoresActualizados) => {
