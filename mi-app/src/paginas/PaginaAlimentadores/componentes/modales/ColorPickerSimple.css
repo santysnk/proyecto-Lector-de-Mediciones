@@ -1,0 +1,125 @@
+/* src/paginas/PaginaAlimentadores/componentes/modales/ColorPickerSimple.css */
+/* Estilos minimalistas para el selector de color */
+
+.color-picker-simple {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	align-items: center;
+	margin-top: -2px;
+}
+
+.color-picker-simple-label {
+	font-size: 14px;
+	color: #94a3b8;
+	font-weight: 500;
+}
+
+.color-picker-simple-wrapper {
+	position: relative;
+}
+
+.color-picker-simple-button {
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	border: 2px solid #475569;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-picker-simple-button:hover {
+	transform: scale(1.1);
+	border-color: #64748b;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-picker-simple-button:active {
+	transform: scale(0.95);
+}
+
+.color-picker-simple-popover {
+	position: fixed;
+	z-index: 9999;
+	padding: 6px;
+	background: #1e293b;
+	border-radius: 6px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+	border: 1px solid #334155;
+	width: 200px;
+}
+
+/* Estilos para el picker de react-colorful */
+.color-picker-simple-popover .react-colorful {
+	width: 100%;
+	height: 140px;
+}
+
+.color-picker-simple-popover .react-colorful__saturation {
+	border-radius: 4px 4px 0 0;
+	height: 100px;
+}
+
+.color-picker-simple-popover .react-colorful__hue {
+	height: 16px;
+	border-radius: 0 0 4px 4px;
+	margin-top: 6px;
+}
+
+.color-picker-simple-popover .react-colorful__pointer {
+	width: 18px;
+	height: 18px;
+}
+
+/* Input de valor hexadecimal */
+.color-picker-hex-input-wrapper {
+	display: flex;
+	gap: 4px;
+	margin-top: 8px;
+	align-items: center;
+}
+
+.color-picker-hex-input {
+	flex: 1;
+	background: #0f172a;
+	border: 1.5px solid #64748b;
+	border-radius: 4px;
+	padding: 5px 6px;
+	color: #e2e8f0;
+	font-size: 12px;
+	font-family: monospace;
+	text-align: center;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.color-picker-hex-input:hover {
+	border-color: #94a3b8;
+	background: #1e293b;
+}
+
+.color-picker-hex-input:focus {
+	outline: none;
+	border-color: #06b6d4;
+	background: #1e293b;
+}
+
+.color-picker-copy-btn {
+	background: #334155;
+	border: none;
+	border-radius: 4px;
+	padding: 6px 8px;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.color-picker-copy-btn:hover {
+	background: #475569;
+	transform: scale(1.05);
+}
+
+.color-picker-copy-btn:active {
+	transform: scale(0.95);
+}

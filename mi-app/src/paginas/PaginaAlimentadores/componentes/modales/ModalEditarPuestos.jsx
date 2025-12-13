@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";      // React + hooks para estado y efectos
 import "./ModalEditarPuestos.css";                       // estilos específicos de este modal
+import ColorPickerSimple from "./ColorPickerSimple";     // selector de color minimalista
 
 const ModalEditarPuestos = ({
 	abierto,                                              // si es false, el modal no se renderiza
@@ -49,48 +50,36 @@ const ModalEditarPuestos = ({
 	if (!abierto) return null;                            // si no está abierto, no dibujo nada
 
 	return (
-		<div className="alim-modal-overlay">
-			<div className="alim-modal">
+		<div className="editar-fondo-oscuro">
+			<div className="editar-contenedor">
 				<h2>Editar puestos</h2>
 
-				<div className="alim-edit-list">
+				<div className="editar-lista">
 					{puestosEditados.map((p) => (
-						<div key={p.id} className="alim-edit-row">
+						<div key={p.id} className="editar-fila">
 							<input
 								type="text"
-								className="alim-edit-input"
+								className="editar-nombre"
 								value={p.nombre}
 								onChange={(e) => cambiarNombre(p.id, e.target.value)} // actualiza nombre en la copia local
 							/>
 
-							<div className="alim-edit-right">
-								<div className="alim-edit-color-group">
-									<span className="alim-edit-color-label">Botón</span>
-									<input
-										type="color"
-										className="alim-edit-color-input"
-										value={p.color}
-										onChange={(e) =>
-											cambiarColorBoton(p.id, e.target.value)
-										} // cambia color del botón del puesto
-									/>
-								</div>
+							<div className="editar-controles">
+								<ColorPickerSimple
+									color={p.color || "#22c55e"}
+									onChange={(newColor) => cambiarColorBoton(p.id, newColor)}
+									label="Botón"
+								/>
 
-								<div className="alim-edit-color-group">
-									<span className="alim-edit-color-label">Fondo</span>
-									<input
-										type="color"
-										className="alim-edit-color-input"
-										value={p.bgColor || "#e5e7eb"}           // si no hay fondo guardado, uso gris claro
-										onChange={(e) =>
-											cambiarColorFondo(p.id, e.target.value)
-										} // cambia color de fondo del puesto
-									/>
-								</div>
+								<ColorPickerSimple
+									color={p.bgColor || p.bg_color || "#e5e7eb"}
+									onChange={(newColor) => cambiarColorFondo(p.id, newColor)}
+									label="Fondo"
+								/>
 
 								<button
 									type="button"
-									className="alim-edit-delete"
+									className="editar-eliminar"
 									onClick={() => eliminar(p.id)}             // elimina el puesto de la lista local
 								>
 									Eliminar
@@ -100,17 +89,17 @@ const ModalEditarPuestos = ({
 					))}
 				</div>
 
-				<div className="alim-modal-actions">
+				<div className="editar-acciones">
 					<button
 						type="button"
-						className="alim-modal-btn alim-modal-btn-cancelar"
+						className="editar-boton editar-cancelar"
 						onClick={onCerrar}                                  // cierro sin persistir cambios
 					>
 						Cancelar
 					</button>
 					<button
 						type="button"
-						className="alim-modal-btn alim-modal-btn-guardar"
+						className="editar-boton editar-guardar"
 						onClick={handleSubmit}                              // guardo todos los cambios hechos
 					>
 						Guardar
