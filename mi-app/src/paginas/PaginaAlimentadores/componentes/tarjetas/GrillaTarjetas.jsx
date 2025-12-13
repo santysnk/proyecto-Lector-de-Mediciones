@@ -286,68 +286,70 @@ const GrillaTarjetas = ({
 					const marginTop = obtenerMarginTop(alim.id);
 
 					return (
-						<div
-							key={alim.id}
-							className="alim-card-wrapper"
-							data-alim-id={alim.id}
-							style={{ display: 'flex', alignItems: 'stretch', marginTop: marginTop > 0 ? `${marginTop}px` : undefined }}
-						>
-							<TarjetaAlimentador
-								nombre={alim.nombre}
-								color={alim.color}
-								onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
-								onMapClick={() => onAbrirMapeo(puestoId, alim)}
-								topSide={lecturasAlim.parteSuperior}
-								bottomSide={lecturasAlim.parteInferior}
-								draggable={true}
-								isDragging={elementoArrastrandoId === alim.id}
-								onDragStart={() => onDragStart(alim.id)}
-								onDragOver={onDragOver}
-								onDrop={(e) => {
-									e.preventDefault();
-									onDrop(alim.id);
-								}}
-								onDragEnd={onDragEnd}
-								mideRele={mideRele}
-								mideAnalizador={mideAnalizador}
-								periodoRele={alim.periodoSegundos || 60}
-								periodoAnalizador={alim.analizador?.periodoSegundos || 60}
-								timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
-								timestampInicioAnalizador={obtenerTimestampInicio(alim.id, "analizador")}
-								contadorRele={obtenerContadorLecturas(alim.id, "rele")}
-								contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
-							/>
-							{/* GapResizer solo en desktop y sin drag; spacer fijo en móvil o durante drag */}
-							{!elementoArrastrandoId && !esModoMobile ? (
-								<GapResizer
-									gap={gapTarjeta}
-									onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
+						<React.Fragment key={alim.id}>
+							{/* Tarjeta del alimentador */}
+							<div
+								className="alim-card-wrapper"
+								data-alim-id={alim.id}
+								style={{ marginTop: marginTop > 0 ? `${marginTop}px` : undefined }}
+							>
+								<TarjetaAlimentador
+									nombre={alim.nombre}
+									color={alim.color}
+									onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
+									onMapClick={() => onAbrirMapeo(puestoId, alim)}
+									topSide={lecturasAlim.parteSuperior}
+									bottomSide={lecturasAlim.parteInferior}
+									draggable={true}
+									isDragging={elementoArrastrandoId === alim.id}
+									onDragStart={() => onDragStart(alim.id)}
+									onDragOver={onDragOver}
+									onDrop={(e) => {
+										e.preventDefault();
+										onDrop(alim.id);
+									}}
+									onDragEnd={onDragEnd}
+									mideRele={mideRele}
+									mideAnalizador={mideAnalizador}
+									periodoRele={alim.periodoSegundos || 60}
+									periodoAnalizador={alim.analizador?.periodoSegundos || 60}
+									timestampInicioRele={obtenerTimestampInicio(alim.id, "rele")}
+									timestampInicioAnalizador={obtenerTimestampInicio(alim.id, "analizador")}
+									contadorRele={obtenerContadorLecturas(alim.id, "rele")}
+									contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
 								/>
+							</div>
+							{/* GapResizer a la derecha de cada tarjeta (elemento hermano independiente) */}
+							{/* Usa el mismo marginTop que la tarjeta para alinearse verticalmente */}
+							{!elementoArrastrandoId && !esModoMobile ? (
+								<div style={{ marginTop: marginTop > 0 ? `${marginTop}px` : undefined }}>
+									<GapResizer
+										gap={gapTarjeta}
+										onGapChange={(nuevoGap) => onGapChange(alim.id, nuevoGap)}
+									/>
+								</div>
 							) : (
-								<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : gapTarjeta }} />
+								<div className="gap-spacer" style={{ width: esModoMobile ? GAP_FIJO_MOBILE : gapTarjeta, marginTop: marginTop > 0 ? `${marginTop}px` : undefined }} />
 							)}
-						</div>
+						</React.Fragment>
 					);
 				})}
 
 				{/* Skeleton card (se muestra mientras se guarda un nuevo alimentador) */}
 				{skeletonCard && (() => {
-					// El skeleton debe tener el mismo marginTop que tendría "nuevo-registrador"
 					const marginTopSkeleton = obtenerMarginTop('nuevo-registrador');
 					return (
-						<div
-							className="alim-card-wrapper"
-							data-alim-id="skeleton"
-							style={{
-								display: 'flex',
-								alignItems: 'flex-start',
-								marginTop: marginTopSkeleton > 0 ? `${marginTopSkeleton}px` : undefined
-							}}
-						>
-							{skeletonCard}
-							{/* Spacer para simular gap */}
-							<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : 10 }} />
-						</div>
+						<React.Fragment>
+							<div
+								className="alim-card-wrapper"
+								data-alim-id="skeleton"
+								style={{ marginTop: marginTopSkeleton > 0 ? `${marginTopSkeleton}px` : undefined }}
+							>
+								{skeletonCard}
+							</div>
+							{/* Gap después del skeleton */}
+							<div className="gap-spacer" style={{ width: esModoMobile ? GAP_FIJO_MOBILE : 10 }} />
+						</React.Fragment>
 					);
 				})()}
 

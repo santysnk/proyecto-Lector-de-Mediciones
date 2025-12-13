@@ -7,29 +7,13 @@
 	justify-content: center;
 	min-height: 230px; /* misma altura que las tarjetas */
 	flex-shrink: 0;
+	pointer-events: none; /* No bloquear eventos en el área del gap */
+	overflow: clip; /* Más estricto que hidden, recorta todo el contenido */
 	/* El ancho se controla via style inline basado en el gap */
 }
 
-.gap-resizer__track {
-	position: relative;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	height: 100%;
-	width: 100%;
-}
-
-/* Contenedor del handle + hitbox, siempre centrado */
-.gap-resizer__handle-wrapper {
-	position: relative;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-}
-
 /* Hitbox invisible que siempre captura eventos del mouse */
-/* Está encima del handle visual, misma posición */
+/* Posicionado en el centro exacto del gap-resizer */
 .gap-resizer__hitbox {
 	position: absolute;
 	top: 50%;
@@ -39,10 +23,15 @@
 	height: 120px;
 	cursor: ew-resize;
 	z-index: 2;
+	pointer-events: auto; /* Capturar eventos del mouse */
 	/* background: rgba(255,0,0,0.2); */ /* descomentar para debug */
 }
 
 .gap-resizer__handle {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 	display: flex;
 	flex-direction: column;
 	align-items: center;
@@ -95,10 +84,13 @@
 .gap-resizer__input-container {
 	position: absolute;
 	top: calc(50% + 50px);
+	left: 50%;
+	transform: translateX(-50%);
 	display: flex;
 	justify-content: center;
 	opacity: 0;
 	transition: opacity 0.2s ease;
+	pointer-events: auto; /* Permitir interacción con el input */
 }
 
 /* Solo mostrar el input cuando está activo via React */

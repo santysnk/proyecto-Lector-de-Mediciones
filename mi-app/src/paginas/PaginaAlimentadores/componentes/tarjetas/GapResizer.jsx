@@ -183,55 +183,52 @@ const GapResizer = ({ gap, onGapChange, minGap = 0, maxGap = 500 }) => {
 			className={`gap-resizer ${isActive ? "gap-resizer--active" : ""}`}
 			style={{ width: `${gap}px` }}
 		>
-			<div className="gap-resizer__track">
-				{/* Wrapper que contiene hitbox + handle en la misma posición */}
-				<div className="gap-resizer__handle-wrapper">
-					{/* Zona de hitbox invisible que siempre detecta el mouse */}
-					<div
-						ref={hitboxRef}
-						className="gap-resizer__hitbox"
-						onMouseEnter={() => setIsHovered(true)}
-						onMouseLeave={() => !isDragging && !isEditing && setIsHovered(false)}
-						onMouseDown={handleMouseDown}
-						onDoubleClick={handleDoubleClick}
-					/>
-					{/* Handle visual (solo decorativo, los eventos van al hitbox) */}
-					<div
-						className={`gap-resizer__handle ${isDragging ? "gap-resizer__handle--dragging" : ""}`}
-						title="Arrastra para ajustar el espaciado"
-					>
-						<div className="gap-resizer__line" />
-						<div className="gap-resizer__circle" />
-						<div className="gap-resizer__line" />
-					</div>
-				</div>
+			{/* Hitbox centrado directamente en el gap-resizer */}
+			<div
+				ref={hitboxRef}
+				className="gap-resizer__hitbox"
+				style={{ width: `${Math.min(30, gap)}px` }}
+				onMouseEnter={() => setIsHovered(true)}
+				onMouseLeave={() => !isDragging && !isEditing && setIsHovered(false)}
+				onMouseDown={handleMouseDown}
+				onDoubleClick={handleDoubleClick}
+			/>
 
-				{isActive && (
-					<div className="gap-resizer__input-container">
-						{isEditing ? (
-							<input
-								ref={inputRef}
-								type="number"
-								className="gap-resizer__input"
-								value={inputValue}
-								onChange={handleInputChange}
-								onBlur={handleInputBlur}
-								onKeyDown={handleInputKeyDown}
-								min={minGap}
-								max={maxGap}
-							/>
-						) : (
-							<span
-								className="gap-resizer__value"
-								onClick={handleValueClick}
-								title="Click para editar"
-							>
-								{gap}px
-							</span>
-						)}
-					</div>
-				)}
+			{/* Handle visual (solo decorativo, los eventos van al hitbox) */}
+			<div
+				className={`gap-resizer__handle ${isDragging ? "gap-resizer__handle--dragging" : ""}`}
+				title="Arrastra para ajustar el espaciado"
+			>
+				<div className="gap-resizer__line" />
+				<div className="gap-resizer__circle" />
+				<div className="gap-resizer__line" />
 			</div>
+
+			{isActive && (
+				<div className="gap-resizer__input-container">
+					{isEditing ? (
+						<input
+							ref={inputRef}
+							type="number"
+							className="gap-resizer__input"
+							value={inputValue}
+							onChange={handleInputChange}
+							onBlur={handleInputBlur}
+							onKeyDown={handleInputKeyDown}
+							min={minGap}
+							max={maxGap}
+						/>
+					) : (
+						<span
+							className="gap-resizer__value"
+							onClick={handleValueClick}
+							title="Click para editar"
+						>
+							{gap}px
+						</span>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

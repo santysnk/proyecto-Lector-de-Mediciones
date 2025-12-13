@@ -22,13 +22,17 @@
 	border: 1px solid #1f2937;
 	min-height: 230px;
 
-	/* importante para que flex calcule bien el ancho */
-	flex: 0 0 304px; /* ancho "normal" de la tarjeta */
+	/* Ancho fijo de la tarjeta */
+	width: 304px;
+	min-width: 304px;
+	flex-shrink: 0;
+	box-sizing: border-box;
 }
 
 /* Cuando hay 4 boxes en alguna fila, la hacemos más ancha */
 .alim-card-wide {
-	flex-basis: 380px;
+	width: 380px;
+	min-width: 380px;
 }
 
 /* Header de la tarjeta */

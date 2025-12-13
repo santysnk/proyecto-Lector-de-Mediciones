@@ -34,10 +34,13 @@
    }
 }
 
-/* Wrapper que contiene tarjeta + gap resizer */
+/* Wrapper que contiene solo la tarjeta */
 .alim-card-wrapper {
-   display: flex;
-   align-items: stretch;
+   flex-shrink: 0;
+}
+
+/* Spacer para simular el gap cuando está en modo drag o mobile */
+.gap-spacer {
    flex-shrink: 0;
 }
 
