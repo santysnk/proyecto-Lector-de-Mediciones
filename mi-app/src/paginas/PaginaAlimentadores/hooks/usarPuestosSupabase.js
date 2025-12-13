@@ -436,28 +436,17 @@ export const usarPuestosSupabase = (configuracionId) => {
   };
 
   /**
-   * Reordena los alimentadores de un puesto
+   * Reordena los alimentadores de un puesto (solo estado local).
+   * La sincronización con BD se hace al presionar "Guardar cambios".
    */
-  const reordenarAlimentadores = async (idPuesto, nuevoOrdenAlimentadores) => {
-    try {
-      setError(null);
-
-      // Actualizar localmente primero para UX fluida
-      setPuestos((prev) =>
-        prev.map((p) =>
-          p.id === idPuesto ? { ...p, alimentadores: nuevoOrdenAlimentadores } : p
-        )
-      );
-
-      // Sincronizar con el backend
-      const ordenIds = nuevoOrdenAlimentadores.map((a) => a.id);
-      await reordenarAlimentadoresAPI(idPuesto, ordenIds);
-    } catch (err) {
-      console.error("Error reordenando alimentadores:", err);
-      setError(err.message);
-      // Recargar para sincronizar
-      await cargarPuestos();
-    }
+  const reordenarAlimentadores = (idPuesto, nuevoOrdenAlimentadores) => {
+    // Solo actualizar estado local - la sincronización con BD
+    // se hace mediante el botón "Guardar cambios" (draft/publish pattern)
+    setPuestos((prev) =>
+      prev.map((p) =>
+        p.id === idPuesto ? { ...p, alimentadores: nuevoOrdenAlimentadores } : p
+      )
+    );
   };
 
   return {

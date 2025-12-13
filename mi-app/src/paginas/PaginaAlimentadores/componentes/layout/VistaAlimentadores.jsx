@@ -49,6 +49,8 @@ const VistaAlimentadores = () => {
    GAP_DEFAULT,                           // valor por defecto para gaps horizontales
    // Limpieza al salir
    limpiarPreferenciasUI,                 // limpia localStorage de gaps al salir
+   // Estado de sincronización
+   sincronizando,                         // true mientras se guardan cambios en BD
 } = usarContextoAlimentadores();          // hook que conecta esta vista con el contexto global de alimentadores
 
 
@@ -253,8 +255,9 @@ const {
 		alTerminarArrastre();
 	};
 
-	// Estado de carga
-	if (cargando) {
+	// Estado de carga (solo mostrar si NO estamos sincronizando)
+	// Durante la sincronización, el overlay de "Guardando cambios..." se encarga del feedback
+	if (cargando && !sincronizando) {
 		return (
 			<div className="alim-page alim-page--cargando">
 				<div className="alim-loading">

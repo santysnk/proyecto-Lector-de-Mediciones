@@ -49,18 +49,22 @@ export const usarCambiosPendientes = () => {
   /**
    * Guarda el snapshot original de los datos cargados de BD (Pbase).
    * Llamar después de cargar datos del backend.
+   *
+   * IMPORTANTE: Todos los IDs se guardan como strings para evitar
+   * problemas de comparación entre tipos (números vs strings).
    */
   const guardarSnapshot = useCallback((puestos) => {
     const snapshot = {
       puestos: {},
       alimentadores: {},
-      alimentadoresIds: new Set(),
+      alimentadoresIds: new Set(), // Set de strings
     };
 
     puestos.forEach((puesto) => {
       const alimentadoresDelPuesto = puesto.alimentadores || [];
+      const puestoIdStr = String(puesto.id);
 
-      snapshot.puestos[puesto.id] = {
+      snapshot.puestos[puestoIdStr] = {
         color: puesto.color,
         bgColor: puesto.bgColor || puesto.bg_color,
         gapsVerticales: JSON.stringify(puesto.gapsVerticales || { "0": 40 }),
@@ -68,13 +72,14 @@ export const usarCambiosPendientes = () => {
       };
 
       alimentadoresDelPuesto.forEach((alim, index) => {
-        snapshot.alimentadores[alim.id] = {
+        const alimIdStr = String(alim.id);
+        snapshot.alimentadores[alimIdStr] = {
           color: alim.color,
           gapHorizontal: alim.gapHorizontal ?? 10,
           orden: index,
-          puestoId: puesto.id,
+          puestoId: puestoIdStr, // también string
         };
-        snapshot.alimentadoresIds.add(alim.id);
+        snapshot.alimentadoresIds.add(alimIdStr);
       });
     });
 
@@ -105,24 +110,42 @@ export const usarCambiosPendientes = () => {
     const snapshot = snapshotRef.current;
 
     // Trackear IDs actuales para detectar elementos nuevos/eliminados
+    // IMPORTANTE: Usamos Set de strings para comparación consistente
     const alimentadoresActualesIds = new Set();
     let hayNuevosElementos = false;
     let hayElementosEliminados = false;
 
     // Comparar puestos
     puestosActuales.forEach((puesto) => {
-      const original = snapshot.puestos[puesto.id];
+      const puestoIdStr = String(puesto.id);
+      const original = snapshot.puestos[puestoIdStr];
       const alimentadoresDelPuesto = puesto.alimentadores || [];
 
-      // Recolectar IDs de alimentadores actuales
+      // Recolectar IDs de alimentadores actuales (como strings)
       alimentadoresDelPuesto.forEach((alim) => {
-        alimentadoresActualesIds.add(alim.id);
+        const alimIdStr = String(alim.id);
+        alimentadoresActualesIds.add(alimIdStr);
 
         // Detectar alimentadores nuevos (no estaban en Pbase)
-        if (!snapshot.alimentadoresIds.has(alim.id)) {
+        if (!snapshot.alimentadoresIds.has(alimIdStr)) {
           hayNuevosElementos = true;
         }
       });
+
+      // Detectar cambio de orden comparando arrays de IDs (todos como strings)
+      const ordenActualIds = alimentadoresDelPuesto.map(a => String(a.id));
+      const ordenOriginalIds = Object.entries(snapshot.alimentadores)
+        .filter(([_, data]) => data.puestoId === puestoIdStr)
+        .sort((a, b) => a[1].orden - b[1].orden)
+        .map(([id, _]) => id); // ya es string porque es key de objeto
+
+      // Comparar si el orden cambió (solo si tienen la misma cantidad de elementos)
+      if (ordenActualIds.length === ordenOriginalIds.length && ordenActualIds.length > 0) {
+        const ordenCambio = ordenActualIds.some((id, idx) => id !== ordenOriginalIds[idx]);
+        if (ordenCambio) {
+          cambios.ordenPorPuesto[puesto.id] = alimentadoresDelPuesto.map(a => a.id);
+        }
+      }
 
       // Si es un puesto nuevo, no comparar valores pero sí registrar sus gaps
       if (!original) {
@@ -167,12 +190,13 @@ export const usarCambiosPendientes = () => {
       }
 
       // Comparar alimentadores del puesto
-      alimentadoresDelPuesto.forEach((alim, indexActual) => {
-        const originalAlim = snapshot.alimentadores[alim.id];
+      alimentadoresDelPuesto.forEach((alim) => {
+        const alimIdStr = String(alim.id);
+        const originalAlim = snapshot.alimentadores[alimIdStr];
 
         // Alimentador nuevo: registrar sus gaps si son diferentes al default
         if (!originalAlim) {
-          const gapActual = gapsPorTarjeta[alim.id] ?? alim.gapHorizontal ?? 10;
+          const gapActual = gapsPorTarjeta[alimIdStr] ?? gapsPorTarjeta[alim.id] ?? alim.gapHorizontal ?? 10;
           if (gapActual !== 10) { // Solo si es diferente al default
             cambios.alimentadores.push({ id: alim.id, campos: { gapHorizontal: gapActual } });
           }
@@ -187,7 +211,8 @@ export const usarCambiosPendientes = () => {
         }
 
         // Gap horizontal: preferir localStorage, luego el del objeto
-        const gapActual = gapsPorTarjeta[alim.id] ?? alim.gapHorizontal ?? 10;
+        // Buscar tanto por string como por número en gapsPorTarjeta
+        const gapActual = gapsPorTarjeta[alimIdStr] ?? gapsPorTarjeta[alim.id] ?? alim.gapHorizontal ?? 10;
         if (gapActual !== originalAlim.gapHorizontal) {
           cambiosAlim.gapHorizontal = gapActual;
         }
@@ -195,17 +220,11 @@ export const usarCambiosPendientes = () => {
         if (Object.keys(cambiosAlim).length > 0) {
           cambios.alimentadores.push({ id: alim.id, campos: cambiosAlim });
         }
-
-        // Detectar cambio de orden
-        if (indexActual !== originalAlim.orden) {
-          if (!cambios.ordenPorPuesto[puesto.id]) {
-            cambios.ordenPorPuesto[puesto.id] = alimentadoresDelPuesto.map((a) => a.id);
-          }
-        }
       });
     });
 
     // Detectar alimentadores eliminados (estaban en Pbase pero ya no están en Pnavegador)
+    // Ambos Sets ahora contienen strings
     snapshot.alimentadoresIds.forEach((idBase) => {
       if (!alimentadoresActualesIds.has(idBase)) {
         hayElementosEliminados = true;
@@ -213,9 +232,9 @@ export const usarCambiosPendientes = () => {
     });
 
     // También detectar si hay gaps en localStorage para alimentadores que ya no existen
-    // Esto ayuda a limpiar gaps huérfanos
-    Object.keys(gapsPorTarjeta).forEach((alimId) => {
-      if (!alimentadoresActualesIds.has(alimId) && snapshot.alimentadoresIds.has(alimId)) {
+    // Object.keys devuelve strings, así que la comparación funciona
+    Object.keys(gapsPorTarjeta).forEach((alimIdStr) => {
+      if (!alimentadoresActualesIds.has(alimIdStr) && snapshot.alimentadoresIds.has(alimIdStr)) {
         // Hay un gap guardado para un alimentador que fue eliminado
         hayElementosEliminados = true;
       }
@@ -242,7 +261,7 @@ export const usarCambiosPendientes = () => {
    * al recargar datos en el callback onSuccess.
    *
    * @param {Object} cambios - Cambios detectados por detectarCambios()
-   * @param {Function} onSuccess - Callback al completar exitosamente
+   * @param {Function} onSuccess - Callback al completar exitosamente (puede ser async)
    * @param {Function} onError - Callback en caso de error
    */
   const sincronizarConBD = useCallback(async (cambios, onSuccess, onError) => {
@@ -276,7 +295,8 @@ export const usarCambiosPendientes = () => {
 
       // El callback onSuccess debe recargar los datos de BD,
       // lo cual disparará guardarSnapshot() con los nuevos datos
-      if (onSuccess) onSuccess();
+      // IMPORTANTE: Esperamos al callback para mantener el overlay visible
+      if (onSuccess) await onSuccess();
     } catch (error) {
       console.error("Error sincronizando cambios:", error);
       setErrorSincronizacion(error.message);

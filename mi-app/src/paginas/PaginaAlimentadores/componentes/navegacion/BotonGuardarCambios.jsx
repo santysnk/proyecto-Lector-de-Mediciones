@@ -1,7 +1,23 @@
 // src/paginas/PaginaAlimentadores/componentes/navegacion/BotonGuardarCambios.jsx
 
 import React from "react";
+import ReactDOM from "react-dom";
 import "./BotonGuardarCambios.css";
+
+/**
+ * Overlay de guardado que se muestra sobre toda la pantalla
+ */
+const OverlayGuardando = () => {
+  return ReactDOM.createPortal(
+    <div className="guardar-overlay">
+      <div className="guardar-overlay__contenido">
+        <div className="guardar-overlay__spinner" />
+        <span className="guardar-overlay__texto">Guardando cambios...</span>
+      </div>
+    </div>,
+    document.body
+  );
+};
 
 /**
  * Botón para guardar cambios pendientes en la base de datos.
@@ -19,44 +35,49 @@ const BotonGuardarCambios = ({
   onDescartar,
 }) => {
   return (
-    <div className="guardar-cambios-container">
-      <button
-        type="button"
-        className={`guardar-cambios-btn ${hayCambios ? "guardar-cambios-btn--activo" : ""} ${sincronizando ? "guardar-cambios-btn--sincronizando" : ""}`}
-        onClick={onGuardar}
-        disabled={!hayCambios || sincronizando}
-        title={
-          sincronizando
-            ? "Guardando..."
-            : hayCambios
-              ? "Guardar cambios en la base de datos"
-              : "No hay cambios pendientes"
-        }
-      >
-        {sincronizando ? (
-          <>
-            <span className="guardar-cambios-spinner" />
-            <span>Guardando...</span>
-          </>
-        ) : (
-          <>
-            <span className="guardar-cambios-icono">💾</span>
-            <span>Guardar</span>
-          </>
-        )}
-      </button>
+    <>
+      {/* Overlay de guardado */}
+      {sincronizando && <OverlayGuardando />}
 
-      {hayCambios && onDescartar && !sincronizando && (
+      <div className="guardar-cambios-container">
         <button
           type="button"
-          className="guardar-cambios-btn-descartar"
-          onClick={onDescartar}
-          title="Descartar cambios y recargar desde la base de datos"
+          className={`guardar-cambios-btn ${hayCambios ? "guardar-cambios-btn--activo" : ""} ${sincronizando ? "guardar-cambios-btn--sincronizando" : ""}`}
+          onClick={onGuardar}
+          disabled={!hayCambios || sincronizando}
+          title={
+            sincronizando
+              ? "Guardando..."
+              : hayCambios
+                ? "Guardar cambios en la base de datos"
+                : "No hay cambios pendientes"
+          }
         >
-          ✕
+          {sincronizando ? (
+            <>
+              <span className="guardar-cambios-spinner" />
+              <span>Guardando...</span>
+            </>
+          ) : (
+            <>
+              <span className="guardar-cambios-icono">💾</span>
+              <span>Guardar</span>
+            </>
+          )}
         </button>
-      )}
-    </div>
+
+        {hayCambios && onDescartar && !sincronizando && (
+          <button
+            type="button"
+            className="guardar-cambios-btn-descartar"
+            onClick={onDescartar}
+            title="Descartar cambios y recargar desde la base de datos"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+    </>
   );
 };
 

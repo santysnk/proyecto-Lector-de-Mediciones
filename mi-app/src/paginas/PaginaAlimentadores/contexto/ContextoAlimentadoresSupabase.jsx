@@ -44,16 +44,29 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
   const [lecturasTarjetas, setLecturasTarjetas] = useState({});
   const [hayCambiosPendientes, setHayCambiosPendientes] = useState(false);
+  // Flag para saber si ya guardamos el snapshot inicial de BD
+  const [snapshotGuardado, setSnapshotGuardado] = useState(false);
 
   // Estado de carga combinado
   const cargando = cargandoConfig || cargandoPuestos;
 
-  // Guardar snapshot cuando se cargan los puestos
+  // Guardar snapshot SOLO cuando terminamos de cargar de BD (una sola vez)
+  // No cuando puestos cambia localmente (ej: drag & drop)
   useEffect(() => {
-    if (puestos.length > 0 && !cargandoPuestos) {
+    // Solo guardar snapshot cuando:
+    // 1. Hay puestos cargados
+    // 2. Ya no estamos cargando (terminó la carga de BD)
+    // 3. No hemos guardado el snapshot aún para esta sesión de carga
+    if (puestos.length > 0 && !cargandoPuestos && !snapshotGuardado) {
       guardarSnapshot(puestos);
+      setSnapshotGuardado(true);
     }
-  }, [puestos, cargandoPuestos, guardarSnapshot]);
+  }, [puestos, cargandoPuestos, snapshotGuardado, guardarSnapshot]);
+
+  // Resetear flag cuando cambia la configuración (para recargar snapshot)
+  useEffect(() => {
+    setSnapshotGuardado(false);
+  }, [configuracionSeleccionadaId]);
 
   // Detectar cambios cada vez que cambian los datos locales
   useEffect(() => {
@@ -90,6 +103,8 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         // Esto evita que queden gaps huérfanos de alimentadores eliminados
         preferenciasHook.resetearTodosLosGaps();
         preferenciasHook.resetearTodosLosRowGaps();
+        // Resetear flag para que se guarde nuevo snapshot al recargar
+        setSnapshotGuardado(false);
         // Recargar datos para actualizar snapshot (Pbase = Pnavegador)
         await puestosHook.cargarPuestos();
       },
@@ -101,14 +116,15 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
 
   // Función para descartar cambios
-  // Solo limpia localStorage, los valores se toman de BD que ya está en memoria
-  const descartarCambios = useCallback(() => {
+  // Limpia localStorage y recarga datos de BD para restaurar orden original
+  const descartarCambios = useCallback(async () => {
     // Limpiar localStorage de gaps
-    // Las funciones obtenerGapCombinado/obtenerRowGapCombinado
-    // automáticamente tomarán los valores de BD (ya en memoria)
     preferenciasHook.resetearTodosLosGaps();
     preferenciasHook.resetearTodosLosRowGaps();
-  }, [preferenciasHook]);
+    // Resetear flag y recargar datos de BD para restaurar orden original
+    setSnapshotGuardado(false);
+    await puestosHook.cargarPuestos();
+  }, [preferenciasHook, puestosHook]);
 
   // Función para limpiar todo el localStorage de preferencias UI (al salir)
   const limpiarPreferenciasUI = useCallback(() => {

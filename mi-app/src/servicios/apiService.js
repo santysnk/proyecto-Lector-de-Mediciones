@@ -173,11 +173,16 @@ export async function eliminarAlimentadorAPI(alimentadorId) {
 
 /**
  * Reordena los alimentadores de un puesto
+ * @param {number} puestoId - ID del puesto
+ * @param {number[]} ordenIds - Array de IDs de alimentadores en el nuevo orden
  */
 export async function reordenarAlimentadores(puestoId, ordenIds) {
+  // El backend espera { ordenes: [{ id, orden }, ...] }
+  const ordenes = ordenIds.map((id, index) => ({ id, orden: index }));
+
   return fetchConAuth(`/api/puestos/${puestoId}/alimentadores/reordenar`, {
     method: 'PUT',
-    body: JSON.stringify({ orden: ordenIds }),
+    body: JSON.stringify({ ordenes }),
   });
 }
 
