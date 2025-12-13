@@ -101,13 +101,14 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
 
   // Función para descartar cambios
-  const descartarCambios = useCallback(async () => {
+  // Solo limpia localStorage, los valores se toman de BD que ya está en memoria
+  const descartarCambios = useCallback(() => {
     // Limpiar localStorage de gaps
+    // Las funciones obtenerGapCombinado/obtenerRowGapCombinado
+    // automáticamente tomarán los valores de BD (ya en memoria)
     preferenciasHook.resetearTodosLosGaps();
     preferenciasHook.resetearTodosLosRowGaps();
-    // Recargar desde BD
-    await puestosHook.cargarPuestos();
-  }, [preferenciasHook, puestosHook]);
+  }, [preferenciasHook]);
 
   // Función para limpiar todo el localStorage de preferencias UI (al salir)
   const limpiarPreferenciasUI = useCallback(() => {
