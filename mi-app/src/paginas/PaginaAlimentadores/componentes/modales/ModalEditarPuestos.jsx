@@ -72,7 +72,7 @@ const ModalEditarPuestos = ({
 								/>
 
 								<ColorPickerSimple
-									color={p.bgColor || p.bg_color || "#e5e7eb"}
+									color={p.bgColor || "#e5e7eb"}
 									onChange={(newColor) => cambiarColorFondo(p.id, newColor)}
 									label="Fondo"
 								/>

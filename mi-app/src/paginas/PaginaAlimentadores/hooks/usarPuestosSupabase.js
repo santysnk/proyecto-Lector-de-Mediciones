@@ -49,6 +49,19 @@ export const usarPuestosSupabase = (configuracionId) => {
     null;
 
   /**
+   * Transforma un puesto de la DB al formato del frontend
+   * Convierte snake_case a camelCase para consistencia
+   */
+  function transformarPuestoDeDB(puesto) {
+    return {
+      ...puesto,
+      bgColor: puesto.bg_color || "#e5e7eb",
+      // Mantener bg_color por compatibilidad con código existente
+      bg_color: puesto.bg_color || "#e5e7eb",
+    };
+  }
+
+  /**
    * Carga los puestos y sus alimentadores desde el backend
    */
   const cargarPuestos = useCallback(async () => {
@@ -70,12 +83,12 @@ export const usarPuestosSupabase = (configuracionId) => {
           try {
             const alimentadores = await obtenerAlimentadores(puesto.id);
             return {
-              ...puesto,
+              ...transformarPuestoDeDB(puesto),
               alimentadores: alimentadores.map(transformarAlimentadorDeDB),
             };
           } catch (err) {
             console.error(`Error cargando alimentadores del puesto ${puesto.id}:`, err);
-            return { ...puesto, alimentadores: [] };
+            return { ...transformarPuestoDeDB(puesto), alimentadores: [] };
           }
         })
       );

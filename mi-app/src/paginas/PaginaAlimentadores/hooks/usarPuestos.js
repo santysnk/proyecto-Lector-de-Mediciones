@@ -93,7 +93,7 @@ export const usarPuestos = () => {
    *
    * @param {Array} nuevaListaPuestos - Nueva lista de puestos.
    */
-  
+
   const actualizarPuestos = (nuevaListaPuestos) => {
     const sinVacios = nuevaListaPuestos.filter((p) => p.nombre.trim() !== "");  // descarta puestos sin nombre
 
@@ -106,6 +106,9 @@ export const usarPuestos = () => {
       setPuestoSeleccionadoId(sinVacios[0]?.id || null);
     }
 
+    // NOTA: Los puestos se guardan en localStorage automáticamente mediante useEffect.
+    // Si estás usando Supabase, las actualizaciones a la BD deben hacerse desde
+    // el componente que llama a esta función (ej: ModalEditarPuestos).
   };
 
 
