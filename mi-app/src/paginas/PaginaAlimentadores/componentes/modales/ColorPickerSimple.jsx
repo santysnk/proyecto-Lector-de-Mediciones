@@ -24,10 +24,21 @@ const ColorPickerSimple = ({ color, onChange, label }) => {
 		}
 	};
 
-	// Actualizar valor hex cuando cambia el color
+	// Actualizar valor hex cuando cambia el color desde el picker
 	const handleColorChange = (nuevoColor) => {
 		setValorHex(nuevoColor);
 		onChange(nuevoColor);
+	};
+
+	// Manejar cambio en el input de texto
+	const handleInputChange = (e) => {
+		const valor = e.target.value;
+		setValorHex(valor);
+
+		// Validar que sea un color hex válido antes de notificar al padre
+		if (/^#[0-9A-Fa-f]{6}$/.test(valor)) {
+			onChange(valor);
+		}
 	};
 
 	// Copiar al portapapeles
@@ -79,9 +90,10 @@ const ColorPickerSimple = ({ color, onChange, label }) => {
 						<input
 							type="text"
 							value={valorHex}
-							readOnly
+							onChange={handleInputChange}
 							className="color-picker-hex-input"
-							onClick={copiarColor}
+							placeholder="#000000"
+							maxLength={7}
 						/>
 						<button
 							type="button"
