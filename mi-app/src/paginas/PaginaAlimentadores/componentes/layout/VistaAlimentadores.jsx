@@ -1,8 +1,10 @@
 // src/paginas/PaginaAlimentadores/componentes/layout/VistaAlimentadores.jsx
 
-import React, { useEffect, useState } from "react";                 
+import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";                                    // para portal del overlay
 import { useNavigate } from "react-router-dom";                     // navegación entre rutas
 import "./VistaAlimentadores.css";                                  // estilos específicos del layout de alimentadores
+import "../navegacion/BotonGuardarCambios.css";                     // estilos del overlay de guardando
 
 import BarraNavegacion from "../navegacion/BarraNavegacion.jsx";    // barra superior (título + botones de puestos)
 import MenuLateral from "../navegacion/MenuLateral.jsx";            // menú lateral en modo compacto (mobile)
@@ -26,6 +28,7 @@ const VistaAlimentadores = () => {
    puestos,                               // lista completa de puestos configurados en el sistema
    puestoSeleccionado,                    // puesto actualmente activo/visible en la vista
    agregarPuesto,                         // agrega un nuevo puesto (se usa desde el modal de nuevo puesto)
+   eliminarPuesto,                        // elimina un puesto de la BD
    seleccionarPuesto,                     // cambia el puesto activo cuando el usuario hace clic en otro
    actualizarPuestos,                     // guarda la lista de puestos editada (nombres/colores, orden, etc.)
    agregarAlimentador,                    // agrega un alimentador al puesto seleccionado
@@ -69,6 +72,7 @@ const {
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
+	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -116,11 +120,28 @@ const {
 	};
 
 	const handleGuardarPuestos = async (puestosEditados) => {
+		// Cerrar modal inmediatamente y mostrar overlay a nivel de página
+		cerrarModal("editarPuestos");
+		setGuardandoPuestos(true);
+
 		try {
-			await actualizarPuestos(puestosEditados);                           // guarda cambios masivos (nombres/colores)
-			cerrarModal("editarPuestos");
+			// Detectar puestos eliminados (están en puestos original pero no en puestosEditados)
+			const idsEditados = new Set(puestosEditados.map(p => p.id));
+			const puestosEliminados = puestos.filter(p => !idsEditados.has(p.id));
+
+			// Primero eliminar los puestos que fueron removidos de la lista
+			for (const puesto of puestosEliminados) {
+				await eliminarPuesto(puesto.id);
+			}
+
+			// Luego actualizar los puestos restantes (nombres/colores)
+			if (puestosEditados.length > 0) {
+				await actualizarPuestos(puestosEditados);
+			}
 		} catch (error) {
 			console.error('Error guardando puestos:', error);
+		} finally {
+			setGuardandoPuestos(false);
 		}
 	};
 
@@ -282,6 +303,17 @@ const {
 
 	return (
 		<div className="alim-page">
+			{/* Overlay de guardando puestos (portal a body) */}
+			{guardandoPuestos && ReactDOM.createPortal(
+				<div className="guardar-overlay">
+					<div className="guardar-overlay__contenido">
+						<div className="guardar-overlay__spinner" />
+						<span className="guardar-overlay__texto">Guardando cambios...</span>
+					</div>
+				</div>,
+				document.body
+			)}
+
 			{/* ===== NAV SUPERIOR ===== */}
 			<BarraNavegacion
 				esCompacto={esCompacto}

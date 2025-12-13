@@ -216,3 +216,68 @@
       min-width: 120px;
    }
 }
+
+/* =========================================================
+   OVERLAY DE GUARDANDO
+   ========================================================= */
+
+/* Contenedor cuando está guardando */
+.editar-contenedor--guardando {
+   position: relative;
+}
+
+/* Overlay semitransparente sobre el contenido */
+.editar-overlay-guardando {
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background: rgba(15, 23, 42, 0.85);
+   border-radius: 18px;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 16px;
+   z-index: 10;
+}
+
+/* Spinner animado */
+.editar-overlay-spinner {
+   width: 40px;
+   height: 40px;
+   border: 3px solid rgba(255, 255, 255, 0.2);
+   border-top-color: #0ea5e9;
+   border-radius: 50%;
+   animation: editar-spin 0.8s linear infinite;
+}
+
+@keyframes editar-spin {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* Texto del overlay */
+.editar-overlay-texto {
+   color: #f1f5f9;
+   font-size: 1rem;
+   font-weight: 500;
+}
+
+/* Botones deshabilitados durante guardado */
+.editar-boton:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+}
+
+.editar-eliminar:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+}
+
+.editar-nombre:disabled {
+   opacity: 0.6;
+   cursor: not-allowed;
+}
