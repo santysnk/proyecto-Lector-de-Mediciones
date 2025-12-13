@@ -1,10 +1,12 @@
 // src/paginas/PaginaAlimentadores/contexto/ContextoAlimentadoresSupabase.jsx
 // Contexto de alimentadores que usa Supabase para persistencia
 
-import React, { createContext, useContext, useMemo, useEffect, useState } from "react";
+import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from "react";
 
 import { usarPuestosSupabase } from "../hooks/usarPuestosSupabase";
 import { usarMediciones } from "../hooks/usarMediciones";
+import { usarPreferenciasUI } from "../hooks/usarPreferenciasUI";
+import { usarCambiosPendientes } from "../hooks/usarCambiosPendientes";
 import { usarContextoConfiguracion } from "./ContextoConfiguracion";
 
 import { obtenerDisenoTarjeta, calcularValoresLadoTarjeta } from "../utilidades/calculosMediciones";
@@ -29,13 +31,89 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   // Hook de mediciones (sin cambios, funciona igual)
   const medicionesHook = usarMediciones();
 
+  // Hook de preferencias UI (gaps horizontales y verticales)
+  const preferenciasHook = usarPreferenciasUI();
+
+  // Hook de cambios pendientes (draft/publish pattern)
+  const cambiosPendientesHook = usarCambiosPendientes();
+
   const { registrosEnVivo } = medicionesHook;
-  const { puestoSeleccionado, cargando: cargandoPuestos } = puestosHook;
+  const { puestoSeleccionado, puestos, cargando: cargandoPuestos } = puestosHook;
+  const { gapsPorTarjeta, gapsPorFila } = preferenciasHook;
+  const { guardarSnapshot, detectarCambios, sincronizarConBD, sincronizando, errorSincronizacion } = cambiosPendientesHook;
 
   const [lecturasTarjetas, setLecturasTarjetas] = useState({});
+  const [hayCambiosPendientes, setHayCambiosPendientes] = useState(false);
 
   // Estado de carga combinado
   const cargando = cargandoConfig || cargandoPuestos;
+
+  // Guardar snapshot cuando se cargan los puestos
+  useEffect(() => {
+    if (puestos.length > 0 && !cargandoPuestos) {
+      guardarSnapshot(puestos);
+    }
+  }, [puestos, cargandoPuestos, guardarSnapshot]);
+
+  // Detectar cambios cada vez que cambian los datos locales
+  useEffect(() => {
+    if (puestos.length > 0) {
+      // Para gaps verticales por puesto, construimos un objeto
+      // Por ahora usamos gapsPorFila global para todos los puestos
+      const gapsPorFilaPorPuesto = {};
+      puestos.forEach((p) => {
+        // Combinar gaps de BD con los de localStorage
+        gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsPorFila };
+      });
+
+      const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
+      setHayCambiosPendientes(hayCambios);
+    }
+  }, [puestos, gapsPorTarjeta, gapsPorFila, detectarCambios]);
+
+  // Función para sincronizar cambios con BD
+  const sincronizarCambios = useCallback(async () => {
+    if (!hayCambiosPendientes) return;
+
+    const gapsPorFilaPorPuesto = {};
+    puestos.forEach((p) => {
+      gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsPorFila };
+    });
+
+    const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
+
+    await sincronizarConBD(
+      cambios,
+      // onSuccess
+      async () => {
+        // Limpiar gaps del localStorage ya que ahora están en la BD
+        // Esto evita que queden gaps huérfanos de alimentadores eliminados
+        preferenciasHook.resetearTodosLosGaps();
+        preferenciasHook.resetearTodosLosRowGaps();
+        // Recargar datos para actualizar snapshot (Pbase = Pnavegador)
+        await puestosHook.cargarPuestos();
+      },
+      // onError
+      (error) => {
+        console.error("Error al sincronizar:", error);
+      }
+    );
+  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
+
+  // Función para descartar cambios
+  const descartarCambios = useCallback(async () => {
+    // Limpiar localStorage de gaps
+    preferenciasHook.resetearTodosLosGaps();
+    preferenciasHook.resetearTodosLosRowGaps();
+    // Recargar desde BD
+    await puestosHook.cargarPuestos();
+  }, [preferenciasHook, puestosHook]);
+
+  // Función para limpiar todo el localStorage de preferencias UI (al salir)
+  const limpiarPreferenciasUI = useCallback(() => {
+    preferenciasHook.resetearTodosLosGaps();
+    preferenciasHook.resetearTodosLosRowGaps();
+  }, [preferenciasHook]);
 
   // Recalcular lecturas de tarjetas cuando cambian los datos
   useEffect(() => {
@@ -73,6 +151,55 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       iniciarMedicionConCalculo(alimentador, equipo, override);
     }
   };
+
+  // ===== FUNCIONES DE GAP COMBINADAS (localStorage + BD) =====
+  // Prioridad: localStorage > BD > default
+
+  /**
+   * Obtiene el gap horizontal de un alimentador.
+   * Prioriza localStorage (cambios no guardados) sobre BD.
+   */
+  const obtenerGapCombinado = useCallback((alimId) => {
+    // 1. Primero mirar localStorage
+    const gapLocal = gapsPorTarjeta[alimId];
+    if (gapLocal !== undefined) {
+      return gapLocal;
+    }
+
+    // 2. Buscar en los datos de BD
+    if (puestoSeleccionado) {
+      const alimentador = puestoSeleccionado.alimentadores.find(a => a.id === alimId);
+      if (alimentador && alimentador.gapHorizontal !== undefined) {
+        return alimentador.gapHorizontal;
+      }
+    }
+
+    // 3. Default
+    return preferenciasHook.GAP_DEFAULT;
+  }, [gapsPorTarjeta, puestoSeleccionado, preferenciasHook.GAP_DEFAULT]);
+
+  /**
+   * Obtiene el gap vertical de una fila.
+   * Prioriza localStorage (cambios no guardados) sobre BD.
+   */
+  const obtenerRowGapCombinado = useCallback((rowIndex) => {
+    // 1. Primero mirar localStorage
+    const gapLocal = gapsPorFila[rowIndex];
+    if (gapLocal !== undefined) {
+      return gapLocal;
+    }
+
+    // 2. Buscar en los gaps verticales del puesto seleccionado (BD)
+    if (puestoSeleccionado && puestoSeleccionado.gapsVerticales) {
+      const gapBD = puestoSeleccionado.gapsVerticales[rowIndex];
+      if (gapBD !== undefined) {
+        return gapBD;
+      }
+    }
+
+    // 3. Default
+    return preferenciasHook.ROW_GAP_DEFAULT;
+  }, [gapsPorFila, puestoSeleccionado, preferenciasHook.ROW_GAP_DEFAULT]);
 
   // Objeto de contexto
   const valorContexto = useMemo(
@@ -116,8 +243,33 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       estaMidiendo: medicionesHook.estaMidiendo,
       obtenerTimestampInicio: medicionesHook.obtenerTimestampInicio,
       obtenerContadorLecturas: medicionesHook.obtenerContadorLecturas,
+
+      // Preferencias UI (gaps)
+      // Las funciones obtenerGap y obtenerRowGap combinan localStorage + BD
+      gapsPorTarjeta: preferenciasHook.gapsPorTarjeta,
+      gapsPorFila: preferenciasHook.gapsPorFila,
+      obtenerGap: obtenerGapCombinado,
+      establecerGap: preferenciasHook.establecerGap,
+      obtenerRowGap: obtenerRowGapCombinado,
+      establecerRowGap: preferenciasHook.establecerRowGap,
+      GAP_MIN: preferenciasHook.GAP_MIN,
+      GAP_MAX: preferenciasHook.GAP_MAX,
+      GAP_DEFAULT: preferenciasHook.GAP_DEFAULT,
+      ROW_GAP_MIN: preferenciasHook.ROW_GAP_MIN,
+      ROW_GAP_MAX: preferenciasHook.ROW_GAP_MAX,
+      ROW_GAP_DEFAULT: preferenciasHook.ROW_GAP_DEFAULT,
+
+      // Cambios pendientes (draft/publish)
+      hayCambiosPendientes,
+      sincronizando,
+      errorSincronizacion,
+      sincronizarCambios,
+      descartarCambios,
+
+      // Limpieza al salir
+      limpiarPreferenciasUI,
     }),
-    [puestosHook, medicionesHook, lecturasTarjetas, configuracionSeleccionada, cargando]
+    [puestosHook, medicionesHook, preferenciasHook, lecturasTarjetas, configuracionSeleccionada, cargando, hayCambiosPendientes, sincronizando, errorSincronizacion, sincronizarCambios, descartarCambios, obtenerGapCombinado, obtenerRowGapCombinado, limpiarPreferenciasUI]
   );
 
   return (

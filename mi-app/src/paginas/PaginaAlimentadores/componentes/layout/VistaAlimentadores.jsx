@@ -18,7 +18,6 @@ import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
-import { usarPreferenciasUI } from "../../hooks/usarPreferenciasUI"; // hook para preferencias de UI (gap, etc.)
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -42,6 +41,14 @@ const VistaAlimentadores = () => {
    detenerMedicion,                       // detiene explícitamente la medición de un alimentador/equipo
    cargando,                              // estado de carga (Supabase)
    error,                                 // error si hubo problema cargando datos
+   // Preferencias UI (gaps) - vienen del contexto para consistencia
+   obtenerGap,                            // obtiene gap horizontal de un alimentador (localStorage > BD > default)
+   establecerGap,                         // establece gap horizontal de un alimentador
+   obtenerRowGap,                         // obtiene gap vertical de una fila (localStorage > BD > default)
+   establecerRowGap,                      // establece gap vertical de una fila
+   GAP_DEFAULT,                           // valor por defecto para gaps horizontales
+   // Limpieza al salir
+   limpiarPreferenciasUI,                 // limpia localStorage de gaps al salir
 } = usarContextoAlimentadores();          // hook que conecta esta vista con el contexto global de alimentadores
 
 
@@ -56,17 +63,6 @@ const {
 
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
-
-	// Preferencias de UI (gaps individuales por tarjeta y gaps verticales entre filas)
-	const {
-		obtenerGap,
-		establecerGap,
-		resetearGap,
-		GAP_DEFAULT,
-		// Gaps verticales
-		obtenerRowGap,
-		establecerRowGap,
-	} = usarPreferenciasUI();
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
@@ -100,7 +96,12 @@ const {
 		: null;
 
 	// Navegacion
-	const handleSalir = () => navigate("/");                          // vuelve al login
+	const handleSalir = () => {
+		// Limpiar localStorage de gaps antes de salir
+		// Así al volver a entrar se cargan los datos frescos de BD
+		limpiarPreferenciasUI();
+		navigate("/");                                                 // vuelve al login
+	};
 
 	// ===== MODALES PUESTOS =====
 	const abrirModalNuevoPuesto = () => abrirModal("nuevoPuesto");    // abre modal para crear puesto
@@ -231,7 +232,7 @@ const {
 		);                                                             // calcula nuevo orden interno
 
 		// Resetear el gap de la tarjeta movida al valor por defecto
-		resetearGap(elementoArrastrandoId);
+		establecerGap(elementoArrastrandoId, GAP_DEFAULT);
 
 		reordenarAlimentadores(puestoSeleccionado.id, nuevaLista);     // guarda el nuevo orden en el contexto
 		alTerminarArrastre();
@@ -246,7 +247,7 @@ const {
 		);                                                             // mueve la tarjeta arrastrada al final
 
 		// Resetear el gap de la tarjeta movida al valor por defecto
-		resetearGap(elementoArrastrandoId);
+		establecerGap(elementoArrastrandoId, GAP_DEFAULT);
 
 		reordenarAlimentadores(puestoSeleccionado.id, nuevaLista);
 		alTerminarArrastre();

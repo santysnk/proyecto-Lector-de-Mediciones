@@ -53,11 +53,27 @@ export const usarPuestosSupabase = (configuracionId) => {
    * Convierte snake_case a camelCase para consistencia
    */
   function transformarPuestoDeDB(puesto) {
+    // Parsear gaps_verticales si viene como string JSON
+    let gapsVerticales = { "0": 40 };
+    if (puesto.gaps_verticales) {
+      if (typeof puesto.gaps_verticales === "string") {
+        try {
+          gapsVerticales = JSON.parse(puesto.gaps_verticales);
+        } catch {
+          gapsVerticales = { "0": 40 };
+        }
+      } else {
+        gapsVerticales = puesto.gaps_verticales;
+      }
+    }
+
     return {
       ...puesto,
       bgColor: puesto.bg_color || "#e5e7eb",
       // Mantener bg_color por compatibilidad con código existente
       bg_color: puesto.bg_color || "#e5e7eb",
+      // Gaps verticales por fila
+      gapsVerticales,
     };
   }
 
@@ -141,6 +157,8 @@ export const usarPuestosSupabase = (configuracionId) => {
       nombre: alim.nombre,
       color: alim.color || COLORES_SISTEMA[0],
       tipoDispositivo: alim.tipo || "rele",
+      // Gap horizontal a la derecha de esta tarjeta
+      gapHorizontal: alim.gap_horizontal != null ? alim.gap_horizontal : 10,
       // Formato nuevo que espera el modal
       // Si no hay valor guardado, dejamos null para que se muestre el placeholder
       rele: {
@@ -196,6 +214,7 @@ export const usarPuestosSupabase = (configuracionId) => {
         nombre: alim.nombre,
         color: alim.color,
         tipo: alim.tipoDispositivo || "rele",
+        gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 10,
         config_rele: alim.rele ? {
           ip: alim.rele.ip || "",
           puerto: alim.rele.puerto != null ? alim.rele.puerto : null,
@@ -222,6 +241,7 @@ export const usarPuestosSupabase = (configuracionId) => {
       nombre: alim.nombre,
       color: alim.color,
       tipo: alim.tipoDispositivo || "rele",
+      gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 10,
       config_rele: {
         ip: alim.ip || "",
         puerto: alim.puerto != null ? alim.puerto : null,

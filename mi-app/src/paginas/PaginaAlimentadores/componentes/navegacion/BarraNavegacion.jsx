@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import "./BarraNavegacion.css";            // estilos específicos de la barra superior
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
 import SelectorConfiguracion from "./SelectorConfiguracion.jsx";
+import BotonGuardarCambios from "./BotonGuardarCambios.jsx";
 
 /**
  * Barra de navegación superior.
@@ -21,7 +22,15 @@ const BarraNavegacion = ({
 	onAbrirMenu,                            // callback para abrir el menú lateral en modo compacto
 	coloresSistema,                         // paleta de colores para botones de puesto
 }) => {
-	const { estaMidiendo, alternarMedicion, detenerMedicion } = usarContextoAlimentadores();
+	const {
+		estaMidiendo,
+		alternarMedicion,
+		detenerMedicion,
+		hayCambiosPendientes,
+		sincronizando,
+		sincronizarCambios,
+		descartarCambios,
+	} = usarContextoAlimentadores();
 
 	// Estado para el diálogo de confirmación
 	const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
@@ -190,6 +199,13 @@ const BarraNavegacion = ({
 
 						{/* Bloque 1: botones de control fijo (nuevo, editar, config, salir) */}
 						<div className="alim-nav-bloque-controles">
+							<BotonGuardarCambios
+								hayCambios={hayCambiosPendientes}
+								sincronizando={sincronizando}
+								onGuardar={sincronizarCambios}
+								onDescartar={descartarCambios}
+							/>
+
 							<button
 								type="button"
 								className="alim-btn alim-btn-add"
