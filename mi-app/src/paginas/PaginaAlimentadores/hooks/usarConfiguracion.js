@@ -1,26 +1,26 @@
 // src/paginas/PaginaAlimentadores/hooks/usarConfiguracion.js
-// Hook para manejar configuraciones del usuario en Supabase
+// Hook para manejar workspaces del usuario en Supabase
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  obtenerConfiguraciones,
-  crearConfiguracion,
-  actualizarConfiguracion as actualizarConfiguracionAPI,
-  eliminarConfiguracion as eliminarConfiguracionAPI,
+  obtenerWorkspaces,
+  crearWorkspace,
+  actualizarWorkspace as actualizarWorkspaceAPI,
+  eliminarWorkspace as eliminarWorkspaceAPI,
 } from "../../../servicios/apiService";
 import { CLAVES_STORAGE } from "../constantes/clavesAlmacenamiento";
 
 /**
- * Hook para manejar configuraciones del usuario.
- * Las configuraciones son contenedores que agrupan puestos y alimentadores.
+ * Hook para manejar workspaces del usuario.
+ * Los workspaces son contenedores que agrupan puestos y alimentadores.
  *
- * @returns {Object} Estado y funciones para trabajar con configuraciones.
+ * @returns {Object} Estado y funciones para trabajar con workspaces.
  */
 export const usarConfiguracion = () => {
-  // Lista de configuraciones del usuario
+  // Lista de workspaces del usuario
   const [configuraciones, setConfiguraciones] = useState([]);
 
-  // ID de la configuración actualmente seleccionada
+  // ID del workspace actualmente seleccionado
   const [configuracionSeleccionadaId, setConfiguracionSeleccionadaId] = useState(() => {
     const guardado = localStorage.getItem(CLAVES_STORAGE.CONFIGURACION_SELECCIONADA);
     return guardado ? Number(guardado) : null;
@@ -32,23 +32,23 @@ export const usarConfiguracion = () => {
   // Error si ocurre
   const [error, setError] = useState(null);
 
-  // Configuración seleccionada (derivado)
+  // Workspace seleccionado (derivado)
   const configuracionSeleccionada = configuraciones.find(
     (c) => c.id === configuracionSeleccionadaId
   ) || configuraciones[0] || null;
 
   /**
-   * Carga las configuraciones desde el backend
+   * Carga los workspaces desde el backend
    */
   const cargarConfiguraciones = useCallback(async () => {
     try {
       setCargando(true);
       setError(null);
 
-      const datos = await obtenerConfiguraciones();
+      const datos = await obtenerWorkspaces();
       setConfiguraciones(datos);
 
-      // Si no hay configuración seleccionada o la seleccionada no existe, seleccionar la primera
+      // Si no hay workspace seleccionado o el seleccionado no existe, seleccionar el primero
       if (datos.length > 0) {
         const seleccionValida = datos.some((c) => c.id === configuracionSeleccionadaId);
         if (!seleccionValida) {
@@ -56,7 +56,7 @@ export const usarConfiguracion = () => {
         }
       }
     } catch (err) {
-      console.error("Error cargando configuraciones:", err);
+      console.error("Error cargando workspaces:", err);
       setError(err.message);
     } finally {
       setCargando(false);
@@ -81,69 +81,69 @@ export const usarConfiguracion = () => {
   }, [configuracionSeleccionadaId]);
 
   /**
-   * Crea una nueva configuración
-   * @param {string} nombre - Nombre de la configuración
+   * Crea un nuevo workspace
+   * @param {string} nombre - Nombre del workspace
    * @param {string} descripcion - Descripción opcional
    */
   const agregarConfiguracion = async (nombre, descripcion = "") => {
     try {
       setError(null);
-      const nueva = await crearConfiguracion(nombre, descripcion);
+      const nueva = await crearWorkspace(nombre, descripcion);
       setConfiguraciones((prev) => [...prev, nueva]);
       setConfiguracionSeleccionadaId(nueva.id);
       return nueva;
     } catch (err) {
-      console.error("Error creando configuración:", err);
+      console.error("Error creando workspace:", err);
       setError(err.message);
       throw err;
     }
   };
 
   /**
-   * Actualiza una configuración existente
-   * @param {number} id - ID de la configuración
+   * Actualiza un workspace existente
+   * @param {number} id - ID del workspace
    * @param {Object} datos - Datos a actualizar
    */
   const actualizarConfiguracion = async (id, datos) => {
     try {
       setError(null);
-      const actualizada = await actualizarConfiguracionAPI(id, datos);
+      const actualizada = await actualizarWorkspaceAPI(id, datos);
       setConfiguraciones((prev) =>
         prev.map((c) => (c.id === id ? actualizada : c))
       );
       return actualizada;
     } catch (err) {
-      console.error("Error actualizando configuración:", err);
+      console.error("Error actualizando workspace:", err);
       setError(err.message);
       throw err;
     }
   };
 
   /**
-   * Elimina una configuración
-   * @param {number} id - ID de la configuración a eliminar
+   * Elimina un workspace
+   * @param {number} id - ID del workspace a eliminar
    */
   const eliminarConfiguracion = async (id) => {
     try {
       setError(null);
-      await eliminarConfiguracionAPI(id);
+      await eliminarWorkspaceAPI(id);
       setConfiguraciones((prev) => prev.filter((c) => c.id !== id));
 
-      // Si se eliminó la seleccionada, seleccionar otra
+      // Si se eliminó el seleccionado, seleccionar otro
       if (configuracionSeleccionadaId === id) {
         const restantes = configuraciones.filter((c) => c.id !== id);
         setConfiguracionSeleccionadaId(restantes[0]?.id || null);
       }
     } catch (err) {
-      console.error("Error eliminando configuración:", err);
+      console.error("Error eliminando workspace:", err);
       setError(err.message);
       throw err;
     }
   };
 
   /**
-   * Selecciona una configuración como activa
-   * @param {number} id - ID de la configuración
+   * Selecciona un workspace como activo
+   * @param {number} id - ID del workspace
    */
   const seleccionarConfiguracion = (id) => {
     setConfiguracionSeleccionadaId(id);

@@ -19,12 +19,12 @@ import { COLORES_SISTEMA } from "../constantes/colores";
 
 /**
  * Hook para manejar puestos y alimentadores conectados a Supabase.
- * Requiere una configuración seleccionada para funcionar.
+ * Requiere un workspace seleccionado para funcionar.
  *
- * @param {number|null} configuracionId - ID de la configuración activa
+ * @param {number|null} workspaceId - ID del workspace activo
  * @returns {Object} Estado y funciones para trabajar con puestos y alimentadores.
  */
-export const usarPuestosSupabase = (configuracionId) => {
+export const usarPuestosSupabase = (workspaceId) => {
   const COLOR_FONDO_POR_DEFECTO = "#e5e7eb";
 
   // Estado: lista de puestos (cada uno con sus alimentadores)
@@ -81,7 +81,7 @@ export const usarPuestosSupabase = (configuracionId) => {
    * Carga los puestos y sus alimentadores desde el backend
    */
   const cargarPuestos = useCallback(async () => {
-    if (!configuracionId) {
+    if (!workspaceId) {
       setPuestos([]);
       return;
     }
@@ -90,8 +90,8 @@ export const usarPuestosSupabase = (configuracionId) => {
       setCargando(true);
       setError(null);
 
-      // Obtener puestos de la configuración
-      const puestosData = await obtenerPuestos(configuracionId);
+      // Obtener puestos del workspace
+      const puestosData = await obtenerPuestos(workspaceId);
 
       // Para cada puesto, cargar sus alimentadores
       const puestosConAlimentadores = await Promise.all(
@@ -126,12 +126,12 @@ export const usarPuestosSupabase = (configuracionId) => {
     } finally {
       setCargando(false);
     }
-  }, [configuracionId, puestoSeleccionadoId]);
+  }, [workspaceId, puestoSeleccionadoId]);
 
-  // Cargar puestos cuando cambie la configuración
+  // Cargar puestos cuando cambie el workspace
   useEffect(() => {
     cargarPuestos();
-  }, [configuracionId]);
+  }, [workspaceId]);
 
   // Guardar selección de puesto en localStorage
   useEffect(() => {
@@ -270,11 +270,11 @@ export const usarPuestosSupabase = (configuracionId) => {
    * Agrega un nuevo puesto
    */
   const agregarPuesto = async (nombrePuesto, colorPuesto) => {
-    if (!configuracionId) return;
+    if (!workspaceId) return;
 
     try {
       setError(null);
-      const nuevoPuesto = await crearPuesto(configuracionId, {
+      const nuevoPuesto = await crearPuesto(workspaceId, {
         nombre: nombrePuesto.trim(),
         color: colorPuesto || COLORES_SISTEMA[0],
         bg_color: COLOR_FONDO_POR_DEFECTO,

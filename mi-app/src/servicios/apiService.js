@@ -42,41 +42,41 @@ async function fetchConAuth(endpoint, opciones = {}) {
 }
 
 // ============================================
-// CONFIGURACIONES
+// WORKSPACES
 // ============================================
 
 /**
- * Obtiene todas las configuraciones del usuario
+ * Obtiene todos los workspaces del usuario
  */
-export async function obtenerConfiguraciones() {
-  return fetchConAuth('/api/configuraciones');
+export async function obtenerWorkspaces() {
+  return fetchConAuth('/api/workspaces');
 }
 
 /**
- * Crea una nueva configuración
+ * Crea un nuevo workspace
  */
-export async function crearConfiguracion(nombre, descripcion = '') {
-  return fetchConAuth('/api/configuraciones', {
+export async function crearWorkspace(nombre, descripcion = '') {
+  return fetchConAuth('/api/workspaces', {
     method: 'POST',
     body: JSON.stringify({ nombre, descripcion }),
   });
 }
 
 /**
- * Actualiza una configuración
+ * Actualiza un workspace
  */
-export async function actualizarConfiguracion(id, datos) {
-  return fetchConAuth(`/api/configuraciones/${id}`, {
+export async function actualizarWorkspace(id, datos) {
+  return fetchConAuth(`/api/workspaces/${id}`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   });
 }
 
 /**
- * Elimina una configuración
+ * Elimina un workspace
  */
-export async function eliminarConfiguracion(id) {
-  return fetchConAuth(`/api/configuraciones/${id}`, {
+export async function eliminarWorkspace(id) {
+  return fetchConAuth(`/api/workspaces/${id}`, {
     method: 'DELETE',
   });
 }
@@ -86,17 +86,17 @@ export async function eliminarConfiguracion(id) {
 // ============================================
 
 /**
- * Obtiene los puestos de una configuración
+ * Obtiene los puestos de un workspace
  */
-export async function obtenerPuestos(configuracionId) {
-  return fetchConAuth(`/api/configuraciones/${configuracionId}/puestos`);
+export async function obtenerPuestos(workspaceId) {
+  return fetchConAuth(`/api/workspaces/${workspaceId}/puestos`);
 }
 
 /**
  * Crea un nuevo puesto
  */
-export async function crearPuesto(configuracionId, datos) {
-  return fetchConAuth(`/api/configuraciones/${configuracionId}/puestos`, {
+export async function crearPuesto(workspaceId, datos) {
+  return fetchConAuth(`/api/workspaces/${workspaceId}/puestos`, {
     method: 'POST',
     body: JSON.stringify(datos),
   });
@@ -124,8 +124,8 @@ export async function eliminarPuesto(puestoId) {
 /**
  * Reordena los puestos
  */
-export async function reordenarPuestos(configuracionId, ordenIds) {
-  return fetchConAuth(`/api/configuraciones/${configuracionId}/puestos/reordenar`, {
+export async function reordenarPuestos(workspaceId, ordenIds) {
+  return fetchConAuth(`/api/workspaces/${workspaceId}/puestos/reordenar`, {
     method: 'PUT',
     body: JSON.stringify({ orden: ordenIds }),
   });
@@ -227,17 +227,17 @@ export async function obtenerLecturasHistoricas(alimentadorId, desde, hasta, tip
 // ============================================
 
 /**
- * Obtiene las preferencias del usuario para una configuración
+ * Obtiene las preferencias del usuario para un workspace
  */
-export async function obtenerPreferencias(configuracionId) {
-  return fetchConAuth(`/api/configuraciones/${configuracionId}/preferencias`);
+export async function obtenerPreferencias(workspaceId) {
+  return fetchConAuth(`/api/workspaces/${workspaceId}/preferencias`);
 }
 
 /**
  * Guarda las preferencias del usuario
  */
-export async function guardarPreferencias(configuracionId, preferencias) {
-  return fetchConAuth(`/api/configuraciones/${configuracionId}/preferencias`, {
+export async function guardarPreferencias(workspaceId, preferencias) {
+  return fetchConAuth(`/api/workspaces/${workspaceId}/preferencias`, {
     method: 'POST',
     body: JSON.stringify(preferencias),
   });
@@ -264,11 +264,11 @@ export async function testConexionModbus(ip, puerto, unitId = 1, indiceInicial =
 }
 
 export default {
-  // Configuraciones
-  obtenerConfiguraciones,
-  crearConfiguracion,
-  actualizarConfiguracion,
-  eliminarConfiguracion,
+  // Workspaces
+  obtenerWorkspaces,
+  crearWorkspace,
+  actualizarWorkspace,
+  eliminarWorkspace,
   // Puestos
   obtenerPuestos,
   crearPuesto,

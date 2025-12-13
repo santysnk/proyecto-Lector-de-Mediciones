@@ -1,13 +1,13 @@
 // src/paginas/PaginaAlimentadores/componentes/navegacion/SelectorConfiguracion.jsx
-// Componente para seleccionar y gestionar configuraciones
+// Componente para seleccionar y gestionar workspaces
 
 import React, { useState } from "react";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import "./SelectorConfiguracion.css";
 
 /**
- * Selector dropdown de configuraciones.
- * Permite cambiar entre configuraciones y crear nuevas.
+ * Selector dropdown de workspaces.
+ * Permite cambiar entre workspaces y crear nuevos.
  */
 const SelectorConfiguracion = () => {
   const {
@@ -41,21 +41,21 @@ const SelectorConfiguracion = () => {
       setMostrarFormNueva(false);
       setMenuAbierto(false);
     } catch (err) {
-      console.error("Error creando configuración:", err);
+      console.error("Error creando workspace:", err);
     } finally {
       setCreando(false);
     }
   };
 
   const handleEliminar = async (id, nombre) => {
-    if (!window.confirm(`¿Eliminar la configuración "${nombre}"? Esta acción no se puede deshacer.`)) {
+    if (!window.confirm(`¿Eliminar el workspace "${nombre}"? Esta acción no se puede deshacer.`)) {
       return;
     }
 
     try {
       await eliminarConfiguracion(id);
     } catch (err) {
-      console.error("Error eliminando configuración:", err);
+      console.error("Error eliminando workspace:", err);
     }
   };
 
@@ -87,7 +87,7 @@ const SelectorConfiguracion = () => {
       >
         <span className="selector-config__icono">&#9881;</span>
         <span className="selector-config__nombre">
-          {configuracionSeleccionada?.nombre || "Sin configuración"}
+          {configuracionSeleccionada?.nombre || "Sin workspace"}
         </span>
         <span className="selector-config__flecha">{menuAbierto ? "▲" : "▼"}</span>
       </button>
@@ -104,7 +104,7 @@ const SelectorConfiguracion = () => {
           />
 
           <div className="selector-config__menu" role="listbox">
-            {/* Lista de configuraciones */}
+            {/* Lista de workspaces */}
             {configuraciones.length > 0 ? (
               <ul className="selector-config__lista">
                 {configuraciones.map((config) => (
@@ -133,7 +133,7 @@ const SelectorConfiguracion = () => {
                           e.stopPropagation();
                           handleEliminar(config.id, config.nombre);
                         }}
-                        title="Eliminar configuración"
+                        title="Eliminar workspace"
                       >
                         ✕
                       </button>
@@ -143,20 +143,20 @@ const SelectorConfiguracion = () => {
               </ul>
             ) : (
               <div className="selector-config__vacio">
-                No hay configuraciones
+                No hay workspaces
               </div>
             )}
 
             {/* Separador */}
             <div className="selector-config__separador" />
 
-            {/* Botón/Form para crear nueva */}
+            {/* Botón/Form para crear nuevo */}
             {mostrarFormNueva ? (
               <form className="selector-config__form" onSubmit={handleCrearNueva}>
                 <input
                   type="text"
                   className="selector-config__input"
-                  placeholder="Nombre de la configuración"
+                  placeholder="Nombre del workspace"
                   value={nombreNueva}
                   onChange={(e) => setNombreNueva(e.target.value)}
                   autoFocus
@@ -189,7 +189,7 @@ const SelectorConfiguracion = () => {
                 className="selector-config__nueva"
                 onClick={() => setMostrarFormNueva(true)}
               >
-                + Nueva configuración
+                + Nuevo workspace
               </button>
             )}
           </div>

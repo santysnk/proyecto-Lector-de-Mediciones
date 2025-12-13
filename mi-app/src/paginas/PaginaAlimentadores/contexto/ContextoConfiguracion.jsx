@@ -1,5 +1,5 @@
 // src/paginas/PaginaAlimentadores/contexto/ContextoConfiguracion.jsx
-// Contexto global para manejar la configuración activa del usuario
+// Contexto global para manejar el workspace activo del usuario
 
 import React, { createContext, useContext } from "react";
 import { usarConfiguracion } from "../hooks/usarConfiguracion";
@@ -7,9 +7,9 @@ import { usarConfiguracion } from "../hooks/usarConfiguracion";
 const ContextoConfiguracion = createContext(null);
 
 /**
- * Provider que maneja las configuraciones del usuario.
+ * Provider que maneja los workspaces del usuario.
  * Debe envolver a ProveedorAlimentadores para que este tenga acceso
- * a la configuración seleccionada.
+ * al workspace seleccionado.
  */
 export const ProveedorConfiguracion = ({ children }) => {
   const configuracionHook = usarConfiguracion();
@@ -22,7 +22,7 @@ export const ProveedorConfiguracion = ({ children }) => {
 };
 
 /**
- * Hook para acceder al contexto de configuración
+ * Hook para acceder al contexto de workspace
  */
 export const usarContextoConfiguracion = () => {
   const contexto = useContext(ContextoConfiguracion);

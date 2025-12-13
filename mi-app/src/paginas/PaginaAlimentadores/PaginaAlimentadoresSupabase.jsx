@@ -12,7 +12,7 @@ import VistaAlimentadores from "./componentes/layout/VistaAlimentadores.jsx";
  * Página de alimentadores conectada a Supabase.
  *
  * Estructura de providers:
- * - ProveedorConfiguracion: maneja las configuraciones del usuario
+ * - ProveedorConfiguracion: maneja los workspaces del usuario
  * - ProveedorAlimentadoresSupabase: maneja puestos y alimentadores con Supabase
  */
 const PaginaAlimentadoresSupabase = () => {

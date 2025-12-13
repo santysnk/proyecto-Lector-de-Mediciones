@@ -18,7 +18,7 @@ const ContextoAlimentadores = createContext(null);
  * Requiere estar envuelto por ProveedorConfiguracion.
  */
 export const ProveedorAlimentadoresSupabase = ({ children }) => {
-  // Obtener configuración activa del contexto superior
+  // Obtener workspace activo del contexto superior
   const {
     configuracionSeleccionada,
     configuracionSeleccionadaId,
@@ -63,7 +63,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     }
   }, [puestos, cargandoPuestos, snapshotGuardado, guardarSnapshot]);
 
-  // Resetear flag cuando cambia la configuración (para recargar snapshot)
+  // Resetear flag cuando cambia el workspace (para recargar snapshot)
   useEffect(() => {
     setSnapshotGuardado(false);
   }, [configuracionSeleccionadaId]);
@@ -225,7 +225,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       cargando,
       error: puestosHook.error,
 
-      // Configuración actual
+      // Workspace actual
       configuracionSeleccionada,
       configuracionSeleccionadaId,
 
