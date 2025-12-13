@@ -331,13 +331,25 @@ const GrillaTarjetas = ({
 				})}
 
 				{/* Skeleton card (se muestra mientras se guarda un nuevo alimentador) */}
-				{skeletonCard && (
-					<div className="alim-card-wrapper" style={{ display: 'flex', alignItems: 'stretch' }}>
-						{skeletonCard}
-						{/* Spacer para simular gap */}
-						<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : 10 }} />
-					</div>
-				)}
+				{skeletonCard && (() => {
+					// El skeleton debe tener el mismo marginTop que tendría "nuevo-registrador"
+					const marginTopSkeleton = obtenerMarginTop('nuevo-registrador');
+					return (
+						<div
+							className="alim-card-wrapper"
+							data-alim-id="skeleton"
+							style={{
+								display: 'flex',
+								alignItems: 'flex-start',
+								marginTop: marginTopSkeleton > 0 ? `${marginTopSkeleton}px` : undefined
+							}}
+						>
+							{skeletonCard}
+							{/* Spacer para simular gap */}
+							<div style={{ width: esModoMobile ? GAP_FIJO_MOBILE : 10 }} />
+						</div>
+					);
+				})()}
 
 				{/* Tarjeta "Nuevo Registrador" o zona de drop */}
 				{(() => {

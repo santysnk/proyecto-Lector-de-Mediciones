@@ -15,15 +15,21 @@
 }
 
 /* Contenedor principal del skeleton */
+/* Debe coincidir con .alim-card-add (Nuevo Registrador) para que tenga el mismo tamaño */
 .skeleton-card {
-	background-color: #1e293b; /* Fondo oscuro similar a las tarjetas reales */
-	border-radius: 12px;
-	padding: 20px;
-	width: 100%;
-	min-width: 280px;
-	max-width: 350px;
-	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	background-color: #111827; /* Mismo fondo que .alim-card */
+	border-radius: 16px; /* Mismo border-radius que .alim-card */
+	padding: 12px;
+	width: 304px; /* Mismo ancho que .alim-card-add */
+	min-width: 304px;
+	max-width: 304px;
+	height: 279px; /* Misma altura que .alim-card-add */
+	min-height: 279px;
+	box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6); /* Mismo shadow que .alim-card */
+	border: 1px solid #1f2937; /* Mismo borde que .alim-card */
 	animation: skeleton-pulse 1.5s ease-in-out infinite;
+	box-sizing: border-box;
+	overflow: hidden;
 }
 
 /* Header */
@@ -31,7 +37,7 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 20px;
+	margin-bottom: 8px;
 }
 
 .skeleton-title {
@@ -48,18 +54,19 @@
 	gap: 8px;
 }
 
-.skeleton-button-circle {
+.skeleton-button-square {
 	background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%);
 	background-size: 200% 100%;
 	width: 32px;
 	height: 32px;
-	border-radius: 50%;
+	border-radius: 6px; /* Bordes redondeados como los botones reales */
 	animation: skeleton-shimmer 2s ease-in-out infinite;
 }
 
 /* Secciones (superior e inferior) */
 .skeleton-section {
-	margin-bottom: 20px;
+	margin-top: 1.1rem;
+	margin-bottom: 1.6rem;
 }
 
 .skeleton-section:last-child {
@@ -69,9 +76,9 @@
 .skeleton-section-title {
 	background: linear-gradient(90deg, #334155 0%, #475569 50%, #334155 100%);
 	background-size: 200% 100%;
-	height: 18px;
-	width: 200px;
-	margin-bottom: 12px;
+	height: 14px;
+	width: 180px;
+	margin-bottom: 6px;
 	border-radius: 4px;
 	animation: skeleton-shimmer 2s ease-in-out infinite;
 }
@@ -79,7 +86,7 @@
 /* Contenedor de boxes */
 .skeleton-boxes {
 	display: flex;
-	gap: 12px;
+	gap: 8px;
 	justify-content: space-between;
 }
 
@@ -90,19 +97,19 @@
 	background-size: 200% 100%;
 	border: 1px solid #334155;
 	border-radius: 8px;
-	padding: 12px 8px;
+	padding: 12px 6px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	animation: skeleton-shimmer 2s ease-in-out infinite;
 }
 
 .skeleton-label {
 	background: linear-gradient(90deg, #475569 0%, #64748b 50%, #475569 100%);
 	background-size: 200% 100%;
-	height: 14px;
-	width: 20px;
+	height: 12px;
+	width: 16px;
 	border-radius: 3px;
 	animation: skeleton-shimmer 2s ease-in-out infinite;
 }
@@ -110,8 +117,8 @@
 .skeleton-value {
 	background: linear-gradient(90deg, #475569 0%, #64748b 50%, #475569 100%);
 	background-size: 200% 100%;
-	height: 20px;
-	width: 50px;
+	height: 18px;
+	width: 45px;
 	border-radius: 4px;
 	animation: skeleton-shimmer 2s ease-in-out infinite;
 }
@@ -126,9 +133,10 @@
 	}
 }
 
-/* Responsive */
+/* Responsive - en mobile el skeleton ocupa todo el ancho disponible */
 @media (max-width: 982px) {
 	.skeleton-card {
-		max-width: 100%;
+		flex: 1 1 100%;
+		min-width: 280px;
 	}
 }

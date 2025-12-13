@@ -7,13 +7,13 @@ import "./SkeletonCard.css";
 const SkeletonCard = () => {
 	return (
 		<div className="skeleton-card">
-			{/* Header de la tarjeta */}
+			{/* Header de la tarjeta - botones a la izquierda, título a la derecha */}
 			<div className="skeleton-header">
-				<div className="skeleton-title"></div>
 				<div className="skeleton-buttons">
-					<div className="skeleton-button-circle"></div>
-					<div className="skeleton-button-circle"></div>
+					<div className="skeleton-button-square"></div>
+					<div className="skeleton-button-square"></div>
 				</div>
+				<div className="skeleton-title"></div>
 			</div>
 
 			{/* Parte superior (ej: Corriente) */}

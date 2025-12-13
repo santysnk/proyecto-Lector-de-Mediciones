@@ -42,23 +42,23 @@
 .color-picker-simple-popover {
 	position: fixed;
 	z-index: 9999;
-	padding: 6px;
+	padding: 8px;
 	background: #1e293b;
 	border-radius: 6px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 	border: 1px solid #334155;
-	width: 200px;
+	width: 240px;
 }
 
 /* Estilos para el picker de react-colorful */
 .color-picker-simple-popover .react-colorful {
 	width: 100%;
-	height: 140px;
+	height: 180px;
 }
 
 .color-picker-simple-popover .react-colorful__saturation {
 	border-radius: 4px 4px 0 0;
-	height: 100px;
+	height: 140px;
 }
 
 .color-picker-simple-popover .react-colorful__hue {

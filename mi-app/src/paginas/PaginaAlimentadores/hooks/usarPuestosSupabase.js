@@ -190,50 +190,57 @@ export const usarPuestosSupabase = (configuracionId) => {
 
     if (tieneFormatoNuevo) {
       // Formato nuevo del modal: { rele: {...}, analizador: {...} }
+      // Preservar null para campos numéricos opcionales (puerto, indiceInicial, cantRegistros)
+      // para que al cargar se muestren los placeholders en lugar de valores por defecto
       return {
         nombre: alim.nombre,
         color: alim.color,
         tipo: alim.tipoDispositivo || "rele",
         config_rele: alim.rele ? {
           ip: alim.rele.ip || "",
-          puerto: alim.rele.puerto || 502,
+          puerto: alim.rele.puerto != null ? alim.rele.puerto : null,
           unitId: alim.rele.unitId || 1,
           periodoLectura: alim.periodoSegundos || 60,
-          indiceInicial: alim.rele.indiceInicial || 0,
-          cantRegistros: alim.rele.cantRegistros || 10,
+          indiceInicial: alim.rele.indiceInicial != null ? alim.rele.indiceInicial : null,
+          cantRegistros: alim.rele.cantRegistros != null ? alim.rele.cantRegistros : null,
         } : null,
         config_analizador: alim.analizador ? {
           ip: alim.analizador.ip || "",
-          puerto: alim.analizador.puerto || 502,
+          puerto: alim.analizador.puerto != null ? alim.analizador.puerto : null,
           unitId: alim.analizador.unitId || 2,
           periodoLectura: alim.analizador.periodoSegundos || 60,
-          indiceInicial: alim.analizador.indiceInicial || 0,
-          cantRegistros: alim.analizador.cantRegistros || 20,
+          indiceInicial: alim.analizador.indiceInicial != null ? alim.analizador.indiceInicial : null,
+          cantRegistros: alim.analizador.cantRegistros != null ? alim.analizador.cantRegistros : null,
         } : null,
         mapeo_mediciones: alim.mapeoMediciones || {},
       };
     }
 
     // Formato plano (legacy)
+    // Preservar null para campos numéricos opcionales
     return {
       nombre: alim.nombre,
       color: alim.color,
       tipo: alim.tipoDispositivo || "rele",
       config_rele: {
         ip: alim.ip || "",
-        puerto: alim.puerto || 502,
+        puerto: alim.puerto != null ? alim.puerto : null,
         unitId: alim.unitId || 1,
         periodoLectura: alim.periodoLectura || 60,
-        indiceInicial: alim.indiceInicio || 0,
-        cantRegistros: alim.indiceFin ? (alim.indiceFin - (alim.indiceInicio || 0)) : 10,
+        indiceInicial: alim.indiceInicio != null ? alim.indiceInicio : null,
+        cantRegistros: alim.indiceFin != null && alim.indiceInicio != null
+          ? (alim.indiceFin - alim.indiceInicio)
+          : null,
       },
       config_analizador: {
         ip: alim.ipAnalizador || "",
-        puerto: alim.puertoAnalizador || 502,
+        puerto: alim.puertoAnalizador != null ? alim.puertoAnalizador : null,
         unitId: alim.unitIdAnalizador || 2,
         periodoLectura: alim.periodoLecturaAnalizador || 60,
-        indiceInicial: alim.indiceInicioAnalizador || 0,
-        cantRegistros: alim.indiceFinAnalizador ? (alim.indiceFinAnalizador - (alim.indiceInicioAnalizador || 0)) : 20,
+        indiceInicial: alim.indiceInicioAnalizador != null ? alim.indiceInicioAnalizador : null,
+        cantRegistros: alim.indiceFinAnalizador != null && alim.indiceInicioAnalizador != null
+          ? (alim.indiceFinAnalizador - alim.indiceInicioAnalizador)
+          : null,
       },
       mapeo_mediciones: alim.mapeoMediciones || {},
     };
