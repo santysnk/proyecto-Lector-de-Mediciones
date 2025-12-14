@@ -20,10 +20,12 @@ import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";       
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
+import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
+	const { configuracionSeleccionada } = usarContextoConfiguracion(); // workspace activo
 
 	const {
    puestos,                               // lista completa de puestos configurados en el sistema
@@ -456,8 +458,8 @@ const {
 
 			<ModalConfigurarAgente
 				abierto={modalAgenteAbierto}
-				onGuardar={() => setModalAgenteAbierto(false)}
-				onCancelar={() => setModalAgenteAbierto(false)}
+				workspaceId={configuracionSeleccionada?.id}
+				onCerrar={() => setModalAgenteAbierto(false)}
 			/>
 		</div>
 	);

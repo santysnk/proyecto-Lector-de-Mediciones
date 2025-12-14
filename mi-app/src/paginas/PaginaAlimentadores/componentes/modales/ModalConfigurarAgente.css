@@ -48,8 +48,205 @@
 
 /* Contenido del modal */
 .config-agente-contenido {
-  min-height: 100px;
+  min-height: 120px;
   margin-bottom: 1.5rem;
+}
+
+/* Estado de carga */
+.config-agente-cargando {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: #94a3b8;
+}
+
+.config-agente-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #334155;
+  border-top-color: #0ea5e9;
+  border-radius: 50%;
+  animation: config-agente-spin 0.8s linear infinite;
+}
+
+@keyframes config-agente-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error */
+.config-agente-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  color: #f87171;
+  text-align: center;
+}
+
+.config-agente-reintentar {
+  padding: 0.5rem 1rem;
+  background: #334155;
+  color: #e2e8f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.config-agente-reintentar:hover {
+  background: #475569;
+}
+
+/* Estado de vinculación */
+.config-agente-estado {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.config-agente-indicador {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #475569;
+}
+
+.config-agente-indicador--activo {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+/* Info del agente vinculado */
+.config-agente-info {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.config-agente-campo {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+}
+
+.config-agente-campo:not(:last-child) {
+  border-bottom: 1px solid #334155;
+}
+
+.config-agente-label {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.config-agente-valor {
+  color: #f1f5f9;
+  font-weight: 500;
+}
+
+.config-agente-activo {
+  color: #22c55e;
+}
+
+.config-agente-inactivo {
+  color: #f87171;
+}
+
+/* Instrucciones */
+.config-agente-instrucciones {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
+  line-height: 1.5;
+}
+
+/* Contenedor del código */
+.config-agente-codigo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.config-agente-codigo-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.config-agente-codigo-box code {
+  flex: 1;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #f1f5f9;
+  word-break: break-all;
+}
+
+.config-agente-codigo-grande code {
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.config-agente-copiar {
+  padding: 0.4rem 0.8rem;
+  background: #334155;
+  color: #e2e8f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.config-agente-copiar:hover {
+  background: #475569;
+}
+
+.config-agente-expira {
+  color: #fbbf24;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Nueva clave */
+.config-agente-nueva-clave {
+  background: #1e3a2f;
+  border: 1px solid #22c55e;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.config-agente-nueva-clave p {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #86efac;
+}
+
+.config-agente-nota {
+  color: #94a3b8 !important;
+  font-size: 0.8rem !important;
+  margin-top: 0.75rem !important;
+}
+
+/* Acciones cuando vinculado */
+.config-agente-acciones-vinculado {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 /* Contenedor de botones de acción */
@@ -57,6 +254,8 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.8rem;
+  padding-top: 1rem;
+  border-top: 1px solid #334155;
 }
 
 /* Botones base */
@@ -68,28 +267,58 @@
   font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-/* Botón Cancelar: gris oscuro */
-.config-agente-cancelar {
+.config-agente-boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Botón Cerrar: gris oscuro */
+.config-agente-cerrar {
   background-color: #334155;
   color: #e2e8f0;
 }
 
-.config-agente-cancelar:hover {
+.config-agente-cerrar:hover:not(:disabled) {
   background-color: #475569;
 }
 
-/* Botón Guardar: celeste */
-.config-agente-guardar {
+/* Botón Generar: celeste */
+.config-agente-generar,
+.config-agente-regenerar {
   background-color: #0ea5e9;
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+  width: 100%;
 }
 
-.config-agente-guardar:hover {
+.config-agente-generar:hover:not(:disabled),
+.config-agente-regenerar:hover:not(:disabled) {
   background-color: #0284c7;
+}
+
+/* Botón Rotar: naranja */
+.config-agente-rotar {
+  background-color: #f59e0b;
+  color: #ffffff;
+  flex: 1;
+}
+
+.config-agente-rotar:hover:not(:disabled) {
+  background-color: #d97706;
+}
+
+/* Botón Desvincular: rojo */
+.config-agente-desvincular {
+  background-color: #ef4444;
+  color: #ffffff;
+  flex: 1;
+}
+
+.config-agente-desvincular:hover:not(:disabled) {
+  background-color: #dc2626;
 }
 
 /* Responsive */
@@ -104,8 +333,17 @@
     gap: 0.6rem;
   }
 
+  .config-agente-acciones-vinculado {
+    flex-direction: column;
+  }
+
   .config-agente-boton {
     width: 100%;
     min-width: unset;
+  }
+
+  .config-agente-codigo-grande code {
+    font-size: 1.1rem;
+    letter-spacing: 1px;
   }
 }

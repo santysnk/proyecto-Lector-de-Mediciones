@@ -244,6 +244,47 @@ export async function guardarPreferencias(workspaceId, preferencias) {
 }
 
 // ============================================
+// AGENTES
+// ============================================
+
+/**
+ * Obtiene el estado de vinculación del workspace con un agente
+ */
+export async function obtenerEstadoAgente(workspaceId) {
+  return fetchConAuth(`/api/agentes/estado?workspaceId=${workspaceId}`);
+}
+
+/**
+ * Solicita un código de vinculación para conectar el workspace con un agente
+ */
+export async function solicitarVinculacionAgente(workspaceId) {
+  return fetchConAuth('/api/agentes/solicitar-vinculacion', {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
+/**
+ * Desvincula el agente del workspace
+ */
+export async function desvincularAgente(workspaceId) {
+  return fetchConAuth('/api/agentes/desvincular', {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
+/**
+ * Rota la clave del agente (genera nueva, mantiene anterior por 24h)
+ */
+export async function rotarClaveAgente(workspaceId) {
+  return fetchConAuth('/api/agentes/rotar-clave', {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
+// ============================================
 // TEST DE CONEXIÓN MODBUS
 // ============================================
 
@@ -288,6 +329,11 @@ export default {
   // Preferencias
   obtenerPreferencias,
   guardarPreferencias,
+  // Agentes
+  obtenerEstadoAgente,
+  solicitarVinculacionAgente,
+  desvincularAgente,
+  rotarClaveAgente,
   // Test conexión Modbus
   testConexionModbus,
 };
