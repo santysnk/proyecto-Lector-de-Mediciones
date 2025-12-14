@@ -15,6 +15,7 @@ import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal par
 import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
 import ModalMapeoMediciones from "../modales/ModalMapeoMediciones.jsx";                   // modal de mapeo de mediciones
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
+import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -73,6 +74,7 @@ const {
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
+	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -113,6 +115,7 @@ const {
 	const abrirModalNuevoPuesto = () => abrirModal("nuevoPuesto");    // abre modal para crear puesto
 	const abrirModalEditarPuestos = () => abrirModal("editarPuestos");// abre modal para editar lista de puestos
 	const abrirModalConfigPuesto = () => abrirModal("configPuesto");  // abre modal de configuración global del puesto
+	const abrirModalConfigurarAgente = () => setModalAgenteAbierto(true); // abre modal de configuración del agente
 
 	const handleCrearPuesto = (nombre, color) => {
 		agregarPuesto(nombre, color);                                 // crea el puesto vía contexto
@@ -323,6 +326,7 @@ const {
 				onAbrirModalNuevoPuesto={abrirModalNuevoPuesto}
 				onAbrirModalEditarPuestos={abrirModalEditarPuestos}
 				onAbrirModalConfigPuesto={abrirModalConfigPuesto}
+				onAbrirModalConfigurarAgente={abrirModalConfigurarAgente}
 				onSalir={handleSalir}
 				onAbrirMenu={() => setMenuAbierto(true)}
 				coloresSistema={COLORES_SISTEMA}
@@ -448,6 +452,12 @@ const {
 				puesto={puestoSeleccionado}
 				onCerrar={() => cerrarModal("configPuesto")}
 				onGuardar={handleGuardarConfigPuesto}
+			/>
+
+			<ModalConfigurarAgente
+				abierto={modalAgenteAbierto}
+				onGuardar={() => setModalAgenteAbierto(false)}
+				onCancelar={() => setModalAgenteAbierto(false)}
 			/>
 		</div>
 	);

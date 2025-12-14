@@ -1,0 +1,111 @@
+/* src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.css */
+/* Estilos para el modal de configuración del agente */
+
+/* Fondo oscuro del overlay */
+.config-agente-fondo-oscuro {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Contenedor principal del modal */
+.config-agente-contenedor {
+  border-radius: 18px;
+  padding: 1.5rem 1.8rem;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
+  max-width: 500px;
+  width: 90%;
+  box-sizing: border-box;
+  background: #0f172a;
+  color: #e2e8f0;
+  animation: config-agente-aparecer 0.2s ease-out;
+}
+
+@keyframes config-agente-aparecer {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.config-agente-contenedor h2 {
+  margin: 0 0 1.2rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+/* Contenido del modal */
+.config-agente-contenido {
+  min-height: 100px;
+  margin-bottom: 1.5rem;
+}
+
+/* Contenedor de botones de acción */
+.config-agente-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+/* Botones base */
+.config-agente-boton {
+  min-width: 100px;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+/* Botón Cancelar: gris oscuro */
+.config-agente-cancelar {
+  background-color: #334155;
+  color: #e2e8f0;
+}
+
+.config-agente-cancelar:hover {
+  background-color: #475569;
+}
+
+/* Botón Guardar: celeste */
+.config-agente-guardar {
+  background-color: #0ea5e9;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+}
+
+.config-agente-guardar:hover {
+  background-color: #0284c7;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .config-agente-contenedor {
+    padding: 1.2rem 1rem;
+    margin: 0 0.5rem;
+  }
+
+  .config-agente-acciones {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .config-agente-boton {
+    width: 100%;
+    min-width: unset;
+  }
+}

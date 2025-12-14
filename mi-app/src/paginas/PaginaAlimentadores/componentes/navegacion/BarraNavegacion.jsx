@@ -18,6 +18,7 @@ const BarraNavegacion = ({
 	onAbrirModalNuevoPuesto,                // callback para abrir modal "Nuevo puesto"
 	onAbrirModalEditarPuestos,              // callback para abrir modal "Editar puestos"
 	onAbrirModalConfigPuesto,               // callback para abrir modal de configuración del puesto
+	onAbrirModalConfigurarAgente,           // callback para abrir modal de configuración del agente
 	onSalir,                                // callback para cerrar sesión / volver al inicio
 	onAbrirMenu,                            // callback para abrir el menú lateral en modo compacto
 	coloresSistema,                         // paleta de colores para botones de puesto
@@ -209,6 +210,7 @@ const BarraNavegacion = ({
 							<SelectorConfiguracion
 								onAbrirModalNuevoPuesto={onAbrirModalNuevoPuesto}
 								onAbrirModalEditarPuestos={onAbrirModalEditarPuestos}
+								onAbrirModalConfigurarAgente={onAbrirModalConfigurarAgente}
 								puestosLength={puestos.length}
 							/>
 
