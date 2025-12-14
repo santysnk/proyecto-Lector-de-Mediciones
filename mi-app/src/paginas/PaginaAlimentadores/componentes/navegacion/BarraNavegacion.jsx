@@ -206,24 +206,11 @@ const BarraNavegacion = ({
 								onDescartar={descartarCambios}
 							/>
 
-							<button
-								type="button"
-								className="alim-btn alim-btn-add"
-								onClick={onAbrirModalNuevoPuesto}
-							>
-								<span className="alim-btn-add-icon">+</span>
-							</button>
-
-							<button
-								type="button"
-								className="alim-btn alim-btn-edit"
-								onClick={onAbrirModalEditarPuestos}
-								disabled={puestos.length === 0}
-							>
-								✎
-							</button>
-
-							<SelectorConfiguracion />
+							<SelectorConfiguracion
+								onAbrirModalNuevoPuesto={onAbrirModalNuevoPuesto}
+								onAbrirModalEditarPuestos={onAbrirModalEditarPuestos}
+								puestosLength={puestos.length}
+							/>
 
 							<button
 								type="button"

@@ -93,7 +93,7 @@
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   z-index: 100;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Lista de configuraciones */
@@ -183,6 +183,66 @@
   background: #334155;
 }
 
+/* Opción secundaria (editar puestos, etc.) */
+.selector-config__opcion-secundaria {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: #283548;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.selector-config__opcion-secundaria:hover:not(:disabled) {
+  background: #334155;
+}
+
+.selector-config__opcion-secundaria:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selector-config__opcion-icono {
+  font-size: 1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Botón eliminar workspace activo */
+.selector-config__eliminar-activo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: #283548;
+  border: none;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.selector-config__eliminar-activo:hover {
+  background: #7f1d1d;
+  color: #f1f5f9;
+}
+
+.selector-config__eliminar-icono {
+  font-size: 1.1rem;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 /* Form para crear nueva */
 .selector-config__form {
   padding: 12px;
@@ -252,4 +312,76 @@
 .selector-config__btn-crear:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ===== SUBMENÚ ===== */
+.selector-config__submenu-container {
+  position: relative;
+}
+
+.selector-config__submenu-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #f1f5f9;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.selector-config__submenu-trigger:hover,
+.selector-config__submenu-trigger--activo {
+  background: #334155;
+}
+
+.selector-config__submenu-flecha {
+  position: absolute;
+  left: 12px;
+  font-size: 0.6rem;
+  color: #94a3b8;
+  transform: rotate(90deg);
+  transition: transform 0.2s ease, color 0.15s ease;
+}
+
+.selector-config__submenu-flecha--abierto {
+  transform: rotate(-90deg);
+}
+
+.selector-config__submenu-trigger:hover .selector-config__submenu-flecha,
+.selector-config__submenu-trigger--activo .selector-config__submenu-flecha {
+  color: #f1f5f9;
+}
+
+/* Submenú desplegable a la izquierda */
+.selector-config__submenu {
+  position: absolute;
+  top: 0;
+  right: calc(100% + 4px);
+  min-width: 180px;
+  max-width: 280px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 101;
+  overflow: hidden;
+}
+
+.selector-config__submenu .selector-config__lista {
+  padding: 4px 0;
+}
+
+.selector-config__submenu .selector-config__item {
+  padding: 0 4px;
+}
+
+.selector-config__submenu .selector-config__vacio {
+  padding: 12px;
 }

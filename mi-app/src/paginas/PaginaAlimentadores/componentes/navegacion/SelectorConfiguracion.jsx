@@ -1,15 +1,16 @@
 // src/paginas/PaginaAlimentadores/componentes/navegacion/SelectorConfiguracion.jsx
 // Componente para seleccionar y gestionar workspaces
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
+import ModalConfirmacion from "../modales/ModalConfirmacion";
 import "./SelectorConfiguracion.css";
 
 /**
  * Selector dropdown de workspaces.
  * Permite cambiar entre workspaces y crear nuevos.
  */
-const SelectorConfiguracion = () => {
+const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPuesto, puestosLength = 0 }) => {
   const {
     configuraciones,
     configuracionSeleccionada,
@@ -24,9 +25,53 @@ const SelectorConfiguracion = () => {
   const [mostrarFormNueva, setMostrarFormNueva] = useState(false);
   const [nombreNueva, setNombreNueva] = useState("");
   const [creando, setCreando] = useState(false);
+  const [submenuAbierto, setSubmenuAbierto] = useState(false);
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
+
+  const hoverTimeoutRef = useRef(null);
+  const submenuRef = useRef(null);
+
+  // Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Cerrar submenú cuando se cierra el menú principal
+  useEffect(() => {
+    if (!menuAbierto) {
+      setSubmenuAbierto(false);
+    }
+  }, [menuAbierto]);
+
+  const handleSubmenuMouseEnter = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setSubmenuAbierto(true);
+    }, 300); // 300ms de delay para abrir
+  };
+
+  const handleSubmenuMouseLeave = () => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    hoverTimeoutRef.current = setTimeout(() => {
+      setSubmenuAbierto(false);
+    }, 200); // 200ms de delay para cerrar
+  };
+
+  const handleSubmenuClick = () => {
+    setSubmenuAbierto(!submenuAbierto);
+  };
 
   const handleSeleccionar = (id) => {
     seleccionarConfiguracion(id);
+    setSubmenuAbierto(false);
     setMenuAbierto(false);
   };
 
@@ -47,13 +92,37 @@ const SelectorConfiguracion = () => {
     }
   };
 
-  const handleEliminar = async (id, nombre) => {
-    if (!window.confirm(`¿Eliminar el workspace "${nombre}"? Esta acción no se puede deshacer.`)) {
+  const handleEliminarActivo = () => {
+    if (!configuracionSeleccionada) return;
+    if (configuraciones.length <= 1) {
+      alert("No se puede eliminar el único workspace existente.");
       return;
     }
+    // Abrir modal de confirmación
+    setModalEliminarAbierto(true);
+  };
 
+  const confirmarEliminarWorkspace = async () => {
     try {
-      await eliminarConfiguracion(id);
+      // Encontrar el índice del workspace activo
+      const indiceActual = configuraciones.findIndex(c => c.id === configuracionSeleccionada.id);
+
+      // Determinar a qué workspace cambiar: anterior si existe, sino siguiente
+      let nuevoWorkspace;
+      if (indiceActual > 0) {
+        nuevoWorkspace = configuraciones[indiceActual - 1];
+      } else {
+        nuevoWorkspace = configuraciones[indiceActual + 1];
+      }
+
+      // Cambiar al nuevo workspace antes de eliminar
+      seleccionarConfiguracion(nuevoWorkspace.id);
+
+      // Eliminar el workspace
+      await eliminarConfiguracion(configuracionSeleccionada.id);
+
+      setModalEliminarAbierto(false);
+      setMenuAbierto(false);
     } catch (err) {
       console.error("Error eliminando workspace:", err);
     }
@@ -85,7 +154,6 @@ const SelectorConfiguracion = () => {
         aria-expanded={menuAbierto}
         aria-haspopup="listbox"
       >
-        <span className="selector-config__icono">&#9881;</span>
         <span className="selector-config__nombre">
           {configuracionSeleccionada?.nombre || "Sin workspace"}
         </span>
@@ -104,48 +172,60 @@ const SelectorConfiguracion = () => {
           />
 
           <div className="selector-config__menu" role="listbox">
-            {/* Lista de workspaces */}
-            {configuraciones.length > 0 ? (
-              <ul className="selector-config__lista">
-                {configuraciones.map((config) => (
-                  <li
-                    key={config.id}
-                    className={`selector-config__item ${
-                      config.id === configuracionSeleccionada?.id
-                        ? "selector-config__item--activo"
-                        : ""
-                    }`}
-                  >
-                    <button
-                      type="button"
-                      className="selector-config__item-btn"
-                      onClick={() => handleSeleccionar(config.id)}
-                      role="option"
-                      aria-selected={config.id === configuracionSeleccionada?.id}
-                    >
-                      {config.nombre}
-                    </button>
-                    {configuraciones.length > 1 && (
-                      <button
-                        type="button"
-                        className="selector-config__eliminar"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEliminar(config.id, config.nombre);
-                        }}
-                        title="Eliminar workspace"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="selector-config__vacio">
-                No hay workspaces
-              </div>
-            )}
+            {/* Opción Workspaces con submenú */}
+            <div
+              className="selector-config__submenu-container"
+              ref={submenuRef}
+              onMouseEnter={handleSubmenuMouseEnter}
+              onMouseLeave={handleSubmenuMouseLeave}
+            >
+              <button
+                type="button"
+                className={`selector-config__submenu-trigger ${submenuAbierto ? 'selector-config__submenu-trigger--activo' : ''}`}
+                onClick={handleSubmenuClick}
+              >
+                <span className={`selector-config__submenu-flecha ${submenuAbierto ? 'selector-config__submenu-flecha--abierto' : ''}`}>▼</span>
+                <span>Workspace</span>
+              </button>
+
+              {/* Submenú de workspaces */}
+              {submenuAbierto && (
+                <div
+                  className="selector-config__submenu"
+                  onMouseEnter={handleSubmenuMouseEnter}
+                  onMouseLeave={handleSubmenuMouseLeave}
+                >
+                  {configuraciones.length > 0 ? (
+                    <ul className="selector-config__lista">
+                      {configuraciones.map((config) => (
+                        <li
+                          key={config.id}
+                          className={`selector-config__item ${
+                            config.id === configuracionSeleccionada?.id
+                              ? "selector-config__item--activo"
+                              : ""
+                          }`}
+                        >
+                          <button
+                            type="button"
+                            className="selector-config__item-btn"
+                            onClick={() => handleSeleccionar(config.id)}
+                            role="option"
+                            aria-selected={config.id === configuracionSeleccionada?.id}
+                          >
+                            {config.nombre}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="selector-config__vacio">
+                      No hay workspaces
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Separador */}
             <div className="selector-config__separador" />
@@ -184,17 +264,70 @@ const SelectorConfiguracion = () => {
                 </div>
               </form>
             ) : (
-              <button
-                type="button"
-                className="selector-config__nueva"
-                onClick={() => setMostrarFormNueva(true)}
-              >
-                + Nuevo workspace
-              </button>
+              <>
+                {/* Opción nuevo puesto */}
+                <button
+                  type="button"
+                  className="selector-config__opcion-secundaria"
+                  onClick={() => {
+                    setMenuAbierto(false);
+                    onAbrirModalNuevoPuesto?.();
+                  }}
+                >
+                  <span className="selector-config__opcion-icono">+</span>
+                  Nuevo puesto
+                </button>
+
+                {/* Opción editar puestos */}
+                <button
+                  type="button"
+                  className="selector-config__opcion-secundaria"
+                  onClick={() => {
+                    setMenuAbierto(false);
+                    onAbrirModalEditarPuestos?.();
+                  }}
+                  disabled={puestosLength === 0}
+                >
+                  <span className="selector-config__opcion-icono">✎</span>
+                  Editar puestos
+                </button>
+
+                {/* Opción eliminar workspace activo (solo si hay más de uno) */}
+                {configuraciones.length > 1 && (
+                  <button
+                    type="button"
+                    className="selector-config__eliminar-activo"
+                    onClick={handleEliminarActivo}
+                  >
+                    <span className="selector-config__eliminar-icono">🗑</span>
+                    Eliminar workspace
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="selector-config__nueva"
+                  onClick={() => setMostrarFormNueva(true)}
+                >
+                  + Nuevo workspace
+                </button>
+              </>
             )}
           </div>
         </>
       )}
+
+      {/* Modal de confirmación para eliminar workspace */}
+      <ModalConfirmacion
+        abierto={modalEliminarAbierto}
+        titulo="Eliminar workspace"
+        mensaje={`¿Estás seguro de que deseas eliminar el workspace "${configuracionSeleccionada?.nombre}"? Esta acción no se puede deshacer.`}
+        textoConfirmar="Eliminar"
+        textoCancelar="Cancelar"
+        peligroso={true}
+        onConfirmar={confirmarEliminarWorkspace}
+        onCancelar={() => setModalEliminarAbierto(false)}
+      />
     </div>
   );
 };
