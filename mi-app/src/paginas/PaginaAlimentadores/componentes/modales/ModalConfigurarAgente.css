@@ -135,21 +135,26 @@
 }
 
 /* ============================================ */
-/* Barra de estado del agente (discreta)       */
+/* Barra de estado del agente (dos líneas)     */
 /* ============================================ */
 .config-agente-barra {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
+  padding: 0.85rem 1.5rem;
   background: #1e293b;
   border-bottom: 1px solid #334155;
   flex-shrink: 0;
 }
 
-.config-agente-barra--vinculado {
+.config-agente-barra--conectado {
   background: linear-gradient(90deg, #1e3a2f 0%, #1e293b 100%);
   border-bottom-color: #22c55e33;
+}
+
+.config-agente-barra--desconectado {
+  background: linear-gradient(90deg, #3a1e1e 0%, #1e293b 100%);
+  border-bottom-color: #ef444433;
 }
 
 .config-agente-barra--sin-vincular {
@@ -158,41 +163,71 @@
 
 .config-agente-barra-info {
   display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.config-agente-barra-linea {
+  display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
+}
+
+.config-agente-barra-label {
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  min-width: 110px;
+}
+
+.config-agente-barra-valor {
+  color: #e2e8f0;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.config-agente-barra-valor--ninguno {
+  color: #64748b;
+  font-weight: 400;
+}
+
+.config-agente-barra-valor--conectado {
+  color: #22c55e;
+}
+
+.config-agente-barra-valor--desconectado {
+  color: #ef4444;
+}
+
+.config-agente-icono-vinculado {
   font-size: 0.9rem;
 }
 
-.config-agente-indicador {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #475569;
-  flex-shrink: 0;
+.config-agente-icono-desvinculado {
+  font-size: 0.9rem;
+  opacity: 0.7;
 }
 
-.config-agente-indicador--activo {
-  background: #22c55e;
-  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+.config-agente-indicador-estado {
+  font-size: 0.7rem;
+  margin-left: 0.2rem;
 }
 
-.config-agente-barra-texto {
-  color: #94a3b8;
-}
-
-.config-agente-barra-texto strong {
-  color: #e2e8f0;
-  font-weight: 500;
-}
-
-.config-agente-activo {
+.config-agente-indicador-estado--conectado {
   color: #22c55e;
-  font-size: 0.85rem;
+  text-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+  animation: config-agente-pulso 2s ease-in-out infinite;
 }
 
-.config-agente-inactivo {
-  color: #f87171;
-  font-size: 0.85rem;
+.config-agente-indicador-estado--desconectado {
+  color: #ef4444;
+}
+
+@keyframes config-agente-pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .config-agente-barra-boton {

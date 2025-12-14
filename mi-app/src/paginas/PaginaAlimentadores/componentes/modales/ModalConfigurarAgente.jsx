@@ -582,20 +582,35 @@ const ModalConfigurarAgente = ({
         ) : (
           /* ========== VISTA PRINCIPAL ========== */
           <>
-            {/* Barra de estado del agente - discreta arriba */}
-            <div className={`config-agente-barra ${estado?.vinculado ? 'config-agente-barra--vinculado' : 'config-agente-barra--sin-vincular'}`}>
+            {/* Barra de estado del agente - dos líneas */}
+            <div className={`config-agente-barra ${estado?.conectado ? 'config-agente-barra--conectado' : estado?.vinculado ? 'config-agente-barra--desconectado' : 'config-agente-barra--sin-vincular'}`}>
               <div className="config-agente-barra-info">
-                <span className={`config-agente-indicador ${estado?.vinculado ? 'config-agente-indicador--activo' : ''}`}></span>
-                {estado?.vinculado ? (
-                  <span className="config-agente-barra-texto">
-                    <strong>{estado.agente?.nombre}</strong>
-                    <span className={estado.agente?.activo ? "config-agente-activo" : "config-agente-inactivo"}>
-                      {estado.agente?.activo ? " (Activo)" : " (Inactivo)"}
+                {/* Línea 1: Agente Vinculado */}
+                <div className="config-agente-barra-linea">
+                  <span className="config-agente-barra-label">Agente Vinculado:</span>
+                  {estado?.vinculado ? (
+                    <span className="config-agente-barra-valor">
+                      {estado.agente?.nombre} <span className="config-agente-icono-vinculado">🔗</span>
                     </span>
-                  </span>
-                ) : (
-                  <span className="config-agente-barra-texto">Sin agente vinculado</span>
-                )}
+                  ) : (
+                    <span className="config-agente-barra-valor config-agente-barra-valor--ninguno">
+                      Ninguno <span className="config-agente-icono-desvinculado">⛓️‍💥</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Línea 2: Estado del Agente */}
+                <div className="config-agente-barra-linea">
+                  <span className="config-agente-barra-label">Estado del Agente:</span>
+                  {estado?.vinculado ? (
+                    <span className={`config-agente-barra-valor ${estado?.conectado ? 'config-agente-barra-valor--conectado' : 'config-agente-barra-valor--desconectado'}`}>
+                      {estado?.conectado ? 'Conectado' : 'Desconectado'}
+                      <span className={`config-agente-indicador-estado ${estado?.conectado ? 'config-agente-indicador-estado--conectado' : 'config-agente-indicador-estado--desconectado'}`}>●</span>
+                    </span>
+                  ) : (
+                    <span className="config-agente-barra-valor config-agente-barra-valor--ninguno">--</span>
+                  )}
+                </div>
               </div>
 
               {estado?.vinculado ? (
