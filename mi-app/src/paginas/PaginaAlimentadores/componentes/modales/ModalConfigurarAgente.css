@@ -15,17 +15,22 @@
   z-index: 1000;
 }
 
-/* Contenedor principal del modal */
+/* Contenedor principal del modal - MÁS GRANDE */
 .config-agente-contenedor {
   border-radius: 18px;
-  padding: 1.5rem 1.8rem;
+  padding: 0;
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
-  max-width: 500px;
-  width: 90%;
+  max-width: 700px;
+  width: 95%;
+  min-height: 500px;
+  max-height: 85vh;
   box-sizing: border-box;
   background: #0f172a;
   color: #e2e8f0;
   animation: config-agente-aparecer 0.2s ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 @keyframes config-agente-aparecer {
@@ -39,27 +44,56 @@
   }
 }
 
-.config-agente-contenedor h2 {
-  margin: 0 0 1.2rem 0;
-  font-size: 1.2rem;
+/* ============================================ */
+/* Header con título y botón cerrar            */
+/* ============================================ */
+.config-agente-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid #1e293b;
+  flex-shrink: 0;
+}
+
+.config-agente-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
   font-weight: 600;
   color: #e2e8f0;
 }
 
-/* Contenido del modal */
-.config-agente-contenido {
-  min-height: 120px;
-  margin-bottom: 1.5rem;
+.config-agente-cerrar-x {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 1.5rem;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
 }
 
-/* Estado de carga */
+.config-agente-cerrar-x:hover {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+/* ============================================ */
+/* Estado de carga y error                     */
+/* ============================================ */
 .config-agente-cargando {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 2rem;
+  padding: 3rem;
   color: #94a3b8;
+  flex: 1;
 }
 
 .config-agente-spinner {
@@ -75,15 +109,15 @@
   to { transform: rotate(360deg); }
 }
 
-/* Error */
 .config-agente-error {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 3rem;
   color: #f87171;
   text-align: center;
+  flex: 1;
 }
 
 .config-agente-reintentar {
@@ -100,21 +134,41 @@
   background: #475569;
 }
 
-/* Estado de vinculación */
-.config-agente-estado {
+/* ============================================ */
+/* Barra de estado del agente (discreta)       */
+/* ============================================ */
+.config-agente-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  flex-shrink: 0;
+}
+
+.config-agente-barra--vinculado {
+  background: linear-gradient(90deg, #1e3a2f 0%, #1e293b 100%);
+  border-bottom-color: #22c55e33;
+}
+
+.config-agente-barra--sin-vincular {
+  background: #1e293b;
+}
+
+.config-agente-barra-info {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .config-agente-indicador {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #475569;
+  flex-shrink: 0;
 }
 
 .config-agente-indicador--activo {
@@ -122,51 +176,117 @@
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 
-/* Info del agente vinculado */
-.config-agente-info {
-  background: #1e293b;
-  border-radius: 10px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.config-agente-campo {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-}
-
-.config-agente-campo:not(:last-child) {
-  border-bottom: 1px solid #334155;
-}
-
-.config-agente-label {
+.config-agente-barra-texto {
   color: #94a3b8;
-  font-size: 0.9rem;
 }
 
-.config-agente-valor {
-  color: #f1f5f9;
+.config-agente-barra-texto strong {
+  color: #e2e8f0;
   font-weight: 500;
 }
 
 .config-agente-activo {
   color: #22c55e;
+  font-size: 0.85rem;
 }
 
 .config-agente-inactivo {
   color: #f87171;
+  font-size: 0.85rem;
 }
 
-/* Instrucciones */
+.config-agente-barra-boton {
+  padding: 0.4rem 0.9rem;
+  background: #334155;
+  color: #e2e8f0;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.config-agente-barra-boton:hover {
+  background: #475569;
+}
+
+.config-agente-barra-boton--vincular {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+.config-agente-barra-boton--vincular:hover {
+  background: #0284c7;
+}
+
+.config-agente-barra-boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================ */
+/* Panel de opciones del agente (expandible)   */
+/* ============================================ */
+.config-agente-opciones {
+  padding: 1rem 1.5rem;
+  background: #162032;
+  border-bottom: 1px solid #334155;
+  animation: config-agente-expandir 0.2s ease-out;
+}
+
+@keyframes config-agente-expandir {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+.config-agente-nueva-clave {
+  background: #1e3a2f;
+  border: 1px solid #22c55e;
+  border-radius: 8px;
+  padding: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.config-agente-nueva-clave p {
+  margin: 0 0 0.6rem 0;
+  font-size: 0.85rem;
+  color: #86efac;
+}
+
+.config-agente-nota {
+  color: #94a3b8 !important;
+  font-size: 0.75rem !important;
+  margin-top: 0.6rem !important;
+}
+
+.config-agente-acciones-vinculado {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* ============================================ */
+/* Panel de vinculación                        */
+/* ============================================ */
+.config-agente-vinculacion-panel {
+  padding: 1.5rem;
+  background: #162032;
+  border-bottom: 1px solid #334155;
+}
+
 .config-agente-instrucciones {
   color: #94a3b8;
   font-size: 0.9rem;
-  margin-bottom: 1.2rem;
-  line-height: 1.5;
+  margin: 0 0 1rem 0;
+  text-align: center;
 }
 
-/* Contenedor del código */
 .config-agente-codigo-container {
   display: flex;
   flex-direction: column;
@@ -183,6 +303,7 @@
   border-radius: 8px;
   padding: 0.75rem 1rem;
   width: 100%;
+  max-width: 300px;
   box-sizing: border-box;
 }
 
@@ -194,9 +315,13 @@
   word-break: break-all;
 }
 
+.config-agente-codigo-grande {
+  max-width: 280px;
+}
+
 .config-agente-codigo-grande code {
-  font-size: 1.4rem;
-  letter-spacing: 2px;
+  font-size: 1.5rem;
+  letter-spacing: 3px;
   text-align: center;
 }
 
@@ -209,6 +334,7 @@
   cursor: pointer;
   font-size: 0.8rem;
   white-space: nowrap;
+  transition: background 0.15s;
 }
 
 .config-agente-copiar:hover {
@@ -221,50 +347,103 @@
   font-weight: 500;
 }
 
-/* Nueva clave */
-.config-agente-nueva-clave {
-  background: #1e3a2f;
-  border: 1px solid #22c55e;
-  border-radius: 10px;
-  padding: 1rem;
+/* ============================================ */
+/* Sección principal: Registradores            */
+/* ============================================ */
+.config-agente-seccion {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1.25rem 1.5rem;
+}
+
+.config-agente-seccion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
-.config-agente-nueva-clave p {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.9rem;
-  color: #86efac;
+.config-agente-seccion-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e2e8f0;
 }
 
-.config-agente-nota {
-  color: #94a3b8 !important;
-  font-size: 0.8rem !important;
-  margin-top: 0.75rem !important;
+.config-agente-agregar-btn {
+  padding: 0.45rem 1rem;
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 0.15s, opacity 0.15s;
 }
 
-/* Acciones cuando vinculado */
-.config-agente-acciones-vinculado {
+.config-agente-agregar-btn:hover:not(:disabled) {
+  background: #0284c7;
+}
+
+.config-agente-agregar-btn:disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Lista de registradores */
+.config-agente-registradores-lista {
+  flex: 1;
+  overflow-y: auto;
+  background: #1e293b;
+  border-radius: 10px;
+  min-height: 200px;
+}
+
+.config-agente-registradores-vacio {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
 }
 
-/* Contenedor de botones de acción */
-.config-agente-acciones {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.8rem;
-  padding-top: 1rem;
-  border-top: 1px solid #334155;
+.config-agente-registradores-icono {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.6;
 }
 
-/* Botones base */
+.config-agente-registradores-vacio p {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.95rem;
+  color: #94a3b8;
+}
+
+.config-agente-registradores-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  max-width: 280px;
+  line-height: 1.4;
+}
+
+/* ============================================ */
+/* Botones base                                */
+/* ============================================ */
 .config-agente-boton {
   min-width: 100px;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
+  padding: 0.55rem 1rem;
+  border-radius: 6px;
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.15s ease, opacity 0.15s ease;
@@ -275,31 +454,6 @@
   cursor: not-allowed;
 }
 
-/* Botón Cerrar: gris oscuro */
-.config-agente-cerrar {
-  background-color: #334155;
-  color: #e2e8f0;
-}
-
-.config-agente-cerrar:hover:not(:disabled) {
-  background-color: #475569;
-}
-
-/* Botón Generar: celeste */
-.config-agente-generar,
-.config-agente-regenerar {
-  background-color: #0ea5e9;
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
-  width: 100%;
-}
-
-.config-agente-generar:hover:not(:disabled),
-.config-agente-regenerar:hover:not(:disabled) {
-  background-color: #0284c7;
-}
-
-/* Botón Rotar: naranja */
 .config-agente-rotar {
   background-color: #f59e0b;
   color: #ffffff;
@@ -310,7 +464,6 @@
   background-color: #d97706;
 }
 
-/* Botón Desvincular: rojo */
 .config-agente-desvincular {
   background-color: #ef4444;
   color: #ffffff;
@@ -321,16 +474,465 @@
   background-color: #dc2626;
 }
 
-/* Responsive */
-@media (max-width: 480px) {
+/* ============================================ */
+/* Lista de registradores (items)              */
+/* ============================================ */
+.config-agente-registradores-items {
+  padding: 0.5rem;
+}
+
+.config-agente-registrador-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: #0f172a;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: background 0.15s;
+}
+
+.config-agente-registrador-item:hover {
+  background: #1a2744;
+}
+
+.config-agente-registrador-item:last-child {
+  margin-bottom: 0;
+}
+
+.config-agente-registrador-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.config-agente-registrador-nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.config-agente-registrador-nombre strong {
+  color: #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.config-agente-registrador-estado {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  flex-shrink: 0;
+}
+
+.config-agente-registrador-estado--activo {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  animation: config-agente-pulse 2s infinite;
+}
+
+@keyframes config-agente-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.config-agente-registrador-tipo {
+  font-size: 0.75rem;
+  color: #64748b;
+  background: #334155;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.config-agente-registrador-detalle {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.config-agente-registrador-ubicacion {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.2rem;
+}
+
+.config-agente-registrador-acciones {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.config-agente-registrador-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.config-agente-registrador-btn:hover {
+  background: #475569;
+  transform: scale(1.05);
+}
+
+.config-agente-registrador-btn--iniciar {
+  background: #166534;
+  color: #22c55e;
+}
+
+.config-agente-registrador-btn--iniciar:hover {
+  background: #15803d;
+}
+
+.config-agente-registrador-btn--detener {
+  background: #7f1d1d;
+  color: #f87171;
+}
+
+.config-agente-registrador-btn--detener:hover {
+  background: #991b1b;
+}
+
+.config-agente-registrador-btn--editar {
+  color: #fbbf24;
+}
+
+.config-agente-registrador-btn--eliminar {
+  color: #f87171;
+}
+
+.config-agente-registrador-btn--eliminar:hover {
+  background: #7f1d1d;
+}
+
+/* ============================================ */
+/* Formulario de registrador                   */
+/* ============================================ */
+.config-agente-formulario {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.config-agente-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.config-agente-form-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.config-agente-form-grupo--corto {
+  grid-column: span 1;
+}
+
+.config-agente-form-grupo:first-child,
+.config-agente-form-grupo:nth-child(2),
+.config-agente-form-grupo:nth-child(3) {
+  grid-column: span 2;
+}
+
+.config-agente-form-grupo label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.config-agente-form-grupo input {
+  padding: 0.6rem 0.9rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.config-agente-form-grupo input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  background: #1a2744;
+}
+
+.config-agente-form-grupo input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-agente-form-grupo input::placeholder {
+  color: #64748b;
+}
+
+.config-agente-form-nota {
+  margin: 1rem 0 0 0;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.config-agente-form-error {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+}
+
+.config-agente-form-acciones {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.config-agente-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.config-agente-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-agente-btn--primario {
+  background: #0369a1;
+  color: #fff;
+}
+
+.config-agente-btn--primario:hover:not(:disabled) {
+  background: #0284c7;
+}
+
+.config-agente-btn--secundario {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.config-agente-btn--secundario:hover:not(:disabled) {
+  background: #475569;
+}
+
+/* ============================================ */
+/* Resultado del test de conexión              */
+/* ============================================ */
+.config-agente-test-resultado {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border-radius: 8px;
+  animation: config-agente-aparecer 0.2s ease-out;
+}
+
+.config-agente-test-resultado--exito {
+  background: #14532d;
+  border: 1px solid #22c55e;
+}
+
+.config-agente-test-resultado--error {
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
+}
+
+.config-agente-test-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.config-agente-test-icono {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.config-agente-test-icono--exito {
+  background: #22c55e;
+  color: #14532d;
+}
+
+.config-agente-test-icono--error {
+  background: #ef4444;
+  color: #7f1d1d;
+}
+
+.config-agente-test-tabla-container {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.75rem;
+}
+
+.config-agente-test-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.config-agente-test-tabla th,
+.config-agente-test-tabla td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #22c55e33;
+}
+
+.config-agente-test-tabla th {
+  background: #166534;
+  color: #86efac;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.config-agente-test-tabla td {
+  color: #e2e8f0;
+  font-family: monospace;
+}
+
+.config-agente-test-tabla tr:hover td {
+  background: #1a4d2e;
+}
+
+/* ============================================ */
+/* Modal de éxito al crear registrador         */
+/* ============================================ */
+.config-agente-modal-exito-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  animation: config-agente-aparecer 0.15s ease-out;
+}
+
+.config-agente-modal-exito {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: config-agente-aparecer 0.2s ease-out;
+}
+
+.config-agente-modal-exito-icono {
+  width: 56px;
+  height: 56px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.8rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+.config-agente-modal-exito h3 {
+  color: #e2e8f0;
+  font-size: 1.25rem;
+  margin: 0 0 1.25rem 0;
+  font-weight: 600;
+}
+
+.config-agente-modal-exito-info {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.config-agente-modal-exito-info p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  margin: 0 0 0.4rem 0;
+}
+
+.config-agente-modal-exito-info code {
+  display: block;
+  color: #0ea5e9;
+  font-size: 0.8rem;
+  word-break: break-all;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.config-agente-modal-exito-columnas {
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  font-family: monospace;
+  line-height: 1.6;
+  max-height: 80px;
+  overflow-y: auto;
+}
+
+.config-agente-modal-exito-btn {
+  background: #0369a1;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 2rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.config-agente-modal-exito-btn:hover {
+  background: #0284c7;
+}
+
+/* ============================================ */
+/* Responsive                                  */
+/* ============================================ */
+@media (max-width: 600px) {
   .config-agente-contenedor {
-    padding: 1.2rem 1rem;
-    margin: 0 0.5rem;
+    max-width: 100%;
+    width: 100%;
+    min-height: unset;
+    max-height: 100vh;
+    border-radius: 0;
   }
 
-  .config-agente-acciones {
-    flex-direction: column;
-    gap: 0.6rem;
+  .config-agente-header {
+    padding: 1rem;
+  }
+
+  .config-agente-barra {
+    padding: 0.65rem 1rem;
+  }
+
+  .config-agente-seccion {
+    padding: 1rem;
   }
 
   .config-agente-acciones-vinculado {
@@ -343,7 +945,7 @@
   }
 
   .config-agente-codigo-grande code {
-    font-size: 1.1rem;
-    letter-spacing: 1px;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
   }
 }

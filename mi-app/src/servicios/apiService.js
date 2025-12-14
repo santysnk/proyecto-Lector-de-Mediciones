@@ -304,6 +304,66 @@ export async function testConexionModbus(ip, puerto, unitId = 1, indiceInicial =
   });
 }
 
+// ============================================
+// REGISTRADORES
+// ============================================
+
+/**
+ * Obtiene los registradores del workspace
+ */
+export async function obtenerRegistradores(workspaceId) {
+  return fetchConAuth(`/api/registradores?workspaceId=${workspaceId}`);
+}
+
+/**
+ * Crea un nuevo registrador
+ */
+export async function crearRegistrador(datos) {
+  return fetchConAuth('/api/registradores', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Actualiza un registrador
+ */
+export async function actualizarRegistrador(registradorId, datos) {
+  return fetchConAuth(`/api/registradores/${registradorId}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Elimina un registrador
+ */
+export async function eliminarRegistrador(registradorId, workspaceId) {
+  return fetchConAuth(`/api/registradores/${registradorId}?workspaceId=${workspaceId}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Activa o desactiva la medición de un registrador
+ */
+export async function toggleActivoRegistrador(registradorId, workspaceId, activo) {
+  return fetchConAuth(`/api/registradores/${registradorId}/toggle-activo`, {
+    method: 'POST',
+    body: JSON.stringify({ workspaceId, activo }),
+  });
+}
+
+/**
+ * Prueba la conexión Modbus de un registrador
+ */
+export async function testConexionRegistrador(ip, puerto, indiceInicial, cantidadRegistros, unitId = 1) {
+  return fetchConAuth('/api/registradores/test-conexion', {
+    method: 'POST',
+    body: JSON.stringify({ ip, puerto, indiceInicial, cantidadRegistros, unitId }),
+  });
+}
+
 export default {
   // Workspaces
   obtenerWorkspaces,
@@ -336,4 +396,11 @@ export default {
   rotarClaveAgente,
   // Test conexión Modbus
   testConexionModbus,
+  // Registradores
+  obtenerRegistradores,
+  crearRegistrador,
+  actualizarRegistrador,
+  eliminarRegistrador,
+  toggleActivoRegistrador,
+  testConexionRegistrador,
 };
