@@ -19,6 +19,8 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     seleccionarConfiguracion,
     agregarConfiguracion,
     eliminarConfiguracion,
+    puedeCrearWorkspaces,
+    rolGlobal,
   } = usarContextoConfiguracion();
 
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -145,8 +147,42 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     );
   }
 
-  // Si no hay workspaces, mostrar botón especial para crear uno
+  // Si no hay workspaces, mostrar estado según permisos del rol
   if (configuraciones.length === 0) {
+    // Usuarios sin permiso para crear (operador, observador)
+    if (!puedeCrearWorkspaces) {
+      return (
+        <div className="selector-config">
+          <button
+            type="button"
+            className="selector-config__trigger selector-config__trigger--deshabilitado"
+            onClick={() => setMenuAbierto(!menuAbierto)}
+            aria-expanded={menuAbierto}
+          >
+            <span className="selector-config__nombre">Sin workspace</span>
+            <span className="selector-config__flecha">{menuAbierto ? "▲" : "▼"}</span>
+          </button>
+
+          {menuAbierto && (
+            <>
+              <div
+                className="selector-config__overlay"
+                onClick={() => setMenuAbierto(false)}
+              />
+              <div className="selector-config__menu">
+                <div className="selector-config__vacio-mensaje selector-config__vacio-mensaje--info">
+                  No tienes workspaces asignados.
+                  <br />
+                  <small>Contacta a un administrador para ser invitado a un workspace.</small>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // Usuarios con permiso para crear (superadmin, admin)
     return (
       <div className="selector-config">
         <button
@@ -381,8 +417,8 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   Configurar Agente
                 </button>
 
-                {/* Opción eliminar workspace activo (solo si hay más de uno) */}
-                {configuraciones.length > 1 && (
+                {/* Opción eliminar workspace activo (solo si hay más de uno y es creador/admin) */}
+                {configuraciones.length > 1 && configuracionSeleccionada?.esCreador && (
                   <button
                     type="button"
                     className="selector-config__eliminar-activo"
@@ -393,13 +429,16 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  className="selector-config__nueva"
-                  onClick={() => setMostrarFormNueva(true)}
-                >
-                  + Nuevo workspace
-                </button>
+                {/* Solo mostrar botón de crear si tiene permisos */}
+                {puedeCrearWorkspaces && (
+                  <button
+                    type="button"
+                    className="selector-config__nueva"
+                    onClick={() => setMostrarFormNueva(true)}
+                  >
+                    + Nuevo workspace
+                  </button>
+                )}
               </>
             )}
           </div>

@@ -42,6 +42,17 @@ async function fetchConAuth(endpoint, opciones = {}) {
 }
 
 // ============================================
+// USUARIOS
+// ============================================
+
+/**
+ * Obtiene el perfil del usuario autenticado (incluye rol global)
+ */
+export async function obtenerPerfil() {
+  return fetchConAuth('/api/usuarios/perfil');
+}
+
+// ============================================
 // WORKSPACES
 // ============================================
 
@@ -365,6 +376,8 @@ export async function testConexionRegistrador(ip, puerto, indiceInicial, cantida
 }
 
 export default {
+  // Usuarios
+  obtenerPerfil,
   // Workspaces
   obtenerWorkspaces,
   crearWorkspace,

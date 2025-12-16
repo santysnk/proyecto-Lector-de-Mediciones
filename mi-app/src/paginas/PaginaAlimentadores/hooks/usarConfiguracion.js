@@ -7,6 +7,7 @@ import {
   crearWorkspace,
   actualizarWorkspace as actualizarWorkspaceAPI,
   eliminarWorkspace as eliminarWorkspaceAPI,
+  obtenerPerfil,
 } from "../../../servicios/apiService";
 import { CLAVES_STORAGE } from "../constantes/clavesAlmacenamiento";
 
@@ -32,31 +33,44 @@ export const usarConfiguracion = () => {
   // Error si ocurre
   const [error, setError] = useState(null);
 
+  // Perfil del usuario (incluye rol global)
+  const [perfil, setPerfil] = useState(null);
+
   // Workspace seleccionado (derivado)
   const configuracionSeleccionada = configuraciones.find(
     (c) => c.id === configuracionSeleccionadaId
   ) || configuraciones[0] || null;
 
+  // Permisos derivados del perfil
+  const puedeCrearWorkspaces = perfil?.puedeCrearWorkspaces ?? false;
+  const rolGlobal = perfil?.rolGlobal ?? 'observador';
+
   /**
-   * Carga los workspaces desde el backend
+   * Carga el perfil del usuario y los workspaces desde el backend
    */
   const cargarConfiguraciones = useCallback(async () => {
     try {
       setCargando(true);
       setError(null);
 
-      const datos = await obtenerWorkspaces();
-      setConfiguraciones(datos);
+      // Cargar perfil y workspaces en paralelo
+      const [perfilData, workspacesData] = await Promise.all([
+        obtenerPerfil(),
+        obtenerWorkspaces(),
+      ]);
+
+      setPerfil(perfilData);
+      setConfiguraciones(workspacesData);
 
       // Si no hay workspace seleccionado o el seleccionado no existe, seleccionar el primero
-      if (datos.length > 0) {
-        const seleccionValida = datos.some((c) => c.id === configuracionSeleccionadaId);
+      if (workspacesData.length > 0) {
+        const seleccionValida = workspacesData.some((c) => c.id === configuracionSeleccionadaId);
         if (!seleccionValida) {
-          setConfiguracionSeleccionadaId(datos[0].id);
+          setConfiguracionSeleccionadaId(workspacesData[0].id);
         }
       }
     } catch (err) {
-      console.error("Error cargando workspaces:", err);
+      console.error("Error cargando datos:", err);
       setError(err.message);
     } finally {
       setCargando(false);
@@ -156,6 +170,11 @@ export const usarConfiguracion = () => {
     configuracionSeleccionadaId,
     cargando,
     error,
+
+    // Perfil y permisos
+    perfil,
+    rolGlobal,
+    puedeCrearWorkspaces,
 
     // Funciones
     cargarConfiguraciones,

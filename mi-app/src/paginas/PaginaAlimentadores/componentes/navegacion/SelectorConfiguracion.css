@@ -428,3 +428,33 @@
 .selector-config__nueva--destacado:hover {
   background: linear-gradient(135deg, #047857 0%, #065f46 100%);
 }
+
+/* Botón trigger deshabilitado (usuario sin permisos) */
+.selector-config__trigger--deshabilitado {
+  background: #374151;
+  border-color: #4b5563;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.selector-config__trigger--deshabilitado:hover {
+  background: #4b5563;
+  border-color: #6b7280;
+}
+
+.selector-config__trigger--deshabilitado .selector-config__nombre {
+  color: #9ca3af;
+}
+
+/* Mensaje informativo para usuarios sin permisos */
+.selector-config__vacio-mensaje--info {
+  border-bottom: none;
+  padding: 20px 16px;
+}
+
+.selector-config__vacio-mensaje--info small {
+  display: block;
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 0.75rem;
+}
