@@ -151,26 +151,26 @@
    transform: none;
 }
 
-/* Botón salir */
+/* Botón salir - estilo rojo gradient */
 .alim-btn-exit {
-   border: none;
-   border-radius: 10px;
-   padding: 0.45rem 1.2rem;
-   font-size: 0.9rem;
+   border: 1px solid #f87171;
+   border-radius: 8px;
+   padding: 0.5rem 1rem;
+   font-size: 0.875rem;
    font-weight: 600;
    cursor: pointer;
-   background-color: #ef4444;
-   color: #f9fafb;
-   transition: background-color 0.15s ease, transform 0.1s ease,
-      box-shadow 0.1s ease;
+   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+   color: #fef2f2;
+   transition: all 0.2s ease;
    display: inline-flex;
    align-items: center;
    justify-content: center;
 }
 
 .alim-btn-exit:hover {
-   background-color: #dc2626;
-   box-shadow: 0 4px 10px rgba(220, 38, 38, 0.4);
+   background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+   border-color: #fca5a5;
+   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
    transform: translateY(-1px);
 }
 

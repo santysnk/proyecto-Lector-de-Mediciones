@@ -21,6 +21,7 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     eliminarConfiguracion,
     puedeCrearWorkspaces,
     rolGlobal,
+    perfil,
   } = usarContextoConfiguracion();
 
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -170,6 +171,13 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                 onClick={() => setMenuAbierto(false)}
               />
               <div className="selector-config__menu">
+                {/* Header con usuario y rol */}
+                {perfil && (
+                  <div className="selector-config__usuario-header">
+                    <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
+                    <span className="selector-config__usuario-rol">{perfil.roles?.nombre || rolGlobal}</span>
+                  </div>
+                )}
                 <div className="selector-config__vacio-mensaje selector-config__vacio-mensaje--info">
                   No tienes workspaces asignados.
                   <br />
@@ -204,6 +212,13 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
               }}
             />
             <div className="selector-config__menu">
+              {/* Header con usuario y rol */}
+              {perfil && (
+                <div className="selector-config__usuario-header">
+                  <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
+                  <span className="selector-config__usuario-rol">{perfil.roles?.nombre || rolGlobal}</span>
+                </div>
+              )}
               <div className="selector-config__vacio-mensaje">
                 No tienes workspaces asignados.
                 <br />
@@ -284,6 +299,14 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
           />
 
           <div className="selector-config__menu" role="listbox">
+            {/* Header con usuario y rol */}
+            {perfil && (
+              <div className="selector-config__usuario-header">
+                <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
+                <span className="selector-config__usuario-rol">{perfil.roles?.nombre || rolGlobal}</span>
+              </div>
+            )}
+
             {/* Opción Workspaces con submenú */}
             <div
               className="selector-config__submenu-container"
