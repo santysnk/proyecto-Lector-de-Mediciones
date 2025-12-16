@@ -145,6 +145,82 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     );
   }
 
+  // Si no hay workspaces, mostrar botón especial para crear uno
+  if (configuraciones.length === 0) {
+    return (
+      <div className="selector-config">
+        <button
+          type="button"
+          className="selector-config__trigger selector-config__trigger--crear"
+          onClick={() => setMenuAbierto(!menuAbierto)}
+          aria-expanded={menuAbierto}
+        >
+          <span className="selector-config__nombre">+ Crear Workspace</span>
+        </button>
+
+        {menuAbierto && (
+          <>
+            <div
+              className="selector-config__overlay"
+              onClick={() => {
+                setMenuAbierto(false);
+                setMostrarFormNueva(false);
+              }}
+            />
+            <div className="selector-config__menu">
+              <div className="selector-config__vacio-mensaje">
+                No tienes workspaces asignados.
+                <br />
+                Crea uno para empezar.
+              </div>
+              {mostrarFormNueva ? (
+                <form className="selector-config__form" onSubmit={handleCrearNueva}>
+                  <input
+                    type="text"
+                    className="selector-config__input"
+                    placeholder="Nombre del workspace"
+                    value={nombreNueva}
+                    onChange={(e) => setNombreNueva(e.target.value)}
+                    autoFocus
+                    disabled={creando}
+                  />
+                  <div className="selector-config__form-btns">
+                    <button
+                      type="button"
+                      className="selector-config__btn-cancelar"
+                      onClick={() => {
+                        setMostrarFormNueva(false);
+                        setNombreNueva("");
+                      }}
+                      disabled={creando}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="selector-config__btn-crear"
+                      disabled={!nombreNueva.trim() || creando}
+                    >
+                      {creando ? "Creando..." : "Crear"}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  className="selector-config__nueva selector-config__nueva--destacado"
+                  onClick={() => setMostrarFormNueva(true)}
+                >
+                  + Crear mi primer workspace
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="selector-config">
       <button
