@@ -21,10 +21,10 @@ export const usarConfiguracion = () => {
   // Lista de workspaces del usuario
   const [configuraciones, setConfiguraciones] = useState([]);
 
-  // ID del workspace actualmente seleccionado
+  // ID del workspace actualmente seleccionado (UUID string)
   const [configuracionSeleccionadaId, setConfiguracionSeleccionadaId] = useState(() => {
     const guardado = localStorage.getItem(CLAVES_STORAGE.CONFIGURACION_SELECCIONADA);
-    return guardado ? Number(guardado) : null;
+    return guardado || null;
   });
 
   // Estado de carga

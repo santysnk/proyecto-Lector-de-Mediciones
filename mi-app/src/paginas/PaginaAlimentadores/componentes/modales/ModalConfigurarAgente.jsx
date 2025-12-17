@@ -1,198 +1,206 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.jsx
-// Modal para configurar el agente y gestionar registradores
+// Modal para configurar agentes con pestañas dinámicas según rol
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  obtenerEstadoAgente,
-  solicitarVinculacionAgente,
-  desvincularAgente,
-  rotarClaveAgente,
-  obtenerRegistradores,
-  crearRegistrador,
-  actualizarRegistrador,
-  eliminarRegistrador,
-  toggleActivoRegistrador,
-  testConexionRegistrador,
+  // Nueva arquitectura
+  listarAgentesWorkspace,
+  listarAgentesDisponibles,
+  vincularAgenteWorkspace,
+  desvincularAgenteWorkspace,
+  listarTodosLosAgentes,
+  crearAgente,
+  eliminarAgente,
+  rotarClaveAgentePorId,
+  listarRegistradoresAgente,
 } from "../../../../servicios/apiService";
+import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import "./ModalConfigurarAgente.css";
 
 /**
- * Modal para configurar el agente y gestionar registradores.
+ * Modal para configurar agentes con pestañas según rol del usuario.
+ *
+ * Pestañas:
+ * - "Agentes Vinculados": Todos los roles con acceso al workspace
+ * - "Vincular Agente": Admin y Superadmin
+ * - "Panel Admin": Solo Superadmin
  */
-const ModalConfigurarAgente = ({
-  abierto,
-  workspaceId,
-  onCerrar,
-}) => {
-  // Estado del agente
-  const [cargando, setCargando] = useState(true);
+const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
+  const { rolGlobal, perfil } = usarContextoConfiguracion();
+
+  // Determinar permisos según rol
+  const esSuperadmin = rolGlobal === 'superadmin';
+  const esAdmin = rolGlobal === 'admin' || esSuperadmin;
+  const puedeVincular = esAdmin;
+
+  // Pestañas disponibles según rol
+  const pestanasDisponibles = [
+    { id: 'vinculados', label: 'Agentes Vinculados', visible: true },
+    { id: 'vincular', label: 'Vincular Agente', visible: puedeVincular },
+    { id: 'admin', label: 'Panel Admin', visible: esSuperadmin },
+  ].filter(p => p.visible);
+
+  // Estado
+  const [pestanaActiva, setPestanaActiva] = useState('vinculados');
+  const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
-  const [estado, setEstado] = useState(null);
-  const [codigoGenerado, setCodigoGenerado] = useState(null);
-  const [tiempoRestante, setTiempoRestante] = useState(0);
-  const [generandoCodigo, setGenerandoCodigo] = useState(false);
-  const [desvinculando, setDesvinculando] = useState(false);
-  const [rotandoClave, setRotandoClave] = useState(false);
-  const [nuevaClave, setNuevaClave] = useState(null);
-  const [mostrarOpcionesAgente, setMostrarOpcionesAgente] = useState(false);
 
-  // Estado de registradores
-  const [registradores, setRegistradores] = useState([]);
-  const [cargandoRegistradores, setCargandoRegistradores] = useState(false);
-  const [mostrarFormulario, setMostrarFormulario] = useState(false);
-  const [registradorEditando, setRegistradorEditando] = useState(null);
+  // Datos
+  const [agentesVinculados, setAgentesVinculados] = useState([]);
+  const [agentesDisponibles, setAgentesDisponibles] = useState([]);
+  const [todosAgentes, setTodosAgentes] = useState([]);
+  const [registradoresAgente, setRegistradoresAgente] = useState({});
 
-  // Estado del formulario
-  const [formulario, setFormulario] = useState({
-    nombre: "",
-    ubicacion: "",
-    tipo: "",
-    ip: "",
-    puerto: "",
-    indiceInicial: "",
-    cantidadRegistros: "",
-    intervaloSegundos: "60",
-  });
-  const [guardando, setGuardando] = useState(false);
-  const [errorFormulario, setErrorFormulario] = useState(null);
+  // Estado para crear agente
+  const [mostrarFormCrear, setMostrarFormCrear] = useState(false);
+  const [nuevoAgente, setNuevoAgente] = useState({ nombre: '', descripcion: '' });
+  const [creando, setCreando] = useState(false);
+  const [claveGenerada, setClaveGenerada] = useState(null);
 
-  // Estado de test de conexión
-  const [testeando, setTesteando] = useState(false);
-  const [resultadoTest, setResultadoTest] = useState(null);
+  // Estado para expandir registradores
+  const [agenteExpandido, setAgenteExpandido] = useState(null);
 
-  // Modal de éxito al crear registrador
-  const [modalExito, setModalExito] = useState(null);
+  // Cargar datos al abrir
+  useEffect(() => {
+    if (abierto && workspaceId) {
+      cargarDatos();
+    }
+  }, [abierto, workspaceId]);
 
-  // Cargar estado al abrir
-  const cargarEstado = useCallback(async () => {
-    if (!workspaceId) return;
+  // Resetear estado al cerrar
+  useEffect(() => {
+    if (!abierto) {
+      setPestanaActiva('vinculados');
+      setError(null);
+      setMostrarFormCrear(false);
+      setClaveGenerada(null);
+      setAgenteExpandido(null);
+    }
+  }, [abierto]);
+
+  const cargarDatos = async () => {
+    setCargando(true);
+    setError(null);
 
     try {
-      setCargando(true);
-      setError(null);
-      const data = await obtenerEstadoAgente(workspaceId);
-      setEstado(data);
+      // Cargar agentes vinculados al workspace
+      const vinculados = await listarAgentesWorkspace(workspaceId);
+      setAgentesVinculados(vinculados || []);
 
-      // Si hay código pendiente, mostrar
-      if (data.codigoPendiente) {
-        setCodigoGenerado(data.codigoPendiente.codigo);
-        const expiraEn = new Date(data.codigoPendiente.expiraAt).getTime();
-        const ahora = Date.now();
-        const segundosRestantes = Math.max(0, Math.floor((expiraEn - ahora) / 1000));
-        setTiempoRestante(segundosRestantes);
+      // Si puede vincular, cargar disponibles
+      if (puedeVincular) {
+        const disponibles = await listarAgentesDisponibles();
+        // Filtrar los que ya están vinculados
+        const idsVinculados = new Set((vinculados || []).map(a => a.id));
+        setAgentesDisponibles((disponibles || []).filter(a => !idsVinculados.has(a.id)));
+      }
+
+      // Si es superadmin, cargar todos
+      if (esSuperadmin) {
+        const todos = await listarTodosLosAgentes();
+        setTodosAgentes(todos || []);
       }
     } catch (err) {
-      console.error("Error cargando estado agente:", err);
+      console.error('Error cargando datos:', err);
+      setError(err.message || 'Error cargando datos');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Vincular agente al workspace
+  const handleVincular = async (agenteId) => {
+    try {
+      setCargando(true);
+      await vincularAgenteWorkspace(workspaceId, agenteId);
+      await cargarDatos();
+      setPestanaActiva('vinculados');
+    } catch (err) {
       setError(err.message);
     } finally {
       setCargando(false);
     }
-  }, [workspaceId]);
+  };
 
-  // Cargar registradores
-  const cargarRegistradores = useCallback(async () => {
-    if (!workspaceId || !estado?.vinculado) return;
+  // Desvincular agente del workspace
+  const handleDesvincular = async (agenteId) => {
+    if (!confirm('¿Desvincular este agente del workspace?')) return;
 
     try {
-      setCargandoRegistradores(true);
-      const data = await obtenerRegistradores(workspaceId);
-      setRegistradores(data.registradores || []);
+      setCargando(true);
+      await desvincularAgenteWorkspace(workspaceId, agenteId);
+      await cargarDatos();
     } catch (err) {
-      console.error("Error cargando registradores:", err);
-    } finally {
-      setCargandoRegistradores(false);
-    }
-  }, [workspaceId, estado?.vinculado]);
-
-  useEffect(() => {
-    if (abierto) {
-      cargarEstado();
-      setNuevaClave(null);
-      setMostrarOpcionesAgente(false);
-      setMostrarFormulario(false);
-      setRegistradorEditando(null);
-      setResultadoTest(null);
-    }
-  }, [abierto, cargarEstado]);
-
-  useEffect(() => {
-    if (estado?.vinculado) {
-      cargarRegistradores();
-    }
-  }, [estado?.vinculado, cargarRegistradores]);
-
-  // Timer para el código
-  useEffect(() => {
-    if (tiempoRestante <= 0) return;
-
-    const timer = setInterval(() => {
-      setTiempoRestante((prev) => {
-        if (prev <= 1) {
-          setCodigoGenerado(null);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [tiempoRestante]);
-
-  // Generar código de vinculación
-  const handleGenerarCodigo = async () => {
-    try {
-      setGenerandoCodigo(true);
-      setError(null);
-      const data = await solicitarVinculacionAgente(workspaceId);
-      setCodigoGenerado(data.codigo);
-
-      const expiraEn = new Date(data.expiraAt).getTime();
-      const ahora = Date.now();
-      setTiempoRestante(Math.floor((expiraEn - ahora) / 1000));
-    } catch (err) {
-      console.error("Error generando código:", err);
       setError(err.message);
     } finally {
-      setGenerandoCodigo(false);
+      setCargando(false);
     }
   };
 
-  // Desvincular agente
-  const handleDesvincular = async () => {
-    if (!confirm("¿Estás seguro de desvincular el agente? El workspace dejará de recibir datos.")) {
+  // Crear nuevo agente (superadmin)
+  const handleCrearAgente = async (e) => {
+    e.preventDefault();
+    if (!nuevoAgente.nombre.trim()) return;
+
+    try {
+      setCreando(true);
+      setError(null);
+      const resultado = await crearAgente(nuevoAgente.nombre, nuevoAgente.descripcion);
+      setClaveGenerada(resultado.claveSecreta);
+      setNuevoAgente({ nombre: '', descripcion: '' });
+      await cargarDatos();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreando(false);
+    }
+  };
+
+  // Eliminar agente (superadmin)
+  const handleEliminarAgente = async (agenteId, nombre) => {
+    if (!confirm(`¿Eliminar el agente "${nombre}"? Esta acción no se puede deshacer.`)) return;
+
+    try {
+      setCargando(true);
+      await eliminarAgente(agenteId);
+      await cargarDatos();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Rotar clave de agente (superadmin)
+  const handleRotarClave = async (agenteId) => {
+    if (!confirm('¿Rotar la clave del agente? Deberás actualizar el agente con la nueva clave.')) return;
+
+    try {
+      setCargando(true);
+      const resultado = await rotarClaveAgentePorId(agenteId);
+      setClaveGenerada(resultado.nuevaClave);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Cargar registradores de un agente
+  const toggleRegistradores = async (agenteId) => {
+    if (agenteExpandido === agenteId) {
+      setAgenteExpandido(null);
       return;
     }
 
     try {
-      setDesvinculando(true);
-      setError(null);
-      await desvincularAgente(workspaceId);
-      await cargarEstado();
-      setMostrarOpcionesAgente(false);
+      if (!registradoresAgente[agenteId]) {
+        const regs = await listarRegistradoresAgente(agenteId);
+        setRegistradoresAgente(prev => ({ ...prev, [agenteId]: regs }));
+      }
+      setAgenteExpandido(agenteId);
     } catch (err) {
-      console.error("Error desvinculando:", err);
-      setError(err.message);
-    } finally {
-      setDesvinculando(false);
-    }
-  };
-
-  // Rotar clave
-  const handleRotarClave = async () => {
-    if (!confirm("¿Estás seguro de rotar la clave? El agente deberá actualizarse con la nueva clave.")) {
-      return;
-    }
-
-    try {
-      setRotandoClave(true);
-      setError(null);
-      const data = await rotarClaveAgente(workspaceId);
-      setNuevaClave(data.nuevaClave);
-    } catch (err) {
-      console.error("Error rotando clave:", err);
-      setError(err.message);
-    } finally {
-      setRotandoClave(false);
+      console.error('Error cargando registradores:', err);
     }
   };
 
@@ -201,577 +209,317 @@ const ModalConfigurarAgente = ({
     navigator.clipboard.writeText(texto);
   };
 
-  // Abrir formulario para agregar
-  const handleAgregarRegistrador = () => {
-    setRegistradorEditando(null);
-    setFormulario({
-      nombre: "",
-      ubicacion: "",
-      tipo: "",
-      ip: "",
-      puerto: "",
-      indiceInicial: "",
-      cantidadRegistros: "",
-      intervaloSegundos: "60",
-    });
-    setResultadoTest(null);
-    setErrorFormulario(null);
-    setMostrarFormulario(true);
-  };
-
-  // Abrir formulario para editar
-  const handleEditarRegistrador = (reg) => {
-    setRegistradorEditando(reg);
-    setFormulario({
-      nombre: reg.nombre || "",
-      ubicacion: reg.ubicacion || "",
-      tipo: reg.tipo || "",
-      ip: reg.ip || "",
-      puerto: String(reg.puerto || 502),
-      indiceInicial: String(reg.indice_inicial || ""),
-      cantidadRegistros: String(reg.cantidad_registros || ""),
-      intervaloSegundos: String(reg.intervalo_segundos || 60),
-    });
-    setResultadoTest(null);
-    setErrorFormulario(null);
-    setMostrarFormulario(true);
-  };
-
-  // Cerrar formulario
-  const handleCerrarFormulario = () => {
-    setMostrarFormulario(false);
-    setRegistradorEditando(null);
-    setResultadoTest(null);
-    setErrorFormulario(null);
-  };
-
-  // Cambio en formulario
-  const handleCambioFormulario = (campo, valor) => {
-    setFormulario(prev => ({ ...prev, [campo]: valor }));
-    setErrorFormulario(null);
-  };
-
-  // Test de conexión
-  const handleTestConexion = async () => {
-    const { ip, puerto, indiceInicial, cantidadRegistros } = formulario;
-
-    if (!ip || !puerto || !indiceInicial || !cantidadRegistros) {
-      setErrorFormulario("Completa IP, puerto, índice y cantidad de registros para probar");
-      return;
-    }
-
-    try {
-      setTesteando(true);
-      setResultadoTest(null);
-      setErrorFormulario(null);
-
-      const resultado = await testConexionRegistrador(
-        ip,
-        parseInt(puerto),
-        parseInt(indiceInicial),
-        parseInt(cantidadRegistros)
-      );
-
-      setResultadoTest(resultado);
-    } catch (err) {
-      setResultadoTest({ exito: false, mensaje: err.message });
-    } finally {
-      setTesteando(false);
-    }
-  };
-
-  // Guardar registrador
-  const handleGuardarRegistrador = async () => {
-    const { nombre, ip, puerto, indiceInicial, cantidadRegistros, intervaloSegundos, ubicacion, tipo } = formulario;
-
-    if (!nombre || !ip || !puerto || !indiceInicial || !cantidadRegistros) {
-      setErrorFormulario("Nombre, IP, puerto, índice inicial y cantidad de registros son obligatorios");
-      return;
-    }
-
-    try {
-      setGuardando(true);
-      setErrorFormulario(null);
-
-      if (registradorEditando) {
-        // Actualizar
-        await actualizarRegistrador(registradorEditando.id, {
-          workspaceId,
-          nombre,
-          tipo,
-          ubicacion,
-          ip,
-          puerto: parseInt(puerto),
-          intervaloSegundos: parseInt(intervaloSegundos),
-        });
-      } else {
-        // Crear
-        const resultado = await crearRegistrador({
-          workspaceId,
-          nombre,
-          tipo,
-          ubicacion,
-          ip,
-          puerto: parseInt(puerto),
-          indiceInicial: parseInt(indiceInicial),
-          cantidadRegistros: parseInt(cantidadRegistros),
-          intervaloSegundos: parseInt(intervaloSegundos),
-        });
-
-        // Mostrar modal de éxito
-        if (resultado.tablaCreada) {
-          setModalExito({
-            titulo: "Registrador creado",
-            tabla: resultado.tablaCreada,
-            columnas: resultado.columnas,
-          });
-        }
-      }
-
-      await cargarRegistradores();
-      handleCerrarFormulario();
-    } catch (err) {
-      console.error("Error guardando registrador:", err);
-      setErrorFormulario(err.message);
-    } finally {
-      setGuardando(false);
-    }
-  };
-
-  // Eliminar registrador
-  const handleEliminarRegistrador = async (reg) => {
-    if (!confirm(`¿Eliminar el registrador "${reg.nombre}"? También se eliminará su tabla de lecturas.`)) {
-      return;
-    }
-
-    try {
-      await eliminarRegistrador(reg.id, workspaceId);
-      await cargarRegistradores();
-    } catch (err) {
-      console.error("Error eliminando registrador:", err);
-      alert(err.message);
-    }
-  };
-
-  // Toggle activo
-  const handleToggleActivo = async (reg) => {
-    try {
-      await toggleActivoRegistrador(reg.id, workspaceId, !reg.activo);
-      await cargarRegistradores();
-    } catch (err) {
-      console.error("Error cambiando estado:", err);
-      alert(err.message);
-    }
-  };
-
   if (!abierto) return null;
 
-  const formatearTiempo = (segundos) => {
-    const mins = Math.floor(segundos / 60);
-    const secs = segundos % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
+  // Renderizar indicador de estado de conexión
+  const renderEstadoConexion = (agente) => (
+    <span className={`config-agente-estado ${agente.conectado ? 'config-agente-estado--conectado' : 'config-agente-estado--desconectado'}`}>
+      <span className="config-agente-estado-punto"></span>
+      {agente.conectado ? 'Conectado' : 'Desconectado'}
+    </span>
+  );
 
-  // Cerrar modal de éxito
-  const handleCerrarModalExito = () => {
-    setModalExito(null);
+  // Renderizar lista de registradores
+  const renderRegistradores = (agenteId) => {
+    const regs = registradoresAgente[agenteId] || [];
+    if (regs.length === 0) {
+      return <div className="config-agente-regs-vacio">Sin registradores configurados</div>;
+    }
+    return (
+      <div className="config-agente-regs-lista">
+        {regs.map(reg => (
+          <div key={reg.id} className="config-agente-reg-item">
+            <span className={`config-agente-reg-estado ${reg.activo ? 'config-agente-reg-estado--activo' : ''}`}></span>
+            <span className="config-agente-reg-nombre">{reg.nombre}</span>
+            <span className="config-agente-reg-detalle">
+              {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
-    <div className="config-agente-fondo-oscuro">
-      {/* Modal de éxito al crear registrador */}
-      {modalExito && (
-        <div className="config-agente-modal-exito-overlay">
-          <div className="config-agente-modal-exito">
-            <div className="config-agente-modal-exito-icono">✓</div>
-            <h3>{modalExito.titulo}</h3>
-            <div className="config-agente-modal-exito-info">
-              <p><strong>Tabla de lecturas:</strong></p>
-              <code>{modalExito.tabla}</code>
-              <p><strong>Columnas (índices):</strong></p>
-              <div className="config-agente-modal-exito-columnas">
-                {modalExito.columnas.join(", ")}
-              </div>
-            </div>
-            <button
-              className="config-agente-modal-exito-btn"
-              onClick={handleCerrarModalExito}
-            >
-              Aceptar
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="config-agente-contenedor">
-        {/* Header con título y botón cerrar */}
+    <div className="config-agente-overlay" onClick={onCerrar}>
+      <div className="config-agente-modal" onClick={e => e.stopPropagation()}>
+        {/* Header */}
         <div className="config-agente-header">
-          <h2>{mostrarFormulario ? (registradorEditando ? "Editar Registrador" : "Nuevo Registrador") : "Configurar Agente"}</h2>
-          <button className="config-agente-cerrar-x" onClick={mostrarFormulario ? handleCerrarFormulario : onCerrar} title="Cerrar">
-            ×
-          </button>
+          <h2>Configuración de Agentes</h2>
+          <button className="config-agente-cerrar" onClick={onCerrar}>×</button>
         </div>
 
-        {cargando ? (
-          <div className="config-agente-cargando">
-            <span className="config-agente-spinner"></span>
-            Cargando...
-          </div>
-        ) : error ? (
-          <div className="config-agente-error">
-            {error}
-            <button onClick={cargarEstado} className="config-agente-reintentar">
-              Reintentar
+        {/* Pestañas */}
+        <div className="config-agente-tabs">
+          {pestanasDisponibles.map(p => (
+            <button
+              key={p.id}
+              className={`config-agente-tab ${pestanaActiva === p.id ? 'config-agente-tab--activa' : ''}`}
+              onClick={() => setPestanaActiva(p.id)}
+            >
+              {p.label}
             </button>
-          </div>
-        ) : mostrarFormulario ? (
-          /* ========== FORMULARIO DE REGISTRADOR ========== */
-          <div className="config-agente-formulario">
-            <div className="config-agente-form-grid">
-              <div className="config-agente-form-grupo">
-                <label>Nombre del registrador *</label>
-                <input
-                  type="text"
-                  value={formulario.nombre}
-                  onChange={(e) => handleCambioFormulario("nombre", e.target.value)}
-                  placeholder="Ej: TERNA 1"
-                  disabled={guardando}
-                />
-              </div>
+          ))}
+        </div>
 
-              <div className="config-agente-form-grupo">
-                <label>Ubicación</label>
-                <input
-                  type="text"
-                  value={formulario.ubicacion}
-                  onChange={(e) => handleCambioFormulario("ubicacion", e.target.value)}
-                  placeholder="Ej: Panel Terna 1 - Puesto"
-                  disabled={guardando}
-                />
+        {/* Contenido */}
+        <div className="config-agente-contenido">
+          {/* Alerta de clave generada */}
+          {claveGenerada && (
+            <div className="config-agente-alerta config-agente-alerta--exito">
+              <div className="config-agente-alerta-header">
+                <strong>Clave del Agente</strong>
+                <button onClick={() => setClaveGenerada(null)}>×</button>
               </div>
-
-              <div className="config-agente-form-grupo">
-                <label>Tipo</label>
-                <input
-                  type="text"
-                  value={formulario.tipo}
-                  onChange={(e) => handleCambioFormulario("tipo", e.target.value)}
-                  placeholder="Ej: Relé - Analizador"
-                  disabled={guardando}
-                />
-              </div>
-
-              <div className="config-agente-form-grupo">
-                <label>IP *</label>
-                <input
-                  type="text"
-                  value={formulario.ip}
-                  onChange={(e) => handleCambioFormulario("ip", e.target.value)}
-                  placeholder="Ej: 192.168.0.1"
-                  disabled={guardando}
-                />
-              </div>
-
-              <div className="config-agente-form-grupo config-agente-form-grupo--corto">
-                <label>Puerto *</label>
-                <input
-                  type="number"
-                  value={formulario.puerto}
-                  onChange={(e) => handleCambioFormulario("puerto", e.target.value)}
-                  placeholder="Ej: 502"
-                  disabled={guardando}
-                />
-              </div>
-
-              <div className="config-agente-form-grupo config-agente-form-grupo--corto">
-                <label>Índice de Registro *</label>
-                <input
-                  type="number"
-                  value={formulario.indiceInicial}
-                  onChange={(e) => handleCambioFormulario("indiceInicial", e.target.value)}
-                  placeholder="Ej: 137"
-                  disabled={guardando || registradorEditando}
-                />
-              </div>
-
-              <div className="config-agente-form-grupo config-agente-form-grupo--corto">
-                <label>Cant. de Registros *</label>
-                <input
-                  type="number"
-                  value={formulario.cantidadRegistros}
-                  onChange={(e) => handleCambioFormulario("cantidadRegistros", e.target.value)}
-                  placeholder="Ej: 10"
-                  disabled={guardando || registradorEditando}
-                />
-              </div>
-
-              <div className="config-agente-form-grupo config-agente-form-grupo--corto">
-                <label>Intervalo (seg)</label>
-                <input
-                  type="number"
-                  value={formulario.intervaloSegundos}
-                  onChange={(e) => handleCambioFormulario("intervaloSegundos", e.target.value)}
-                  placeholder="60"
-                  disabled={guardando}
-                />
+              <p>Guarda esta clave, no se mostrará de nuevo:</p>
+              <div className="config-agente-clave-box">
+                <code>{claveGenerada}</code>
+                <button onClick={() => copiarAlPortapapeles(claveGenerada)}>Copiar</button>
               </div>
             </div>
+          )}
 
-            {registradorEditando && (
-              <p className="config-agente-form-nota">
-                * El índice inicial y cantidad de registros no se pueden modificar ya que están vinculados a la tabla de lecturas.
-              </p>
-            )}
-
-            {errorFormulario && (
-              <div className="config-agente-form-error">{errorFormulario}</div>
-            )}
-
-            {/* Botones de acción */}
-            <div className="config-agente-form-acciones">
-              <button
-                className="config-agente-btn config-agente-btn--secundario"
-                onClick={handleTestConexion}
-                disabled={testeando || guardando}
-              >
-                {testeando ? "Probando..." : "Test Conexión"}
-              </button>
-
-              <button
-                className="config-agente-btn config-agente-btn--primario"
-                onClick={handleGuardarRegistrador}
-                disabled={guardando || testeando}
-              >
-                {guardando ? "Guardando..." : (registradorEditando ? "Guardar Cambios" : "Crear Registrador")}
-              </button>
+          {/* Error */}
+          {error && (
+            <div className="config-agente-alerta config-agente-alerta--error">
+              {error}
+              <button onClick={() => setError(null)}>×</button>
             </div>
+          )}
 
-            {/* Resultado del test */}
-            {resultadoTest && (
-              <div className={`config-agente-test-resultado ${resultadoTest.exito ? "config-agente-test-resultado--exito" : "config-agente-test-resultado--error"}`}>
-                <div className="config-agente-test-header">
-                  <span className={`config-agente-test-icono ${resultadoTest.exito ? "config-agente-test-icono--exito" : "config-agente-test-icono--error"}`}>
-                    {resultadoTest.exito ? "✓" : "✗"}
-                  </span>
-                  <span>{resultadoTest.mensaje}</span>
-                </div>
-
-                {resultadoTest.exito && resultadoTest.registros && resultadoTest.registros.length > 0 && (
-                  <div className="config-agente-test-tabla-container">
-                    <table className="config-agente-test-tabla">
-                      <thead>
-                        <tr>
-                          <th>Índice</th>
-                          <th>Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {resultadoTest.registros.map((reg) => (
-                          <tr key={reg.indice}>
-                            <td>{reg.indice}</td>
-                            <td>{reg.valor}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          /* ========== VISTA PRINCIPAL ========== */
-          <>
-            {/* Barra de estado del agente - dos líneas */}
-            <div className={`config-agente-barra ${estado?.conectado ? 'config-agente-barra--conectado' : estado?.vinculado ? 'config-agente-barra--desconectado' : 'config-agente-barra--sin-vincular'}`}>
-              <div className="config-agente-barra-info">
-                {/* Línea 1: Agente Vinculado */}
-                <div className="config-agente-barra-linea">
-                  <span className="config-agente-barra-label">Agente Vinculado:</span>
-                  {estado?.vinculado ? (
-                    <span className="config-agente-barra-valor">
-                      {estado.agente?.nombre} <span className="config-agente-icono-vinculado">🔗</span>
-                    </span>
-                  ) : (
-                    <span className="config-agente-barra-valor config-agente-barra-valor--ninguno">
-                      Ninguno <span className="config-agente-icono-desvinculado">⛓️‍💥</span>
-                    </span>
-                  )}
-                </div>
-
-                {/* Línea 2: Estado del Agente */}
-                <div className="config-agente-barra-linea">
-                  <span className="config-agente-barra-label">Estado del Agente:</span>
-                  {estado?.vinculado ? (
-                    <span className={`config-agente-barra-valor ${estado?.conectado ? 'config-agente-barra-valor--conectado' : 'config-agente-barra-valor--desconectado'}`}>
-                      {estado?.conectado ? 'Conectado' : 'Desconectado'}
-                      <span className={`config-agente-indicador-estado ${estado?.conectado ? 'config-agente-indicador-estado--conectado' : 'config-agente-indicador-estado--desconectado'}`}>●</span>
-                    </span>
-                  ) : (
-                    <span className="config-agente-barra-valor config-agente-barra-valor--ninguno">--</span>
-                  )}
-                </div>
-              </div>
-
-              {estado?.vinculado ? (
-                <button
-                  className="config-agente-barra-boton"
-                  onClick={() => setMostrarOpcionesAgente(!mostrarOpcionesAgente)}
-                >
-                  {mostrarOpcionesAgente ? 'Ocultar' : 'Opciones'}
-                </button>
-              ) : (
-                <button
-                  className="config-agente-barra-boton config-agente-barra-boton--vincular"
-                  onClick={handleGenerarCodigo}
-                  disabled={generandoCodigo}
-                >
-                  {generandoCodigo ? 'Generando...' : 'Vincular'}
-                </button>
-              )}
+          {/* Cargando */}
+          {cargando && (
+            <div className="config-agente-cargando">
+              <span className="config-agente-spinner"></span>
+              Cargando...
             </div>
+          )}
 
-            {/* Panel de opciones del agente (expandible) */}
-            {estado?.vinculado && mostrarOpcionesAgente && (
-              <div className="config-agente-opciones">
-                {nuevaClave && (
-                  <div className="config-agente-nueva-clave">
-                    <p>Nueva clave generada (guardar ahora):</p>
-                    <div className="config-agente-codigo-box">
-                      <code>{nuevaClave}</code>
-                      <button
-                        onClick={() => copiarAlPortapapeles(nuevaClave)}
-                        className="config-agente-copiar"
-                      >
-                        Copiar
-                      </button>
-                    </div>
-                    <p className="config-agente-nota">La clave anterior funciona 24h más.</p>
-                  </div>
-                )}
-                <div className="config-agente-acciones-vinculado">
-                  <button
-                    onClick={handleRotarClave}
-                    disabled={rotandoClave}
-                    className="config-agente-boton config-agente-rotar"
-                  >
-                    {rotandoClave ? "Rotando..." : "Rotar clave"}
-                  </button>
-                  <button
-                    onClick={handleDesvincular}
-                    disabled={desvinculando}
-                    className="config-agente-boton config-agente-desvincular"
-                  >
-                    {desvinculando ? "Desvinculando..." : "Desvincular"}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Panel de vinculación (cuando no hay agente) */}
-            {!estado?.vinculado && codigoGenerado && (
-              <div className="config-agente-vinculacion-panel">
-                <p className="config-agente-instrucciones">
-                  Ingresa este código en la consola del agente:
-                </p>
-                <div className="config-agente-codigo-container">
-                  <div className="config-agente-codigo-box config-agente-codigo-grande">
-                    <code>{codigoGenerado}</code>
-                    <button
-                      onClick={() => copiarAlPortapapeles(codigoGenerado)}
-                      className="config-agente-copiar"
-                    >
-                      Copiar
-                    </button>
-                  </div>
-                  <div className="config-agente-expira">
-                    Expira en {formatearTiempo(tiempoRestante)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Sección principal: Registradores */}
+          {/* ========== PESTAÑA: AGENTES VINCULADOS ========== */}
+          {pestanaActiva === 'vinculados' && !cargando && (
             <div className="config-agente-seccion">
-              <div className="config-agente-seccion-header">
-                <h3>Registradores</h3>
-                <button
-                  className="config-agente-agregar-btn"
-                  onClick={handleAgregarRegistrador}
-                  disabled={!estado?.vinculado}
-                  title={!estado?.vinculado ? "Vincula un agente primero" : "Agregar registrador"}
-                >
-                  + Agregar
-                </button>
-              </div>
-
-              <div className="config-agente-registradores-lista">
-                {!estado?.vinculado ? (
-                  <div className="config-agente-registradores-vacio">
-                    <span className="config-agente-registradores-icono">📡</span>
-                    <p>Vincula un agente para gestionar registradores</p>
-                  </div>
-                ) : cargandoRegistradores ? (
-                  <div className="config-agente-registradores-vacio">
-                    <span className="config-agente-spinner"></span>
-                    <p>Cargando registradores...</p>
-                  </div>
-                ) : registradores.length === 0 ? (
-                  <div className="config-agente-registradores-vacio">
-                    <span className="config-agente-registradores-icono">📡</span>
-                    <p>No hay registradores configurados</p>
-                    <span className="config-agente-registradores-hint">
-                      Los registradores son dispositivos Modbus que leen datos de los alimentadores
-                    </span>
-                  </div>
-                ) : (
-                  <div className="config-agente-registradores-items">
-                    {registradores.map((reg) => (
-                      <div key={reg.id} className="config-agente-registrador-item">
-                        <div className="config-agente-registrador-info">
-                          <div className="config-agente-registrador-nombre">
-                            <span className={`config-agente-registrador-estado ${reg.activo ? 'config-agente-registrador-estado--activo' : ''}`}></span>
-                            <strong>{reg.nombre}</strong>
-                            {reg.tipo && <span className="config-agente-registrador-tipo">{reg.tipo}</span>}
-                          </div>
-                          <div className="config-agente-registrador-detalle">
-                            {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1} | {reg.intervalo_segundos}s
-                          </div>
-                          {reg.ubicacion && (
-                            <div className="config-agente-registrador-ubicacion">{reg.ubicacion}</div>
+              {agentesVinculados.length === 0 ? (
+                <div className="config-agente-vacio">
+                  <span className="config-agente-vacio-icono">📡</span>
+                  <p>No hay agentes vinculados a este workspace</p>
+                  {puedeVincular && (
+                    <button
+                      className="config-agente-btn config-agente-btn--primario"
+                      onClick={() => setPestanaActiva('vincular')}
+                    >
+                      Vincular un Agente
+                    </button>
+                  )}
+                  {!puedeVincular && (
+                    <p className="config-agente-hint">Contacta a un administrador para vincular agentes.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="config-agente-lista">
+                  {agentesVinculados.map(agente => (
+                    <div key={agente.id} className="config-agente-card">
+                      <div className="config-agente-card-header">
+                        <div className="config-agente-card-info">
+                          <h3>{agente.nombre}</h3>
+                          {renderEstadoConexion(agente)}
+                        </div>
+                        <div className="config-agente-card-acciones">
+                          <button
+                            className="config-agente-btn-icon"
+                            onClick={() => toggleRegistradores(agente.id)}
+                            title="Ver registradores"
+                          >
+                            {agenteExpandido === agente.id ? '▼' : '▶'}
+                          </button>
+                          {puedeVincular && (
+                            <button
+                              className="config-agente-btn-icon config-agente-btn-icon--danger"
+                              onClick={() => handleDesvincular(agente.id)}
+                              title="Desvincular"
+                            >
+                              ✕
+                            </button>
                           )}
                         </div>
-                        <div className="config-agente-registrador-acciones">
-                          <button
-                            className={`config-agente-registrador-btn ${reg.activo ? 'config-agente-registrador-btn--detener' : 'config-agente-registrador-btn--iniciar'}`}
-                            onClick={() => handleToggleActivo(reg)}
-                            title={reg.activo ? "Detener medición" : "Iniciar medición"}
-                          >
-                            {reg.activo ? "⏹" : "▶"}
-                          </button>
-                          <button
-                            className="config-agente-registrador-btn config-agente-registrador-btn--editar"
-                            onClick={() => handleEditarRegistrador(reg)}
-                            title="Editar"
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="config-agente-registrador-btn config-agente-registrador-btn--eliminar"
-                            onClick={() => handleEliminarRegistrador(reg)}
-                            title="Eliminar"
-                          >
-                            🗑
-                          </button>
+                      </div>
+                      {agente.descripcion && (
+                        <p className="config-agente-card-desc">{agente.descripcion}</p>
+                      )}
+                      {agenteExpandido === agente.id && (
+                        <div className="config-agente-card-regs">
+                          <h4>Registradores</h4>
+                          {renderRegistradores(agente.id)}
                         </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========== PESTAÑA: VINCULAR AGENTE ========== */}
+          {pestanaActiva === 'vincular' && !cargando && (
+            <div className="config-agente-seccion">
+              <p className="config-agente-instruccion">
+                Selecciona un agente disponible para vincularlo a este workspace.
+              </p>
+              {agentesDisponibles.length === 0 ? (
+                <div className="config-agente-vacio">
+                  <span className="config-agente-vacio-icono">🔍</span>
+                  <p>No hay agentes disponibles para vincular</p>
+                  {esSuperadmin && (
+                    <button
+                      className="config-agente-btn config-agente-btn--primario"
+                      onClick={() => setPestanaActiva('admin')}
+                    >
+                      Crear nuevo Agente
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="config-agente-lista">
+                  {agentesDisponibles.map(agente => (
+                    <div key={agente.id} className="config-agente-card config-agente-card--disponible">
+                      <div className="config-agente-card-header">
+                        <div className="config-agente-card-info">
+                          <h3>{agente.nombre}</h3>
+                          {renderEstadoConexion(agente)}
+                        </div>
+                        <button
+                          className="config-agente-btn config-agente-btn--vincular"
+                          onClick={() => handleVincular(agente.id)}
+                        >
+                          Vincular
+                        </button>
+                      </div>
+                      {agente.descripcion && (
+                        <p className="config-agente-card-desc">{agente.descripcion}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========== PESTAÑA: PANEL ADMIN ========== */}
+          {pestanaActiva === 'admin' && !cargando && (
+            <div className="config-agente-seccion">
+              {/* Formulario crear agente */}
+              {!mostrarFormCrear ? (
+                <button
+                  className="config-agente-btn config-agente-btn--crear"
+                  onClick={() => setMostrarFormCrear(true)}
+                >
+                  + Crear Nuevo Agente
+                </button>
+              ) : (
+                <form className="config-agente-form" onSubmit={handleCrearAgente}>
+                  <h4>Nuevo Agente</h4>
+                  <div className="config-agente-form-grupo">
+                    <label>Nombre *</label>
+                    <input
+                      type="text"
+                      value={nuevoAgente.nombre}
+                      onChange={e => setNuevoAgente(prev => ({ ...prev, nombre: e.target.value }))}
+                      placeholder="Ej: Agente Subestación Norte"
+                      disabled={creando}
+                    />
+                  </div>
+                  <div className="config-agente-form-grupo">
+                    <label>Descripción</label>
+                    <input
+                      type="text"
+                      value={nuevoAgente.descripcion}
+                      onChange={e => setNuevoAgente(prev => ({ ...prev, descripcion: e.target.value }))}
+                      placeholder="Descripción opcional"
+                      disabled={creando}
+                    />
+                  </div>
+                  <div className="config-agente-form-acciones">
+                    <button
+                      type="button"
+                      className="config-agente-btn config-agente-btn--secundario"
+                      onClick={() => setMostrarFormCrear(false)}
+                      disabled={creando}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="config-agente-btn config-agente-btn--primario"
+                      disabled={creando || !nuevoAgente.nombre.trim()}
+                    >
+                      {creando ? 'Creando...' : 'Crear Agente'}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Lista de todos los agentes */}
+              <div className="config-agente-admin-lista">
+                <h4>Todos los Agentes del Sistema</h4>
+                {todosAgentes.length === 0 ? (
+                  <div className="config-agente-vacio">
+                    <p>No hay agentes en el sistema</p>
+                  </div>
+                ) : (
+                  <div className="config-agente-lista">
+                    {todosAgentes.map(agente => (
+                      <div key={agente.id} className="config-agente-card config-agente-card--admin">
+                        <div className="config-agente-card-header">
+                          <div className="config-agente-card-info">
+                            <h3>{agente.nombre}</h3>
+                            {renderEstadoConexion(agente)}
+                            {!agente.activo && (
+                              <span className="config-agente-badge config-agente-badge--inactivo">Inactivo</span>
+                            )}
+                          </div>
+                          <div className="config-agente-card-acciones">
+                            <button
+                              className="config-agente-btn-icon"
+                              onClick={() => toggleRegistradores(agente.id)}
+                              title="Ver registradores"
+                            >
+                              {agenteExpandido === agente.id ? '▼' : '▶'}
+                            </button>
+                            <button
+                              className="config-agente-btn-icon"
+                              onClick={() => handleRotarClave(agente.id)}
+                              title="Rotar clave"
+                            >
+                              🔑
+                            </button>
+                            <button
+                              className="config-agente-btn-icon config-agente-btn-icon--danger"
+                              onClick={() => handleEliminarAgente(agente.id, agente.nombre)}
+                              title="Eliminar"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                        {agente.descripcion && (
+                          <p className="config-agente-card-desc">{agente.descripcion}</p>
+                        )}
+                        {agente.version_software && (
+                          <p className="config-agente-card-version">v{agente.version_software}</p>
+                        )}
+                        {agenteExpandido === agente.id && (
+                          <div className="config-agente-card-regs">
+                            <h4>Registradores</h4>
+                            {renderRegistradores(agente.id)}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 )}
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
