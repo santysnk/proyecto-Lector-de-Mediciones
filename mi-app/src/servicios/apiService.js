@@ -434,6 +434,29 @@ export async function toggleRegistradorAgente(agenteId, registradorId) {
   });
 }
 
+/**
+ * Solicita un test de conexión para un registrador (ejecutado por el agente)
+ * @param {string} agenteId - ID del agente que ejecutará el test
+ * @param {object} datos - Datos del test: ip, puerto, unitId, indiceInicial, cantidadRegistros
+ * @returns {Promise<{testId: string, mensaje: string, timeoutSegundos: number}>}
+ */
+export async function solicitarTestRegistrador(agenteId, datos) {
+  return fetchConAuth(`/api/agentes/${agenteId}/test-registrador`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Consulta el estado/resultado de un test de registrador
+ * @param {string} agenteId - ID del agente
+ * @param {string} testId - ID del test
+ * @returns {Promise<{estado: string, valores?: number[], error_mensaje?: string, tiempo_respuesta_ms?: number}>}
+ */
+export async function consultarTestRegistrador(agenteId, testId) {
+  return fetchConAuth(`/api/agentes/${agenteId}/test-registrador/${testId}`);
+}
+
 // ============================================
 // TEST DE CONEXIÓN MODBUS
 // ============================================
@@ -561,6 +584,8 @@ export default {
   actualizarRegistradorAgente,
   eliminarRegistradorAgente,
   toggleRegistradorAgente,
+  solicitarTestRegistrador,
+  consultarTestRegistrador,
   // Test conexión Modbus
   testConexionModbus,
   // Registradores

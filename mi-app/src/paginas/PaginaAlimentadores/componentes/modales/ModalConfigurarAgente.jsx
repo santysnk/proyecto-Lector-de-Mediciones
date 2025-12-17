@@ -17,6 +17,8 @@ import {
   actualizarRegistradorAgente,
   eliminarRegistradorAgente,
   toggleRegistradorAgente,
+  solicitarTestRegistrador,
+  consultarTestRegistrador,
 } from "../../../../servicios/apiService";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import "./ModalConfigurarAgente.css";
@@ -78,6 +80,11 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
     intervaloSegundos: '',
   });
   const [guardandoRegistrador, setGuardandoRegistrador] = useState(false);
+  const [registradorProcesando, setRegistradorProcesando] = useState(null); // ID del registrador que está procesando
+
+  // Estado para test de registrador
+  const [testEnCurso, setTestEnCurso] = useState(null); // { agenteId, registradorId, testId, estado, progreso }
+  const [resultadoTest, setResultadoTest] = useState(null); // Resultado del test para mostrar en modal
 
   // Cargar datos al abrir
   useEffect(() => {
@@ -97,6 +104,8 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
       setMostrarFormRegistrador(null);
       setRegistradorEditando(null);
       resetFormRegistrador();
+      setTestEnCurso(null);
+      setResultadoTest(null);
     }
   }, [abierto]);
 
@@ -320,10 +329,160 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   // Toggle activo registrador
   const handleToggleRegistrador = async (agenteId, registradorId) => {
     try {
+      setRegistradorProcesando(registradorId);
       await toggleRegistradorAgente(agenteId, registradorId);
       await recargarRegistradores(agenteId);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setRegistradorProcesando(null);
+    }
+  };
+
+  // Iniciar o parar todos los registradores de un agente
+  const handleToggleTodosRegistradores = async (agenteId, iniciar) => {
+    const regs = registradoresAgente[agenteId] || [];
+    const registrosAToggle = regs.filter(r => iniciar ? !r.activo : r.activo);
+
+    if (registrosAToggle.length === 0) return;
+
+    try {
+      setRegistradorProcesando('todos');
+      // Toggle cada registrador que necesite cambiar
+      for (const reg of registrosAToggle) {
+        await toggleRegistradorAgente(agenteId, reg.id);
+      }
+      await recargarRegistradores(agenteId);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRegistradorProcesando(null);
+    }
+  };
+
+  // Test de conexión de registrador (usa datos del formulario)
+  const handleTestRegistrador = async (agenteId) => {
+    // Verificar si ya hay un test en curso
+    if (testEnCurso) {
+      return;
+    }
+
+    // Validar que los campos requeridos estén completos
+    if (!nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) {
+      setError('Completa IP, Puerto, Índice Inicial y Cantidad de Registros para hacer el test');
+      return;
+    }
+
+// Crear objeto con datos del formulario (fuera del try para usar en catch)
+    const datosTest = {
+      nombre: nuevoRegistrador.nombre || 'Test',
+      ip: nuevoRegistrador.ip,
+      puerto: parseInt(nuevoRegistrador.puerto),
+      unit_id: parseInt(nuevoRegistrador.unitId) || 1,
+      indice_inicial: parseInt(nuevoRegistrador.indiceInicial),
+      cantidad_registros: parseInt(nuevoRegistrador.cantidadRegistros),
+    };
+
+    try {
+      setTestEnCurso({
+        agenteId,
+        registradorId: 'form',
+        testId: null,
+        estado: 'solicitando',
+        progreso: 0,
+      });
+      setResultadoTest(null);
+      setError(null);
+
+      // Solicitar el test
+      const respuesta = await solicitarTestRegistrador(agenteId, {
+        ip: datosTest.ip,
+        puerto: datosTest.puerto,
+        unitId: datosTest.unit_id,
+        indiceInicial: datosTest.indice_inicial,
+        cantidadRegistros: datosTest.cantidad_registros,
+      });
+
+      const { testId, timeoutSegundos } = respuesta;
+
+      setTestEnCurso(prev => ({
+        ...prev,
+        testId,
+        estado: 'esperando',
+        progreso: 0,
+      }));
+
+      // Polling del resultado
+      const tiempoInicio = Date.now();
+      const tiempoMaximo = (timeoutSegundos || 30) * 1000;
+      const intervalo = 1000; // Consultar cada segundo
+
+      const poll = async () => {
+        const tiempoTranscurrido = Date.now() - tiempoInicio;
+
+        if (tiempoTranscurrido > tiempoMaximo) {
+          setTestEnCurso(null);
+          setResultadoTest({
+            exito: false,
+            estado: 'timeout',
+            error_mensaje: 'El agente no respondió a tiempo',
+            registrador: datosTest,
+          });
+          return;
+        }
+
+        try {
+          const resultado = await consultarTestRegistrador(agenteId, testId);
+
+          // Actualizar progreso
+          const progreso = Math.min((tiempoTranscurrido / tiempoMaximo) * 100, 95);
+          setTestEnCurso(prev => prev ? { ...prev, progreso } : null);
+
+          if (resultado.estado === 'completado' || resultado.estado === 'error' || resultado.estado === 'timeout') {
+            // Primero llevar la barra a 100%
+            setTestEnCurso(prev => prev ? { ...prev, progreso: 100 } : null);
+
+            // Esperar un momento para que se vea la barra llena antes de mostrar el resultado
+            setTimeout(() => {
+              setTestEnCurso(null);
+              setResultadoTest({
+                ...resultado,
+                exito: resultado.estado === 'completado',
+                registrador: datosTest,
+              });
+            }, 400);
+          } else {
+            // Seguir esperando
+            setTimeout(poll, intervalo);
+          }
+        } catch (err) {
+          setTestEnCurso(null);
+          setResultadoTest({
+            exito: false,
+            estado: 'error',
+            error_mensaje: err.message,
+            registrador: datosTest,
+          });
+        }
+      };
+
+      // Iniciar polling
+      setTimeout(poll, intervalo);
+
+    } catch (err) {
+      setTestEnCurso(null);
+
+      // Manejar error de cooldown
+      if (err.message?.includes('esperar')) {
+        setResultadoTest({
+          exito: false,
+          estado: 'cooldown',
+          error_mensaje: err.message,
+          registrador: datosTest,
+        });
+      } else {
+        setError(err.message);
+      }
     }
   };
 
@@ -345,20 +504,52 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   // Renderizar lista de registradores (con acciones opcionales para superadmin)
   const renderRegistradores = (agenteId, conAcciones = false) => {
     const regs = registradoresAgente[agenteId] || [];
+    const hayActivos = regs.some(r => r.activo);
+    const hayInactivos = regs.some(r => !r.activo);
 
     return (
       <div className="config-agente-regs-contenedor">
-        {/* Botón agregar (solo en panel superadmin) */}
+        {/* Botones de acción (solo en panel superadmin) */}
         {conAcciones && (
-          <button
-            className="config-agente-btn config-agente-btn--agregar-reg"
-            onClick={() => {
-              resetFormRegistrador();
-              setMostrarFormRegistrador(agenteId);
-            }}
-          >
-            + Agregar Registrador
-          </button>
+          <div className="config-agente-regs-toolbar">
+            <button
+              className="config-agente-btn config-agente-btn--agregar-reg"
+              onClick={() => {
+                resetFormRegistrador();
+                setMostrarFormRegistrador(agenteId);
+              }}
+            >
+              + Agregar Registrador
+            </button>
+            {regs.length > 0 && (
+              <div className="config-agente-regs-toolbar-acciones">
+                {hayInactivos && (
+                  <button
+                    className="config-agente-btn config-agente-btn--iniciar-todos"
+                    onClick={() => handleToggleTodosRegistradores(agenteId, true)}
+                    disabled={registradorProcesando === 'todos'}
+                    title="Iniciar todos los registradores pausados"
+                  >
+                    {registradorProcesando === 'todos' ? (
+                      <span className="config-agente-spinner-mini"></span>
+                    ) : '▶'} Iniciar todos
+                  </button>
+                )}
+                {hayActivos && (
+                  <button
+                    className="config-agente-btn config-agente-btn--parar-todos"
+                    onClick={() => handleToggleTodosRegistradores(agenteId, false)}
+                    disabled={registradorProcesando === 'todos'}
+                    title="Pausar todos los registradores activos"
+                  >
+                    {registradorProcesando === 'todos' ? (
+                      <span className="config-agente-spinner-mini"></span>
+                    ) : '⏸'} Pausar todos
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Formulario crear/editar registrador */}
@@ -441,22 +632,33 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
             <div className="config-agente-form-acciones">
               <button
                 type="button"
-                className="config-agente-btn config-agente-btn--secundario"
-                onClick={() => {
-                  setMostrarFormRegistrador(null);
-                  resetFormRegistrador();
-                }}
-                disabled={guardandoRegistrador}
+                className="config-agente-btn config-agente-btn--test"
+                onClick={() => handleTestRegistrador(agenteId)}
+                disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
+                title="Probar conexión antes de guardar"
               >
-                Cancelar
+                {testEnCurso ? 'Probando...' : 'Test'}
               </button>
-              <button
-                type="submit"
-                className="config-agente-btn config-agente-btn--primario"
-                disabled={guardandoRegistrador || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
-              >
-                {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
-              </button>
+              <div className="config-agente-form-acciones-derecha">
+                <button
+                  type="button"
+                  className="config-agente-btn config-agente-btn--secundario"
+                  onClick={() => {
+                    setMostrarFormRegistrador(null);
+                    resetFormRegistrador();
+                  }}
+                  disabled={guardandoRegistrador || testEnCurso}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="config-agente-btn config-agente-btn--primario"
+                  disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
+                >
+                  {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
+                </button>
+              </div>
             </div>
           </form>
         )}
@@ -484,13 +686,19 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                       className={`config-agente-btn-icon ${reg.activo ? 'config-agente-btn-icon--success' : ''}`}
                       onClick={() => handleToggleRegistrador(agenteId, reg.id)}
                       title={reg.activo ? 'Desactivar' : 'Activar'}
+                      disabled={registradorProcesando === reg.id}
                     >
-                      {reg.activo ? '⏸' : '▶'}
+                      {registradorProcesando === reg.id ? (
+                        <span className="config-agente-spinner-mini"></span>
+                      ) : (
+                        reg.activo ? '⏸' : '▶'
+                      )}
                     </button>
                     <button
                       className="config-agente-btn-icon"
                       onClick={() => handleEditarRegistrador({ ...reg, agente_id: agenteId })}
                       title="Editar"
+                      disabled={registradorProcesando === reg.id}
                     >
                       ✏️
                     </button>
@@ -498,6 +706,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                       className="config-agente-btn-icon config-agente-btn-icon--danger"
                       onClick={() => handleEliminarRegistrador(agenteId, reg.id, reg.nombre)}
                       title="Eliminar"
+                      disabled={registradorProcesando === reg.id}
                     >
                       🗑
                     </button>
@@ -774,9 +983,6 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                         {agente.descripcion && (
                           <p className="config-agente-card-desc">{agente.descripcion}</p>
                         )}
-                        {agente.version_software && (
-                          <p className="config-agente-card-version">v{agente.version_software}</p>
-                        )}
                         {agenteExpandido === agente.id && (
                           <div className="config-agente-card-regs">
                             <h4>Registradores</h4>
@@ -791,6 +997,90 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
             </div>
           )}
         </div>
+
+        {/* Modal de resultado del test */}
+        {resultadoTest && (
+          <div className="config-agente-test-overlay" onClick={() => setResultadoTest(null)}>
+            <div className="config-agente-test-modal" onClick={e => e.stopPropagation()}>
+              <div className="config-agente-test-header">
+                <h3>Resultado del Test</h3>
+                <button className="config-agente-cerrar" onClick={() => setResultadoTest(null)}>×</button>
+              </div>
+              <div className="config-agente-test-contenido">
+                <div className="config-agente-test-info">
+                  <strong>{resultadoTest.registrador?.nombre}</strong>
+                  <span className="config-agente-test-detalle">
+                    {resultadoTest.registrador?.ip}:{resultadoTest.registrador?.puerto}
+                  </span>
+                </div>
+
+                {resultadoTest.exito ? (
+                  <div className="config-agente-test-exito">
+                    <div className="config-agente-test-icono">✓</div>
+                    <h4>Conexión Exitosa</h4>
+                    <p className="config-agente-test-tiempo">
+                      Tiempo de respuesta: <strong>{resultadoTest.tiempo_respuesta_ms}ms</strong>
+                    </p>
+                    {resultadoTest.valores && resultadoTest.valores.length > 0 && (
+                      <div className="config-agente-test-valores">
+                        <h5>Valores leídos ({resultadoTest.valores.length} registros):</h5>
+                        <div className="config-agente-test-valores-grid">
+                          {resultadoTest.valores.map((valor, idx) => (
+                            <div key={idx} className="config-agente-test-valor">
+                              <span className="config-agente-test-valor-idx">
+                                [{resultadoTest.registrador?.indice_inicial + idx}]
+                              </span>
+                              <span className="config-agente-test-valor-num">{valor}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="config-agente-test-error">
+                    <div className="config-agente-test-icono config-agente-test-icono--error">✗</div>
+                    <h4>
+                      {resultadoTest.estado === 'timeout' && 'Tiempo Agotado'}
+                      {resultadoTest.estado === 'cooldown' && 'Espera Requerida'}
+                      {resultadoTest.estado === 'error' && 'Error de Conexión'}
+                    </h4>
+                    <p className="config-agente-test-mensaje">{resultadoTest.error_mensaje}</p>
+                    {resultadoTest.tiempo_respuesta_ms && (
+                      <p className="config-agente-test-tiempo">
+                        Tiempo transcurrido: {resultadoTest.tiempo_respuesta_ms}ms
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="config-agente-test-acciones">
+                <button
+                  className="config-agente-btn config-agente-btn--primario"
+                  onClick={() => setResultadoTest(null)}
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Indicador de test en progreso */}
+        {testEnCurso && (
+          <div className="config-agente-test-progreso">
+            <div className="config-agente-test-progreso-contenido">
+              <span className="config-agente-spinner"></span>
+              <span>Esperando respuesta del agente...</span>
+              <div className="config-agente-test-progreso-barra">
+                <div
+                  className="config-agente-test-progreso-fill"
+                  style={{ width: `${testEnCurso.progreso}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
