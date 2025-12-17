@@ -387,13 +387,51 @@ export async function desvincularAgenteWorkspace(workspaceId, agenteId) {
   });
 }
 
-// --- Registradores de un agente ---
+// --- Registradores de un agente (solo superadmin) ---
 
 /**
  * Lista registradores de un agente específico
  */
 export async function listarRegistradoresAgente(agenteId) {
   return fetchConAuth(`/api/agentes/${agenteId}/registradores`);
+}
+
+/**
+ * Crea un registrador para un agente (solo superadmin)
+ */
+export async function crearRegistradorAgente(agenteId, datos) {
+  return fetchConAuth(`/api/agentes/${agenteId}/registradores`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Actualiza un registrador de un agente (solo superadmin)
+ */
+export async function actualizarRegistradorAgente(agenteId, registradorId, datos) {
+  return fetchConAuth(`/api/agentes/${agenteId}/registradores/${registradorId}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
+  });
+}
+
+/**
+ * Elimina un registrador de un agente (solo superadmin)
+ */
+export async function eliminarRegistradorAgente(agenteId, registradorId) {
+  return fetchConAuth(`/api/agentes/${agenteId}/registradores/${registradorId}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * Toggle activo de un registrador (solo superadmin)
+ */
+export async function toggleRegistradorAgente(agenteId, registradorId) {
+  return fetchConAuth(`/api/agentes/${agenteId}/registradores/${registradorId}/toggle`, {
+    method: 'POST',
+  });
 }
 
 // ============================================
@@ -519,6 +557,10 @@ export default {
   vincularAgenteWorkspace,
   desvincularAgenteWorkspace,
   listarRegistradoresAgente,
+  crearRegistradorAgente,
+  actualizarRegistradorAgente,
+  eliminarRegistradorAgente,
+  toggleRegistradorAgente,
   // Test conexión Modbus
   testConexionModbus,
   // Registradores

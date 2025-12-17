@@ -13,6 +13,10 @@ import {
   eliminarAgente,
   rotarClaveAgentePorId,
   listarRegistradoresAgente,
+  crearRegistradorAgente,
+  actualizarRegistradorAgente,
+  eliminarRegistradorAgente,
+  toggleRegistradorAgente,
 } from "../../../../servicios/apiService";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import "./ModalConfigurarAgente.css";
@@ -23,7 +27,7 @@ import "./ModalConfigurarAgente.css";
  * Pestañas:
  * - "Agentes Vinculados": Todos los roles con acceso al workspace
  * - "Vincular Agente": Admin y Superadmin
- * - "Panel Admin": Solo Superadmin
+ * - "Panel SuperAdmin": Solo Superadmin (CRUD de agentes y registradores)
  */
 const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   const { rolGlobal, perfil } = usarContextoConfiguracion();
@@ -37,7 +41,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   const pestanasDisponibles = [
     { id: 'vinculados', label: 'Agentes Vinculados', visible: true },
     { id: 'vincular', label: 'Vincular Agente', visible: puedeVincular },
-    { id: 'admin', label: 'Panel Admin', visible: esSuperadmin },
+    { id: 'admin', label: 'Panel SuperAdmin', visible: esSuperadmin },
   ].filter(p => p.visible);
 
   // Estado
@@ -60,6 +64,21 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   // Estado para expandir registradores
   const [agenteExpandido, setAgenteExpandido] = useState(null);
 
+  // Estado para CRUD de registradores
+  const [mostrarFormRegistrador, setMostrarFormRegistrador] = useState(null); // null | agenteId
+  const [registradorEditando, setRegistradorEditando] = useState(null);
+  const [nuevoRegistrador, setNuevoRegistrador] = useState({
+    nombre: '',
+    tipo: 'modbus',
+    ip: '',
+    puerto: '',
+    unitId: '',
+    indiceInicial: '',
+    cantidadRegistros: '',
+    intervaloSegundos: '',
+  });
+  const [guardandoRegistrador, setGuardandoRegistrador] = useState(false);
+
   // Cargar datos al abrir
   useEffect(() => {
     if (abierto && workspaceId) {
@@ -75,8 +94,26 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
       setMostrarFormCrear(false);
       setClaveGenerada(null);
       setAgenteExpandido(null);
+      setMostrarFormRegistrador(null);
+      setRegistradorEditando(null);
+      resetFormRegistrador();
     }
   }, [abierto]);
+
+  // Reset form de registrador
+  const resetFormRegistrador = () => {
+    setNuevoRegistrador({
+      nombre: '',
+      tipo: 'modbus',
+      ip: '',
+      puerto: '',
+      unitId: '',
+      indiceInicial: '',
+      cantidadRegistros: '',
+      intervaloSegundos: '',
+    });
+    setRegistradorEditando(null);
+  };
 
   const cargarDatos = async () => {
     setCargando(true);
@@ -190,6 +227,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
   const toggleRegistradores = async (agenteId) => {
     if (agenteExpandido === agenteId) {
       setAgenteExpandido(null);
+      setMostrarFormRegistrador(null);
       return;
     }
 
@@ -201,6 +239,91 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
       setAgenteExpandido(agenteId);
     } catch (err) {
       console.error('Error cargando registradores:', err);
+    }
+  };
+
+  // Recargar registradores de un agente
+  const recargarRegistradores = async (agenteId) => {
+    try {
+      const regs = await listarRegistradoresAgente(agenteId);
+      setRegistradoresAgente(prev => ({ ...prev, [agenteId]: regs }));
+    } catch (err) {
+      console.error('Error recargando registradores:', err);
+    }
+  };
+
+  // Crear o editar registrador
+  const handleGuardarRegistrador = async (e, agenteId) => {
+    e.preventDefault();
+    if (!nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) return;
+
+    try {
+      setGuardandoRegistrador(true);
+      setError(null);
+
+      // Preparar datos con valores por defecto para campos opcionales
+      const datos = {
+        ...nuevoRegistrador,
+        unitId: nuevoRegistrador.unitId || '1',
+        intervaloSegundos: nuevoRegistrador.intervaloSegundos || '60',
+      };
+
+      if (registradorEditando) {
+        // Editar
+        await actualizarRegistradorAgente(agenteId, registradorEditando.id, datos);
+      } else {
+        // Crear
+        await crearRegistradorAgente(agenteId, datos);
+      }
+
+      await recargarRegistradores(agenteId);
+      setMostrarFormRegistrador(null);
+      resetFormRegistrador();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setGuardandoRegistrador(false);
+    }
+  };
+
+  // Editar registrador
+  const handleEditarRegistrador = (reg) => {
+    setRegistradorEditando(reg);
+    setNuevoRegistrador({
+      nombre: reg.nombre || '',
+      tipo: reg.tipo || 'modbus',
+      ip: reg.ip || '',
+      puerto: String(reg.puerto || '502'),
+      unitId: String(reg.unit_id || '1'),
+      indiceInicial: String(reg.indice_inicial || '0'),
+      cantidadRegistros: String(reg.cantidad_registros || '10'),
+      intervaloSegundos: String(reg.intervalo_segundos || '60'),
+    });
+    setMostrarFormRegistrador(reg.agente_id);
+  };
+
+  // Eliminar registrador
+  const handleEliminarRegistrador = async (agenteId, registradorId, nombre) => {
+    if (!confirm(`¿Eliminar el registrador "${nombre}"?`)) return;
+
+    try {
+      setCargando(true);
+      await eliminarRegistradorAgente(agenteId, registradorId);
+      await recargarRegistradores(agenteId);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Toggle activo registrador
+  const handleToggleRegistrador = async (agenteId, registradorId) => {
+    try {
+      await toggleRegistradorAgente(agenteId, registradorId);
+      await recargarRegistradores(agenteId);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -219,23 +342,171 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
     </span>
   );
 
-  // Renderizar lista de registradores
-  const renderRegistradores = (agenteId) => {
+  // Renderizar lista de registradores (con acciones opcionales para superadmin)
+  const renderRegistradores = (agenteId, conAcciones = false) => {
     const regs = registradoresAgente[agenteId] || [];
-    if (regs.length === 0) {
-      return <div className="config-agente-regs-vacio">Sin registradores configurados</div>;
-    }
+
     return (
-      <div className="config-agente-regs-lista">
-        {regs.map(reg => (
-          <div key={reg.id} className="config-agente-reg-item">
-            <span className={`config-agente-reg-estado ${reg.activo ? 'config-agente-reg-estado--activo' : ''}`}></span>
-            <span className="config-agente-reg-nombre">{reg.nombre}</span>
-            <span className="config-agente-reg-detalle">
-              {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1}
-            </span>
+      <div className="config-agente-regs-contenedor">
+        {/* Botón agregar (solo en panel superadmin) */}
+        {conAcciones && (
+          <button
+            className="config-agente-btn config-agente-btn--agregar-reg"
+            onClick={() => {
+              resetFormRegistrador();
+              setMostrarFormRegistrador(agenteId);
+            }}
+          >
+            + Agregar Registrador
+          </button>
+        )}
+
+        {/* Formulario crear/editar registrador */}
+        {conAcciones && mostrarFormRegistrador === agenteId && (
+          <form className="config-agente-reg-form" onSubmit={(e) => handleGuardarRegistrador(e, agenteId)}>
+            <h5>{registradorEditando ? 'Editar Registrador' : 'Nuevo Registrador'}</h5>
+            <div className="config-agente-reg-form-grid">
+              <div className="config-agente-form-grupo">
+                <label>Nombre *</label>
+                <input
+                  type="text"
+                  value={nuevoRegistrador.nombre}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, nombre: e.target.value }))}
+                  placeholder="Ej: Relé Alimentador 1"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label>IP *</label>
+                <input
+                  type="text"
+                  value={nuevoRegistrador.ip}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, ip: e.target.value }))}
+                  placeholder="192.168.1.100"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label>Puerto *</label>
+                <input
+                  type="number"
+                  value={nuevoRegistrador.puerto}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, puerto: e.target.value }))}
+                  placeholder="Ej: 502"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label title="Slave ID del dispositivo Modbus (usualmente 1)">Unit ID</label>
+                <input
+                  type="number"
+                  value={nuevoRegistrador.unitId}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, unitId: e.target.value }))}
+                  placeholder="Ej: 1"
+                  title="Identificador del esclavo Modbus en la red"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label>Índice Inicial *</label>
+                <input
+                  type="number"
+                  value={nuevoRegistrador.indiceInicial}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, indiceInicial: e.target.value }))}
+                  placeholder="Ej: 137"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label>Cantidad Registros *</label>
+                <input
+                  type="number"
+                  value={nuevoRegistrador.cantidadRegistros}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, cantidadRegistros: e.target.value }))}
+                  placeholder="Ej: 20"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+              <div className="config-agente-form-grupo">
+                <label>Intervalo (seg)</label>
+                <input
+                  type="number"
+                  value={nuevoRegistrador.intervaloSegundos}
+                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, intervaloSegundos: e.target.value }))}
+                  placeholder="Ej: 60"
+                  disabled={guardandoRegistrador}
+                />
+              </div>
+            </div>
+            <div className="config-agente-form-acciones">
+              <button
+                type="button"
+                className="config-agente-btn config-agente-btn--secundario"
+                onClick={() => {
+                  setMostrarFormRegistrador(null);
+                  resetFormRegistrador();
+                }}
+                disabled={guardandoRegistrador}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="config-agente-btn config-agente-btn--primario"
+                disabled={guardandoRegistrador || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
+              >
+                {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Lista de registradores */}
+        {regs.length === 0 ? (
+          <div className="config-agente-regs-vacio">Sin registradores configurados</div>
+        ) : (
+          <div className="config-agente-regs-lista">
+            {regs.map(reg => (
+              <div key={reg.id} className={`config-agente-reg-item ${conAcciones ? 'config-agente-reg-item--admin' : ''}`}>
+                <div className="config-agente-reg-info">
+                  <span
+                    className={`config-agente-reg-estado ${reg.activo ? 'config-agente-reg-estado--activo' : ''}`}
+                    title={reg.activo ? 'Activo' : 'Inactivo'}
+                  ></span>
+                  <span className="config-agente-reg-nombre">{reg.nombre}</span>
+                  <span className="config-agente-reg-detalle">
+                    {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1} | {reg.intervalo_segundos}s
+                  </span>
+                </div>
+                {conAcciones && (
+                  <div className="config-agente-reg-acciones">
+                    <button
+                      className={`config-agente-btn-icon ${reg.activo ? 'config-agente-btn-icon--success' : ''}`}
+                      onClick={() => handleToggleRegistrador(agenteId, reg.id)}
+                      title={reg.activo ? 'Desactivar' : 'Activar'}
+                    >
+                      {reg.activo ? '⏸' : '▶'}
+                    </button>
+                    <button
+                      className="config-agente-btn-icon"
+                      onClick={() => handleEditarRegistrador({ ...reg, agente_id: agenteId })}
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      className="config-agente-btn-icon config-agente-btn-icon--danger"
+                      onClick={() => handleEliminarRegistrador(agenteId, reg.id, reg.nombre)}
+                      title="Eliminar"
+                    >
+                      🗑
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     );
   };
@@ -329,7 +600,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                             onClick={() => toggleRegistradores(agente.id)}
                             title="Ver registradores"
                           >
-                            {agenteExpandido === agente.id ? '▼' : '▶'}
+                            {agenteExpandido === agente.id ? '▲' : '▼'}
                           </button>
                           {puedeVincular && (
                             <button
@@ -482,7 +753,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                               onClick={() => toggleRegistradores(agente.id)}
                               title="Ver registradores"
                             >
-                              {agenteExpandido === agente.id ? '▼' : '▶'}
+                              {agenteExpandido === agente.id ? '▲' : '▼'}
                             </button>
                             <button
                               className="config-agente-btn-icon"
@@ -509,7 +780,7 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                         {agenteExpandido === agente.id && (
                           <div className="config-agente-card-regs">
                             <h4>Registradores</h4>
-                            {renderRegistradores(agente.id)}
+                            {renderRegistradores(agente.id, true)}
                           </div>
                         )}
                       </div>

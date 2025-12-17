@@ -651,6 +651,100 @@
 /* ============================================ */
 /* Responsive                                  */
 /* ============================================ */
+/* ============================================ */
+/* Registradores - Contenedor y Form           */
+/* ============================================ */
+.config-agente-regs-contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.config-agente-btn--agregar-reg {
+  padding: 0.5rem 0.75rem;
+  background: #0f766e;
+  color: #fff;
+  font-size: 0.8rem;
+  width: fit-content;
+}
+
+.config-agente-btn--agregar-reg:hover:not(:disabled) {
+  background: #0d9488;
+}
+
+.config-agente-reg-form {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid #0ea5e933;
+  margin-bottom: 0.5rem;
+}
+
+.config-agente-reg-form h5 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+.config-agente-reg-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.config-agente-reg-form .config-agente-form-grupo {
+  margin-bottom: 0;
+}
+
+.config-agente-reg-form .config-agente-form-grupo label {
+  font-size: 0.75rem;
+}
+
+.config-agente-reg-form .config-agente-form-grupo input {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+/* ============================================ */
+/* Registradores - Item con acciones           */
+/* ============================================ */
+.config-agente-reg-item--admin {
+  justify-content: space-between;
+}
+
+.config-agente-reg-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.config-agente-reg-acciones {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.config-agente-reg-acciones .config-agente-btn-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 0.8rem;
+}
+
+.config-agente-btn-icon--success {
+  color: #22c55e;
+}
+
+.config-agente-btn-icon--success:hover {
+  background: #14532d;
+}
+
+/* ============================================ */
+/* Responsive                                  */
+/* ============================================ */
 @media (max-width: 600px) {
   .config-agente-modal {
     max-width: 100%;
@@ -695,5 +789,20 @@
 
   .config-agente-form-acciones .config-agente-btn {
     width: 100%;
+  }
+
+  .config-agente-reg-form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .config-agente-reg-item--admin {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .config-agente-reg-acciones {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
