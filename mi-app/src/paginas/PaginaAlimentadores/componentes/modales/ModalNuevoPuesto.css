@@ -1,66 +1,123 @@
 /* src/paginas/PaginaAlimentadores/componentes/modales/ModalNuevoPuesto.css */
 /*
-   NOTA SOBRE ESTE ARCHIVO (ModalNuevoPuesto.css)
-   - Estilos compartidos para los modales de puestos (nuevo / editar).
-
-   - `.alim-modal` define el contenedor blanco con sombra; `.alim-modal-sm`
-     solo ajusta el ancho máximo para modales pequeños como "Nuevo puesto".
-	  
-   - `.alim-modal-actions` y las clases de botones controlan el layout y los
-     colores de los botones "Cancelar" y "Guardar/Crear".
+   Estilos específicos del modal "Nuevo Puesto".
+   Los estilos base del modal vienen de ModalConfiguracionAlimentador.css
+   Los estilos del picker vienen de ColorPickerSimple.css
 */
 
-/* Contenedor base del modal */
-.alim-modal {
-   border-radius: 18px;
-   padding: 1.4rem 1.8rem;
-   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
-   max-width: 580px;
-   width: 100%;
-   box-sizing: border-box;
+/* Tamaño compacto para este modal */
+.alim-modal.alim-modal-sm {
+   max-width: 480px;
 }
 
-/* Tamaño compacto para modales pequeños */
-.alim-modal-sm {
-   max-width: 420px;
-}
-
-/* Zona de botones Cancelar / Guardar */
-.alim-modal-actions {
-   display: flex;
-   justify-content: flex-end;
-   gap: 0.6rem;
-   margin-top: 1.4rem;
-}
-
-/* Botones del modal */
-.alim-modal-btn {
-   min-width: 96px;
-   padding: 0.5rem 1.1rem;
+/* ===== Contenedor principal con borde ===== */
+.nuevo-puesto-contenedor {
+   background: #0f172a;
+   border: 1px solid #334155;
    border-radius: 12px;
-   border: none;
-   font-size: 0.9rem;
-   font-weight: 500;
+   padding: 1rem;
+}
+
+/* Input con mismo fondo que el modal */
+.nuevo-puesto-contenedor .alim-modal-input {
+   background: #28374e !important;
+   border: 1px solid #475569;
+   border-radius: 8px;
+}
+
+/* ===== Sección de selección de color ===== */
+
+.nuevo-puesto-color-section {
+   display: flex;
+   align-items: center;
+   gap: 1rem;
+   margin-top: 1rem;
+}
+
+/* Grid de colores predefinidos */
+.nuevo-puesto-color-grid {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 0.4rem;
+   align-items: center;
+}
+
+/* Cada círculo de color */
+.nuevo-puesto-color-swatch {
+   width: 1.5rem;
+   height: 1.5rem;
+   border-radius: 50%;
+   border: 2px solid transparent;
    cursor: pointer;
+   padding: 0;
+   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-/* Cancelar: gris suave */
-.alim-modal-btn-cancelar {
-   background-color: #e5e7eb;
-   color: #111827;
+.nuevo-puesto-color-swatch:hover {
+   transform: scale(1.15);
 }
 
-.alim-modal-btn-cancelar:hover {
-   background-color: #d1d5db;
+.nuevo-puesto-color-swatch--selected {
+   border-color: #fff;
+   box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.6);
 }
 
-/* Guardar: celeste */
-.alim-modal-btn-guardar {
-   background-color: #0ea5e9;
-   color: #ffffff;
-   box-shadow: 0 10px 22px rgba(14, 165, 233, 0.1);
+/* Wrapper del picker personalizado */
+.nuevo-puesto-picker-wrapper {
+   margin-left: auto;
 }
 
-.alim-modal-btn-guardar:hover {
-   background-color: #0284c7;
+/* Preview del color seleccionado */
+.nuevo-puesto-color-preview {
+   width: 90px;
+   height: 1.8rem;
+   border-radius: 6px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   border: 2px solid #475569;
+   margin-left: auto;
+}
+
+.nuevo-puesto-color-preview-text {
+   font-size: 0.7rem;
+   font-weight: 700;
+   letter-spacing: 0.08em;
+   color: #fff;
+   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Círculo multicolor (arcoíris) para el picker dentro del grid */
+.nuevo-puesto-color-grid .color-picker-simple {
+   margin-top: 0;
+   gap: 0;
+}
+
+.nuevo-puesto-color-grid .color-picker-simple-wrapper {
+   display: flex;
+   align-items: center;
+}
+
+.nuevo-puesto-color-grid .color-picker-simple-button {
+   width: 1.5rem !important;
+   height: 1.5rem !important;
+   min-width: 1.5rem;
+   min-height: 1.5rem;
+   background: conic-gradient(
+      from 0deg,
+      red, yellow, lime, aqua, blue, magenta, red
+   ) !important;
+   border: none !important;
+   box-shadow: none !important;
+   padding: 0 !important;
+}
+
+/* Botones de acción juntos a la derecha */
+.alim-modal-sm .alim-modal-actions {
+   justify-content: flex-end;
+}
+
+/* Botón cancelar más oscuro */
+.alim-modal-sm .alim-modal-btn-cancelar {
+   background-color: #1e293b;
 }
