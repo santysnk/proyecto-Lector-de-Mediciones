@@ -146,6 +146,28 @@
    box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
 }
 
+/* Preview del color seleccionado */
+.alim-color-preview {
+   width: 110px;
+   height: 26px;
+   border-radius: 6px;
+   border: 2px solid #475569;
+   margin-left: auto;
+   transition: background-color 0.15s ease;
+   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.alim-color-preview-text {
+   color: white;
+   font-weight: 700;
+   font-size: 0.75rem;
+   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+   letter-spacing: 0.5px;
+}
+
 /* Fila del alimentador */
 .alim-modal-fila {
    display: flex;
@@ -561,6 +583,16 @@
    color: #e2e8f0;
 }
 
+.alim-modal-card-section-registrador {
+   margin-left: auto;
+   font-size: 0.75rem;
+   font-weight: 400;
+   color: #94a3b8;
+   background: #334155;
+   padding: 0.15rem 0.5rem;
+   border-radius: 4px;
+}
+
 .alim-modal-card-section-content {
    margin-top: 0.75rem;
    padding-top: 0.75rem;
@@ -634,8 +666,8 @@
 }
 
 .alim-modal-box-label {
-   width: 70px;
-   min-width: 70px;
+   width: 110px;
+   min-width: 110px;
    flex-shrink: 0;
 }
 

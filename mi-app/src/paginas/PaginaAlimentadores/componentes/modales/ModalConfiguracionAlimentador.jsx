@@ -33,6 +33,7 @@ const PLACEHOLDERS_BOX = ["Ej: R o L1", "Ej: S o L2", "Ej: T o L3", "Ej: Total"]
 const crearSideDesignDefault = (tituloId = "corriente_132") => ({
 	tituloId,
 	tituloCustom: "",
+	registrador_id: null, // cada zona tiene su propio registrador
 	cantidad: 3,
 	boxes: [
 		{ enabled: false, label: "", indice: null, formula: "" },
@@ -70,7 +71,6 @@ const ModalConfiguracionAlimentador = ({
 	// === Estado de registrador ===
 	const [agentesVinculados, setAgentesVinculados] = useState([]);
 	const [registradoresPorAgente, setRegistradoresPorAgente] = useState({});
-	const [registradorSeleccionado, setRegistradorSeleccionado] = useState(null);
 	const [cargandoAgentes, setCargandoAgentes] = useState(false);
 
 	// === Estado de configuración ===
@@ -155,13 +155,31 @@ const ModalConfiguracionAlimentador = ({
 		return "";
 	};
 
-	// Generar índices arrastrables del registrador seleccionado
-	const indicesRegistrador = registradorSeleccionado
-		? Array.from(
-				{ length: registradorSeleccionado.cantidad_registros },
-				(_, i) => registradorSeleccionado.indice_inicial + i
-		  )
-		: [];
+	// Agrupar todos los registradores para los selects
+	const todosRegistradores = [];
+	for (const agente of agentesVinculados) {
+		const regs = registradoresPorAgente[agente.id] || [];
+		for (const reg of regs) {
+			todosRegistradores.push({ ...reg, agenteNombre: agente.nombre });
+		}
+	}
+
+	// Buscar registrador por ID
+	const buscarRegistrador = (regId) => {
+		if (!regId) return null;
+		return todosRegistradores.find((r) => r.id === regId) || null;
+	};
+
+	// Generar índices arrastrables para una zona específica
+	const obtenerIndicesZona = (zona) => {
+		const regId = cardDesign[zona]?.registrador_id;
+		const reg = buscarRegistrador(regId);
+		if (!reg) return [];
+		return Array.from(
+			{ length: reg.cantidad_registros },
+			(_, i) => reg.indice_inicial + i
+		);
+	};
 
 	// === Cargar agentes vinculados ===
 	useEffect(() => {
@@ -205,28 +223,25 @@ const ModalConfiguracionAlimentador = ({
 			// Convertir ms a segundos para la UI
 			const intervaloMs = initialData.intervalo_consulta_ms || 60000;
 			setIntervaloConsultaSeg(Math.max(5, Math.round(intervaloMs / 1000)));
-			setCardDesign(initialData.card_design || crearCardDesignDefault());
 
-			// Buscar registrador seleccionado si existe
-			if (initialData.registrador_id) {
-				// Se buscará cuando se carguen los registradores
-				setTimeout(() => {
-					for (const agente of agentesVinculados) {
-						const regs = registradoresPorAgente[agente.id] || [];
-						const reg = regs.find((r) => r.id === initialData.registrador_id);
-						if (reg) {
-							setRegistradorSeleccionado(reg);
-							break;
-						}
-					}
-				}, 500);
+			// Cargar card_design con compatibilidad hacia atrás
+			let design = initialData.card_design || crearCardDesignDefault();
+
+			// Migración: si existe registrador_id en raíz (formato antiguo), moverlo a las zonas
+			if (initialData.registrador_id && !design.superior?.registrador_id && !design.inferior?.registrador_id) {
+				design = {
+					...design,
+					superior: { ...design.superior, registrador_id: initialData.registrador_id },
+					inferior: { ...design.inferior, registrador_id: initialData.registrador_id },
+				};
 			}
+
+			setCardDesign(design);
 		} else {
 			setNombre("");
 			setColor(COLORES_SISTEMA[0]);
 			setIntervaloConsultaSeg(60); // default 60 segundos
 			setCardDesign(crearCardDesignDefault());
-			setRegistradorSeleccionado(null);
 		}
 	}, [abierto, initialData]);
 
@@ -241,8 +256,7 @@ const ModalConfiguracionAlimentador = ({
 	};
 
 	const copiarColor = () => {
-		const colorActual = esColorPersonalizado ? color : colorPersonalizado;
-		navigator.clipboard.writeText(colorActual);
+		navigator.clipboard.writeText(color);
 	};
 
 	// Cerrar picker al hacer click fuera
@@ -264,23 +278,9 @@ const ModalConfiguracionAlimentador = ({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, [mostrarPicker]);
 
-	// === Handlers registrador ===
-	const handleSeleccionarRegistrador = (e) => {
-		const regId = e.target.value;
-		if (!regId) {
-			setRegistradorSeleccionado(null);
-			return;
-		}
-
-		// Buscar el registrador
-		for (const agente of agentesVinculados) {
-			const regs = registradoresPorAgente[agente.id] || [];
-			const reg = regs.find((r) => r.id === regId);
-			if (reg) {
-				setRegistradorSeleccionado(reg);
-				return;
-			}
-		}
+	// === Handler registrador por zona ===
+	const handleSeleccionarRegistradorZona = (zona, regId) => {
+		actualizarSide(zona, "registrador_id", regId || null);
 	};
 
 	// === Handlers card design ===
@@ -336,9 +336,8 @@ const ModalConfiguracionAlimentador = ({
 		onConfirmar({
 			nombre: limpioNombre,
 			color,
-			registrador_id: registradorSeleccionado?.id || null,
 			intervalo_consulta_ms: intervaloConsultaSeg * 1000, // convertir a ms para guardar
-			card_design: cardDesign,
+			card_design: cardDesign, // registrador_id está dentro de cada zona (superior/inferior)
 		});
 	};
 
@@ -351,15 +350,6 @@ const ModalConfiguracionAlimentador = ({
 	};
 
 	if (!abierto) return null;
-
-	// Agrupar todos los registradores para el combobox
-	const todosRegistradores = [];
-	for (const agente of agentesVinculados) {
-		const regs = registradoresPorAgente[agente.id] || [];
-		for (const reg of regs) {
-			todosRegistradores.push({ ...reg, agenteNombre: agente.nombre });
-		}
-	}
 
 	return (
 		<div className="alim-modal-overlay">
@@ -416,11 +406,19 @@ const ModalConfiguracionAlimentador = ({
 									onClick={() => {
 										setMostrarPicker(!mostrarPicker);
 										if (!mostrarPicker) {
-											setValorHex(esColorPersonalizado ? color : colorPersonalizado);
+											setValorHex(color);
 										}
 									}}
 									aria-label="Color personalizado"
 								/>
+								{/* Preview del color seleccionado */}
+								<div
+									className="alim-color-preview"
+									style={{ backgroundColor: color }}
+									title={color}
+								>
+									<span className="alim-color-preview-text">COLOR</span>
+								</div>
 							</div>
 							{/* Picker flotante */}
 							{mostrarPicker && (
@@ -429,7 +427,7 @@ const ModalConfiguracionAlimentador = ({
 									className="color-picker-simple-popover alim-color-picker-popover"
 								>
 									<HexColorPicker
-										color={esColorPersonalizado ? color : colorPersonalizado}
+										color={color}
 										onChange={(nuevoColor) => {
 											setColor(nuevoColor);
 											setColorPersonalizado(nuevoColor);
@@ -458,125 +456,69 @@ const ModalConfiguracionAlimentador = ({
 							)}
 						</div>
 
-						{/* === SECCIÓN: Vinculación con Registrador === */}
+						{/* === SECCIÓN: Diseño de Card === */}
 						<div className="alim-modal-seccion">
-							<h3 className="alim-modal-seccion-titulo">Fuente de datos</h3>
+							<h3 className="alim-modal-seccion-titulo">Diseño de la tarjeta</h3>
 
 							{cargandoAgentes ? (
-								<p className="alim-modal-cargando">Cargando agentes...</p>
+								<p className="alim-modal-cargando">Cargando registradores...</p>
 							) : agentesVinculados.length === 0 ? (
 								<p className="alim-modal-aviso">
 									No hay agentes vinculados a este workspace. Vinculá un agente desde el
-									panel de configuración.
+									panel de configuración para poder asignar registradores.
 								</p>
 							) : (
 								<>
-									<div className="alim-modal-campo">
-										<label>Registrador</label>
-										<select
-											className="alim-modal-select"
-											value={registradorSeleccionado?.id || ""}
-											onChange={handleSeleccionarRegistrador}
-										>
-											<option value="">-- Sin registrador --</option>
-											{todosRegistradores.map((reg) => (
-												<option key={reg.id} value={reg.id}>
-													{reg.nombre} ({reg.agenteNombre}) - {reg.ip}:{reg.puerto} | Reg:{" "}
-													{reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1}
-												</option>
-											))}
-										</select>
-									</div>
+									<p className="alim-modal-seccion-ayuda">
+										Seleccioná un registrador para cada zona y arrastrá los índices a los campos.
+									</p>
 
-									{registradorSeleccionado && (
-										<div className="alim-modal-registrador-detalles">
-											<div className="alim-modal-registrador-info">
-												<span>
-													<strong>IP:</strong> {registradorSeleccionado.ip}:
-													{registradorSeleccionado.puerto}
-												</span>
-												<span>
-													<strong>Unit ID:</strong> {registradorSeleccionado.unit_id}
-												</span>
-												<span>
-													<strong>Registros:</strong> {registradorSeleccionado.indice_inicial} -{" "}
-													{registradorSeleccionado.indice_inicial +
-														registradorSeleccionado.cantidad_registros -
-														1}
-												</span>
-												<span>
-													<strong>Intervalo polling:</strong>{" "}
-													{registradorSeleccionado.intervalo_segundos}s
-												</span>
-											</div>
+									{/* Parte Superior */}
+									<SeccionCardDesign
+										titulo="Parte superior"
+										zona="superior"
+										design={cardDesign.superior}
+										registradores={todosRegistradores}
+										registradorActual={buscarRegistrador(cardDesign.superior?.registrador_id)}
+										indicesDisponibles={obtenerIndicesZona("superior")}
+										onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("superior", regId)}
+										onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
+										onChangeTituloCustom={(val) =>
+											actualizarSide("superior", "tituloCustom", val)
+										}
+										onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
+										onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
+										onDragOver={handleDragOver}
+										onDrop={(e, idx) => handleDrop(e, "superior", idx)}
+										onDragStart={handleDragStart}
+										estaIndiceDuplicado={estaIndiceDuplicado}
+										obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+									/>
 
-											<div className="alim-modal-indices">
-												<span className="alim-modal-indices-label">
-													Índices arrastrables:
-												</span>
-												<div className="alim-modal-indices-chips">
-													{indicesRegistrador.map((indice) => (
-														<span
-															key={indice}
-															className="alim-modal-indice-chip"
-															draggable
-															onDragStart={(e) => handleDragStart(e, indice)}
-														>
-															{indice}
-														</span>
-													))}
-												</div>
-											</div>
-										</div>
-									)}
+									{/* Parte Inferior */}
+									<SeccionCardDesign
+										titulo="Parte inferior"
+										zona="inferior"
+										design={cardDesign.inferior}
+										registradores={todosRegistradores}
+										registradorActual={buscarRegistrador(cardDesign.inferior?.registrador_id)}
+										indicesDisponibles={obtenerIndicesZona("inferior")}
+										onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("inferior", regId)}
+										onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
+										onChangeTituloCustom={(val) =>
+											actualizarSide("inferior", "tituloCustom", val)
+										}
+										onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
+										onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
+										onDragOver={handleDragOver}
+										onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
+										onDragStart={handleDragStart}
+										estaIndiceDuplicado={estaIndiceDuplicado}
+										obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+									/>
 								</>
 							)}
 						</div>
-
-						{/* === SECCIÓN 3: Diseño de Card === */}
-						{registradorSeleccionado && (
-							<div className="alim-modal-seccion">
-								<h3 className="alim-modal-seccion-titulo">Diseño de la tarjeta</h3>
-								<p className="alim-modal-seccion-ayuda">
-									Arrastrá los índices a los campos de registro para configurar qué valor
-									se muestra en cada box.
-								</p>
-
-								{/* Parte Superior */}
-								<SeccionCardDesign
-									titulo="Parte superior"
-									zona="superior"
-									design={cardDesign.superior}
-									onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
-									onChangeTituloCustom={(val) =>
-										actualizarSide("superior", "tituloCustom", val)
-									}
-									onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
-									onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
-									onDragOver={handleDragOver}
-									onDrop={(e, idx) => handleDrop(e, "superior", idx)}
-									estaIndiceDuplicado={estaIndiceDuplicado}
-									obtenerMensajeDuplicado={obtenerMensajeDuplicado}
-								/>
-
-								{/* Parte Inferior */}
-								<SeccionCardDesign
-									titulo="Parte inferior"
-									zona="inferior"
-									design={cardDesign.inferior}
-									onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
-									onChangeTituloCustom={(val) =>
-										actualizarSide("inferior", "tituloCustom", val)
-									}
-									onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
-									onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
-									onDragOver={handleDragOver}
-									onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
-									estaIndiceDuplicado={estaIndiceDuplicado}
-									obtenerMensajeDuplicado={obtenerMensajeDuplicado}
-								/>
-							</div>
-						)}
 
 						{/* === SECCIÓN: Intervalo de consulta === */}
 						<div className="alim-modal-seccion">
@@ -639,12 +581,17 @@ const SeccionCardDesign = ({
 	titulo,
 	zona,
 	design,
+	registradores,
+	registradorActual,
+	indicesDisponibles,
+	onChangeRegistrador,
 	onChangeTitulo,
 	onChangeTituloCustom,
 	onChangeCantidad,
 	onChangeBox,
 	onDragOver,
 	onDrop,
+	onDragStart,
 	estaIndiceDuplicado,
 	obtenerMensajeDuplicado,
 }) => {
@@ -663,10 +610,54 @@ const SeccionCardDesign = ({
 					▶
 				</span>
 				<span className="alim-modal-card-section-titulo">{titulo}</span>
+				{registradorActual && (
+					<span className="alim-modal-card-section-registrador">
+						{registradorActual.nombre}
+					</span>
+				)}
 			</button>
 
 			{expandido && (
 				<div className="alim-modal-card-section-content">
+					{/* Selector de registrador para esta zona */}
+					<div className="alim-modal-campo">
+						<label>Registrador</label>
+						<select
+							className="alim-modal-select"
+							value={design.registrador_id || ""}
+							onChange={(e) => onChangeRegistrador(e.target.value)}
+						>
+							<option value="">-- Sin registrador --</option>
+							{registradores.map((reg) => (
+								<option key={reg.id} value={reg.id}>
+									{reg.nombre} ({reg.agenteNombre}) - {reg.ip}:{reg.puerto} | Reg:{" "}
+									{reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Índices arrastrables del registrador seleccionado */}
+					{registradorActual && indicesDisponibles.length > 0 && (
+						<div className="alim-modal-indices">
+							<span className="alim-modal-indices-label">
+								Índices arrastrables:
+							</span>
+							<div className="alim-modal-indices-chips">
+								{indicesDisponibles.map((indice) => (
+									<span
+										key={indice}
+										className="alim-modal-indice-chip"
+										draggable
+										onDragStart={(e) => onDragStart(e, indice)}
+									>
+										{indice}
+									</span>
+								))}
+							</div>
+						</div>
+					)}
+
 					<div className="alim-modal-card-header">
 						<div className="alim-modal-campo">
 							<label>Título</label>

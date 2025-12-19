@@ -286,16 +286,25 @@ export const usarMediciones = () => {
 	 * Actualiza los registros directamente (útil para preview o testing).
 	 *
 	 * @param {number} alimId - ID del alimentador.
-	 * @param {Object} nuevosDatos - { rele?: [...], analizador?: [...] }.
+	 * @param {Object|Function} nuevosDatosOFuncion - { rele?: [...], analizador?: [...] }
+	 *        o una función (prevRegistros) => nuevosDatos para actualizar basándose en el estado anterior.
 	 */
-	const actualizarRegistros = (alimId, nuevosDatos) => {
-		setRegistrosEnVivo((anteriores) => ({
-			...anteriores,
-			[alimId]: {
-				...(anteriores[alimId] || {}),
-				...nuevosDatos,
-			},
-		}));
+	const actualizarRegistros = (alimId, nuevosDatosOFuncion) => {
+		setRegistrosEnVivo((anteriores) => {
+			const registrosAnteriores = anteriores[alimId] || {};
+			// Soportar tanto objeto directo como función actualizadora
+			const nuevosDatos = typeof nuevosDatosOFuncion === 'function'
+				? nuevosDatosOFuncion(registrosAnteriores)
+				: nuevosDatosOFuncion;
+
+			return {
+				...anteriores,
+				[alimId]: {
+					...registrosAnteriores,
+					...nuevosDatos,
+				},
+			};
+		});
 	};
 
 	return {

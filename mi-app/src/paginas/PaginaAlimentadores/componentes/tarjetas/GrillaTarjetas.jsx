@@ -16,29 +16,33 @@ const ROW_GAP_FIJO_MOBILE = 20;
 /**
  * Verifica si un alimentador tiene la configuración completa para hacer polling.
  * Requisitos:
- * - registrador_id definido
+ * - Al menos una zona (superior o inferior) con registrador_id definido
  * - intervalo_consulta_ms definido y > 0
- * - Al menos un box habilitado (enabled: true) con un índice válido en superior o inferior
+ * - Al menos un box habilitado (enabled: true) con un índice válido en una zona que tenga registrador
  */
 const puedeHacerPolling = (alim) => {
-	// 1. Verificar registrador_id
-	if (!alim.registrador_id) {
-		return false;
-	}
-
-	// 2. Verificar intervalo_consulta_ms
+	// 1. Verificar intervalo_consulta_ms
 	if (!alim.intervalo_consulta_ms || alim.intervalo_consulta_ms <= 0) {
 		return false;
 	}
 
-	// 3. Verificar que haya al menos un box habilitado con índice válido
+	// 2. Verificar card_design y zonas
 	const cardDesign = alim.card_design || {};
 	const superior = cardDesign.superior || {};
 	const inferior = cardDesign.inferior || {};
 
-	const boxesSuperior = superior.boxes || [];
-	const boxesInferior = inferior.boxes || [];
+	// 3. Verificar que haya al menos una zona con registrador_id
+	const tieneRegistradorSuperior = !!superior.registrador_id;
+	const tieneRegistradorInferior = !!inferior.registrador_id;
 
+	// Compatibilidad con formato antiguo: registrador_id en raíz
+	const tieneRegistradorLegacy = !!alim.registrador_id;
+
+	if (!tieneRegistradorSuperior && !tieneRegistradorInferior && !tieneRegistradorLegacy) {
+		return false;
+	}
+
+	// 4. Verificar que haya al menos un box habilitado con índice válido en una zona que tenga registrador
 	const tieneBoxHabilitado = (boxes) => {
 		return boxes.some((box) => {
 			if (!box.enabled) return false;
@@ -53,7 +57,16 @@ const puedeHacerPolling = (alim) => {
 		});
 	};
 
-	return tieneBoxHabilitado(boxesSuperior) || tieneBoxHabilitado(boxesInferior);
+	const boxesSuperior = superior.boxes || [];
+	const boxesInferior = inferior.boxes || [];
+
+	// Verificar si hay boxes habilitados en zonas que tienen registrador
+	const superiorValido = tieneRegistradorSuperior && tieneBoxHabilitado(boxesSuperior);
+	const inferiorValido = tieneRegistradorInferior && tieneBoxHabilitado(boxesInferior);
+	// Compatibilidad legacy: si hay registrador en raíz, cualquier box habilitado vale
+	const legacyValido = tieneRegistradorLegacy && (tieneBoxHabilitado(boxesSuperior) || tieneBoxHabilitado(boxesInferior));
+
+	return superiorValido || inferiorValido || legacyValido;
 };
 
 /**

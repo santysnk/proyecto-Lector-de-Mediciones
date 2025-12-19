@@ -249,24 +249,23 @@ const {
 	const obtenerContadorPolling = (alimId) => contadoresPolling[alimId] || 0;
 
 	// Función para obtener lecturas de un registrador y actualizar el estado
-	const fetchLecturasRegistrador = useCallback(async (alimId, registradorId) => {
+	const fetchLecturasRegistrador = useCallback(async (alimId, registradorId, zona = null) => {
 		try {
 			const lecturas = await obtenerUltimasLecturasPorRegistrador(registradorId, 1);
 			if (lecturas && lecturas.length > 0) {
 				const lectura = lecturas[0];
+
+				// Guardar lectura por zona si se especifica, o global si no
+				const clavePolling = zona ? `${alimId}_${zona}` : alimId;
 				setLecturasPolling((prev) => ({
 					...prev,
-					[alimId]: lectura,
+					[clavePolling]: lectura,
 				}));
 
 				// Transformar los valores al formato esperado por calcularValoresLadoTarjeta
 				// La lectura tiene: { id, registrador_id, timestamp, valores: [...], indice_inicial, cantidad_registros, ... }
 				// El formato esperado es: { rele: [{ index, address, value }, ...] }
-				// IMPORTANTE: indice_inicial viene de la lectura, NO del alimentador
-				// Si indice_inicial=137 y cantidad_registros=3, entonces:
-				//   valores[0] = registro 137, valores[1] = registro 138, valores[2] = registro 139
 				if (lectura.valores && Array.isArray(lectura.valores)) {
-					// Usar indice_inicial de la lectura (la BD tiene esta columna)
 					const indiceInicial = lectura.indice_inicial ?? 0;
 
 					const registrosTransformados = lectura.valores.map((valor, idx) => ({
@@ -275,10 +274,18 @@ const {
 						value: valor,
 					}));
 
-					// Actualizar registrosEnVivo a través del contexto
-					// Por ahora asumimos que el registrador es de tipo "rele"
-					// TODO: En el futuro, el tipo podría venir del registrador
-					actualizarRegistros(alimId, { rele: registrosTransformados });
+					// Actualizar registrosEnVivo acumulando con registros existentes
+					// Esto permite que múltiples registradores contribuyan datos a la misma card
+					actualizarRegistros(alimId, (prevRegistros) => {
+						const registrosAnteriores = prevRegistros?.rele || [];
+						// Filtrar registros anteriores que no estén en el rango del nuevo registrador
+						// para evitar duplicados, luego agregar los nuevos
+						const rangoNuevo = new Set(registrosTransformados.map(r => r.address));
+						const registrosFiltrados = registrosAnteriores.filter(r => !rangoNuevo.has(r.address));
+						return {
+							rele: [...registrosFiltrados, ...registrosTransformados]
+						};
+					});
 
 					// Incrementar contador de lecturas para reiniciar la animación de borde
 					setContadoresPolling((prev) => ({
@@ -292,40 +299,95 @@ const {
 		}
 	}, [actualizarRegistros]);
 
+	// Extrae los registrador_id únicos del card_design de un alimentador
+	const obtenerRegistradoresDeAlim = useCallback((alim) => {
+		const registradores = [];
+		const card_design = alim.card_design;
+
+		if (card_design?.superior?.registrador_id) {
+			registradores.push({ zona: "superior", id: card_design.superior.registrador_id });
+		}
+		if (card_design?.inferior?.registrador_id) {
+			// Solo agregar si es diferente al superior
+			const yaTieneSuperior = registradores.some(r => r.id === card_design.inferior.registrador_id);
+			if (!yaTieneSuperior) {
+				registradores.push({ zona: "inferior", id: card_design.inferior.registrador_id });
+			} else {
+				// Si es el mismo, marcar que el superior también cubre inferior
+				registradores[0].zonas = ["superior", "inferior"];
+			}
+		}
+
+		// Compatibilidad: si no hay registradores en zonas, usar el de la raíz (formato antiguo)
+		if (registradores.length === 0 && alim.registrador_id) {
+			registradores.push({ zona: "legacy", id: alim.registrador_id });
+		}
+
+		return registradores;
+	}, []);
+
 	// Inicia el polling para un alimentador
 	const iniciarPolling = useCallback((alim) => {
-		if (!alim.registrador_id || !alim.intervalo_consulta_ms) {
-			console.warn(`[Polling] Alimentador ${alim.id} no tiene configuración completa`);
+		const registradores = obtenerRegistradoresDeAlim(alim);
+
+		if (registradores.length === 0) {
+			console.warn(`[Polling] Alimentador ${alim.id} no tiene registradores configurados`);
 			return;
 		}
 
-		// Limpiar intervalo existente si hay uno
-		if (pollingIntervalsRef.current[alim.id]) {
-			clearInterval(pollingIntervalsRef.current[alim.id]);
+		if (!alim.intervalo_consulta_ms) {
+			console.warn(`[Polling] Alimentador ${alim.id} no tiene intervalo de consulta configurado`);
+			return;
 		}
 
-		// Hacer la primera lectura inmediatamente
-		// El indice_inicial se obtiene directamente de la lectura en la BD
-		fetchLecturasRegistrador(alim.id, alim.registrador_id);
+		// Limpiar intervalos existentes si hay
+		if (pollingIntervalsRef.current[alim.id]) {
+			// Puede ser un array de intervalos si hay múltiples registradores
+			const intervalos = pollingIntervalsRef.current[alim.id];
+			if (Array.isArray(intervalos)) {
+				intervalos.forEach(clearInterval);
+			} else {
+				clearInterval(intervalos);
+			}
+		}
 
-		// Configurar intervalo para lecturas periódicas
-		const intervalId = setInterval(() => {
-			fetchLecturasRegistrador(alim.id, alim.registrador_id);
-		}, alim.intervalo_consulta_ms);
+		// Crear intervalos para cada registrador único
+		const intervalos = [];
 
-		pollingIntervalsRef.current[alim.id] = intervalId;
-	}, [fetchLecturasRegistrador]);
+		registradores.forEach(({ zona, id: registradorId }) => {
+			// Hacer la primera lectura inmediatamente
+			fetchLecturasRegistrador(alim.id, registradorId, zona);
+
+			// Configurar intervalo para lecturas periódicas
+			const intervalId = setInterval(() => {
+				fetchLecturasRegistrador(alim.id, registradorId, zona);
+			}, alim.intervalo_consulta_ms);
+
+			intervalos.push(intervalId);
+		});
+
+		pollingIntervalsRef.current[alim.id] = intervalos.length === 1 ? intervalos[0] : intervalos;
+	}, [fetchLecturasRegistrador, obtenerRegistradoresDeAlim]);
 
 	// Detiene el polling para un alimentador
 	const detenerPolling = useCallback((alimId) => {
 		if (pollingIntervalsRef.current[alimId]) {
-			clearInterval(pollingIntervalsRef.current[alimId]);
+			// Puede ser un array de intervalos si hay múltiples registradores
+			const intervalos = pollingIntervalsRef.current[alimId];
+			if (Array.isArray(intervalos)) {
+				intervalos.forEach(clearInterval);
+			} else {
+				clearInterval(intervalos);
+			}
 			delete pollingIntervalsRef.current[alimId];
 		}
-		// Limpiar las lecturas de polling para ese alimentador
+		// Limpiar las lecturas de polling para ese alimentador (incluyendo las de zonas)
 		setLecturasPolling((prev) => {
 			const nuevo = { ...prev };
 			delete nuevo[alimId];
+			delete nuevo[`${alimId}_superior`];
+			delete nuevo[`${alimId}_inferior`];
+			delete nuevo[`${alimId}_legacy`];
 			return nuevo;
 		});
 		// Resetear el contador de lecturas para ese alimentador
@@ -358,17 +420,26 @@ const {
 		}));
 	}, [alimentadoresPolling, buscarAlimentador, detenerPolling, iniciarPolling]);
 
+	// Helper para limpiar intervalos (puede ser un solo intervalo o un array)
+	const limpiarIntervalos = (intervalos) => {
+		if (Array.isArray(intervalos)) {
+			intervalos.forEach(clearInterval);
+		} else {
+			clearInterval(intervalos);
+		}
+	};
+
 	// Limpiar todos los intervalos al desmontar el componente
 	useEffect(() => {
 		return () => {
-			Object.values(pollingIntervalsRef.current).forEach(clearInterval);
+			Object.values(pollingIntervalsRef.current).forEach(limpiarIntervalos);
 		};
 	}, []);
 
 	// Detener polling cuando cambia el puesto seleccionado
 	useEffect(() => {
 		// Limpiar todos los intervalos de polling
-		Object.values(pollingIntervalsRef.current).forEach(clearInterval);
+		Object.values(pollingIntervalsRef.current).forEach(limpiarIntervalos);
 		pollingIntervalsRef.current = {};
 		// Resetear estados
 		setAlimentadoresPolling({});
