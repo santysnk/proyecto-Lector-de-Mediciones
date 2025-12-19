@@ -1,0 +1,269 @@
+/* src/paginas/PaginaAlimentadores/componentes/modales/ModalGestionarAccesos.css */
+/* Estilos específicos del modal de gestión de accesos */
+
+.modal-accesos {
+  max-width: 550px;
+  width: 95%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.modal-accesos__header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 1rem;
+}
+
+.modal-accesos__header h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  color: #f3f4f6;
+}
+
+.modal-accesos__workspace-nombre {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+/* Contenido scrolleable */
+.modal-accesos__contenido {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Secciones */
+.modal-accesos__seccion {
+  margin-bottom: 1.5rem;
+}
+
+.modal-accesos__seccion h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #d1d5db;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Form de invitación */
+.modal-accesos__form-invitar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.modal-accesos__form-invitar .alim-modal-input {
+  flex: 1;
+  min-width: 200px;
+}
+
+.modal-accesos__form-invitar .alim-modal-select {
+  width: 140px;
+  padding: 0.5rem;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  background-color: #1f2937;
+  color: #f3f4f6;
+  font-size: 0.875rem;
+}
+
+.modal-accesos__btn-invitar {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+.modal-accesos__btn-invitar:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.modal-accesos__btn-invitar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mensajes */
+.modal-accesos__mensaje {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.modal-accesos__mensaje--error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.modal-accesos__mensaje--exito {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Estados de carga/error/vacío */
+.modal-accesos__cargando,
+.modal-accesos__vacio {
+  text-align: center;
+  padding: 1.5rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+.modal-accesos__error {
+  text-align: center;
+  padding: 1rem;
+  color: #f87171;
+  font-size: 0.875rem;
+}
+
+.modal-accesos__error button {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  background-color: #374151;
+  color: #f3f4f6;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Lista de usuarios */
+.modal-accesos__lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.modal-accesos__usuario {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  gap: 0.75rem;
+}
+
+.modal-accesos__usuario-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-accesos__usuario-icono {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.modal-accesos__usuario-datos {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.modal-accesos__usuario-nombre {
+  font-weight: 500;
+  color: #f3f4f6;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-accesos__usuario-email {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-accesos__usuario-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.modal-accesos__select-rol {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  background-color: #111827;
+  color: #f3f4f6;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.modal-accesos__select-rol:hover {
+  border-color: #4b5563;
+}
+
+.modal-accesos__btn-eliminar {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #9ca3af;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-accesos__btn-eliminar:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+/* Footer */
+.modal-accesos__footer {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+  .modal-accesos__form-invitar {
+    flex-direction: column;
+  }
+
+  .modal-accesos__form-invitar .alim-modal-input,
+  .modal-accesos__form-invitar .alim-modal-select {
+    width: 100%;
+  }
+
+  .modal-accesos__usuario {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .modal-accesos__usuario-acciones {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+  }
+}

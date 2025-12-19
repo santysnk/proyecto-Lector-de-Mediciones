@@ -16,6 +16,7 @@ import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal par
 import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
+import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -27,7 +28,7 @@ import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarReg
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
 	const { logout } = useAuth();                                    // función de logout del contexto de auth
-	const { configuracionSeleccionada } = usarContextoConfiguracion(); // workspace activo
+	const { configuracionSeleccionada, perfil } = usarContextoConfiguracion(); // workspace activo + perfil usuario
 
 	const {
    puestos,                               // lista completa de puestos configurados en el sistema
@@ -78,6 +79,7 @@ const {
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
+	const [modalAccesosAbierto, setModalAccesosAbierto] = useState(false); // estado del modal de gestión de accesos
 	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
@@ -153,6 +155,7 @@ const {
 	const abrirModalEditarPuestos = () => abrirModal("editarPuestos");// abre modal para editar lista de puestos
 	const abrirModalConfigPuesto = () => abrirModal("configPuesto");  // abre modal de configuración global del puesto
 	const abrirModalConfigurarAgente = () => setModalAgenteAbierto(true); // abre modal de configuración del agente
+	const abrirModalGestionarAccesos = () => setModalAccesosAbierto(true); // abre modal de gestión de accesos
 
 	const handleCrearPuesto = (nombre, color) => {
 		agregarPuesto(nombre, color);                                 // crea el puesto vía contexto
@@ -539,6 +542,7 @@ const {
 				onAbrirModalEditarPuestos={abrirModalEditarPuestos}
 				onAbrirModalConfigPuesto={abrirModalConfigPuesto}
 				onAbrirModalConfigurarAgente={abrirModalConfigurarAgente}
+				onAbrirModalGestionarAccesos={abrirModalGestionarAccesos}
 				onSalir={handleSalir}
 				onAbrirMenu={() => setMenuAbierto(true)}
 				coloresSistema={COLORES_SISTEMA}
@@ -653,6 +657,14 @@ const {
 				abierto={modalAgenteAbierto}
 				workspaceId={configuracionSeleccionada?.id}
 				onCerrar={() => setModalAgenteAbierto(false)}
+			/>
+
+			<ModalGestionarAccesos
+				abierto={modalAccesosAbierto}
+				workspaceId={configuracionSeleccionada?.id}
+				workspaceNombre={configuracionSeleccionada?.nombre}
+				usuarioActualId={perfil?.id}
+				onCerrar={() => setModalAccesosAbierto(false)}
 			/>
 		</div>
 	);
