@@ -52,6 +52,18 @@ export async function obtenerPerfil() {
   return fetchConAuth('/api/usuarios/perfil');
 }
 
+/**
+ * Crea el perfil del usuario después del registro en Supabase Auth
+ * Se debe llamar inmediatamente después de signUp exitoso
+ * @param {string} nombre - Nombre del usuario
+ */
+export async function crearPerfilUsuario(nombre) {
+  return fetchConAuth('/api/usuarios/perfil', {
+    method: 'POST',
+    body: JSON.stringify({ nombre }),
+  });
+}
+
 // ============================================
 // WORKSPACES
 // ============================================
@@ -549,6 +561,7 @@ export async function testConexionRegistrador(ip, puerto, indiceInicial, cantida
 export default {
   // Usuarios
   obtenerPerfil,
+  crearPerfilUsuario,
   // Workspaces
   obtenerWorkspaces,
   crearWorkspace,

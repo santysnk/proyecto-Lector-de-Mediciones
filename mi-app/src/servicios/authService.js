@@ -1,7 +1,10 @@
 // src/servicios/authService.js
 // Servicio de autenticación usando Supabase
+// NOTA: Las operaciones de supabase.auth.* van directas a Supabase (correcto)
+//       Los datos de usuario van por el backend (crearPerfilUsuario, obtenerPerfil)
 
 import { supabase } from '../lib/supabase';
+import { crearPerfilUsuario, obtenerPerfil } from './apiService';
 
 /**
  * Iniciar sesión con email y contraseña
@@ -30,7 +33,7 @@ export async function iniciarSesion(email, password) {
  * @returns {Promise<{user, error}>}
  */
 export async function registrarUsuario(email, password, nombre) {
-  // 1. Crear usuario en Supabase Auth
+  // 1. Crear usuario en Supabase Auth (directo - esto es correcto)
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -45,22 +48,15 @@ export async function registrarUsuario(email, password, nombre) {
     return { user: null, error: traducirError(authError.message) };
   }
 
-  // 2. Crear registro en nuestra tabla usuarios
-  if (authData.user) {
-    const { error: dbError } = await supabase
-      .from('usuarios')
-      .insert({
-        id: authData.user.id,
-        email: email,
-        nombre: nombre,
-        password_hash: '', // Supabase Auth maneja la contraseña
-        es_superadmin: false,
-        activo: true,
-      });
-
-    if (dbError) {
-      console.error('Error al crear usuario en DB:', dbError);
+  // 2. Crear perfil en tabla usuarios VIA BACKEND
+  // El backend usa SERVICE_ROLE y valida la creación
+  if (authData.user && authData.session) {
+    try {
+      await crearPerfilUsuario(nombre);
+    } catch (dbError) {
+      console.error('Error al crear perfil en DB:', dbError);
       // No retornamos error porque el usuario ya se creó en Auth
+      // El backend puede crear el perfil después en obtenerPerfil
     }
   }
 
@@ -69,9 +65,17 @@ export async function registrarUsuario(email, password, nombre) {
 
 /**
  * Cerrar sesión
+ * Limpia también los datos de localStorage para evitar que persistan entre usuarios
  * @returns {Promise<{error}>}
  */
 export async function cerrarSesion() {
+  // Limpiar datos de sesión del localStorage
+  // Esto evita que al loguearse otro usuario se intente acceder a workspaces del anterior
+  localStorage.removeItem('rw-configuracion-seleccionada');
+  localStorage.removeItem('rw-puesto-seleccionado');
+  localStorage.removeItem('rw-gap-tarjetas');
+  localStorage.removeItem('rw-gap-filas');
+
   const { error } = await supabase.auth.signOut();
   return { error: error ? traducirError(error.message) : null };
 }
@@ -90,6 +94,7 @@ export async function obtenerSesion() {
 
 /**
  * Obtener datos del usuario actual desde nuestra tabla
+ * Usa el backend para obtener el perfil (incluye rol global y permisos)
  * @returns {Promise<{usuario, error}>}
  */
 export async function obtenerUsuarioActual() {
@@ -99,17 +104,14 @@ export async function obtenerUsuarioActual() {
     return { usuario: null, error: 'No hay sesión activa' };
   }
 
-  const { data, error } = await supabase
-    .from('usuarios')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  if (error) {
+  try {
+    // Obtener perfil VIA BACKEND
+    // El backend crea el usuario si no existe (auto-provisioning)
+    const perfil = await obtenerPerfil();
+    return { usuario: perfil, error: null };
+  } catch (error) {
     return { usuario: null, error: error.message };
   }
-
-  return { usuario: data, error: null };
 }
 
 /**

@@ -62,12 +62,17 @@ export const usarConfiguracion = () => {
       setPerfil(perfilData);
       setConfiguraciones(workspacesData);
 
-      // Si no hay workspace seleccionado o el seleccionado no existe, seleccionar el primero
+      // Validar la selección guardada contra los workspaces del usuario
       if (workspacesData.length > 0) {
+        // Si hay workspaces pero el seleccionado no está en la lista, seleccionar el primero
         const seleccionValida = workspacesData.some((c) => c.id === configuracionSeleccionadaId);
         if (!seleccionValida) {
           setConfiguracionSeleccionadaId(workspacesData[0].id);
         }
+      } else {
+        // Si el usuario no tiene workspaces, limpiar cualquier selección guardada
+        // Esto evita que se intente cargar datos de un workspace al que ya no tiene acceso
+        setConfiguracionSeleccionadaId(null);
       }
     } catch (err) {
       console.error("Error cargando datos:", err);

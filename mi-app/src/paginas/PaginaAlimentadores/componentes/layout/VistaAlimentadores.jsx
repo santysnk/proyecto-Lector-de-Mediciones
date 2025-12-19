@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";                                    // para portal del overlay
 import { useNavigate } from "react-router-dom";                     // navegación entre rutas
+import { useAuth } from "../../../../contextos/AuthContext";        // contexto de autenticación
 import "./VistaAlimentadores.css";                                  // estilos específicos del layout de alimentadores
 import "../navegacion/BotonGuardarCambios.css";                     // estilos del overlay de guardando
 
@@ -25,6 +26,7 @@ import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarReg
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
+	const { logout } = useAuth();                                    // función de logout del contexto de auth
 	const { configuracionSeleccionada } = usarContextoConfiguracion(); // workspace activo
 
 	const {
@@ -136,10 +138,13 @@ const {
 	const modoAlimentador = estadoModalAlimentador.datos?.modo || "crear"; // "crear" o "editar" según cómo se abrió el modal
 
 	// Navegacion
-	const handleSalir = () => {
+	const handleSalir = async () => {
 		// Limpiar localStorage de gaps antes de salir
 		// Así al volver a entrar se cargan los datos frescos de BD
 		limpiarPreferenciasUI();
+		// Cerrar sesión de Supabase y limpiar localStorage de configuración
+		// Esto evita que al loguearse otro usuario se intente acceder a workspaces del anterior
+		await logout();
 		navigate("/");                                                 // vuelve al login
 	};
 
@@ -561,7 +566,16 @@ const {
 				className="alim-main"
 				style={{ backgroundColor: puestoSeleccionado?.bgColor || "#e5e7eb" }} // usa bgColor del puesto o gris por defecto
 			>
-				{!puestoSeleccionado ? (
+				{/* Caso 1: Sin workspace asignado */}
+				{!configuracionSeleccionada ? (
+					<div className="alim-sin-workspace">
+						<h2>Sin acceso a workspaces</h2>
+						<p>No tienes ningún workspace asignado.</p>
+						<p>Contacta a un administrador para que te asigne acceso a un workspace.</p>
+						<button onClick={handleSalir}>Volver al inicio</button>
+					</div>
+				) : !puestoSeleccionado ? (
+					/* Caso 2: Tiene workspace pero sin puestos */
 					<div className="alim-empty-state">
 						<p>
 							No hay puestos creados. Haz clic en el boton "+" para agregar
@@ -569,6 +583,7 @@ const {
 						</p>
 					</div>
 				) : (
+					/* Caso 3: Tiene workspace y puestos */
 					<>
 						<GrillaTarjetas
 							alimentadores={puestoSeleccionado.alimentadores}
