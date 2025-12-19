@@ -26,11 +26,17 @@
    align-items: stretch; /* para que GapResizer tenga la misma altura */
 }
 
-/* En pantallas más angostas, centramos la grilla */
+/* En pantallas más angostas, centramos la grilla y agregamos gap fijo */
 @media (max-width: 982px) {
    .alim-cards-grid {
       justify-content: center;
       padding-left: 0;
+      gap: 1rem; /* gap fijo entre tarjetas en modo móvil */
+   }
+
+   /* Alinear las tarjetas normales con la tarjeta "Nuevo Registrador" */
+   .alim-card-wrapper {
+      margin-left: 24px;
    }
 }
 
