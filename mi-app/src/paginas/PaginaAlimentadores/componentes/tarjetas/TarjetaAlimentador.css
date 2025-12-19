@@ -40,6 +40,7 @@
 	padding: 0.2rem 0.3rem;
 	display: flex;
 	align-items: center;
+	position: relative;
 }
 
 /* contenedor de los iconos (tuerca + mapeo) */
@@ -75,15 +76,17 @@
 	display: block;
 }
 
-/* Título centrado dentro del header */
+/* Título centrado dentro del header (respecto al contenedor completo) */
 .alim-card-title {
-	flex: 1;
-	text-align: left;
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
 	font-weight: 700;
-	padding-left: 0.4rem;
-	white-space: nowrap;        /* no permitir salto de línea */
-	overflow: hidden;           /* cortar lo que sobra */
-	text-overflow: ellipsis;    /* poner "..." al final */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: calc(100% - 80px); /* espacio para los botones */
+	pointer-events: none; /* permitir clicks a través del título */
 }
 
 /* Botón Play/Stop para polling de lecturas */

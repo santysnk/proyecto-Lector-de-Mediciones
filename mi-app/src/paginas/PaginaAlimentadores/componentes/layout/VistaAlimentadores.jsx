@@ -21,7 +21,7 @@ import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook d
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
-import { obtenerUltimasLecturasPorRegistrador } from "../../../../servicios/apiService"; // API para polling de lecturas
+import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService"; // API para polling de lecturas
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -80,6 +80,7 @@ const {
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
 	const pollingIntervalsRef = useRef({}); // { [alimId]: intervalId } - para limpiar intervalos
+	const [registradores, setRegistradores] = useState([]); // Lista de registradores del workspace
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -89,6 +90,34 @@ const {
 		return () => window.removeEventListener("resize", actualizarModo);
 	}, []);
 
+	// Cargar registradores del workspace (a través de los agentes vinculados)
+	useEffect(() => {
+		if (!configuracionSeleccionada?.id) return;
+		const cargarRegistradores = async () => {
+			try {
+				// Primero obtener los agentes vinculados al workspace
+				const agentes = await listarAgentesWorkspace(configuracionSeleccionada.id);
+
+				// Luego cargar los registradores de cada agente
+				const todosRegistradores = [];
+				for (const agente of agentes || []) {
+					try {
+						const regs = await listarRegistradoresAgente(agente.id);
+						if (regs && regs.length > 0) {
+							todosRegistradores.push(...regs);
+						}
+					} catch (err) {
+						console.error(`Error cargando registradores del agente ${agente.id}:`, err);
+					}
+				}
+				setRegistradores(todosRegistradores);
+			} catch (err) {
+				console.error("Error cargando registradores:", err);
+			}
+		};
+		cargarRegistradores();
+	}, [configuracionSeleccionada?.id]);
+
 	const estadoModalNuevoPuesto = obtenerEstado("nuevoPuesto");     // { abierto, datos } para modal de nuevo puesto
 	const estadoModalEditarPuestos = obtenerEstado("editarPuestos"); // idem para modal de edición de puestos
 	const estadoModalAlimentador = obtenerEstado("alimentador");     // idem para modal de configuración de alimentador
@@ -96,6 +125,9 @@ const {
 
 	const buscarAlimentador = (alimId) =>
 		puestoSeleccionado?.alimentadores.find((a) => a.id === alimId) || null; // helper para obtener el alimentador por id
+
+	const buscarRegistrador = useCallback((regId) =>
+		registradores.find((r) => r.id === regId) || null, [registradores]); // helper para obtener el registrador por id
 
 	const alimentadorEnEdicion = estadoModalAlimentador.datos?.alimentadorId
 		? buscarAlimentador(estadoModalAlimentador.datos.alimentadorId)
@@ -146,21 +178,6 @@ const {
 		} finally {
 			setGuardandoPuestos(false);
 		}
-	};
-
-	const handleGuardarConfigPuesto = (alimentadoresActualizados) => {
-		if (!puestoSeleccionado) return;
-		// Actualizar el puesto con los alimentadores modificados
-		const puestoActualizado = {
-			...puestoSeleccionado,
-			alimentadores: alimentadoresActualizados,
-		};
-		// Actualizar la lista de puestos
-		const nuevaListaPuestos = puestos.map((p) =>
-			p.id === puestoSeleccionado.id ? puestoActualizado : p
-		);
-		actualizarPuestos(nuevaListaPuestos);
-		// No cerrar el modal - los cambios se guardan automáticamente
 	};
 
 	// ===== MODALES ALIMENTADORES =====
@@ -520,6 +537,8 @@ const {
 				onSalir={handleSalir}
 				onAbrirMenu={() => setMenuAbierto(true)}
 				coloresSistema={COLORES_SISTEMA}
+				estaPolling={estaPolling}
+				onPlayStopClick={handlePlayStopClick}
 			/>
 
 			{/* ===== MENU LATERAL (modo compacto) ===== */}
@@ -610,7 +629,9 @@ const {
 				abierto={estadoModalConfigPuesto.abierto}
 				puesto={puestoSeleccionado}
 				onCerrar={() => cerrarModal("configPuesto")}
-				onGuardar={handleGuardarConfigPuesto}
+				estaPolling={estaPolling}
+				onPlayStopClick={handlePlayStopClick}
+				buscarRegistrador={buscarRegistrador}
 			/>
 
 			<ModalConfigurarAgente

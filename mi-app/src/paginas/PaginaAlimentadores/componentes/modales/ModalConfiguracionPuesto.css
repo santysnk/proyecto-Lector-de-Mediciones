@@ -17,7 +17,7 @@
 .puesto-modal {
 	background: #1e293b;
 	border-radius: 12px;
-	width: fit-content;
+	min-width: 550px;
 	max-width: 95vw;
 	max-height: 90vh;
 	display: flex;
@@ -221,41 +221,61 @@
 	background-color: #1e293b;
 }
 
-/* Row (Relé / Analizador) */
+/* Row (Superior / Inferior) */
 .puesto-card__row {
 	display: flex;
-	align-items: flex-end;
-	gap: 0.75rem;
+	align-items: center;
+	gap: 0.5rem;
 }
 
 .puesto-card__field--tipo {
 	flex: 0 0 85px;
+	display: flex;
+	align-items: center;
 }
 
-.puesto-card__tipo-input {
+/* Badges para tipo Superior/Inferior */
+.puesto-card__tipo-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 85px;
+	height: 30px;
+	border-radius: 4px;
 	font-size: 0.7rem;
 	font-weight: 600;
 	text-align: center;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	box-sizing: border-box;
+}
+
+.puesto-card__tipo-badge--superior {
+	background: #1e3a5f;
+	color: #60a5fa;
+	border: 1px solid #3b82f6;
+}
+
+.puesto-card__tipo-badge--inferior {
+	background: #3d1e5f;
+	color: #c084fc;
+	border: 1px solid #8b5cf6;
+}
+
+/* Input readonly */
+.puesto-card__input--readonly {
+	background: #334155 !important;
+	color: #94a3b8 !important;
 	cursor: default;
-}
-
-.puesto-card__tipo-input--rele {
-	background: #1e3a5f !important;
-	color: #60a5fa !important;
-	border-color: #1e3a5f !important;
-}
-
-.puesto-card__tipo-input--analizador {
-	background: #3d1e5f !important;
-	color: #c084fc !important;
-	border-color: #3d1e5f !important;
+	border-color: #475569 !important;
 }
 
 /* Fields container */
 .puesto-card__fields {
 	display: flex;
-	align-items: flex-end;
+	align-items: center;
 	gap: 0.5rem;
+	flex: 1;
 }
 
 /* Field */
@@ -265,19 +285,13 @@
 	gap: 0.15rem;
 }
 
-.puesto-card__field--ip {
-	flex: 0 0 120px;
+.puesto-card__field--registrador {
+	flex: 1;
+	min-width: 200px;
 }
 
-.puesto-card__field--small {
-	flex: 0 0 75px;
-}
-
-.puesto-card__field--action {
-	flex: 0 0 40px;
-	display: flex;
-	flex-direction: column;
-	justify-content: flex-end;
+.puesto-card__field--periodo {
+	flex: 0 0 85px;
 }
 
 .puesto-card__field label {
@@ -291,7 +305,8 @@
 
 .puesto-card__field input {
 	width: 100%;
-	padding: 0.4rem 0.5rem;
+	height: 30px;
+	padding: 0 0.5rem;
 	background: #1e293b;
 	border: 1px solid #475569;
 	border-radius: 4px;
@@ -299,6 +314,15 @@
 	font-size: 0.8rem;
 	text-align: center;
 	transition: border-color 0.2s, box-shadow 0.2s;
+	box-sizing: border-box;
+}
+
+/* Input de registrador: texto alineado a la izquierda con ellipsis */
+.puesto-card__field--registrador input {
+	text-align: left;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space: nowrap;
 }
 
 .puesto-card__field input:focus {
@@ -324,15 +348,20 @@
 
 /* ===== PLAY/STOP BUTTON ===== */
 .puesto-card__play-btn {
-	width: 100%;
-	padding: 0.4rem 0.3rem;
+	width: 28px;
+	height: 28px;
+	padding: 0;
 	background: #1e3a5f;
 	border: 1px solid #3b82f6;
 	border-radius: 4px;
 	color: #60a5fa;
-	font-size: 0.9rem;
+	font-size: 0.75rem;
 	cursor: pointer;
 	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
 }
 
 .puesto-card__play-btn:hover {
@@ -392,12 +421,14 @@
 	transform: scale(0.98);
 }
 
-.puesto-modal__btn--cancelar {
+.puesto-modal__btn--cancelar,
+.puesto-modal__btn--cerrar {
 	background: #475569;
 	color: #f1f5f9;
 }
 
-.puesto-modal__btn--cancelar:hover {
+.puesto-modal__btn--cancelar:hover,
+.puesto-modal__btn--cerrar:hover {
 	background: #64748b;
 }
 
@@ -501,6 +532,7 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 700px) {
 	.puesto-modal {
+		min-width: unset;
 		max-width: 100%;
 		max-height: 100vh;
 		border-radius: 0;

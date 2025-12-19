@@ -22,11 +22,10 @@ const BarraNavegacion = ({
 	onSalir,                                // callback para cerrar sesión / volver al inicio
 	onAbrirMenu,                            // callback para abrir el menú lateral en modo compacto
 	coloresSistema,                         // paleta de colores para botones de puesto
+	estaPolling,                            // (alimId) => boolean - verifica si un alimentador está en polling
+	onPlayStopClick,                        // (alimId) => void - alterna polling de un alimentador
 }) => {
 	const {
-		estaMidiendo,
-		alternarMedicion,
-		detenerMedicion,
 		hayCambiosPendientes,
 		sincronizando,
 		sincronizarCambios,
@@ -37,41 +36,47 @@ const BarraNavegacion = ({
 	const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
 
 	// ===== LÓGICA DEL BOTÓN MAESTRO GLOBAL =====
+	// Helper para verificar si un alimentador puede hacer polling (misma lógica que ModalConfiguracionPuesto)
+	const puedeHacerPolling = (alim) => {
+		if (!alim.intervalo_consulta_ms || alim.intervalo_consulta_ms <= 0) return false;
+
+		const cardDesign = alim.card_design || {};
+		const superior = cardDesign.superior || {};
+		const inferior = cardDesign.inferior || {};
+
+		const tieneRegistrador = !!superior.registrador_id || !!inferior.registrador_id || !!alim.registrador_id;
+		if (!tieneRegistrador) return false;
+
+		// Verificar que al menos un box esté habilitado con índice válido
+		const boxesSuperior = superior.boxes || [];
+		const boxesInferior = inferior.boxes || [];
+		const todosLosBoxes = [...boxesSuperior, ...boxesInferior];
+
+		const tieneBoxHabilitado = todosLosBoxes.some(
+			(box) => box.enabled && box.indice !== null && box.indice !== undefined && box.indice !== ""
+		);
+
+		return tieneBoxHabilitado;
+	};
+
 	const calcularEstadoGlobal = () => {
 		if (!puestoSeleccionado) {
-			return { infoAlimentadores: [], hayAlgunaCardDisponible: false, algunaCardMidiendo: false };
+			return { alimentadoresConPolling: [], hayAlgunaCardDisponible: false, algunaCardMidiendo: false };
 		}
 
 		const alimentadores = puestoSeleccionado.alimentadores || [];
 
-		const infoAlimentadores = alimentadores.map((alim) => {
-			const releConfigValida = alim.rele?.ip?.trim() && alim.rele?.puerto;
-			const analizadorConfigValida = alim.analizador?.ip?.trim() && alim.analizador?.puerto;
-			const hayAlgunaConfigValida = releConfigValida || analizadorConfigValida;
+		// Filtrar solo los alimentadores que pueden hacer polling
+		const alimentadoresConPolling = alimentadores.filter(puedeHacerPolling);
 
-			const releMidiendo = estaMidiendo(alim.id, "rele");
-			const analizadorMidiendo = estaMidiendo(alim.id, "analizador");
+		const hayAlgunaCardDisponible = alimentadoresConPolling.length > 0;
+		// Verificar si algún alimentador está actualmente en polling
+		const algunaCardMidiendo = alimentadoresConPolling.some((alim) => estaPolling?.(alim.id));
 
-			const algunoMidiendo = (releConfigValida && releMidiendo) || (analizadorConfigValida && analizadorMidiendo);
-
-			return {
-				alim,
-				releConfigValida,
-				analizadorConfigValida,
-				hayAlgunaConfigValida,
-				releMidiendo,
-				analizadorMidiendo,
-				algunoMidiendo,
-			};
-		});
-
-		const hayAlgunaCardDisponible = infoAlimentadores.some((info) => info.hayAlgunaConfigValida);
-		const algunaCardMidiendo = infoAlimentadores.some((info) => info.hayAlgunaConfigValida && info.algunoMidiendo);
-
-		return { infoAlimentadores, hayAlgunaCardDisponible, algunaCardMidiendo };
+		return { alimentadoresConPolling, hayAlgunaCardDisponible, algunaCardMidiendo };
 	};
 
-	const { infoAlimentadores, hayAlgunaCardDisponible, algunaCardMidiendo } = calcularEstadoGlobal();
+	const { alimentadoresConPolling, hayAlgunaCardDisponible, algunaCardMidiendo } = calcularEstadoGlobal();
 
 	// Abre el diálogo de confirmación
 	const handleClickMaestro = () => {
@@ -79,19 +84,23 @@ const BarraNavegacion = ({
 		setMostrarConfirmacion(true);
 	};
 
-	// Ejecuta la acción después de confirmar
+	// Ejecuta la acción después de confirmar - inicia o detiene el polling de todos los alimentadores
 	const ejecutarMaestroGlobal = () => {
 		setMostrarConfirmacion(false);
 
 		if (algunaCardMidiendo) {
-			infoAlimentadores.forEach(({ alim, releMidiendo, analizadorMidiendo }) => {
-				if (releMidiendo) detenerMedicion(alim.id, "rele");
-				if (analizadorMidiendo) detenerMedicion(alim.id, "analizador");
+			// Detener todos los que están en polling
+			alimentadoresConPolling.forEach((alim) => {
+				if (estaPolling?.(alim.id)) {
+					onPlayStopClick?.(alim.id);
+				}
 			});
 		} else {
-			infoAlimentadores.forEach(({ alim, releConfigValida, analizadorConfigValida, releMidiendo, analizadorMidiendo }) => {
-				if (releConfigValida && !releMidiendo) alternarMedicion(alim, "rele");
-				if (analizadorConfigValida && !analizadorMidiendo) alternarMedicion(alim, "analizador");
+			// Iniciar todos los disponibles
+			alimentadoresConPolling.forEach((alim) => {
+				if (!estaPolling?.(alim.id)) {
+					onPlayStopClick?.(alim.id);
+				}
 			});
 		}
 	};

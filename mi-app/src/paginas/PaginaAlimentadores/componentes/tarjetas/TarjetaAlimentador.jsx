@@ -187,27 +187,9 @@ const TarjetaAlimentador = ({
           >
             <img src={configIcon} alt="Configurar" className="alim-card-icon" />
           </button>
-
         </div>
 
         <span className="alim-card-title">{nombre}</span>
-
-        {/* Botón Play/Stop para polling de lecturas */}
-        <button
-          type="button"
-          className={`alim-card-play-btn ${estaPolling ? "alim-card-play-btn--active" : ""}`}
-          onClick={onPlayStopClick}
-          disabled={!puedePolling}
-          title={
-            !puedePolling
-              ? "Configuración incompleta: necesita registrador, intervalo y al menos un box habilitado con índice"
-              : estaPolling
-                ? "Detener polling"
-                : "Iniciar polling"
-          }
-        >
-          {estaPolling ? "⏹" : "▶"}
-        </button>
       </div>
 
       {/* Cuerpo con los 2 bloques (superior / inferior) */}
