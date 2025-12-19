@@ -76,6 +76,7 @@ const TarjetaAlimentador = ({
   onPlayStopClick,                     // callback para iniciar/detener polling
   contadorPolling = 0,                 // número de lecturas realizadas durante polling
   periodoPolling = 60,                 // periodo de polling en segundos (para animación)
+  errorPolling = null,                 // { mensaje, timestamp } si hay error de lectura
 }) => {
   // Control local de animaciones de borde: solo se activan tras recibir una lectura
   const [mostrarProgresoRele, setMostrarProgresoRele] = useState(false);
@@ -136,32 +137,51 @@ const TarjetaAlimentador = ({
   const maxBoxes = Math.max(sup.boxes.length, inf.boxes.length);
   const isWide = maxBoxes >= 4;
 
+  // Determinar si hay error en cada zona
+  // errorPolling tiene: { superior, inferior } para mostrar "ERROR" en boxes (desde 1er error)
+  //                     { superiorCritico, inferiorCritico } para mostrar overlay (3+ errores)
+  const errorSuperior = errorPolling?.superior || false;
+  const errorInferior = errorPolling?.inferior || false;
+  const tieneAlgunError = errorSuperior || errorInferior;
+
+  // Para el overlay: solo mostrar cuando hay 3+ errores consecutivos
+  const errorSuperiorCritico = errorPolling?.superiorCritico || false;
+  const errorInferiorCritico = errorPolling?.inferiorCritico || false;
+  const tieneErrorCritico = errorSuperiorCritico || errorInferiorCritico;
+
   // Armar clases de la card
   const clasesCard = ["alim-card"];
   if (isWide) clasesCard.push("alim-card-wide");
   if (isDragging) clasesCard.push("alim-card-dragging");
+  if (tieneErrorCritico) clasesCard.push("alim-card-error"); // borde rojo solo cuando es crítico
 
-  const renderizarCaja = (box, idx, zona) => (                         // renderiza una CajaMedicion para un lado ("sup"/"inf")
-    <CajaMedicion
-      key={`${zona}-${idx}`}                                           // key estable por lado e índice
-      box={box}                                                        // datos de la caja (etiqueta, valor, enabled, origen)
-      indice={idx}                                                     // posición dentro del grupo
-      zona={zona}                                                      // identifica si la caja es superior o inferior
-      mideRele={mideRele}                                              // indica si hay medición de relé activa
-      mideAnalizador={mideAnalizador}                                  // indica si hay medición de analizador activa
-      mostrarProgresoRele={mostrarProgresoRele}                        // controla animación de borde del relé
-      mostrarProgresoAnalizador={mostrarProgresoAnalizador}            // controla animación de borde del analizador
-      periodoRele={periodoRele}                                        // periodo configurado para relé
-      periodoAnalizador={periodoAnalizador}                            // periodo configurado para analizador
-      contadorRele={contadorRele}                                      // contador de lecturas del relé
-      contadorAnalizador={contadorAnalizador}                          // contador de lecturas del analizador
-      // Polling de lecturas desde BD
-      estaPolling={estaPolling}                                        // indica si hay polling activo
-      mostrarProgresoPolling={mostrarProgresoPolling}                  // controla animación de borde del polling
-      periodoPolling={periodoPolling}                                  // periodo de polling en segundos
-      contadorPolling={contadorPolling}                                // contador de lecturas de polling
-    />
-  );
+  const renderizarCaja = (box, idx, zona) => {
+    // Determinar si esta zona tiene error
+    const zonaConError = zona === "sup" ? errorSuperior : errorInferior;
+    return (
+      <CajaMedicion
+        key={`${zona}-${idx}`}                                           // key estable por lado e índice
+        box={box}                                                        // datos de la caja (etiqueta, valor, enabled, origen)
+        indice={idx}                                                     // posición dentro del grupo
+        zona={zona}                                                      // identifica si la caja es superior o inferior
+        mideRele={mideRele}                                              // indica si hay medición de relé activa
+        mideAnalizador={mideAnalizador}                                  // indica si hay medición de analizador activa
+        mostrarProgresoRele={mostrarProgresoRele}                        // controla animación de borde del relé
+        mostrarProgresoAnalizador={mostrarProgresoAnalizador}            // controla animación de borde del analizador
+        periodoRele={periodoRele}                                        // periodo configurado para relé
+        periodoAnalizador={periodoAnalizador}                            // periodo configurado para analizador
+        contadorRele={contadorRele}                                      // contador de lecturas del relé
+        contadorAnalizador={contadorAnalizador}                          // contador de lecturas del analizador
+        // Polling de lecturas desde BD
+        estaPolling={estaPolling}                                        // indica si hay polling activo
+        mostrarProgresoPolling={mostrarProgresoPolling}                  // controla animación de borde del polling
+        periodoPolling={periodoPolling}                                  // periodo de polling en segundos
+        contadorPolling={contadorPolling}                                // contador de lecturas de polling
+        // Error de polling por zona
+        tieneError={zonaConError}                                        // indica si esta zona tiene error de lectura
+      />
+    );
+  };
 
   return (
     <div
@@ -209,6 +229,19 @@ const TarjetaAlimentador = ({
           zona="inf"
           renderizarCaja={renderizarCaja}
         />
+
+        {/* ===== OVERLAY DE ERROR ===== */}
+        {/* Mostrar overlay solo cuando hay 3+ errores consecutivos (error crítico) */}
+        {tieneErrorCritico && (
+          <div className="alim-card-error-overlay alim-card-error-overlay--parpadeo">
+            <div className="alim-card-error-content">
+              <span className="alim-card-error-icon">⚠</span>
+              <span className="alim-card-error-title">ATENCIÓN</span>
+              <span className="alim-card-error-message">Posiblemente fuera de servicio</span>
+              <span className="alim-card-error-detail">Las últimas 3 lecturas no fueron válidas o dieron error</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

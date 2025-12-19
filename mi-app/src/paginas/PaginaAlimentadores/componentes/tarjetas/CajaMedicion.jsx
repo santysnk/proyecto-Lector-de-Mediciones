@@ -22,6 +22,8 @@ const CajaMedicion = ({
 	mostrarProgresoPolling = false,   // activa animación de borde para polling
 	periodoPolling = 60,              // periodo de polling en segundos
 	contadorPolling = 0,              // cuántas lecturas se hicieron durante polling
+	// Error de polling
+	tieneError = false,               // indica si hay error de lectura
 }) => {
 	const esDelRele = box.origen === "rele" || !box.origen;       // si no se especifica origen, asumimos relé
 	const esDelAnalizador = box.origen === "analizador";
@@ -74,7 +76,7 @@ const CajaMedicion = ({
 	let clasesValor = "alim-card-meter-value";                    // clase base del valor
 
 	// si hay animación activa, agregar la clase correspondiente
-	if (usarAnimacion) {
+	if (usarAnimacion && !tieneError) {
 		if (pollingActivo || esDelRele) {
 			clasesValor += " alim-meter-progress-rele";
 		} else if (esDelAnalizador) {
@@ -82,8 +84,19 @@ const CajaMedicion = ({
 		}
 	}
 
+	// si hay error, agregar clase de error
+	if (tieneError && box.enabled) {
+		clasesValor += " alim-card-meter-value--error";
+	}
+
 	// Key que incluye el contador de lecturas para reiniciar animación
 	const claveValor = `${zona}-${indice}-${equipo}-c${contadorLecturas}`;
+
+	// Determinar qué valor mostrar
+	let valorMostrar = box.valor ?? "--,--";
+	if (tieneError && box.enabled) {
+		valorMostrar = "ERROR";
+	}
 
 	return (
 		<div key={`${zona}-${indice}`} className="alim-card-meter">
@@ -92,14 +105,14 @@ const CajaMedicion = ({
 				key={claveValor}
 				className={clasesValor}
 				style={
-					usarAnimacion
+					usarAnimacion && !tieneError
 						? {
 								[propiedadDuracion]: `${duracionAnimacion}s`, // pasa el periodo como variable CSS
 						  }
 						: undefined
 				}
 			>
-				{box.valor ?? "--,--"}
+				{valorMostrar}
 			</span>
 		</div>
 	);

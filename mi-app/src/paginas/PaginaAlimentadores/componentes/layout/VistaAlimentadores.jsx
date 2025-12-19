@@ -85,6 +85,7 @@ const {
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
 	const pollingIntervalsRef = useRef({}); // { [alimId]: intervalId } - para limpiar intervalos
 	const [registradores, setRegistradores] = useState([]); // Lista de registradores del workspace
+	const [contadoresErrorPolling, setContadoresErrorPolling] = useState({}); // { [alimId_zona]: number } - contador de errores consecutivos por registrador/zona
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -255,54 +256,113 @@ const {
 	// Obtiene el contador de lecturas de polling para un alimentador
 	const obtenerContadorPolling = (alimId) => contadoresPolling[alimId] || 0;
 
+	// Obtiene el error de polling de un alimentador por zona
+	// Devuelve objeto con:
+	//   - superior/inferior: boolean - true si hay AL MENOS 1 error (para mostrar "ERROR" en box)
+	//   - superiorCritico/inferiorCritico: boolean - true si hay 3+ errores (para mostrar overlay)
+	const obtenerErrorPolling = (alimId) => {
+		const contadorSuperior = contadoresErrorPolling[`${alimId}_superior`] || 0;
+		const contadorInferior = contadoresErrorPolling[`${alimId}_inferior`] || 0;
+
+		// Si no hay errores en ninguna zona, devolver null
+		if (contadorSuperior === 0 && contadorInferior === 0) return null;
+
+		return {
+			// Para mostrar "ERROR" en los boxes (desde el primer error)
+			superior: contadorSuperior >= 1,
+			inferior: contadorInferior >= 1,
+			// Para mostrar overlay de ATENCIÓN (después de 3 errores consecutivos)
+			superiorCritico: contadorSuperior >= 3,
+			inferiorCritico: contadorInferior >= 3,
+		};
+	};
+
 	// Función para obtener lecturas de un registrador y actualizar el estado
 	const fetchLecturasRegistrador = useCallback(async (alimId, registradorId, zona = null) => {
+		// Clave para el contador de errores: usa zona si está especificada
+		const claveError = zona ? `${alimId}_${zona}` : `${alimId}_superior`; // default a superior si no hay zona
+
 		try {
 			const lecturas = await obtenerUltimasLecturasPorRegistrador(registradorId, 1);
-			if (lecturas && lecturas.length > 0) {
-				const lectura = lecturas[0];
 
-				// Guardar lectura por zona si se especifica, o global si no
-				const clavePolling = zona ? `${alimId}_${zona}` : alimId;
-				setLecturasPolling((prev) => ({
+			// Si no hay lecturas disponibles, simplemente no hacer nada (no es un error)
+			if (!lecturas || lecturas.length === 0) {
+				return;
+			}
+
+			const lectura = lecturas[0];
+
+			// Guardar lectura por zona si se especifica, o global si no
+			const clavePolling = zona ? `${alimId}_${zona}` : alimId;
+			setLecturasPolling((prev) => ({
+				...prev,
+				[clavePolling]: lectura,
+			}));
+
+			// Verificar si la lectura tiene error (exito === false o valores vacíos)
+			const tieneError = lectura.exito === false || !lectura.valores || lectura.valores.length === 0;
+
+			if (tieneError) {
+				// Incrementar contador de errores consecutivos para esta zona/registrador
+				setContadoresErrorPolling((prev) => ({
 					...prev,
-					[clavePolling]: lectura,
+					[claveError]: (prev[claveError] || 0) + 1,
+				}));
+				// Incrementar contador general para que la UI sepa que hubo un intento
+				setContadoresPolling((prev) => ({
+					...prev,
+					[alimId]: (prev[alimId] || 0) + 1,
+				}));
+				return; // No actualizar valores si hay error
+			}
+
+			// Si llegamos aquí, la lectura es exitosa - resetear contador de errores para esta zona
+			setContadoresErrorPolling((prev) => {
+				if (prev[claveError]) {
+					const nuevo = { ...prev };
+					delete nuevo[claveError];
+					return nuevo;
+				}
+				return prev;
+			});
+
+			// Transformar los valores al formato esperado por calcularValoresLadoTarjeta
+			// La lectura tiene: { id, registrador_id, timestamp, valores: [...], indice_inicial, cantidad_registros, ... }
+			// El formato esperado es: { rele: [{ index, address, value }, ...] }
+			if (lectura.valores && Array.isArray(lectura.valores)) {
+				const indiceInicial = lectura.indice_inicial ?? 0;
+
+				const registrosTransformados = lectura.valores.map((valor, idx) => ({
+					index: idx,
+					address: indiceInicial + idx,
+					value: valor,
 				}));
 
-				// Transformar los valores al formato esperado por calcularValoresLadoTarjeta
-				// La lectura tiene: { id, registrador_id, timestamp, valores: [...], indice_inicial, cantidad_registros, ... }
-				// El formato esperado es: { rele: [{ index, address, value }, ...] }
-				if (lectura.valores && Array.isArray(lectura.valores)) {
-					const indiceInicial = lectura.indice_inicial ?? 0;
+				// Actualizar registrosEnVivo acumulando con registros existentes
+				// Esto permite que múltiples registradores contribuyan datos a la misma card
+				actualizarRegistros(alimId, (prevRegistros) => {
+					const registrosAnteriores = prevRegistros?.rele || [];
+					// Filtrar registros anteriores que no estén en el rango del nuevo registrador
+					// para evitar duplicados, luego agregar los nuevos
+					const rangoNuevo = new Set(registrosTransformados.map(r => r.address));
+					const registrosFiltrados = registrosAnteriores.filter(r => !rangoNuevo.has(r.address));
+					return {
+						rele: [...registrosFiltrados, ...registrosTransformados]
+					};
+				});
 
-					const registrosTransformados = lectura.valores.map((valor, idx) => ({
-						index: idx,
-						address: indiceInicial + idx,
-						value: valor,
-					}));
-
-					// Actualizar registrosEnVivo acumulando con registros existentes
-					// Esto permite que múltiples registradores contribuyan datos a la misma card
-					actualizarRegistros(alimId, (prevRegistros) => {
-						const registrosAnteriores = prevRegistros?.rele || [];
-						// Filtrar registros anteriores que no estén en el rango del nuevo registrador
-						// para evitar duplicados, luego agregar los nuevos
-						const rangoNuevo = new Set(registrosTransformados.map(r => r.address));
-						const registrosFiltrados = registrosAnteriores.filter(r => !rangoNuevo.has(r.address));
-						return {
-							rele: [...registrosFiltrados, ...registrosTransformados]
-						};
-					});
-
-					// Incrementar contador de lecturas para reiniciar la animación de borde
-					setContadoresPolling((prev) => ({
-						...prev,
-						[alimId]: (prev[alimId] || 0) + 1,
-					}));
-				}
+				// Incrementar contador de lecturas para reiniciar la animación de borde
+				setContadoresPolling((prev) => ({
+					...prev,
+					[alimId]: (prev[alimId] || 0) + 1,
+				}));
 			}
 		} catch (error) {
 			console.error(`[Polling] Error obteniendo lecturas para alimentador ${alimId}:`, error);
+			setContadoresErrorPolling((prev) => ({
+				...prev,
+				[claveError]: (prev[claveError] || 0) + 1,
+			}));
 		}
 	}, [actualizarRegistros]);
 
@@ -311,23 +371,30 @@ const {
 		const registradores = [];
 		const card_design = alim.card_design;
 
-		if (card_design?.superior?.registrador_id) {
-			registradores.push({ zona: "superior", id: card_design.superior.registrador_id });
-		}
-		if (card_design?.inferior?.registrador_id) {
-			// Solo agregar si es diferente al superior
-			const yaTieneSuperior = registradores.some(r => r.id === card_design.inferior.registrador_id);
-			if (!yaTieneSuperior) {
-				registradores.push({ zona: "inferior", id: card_design.inferior.registrador_id });
+		const regSuperior = card_design?.superior?.registrador_id;
+		const regInferior = card_design?.inferior?.registrador_id;
+
+		if (regSuperior && regInferior) {
+			// Ambas zonas tienen registrador configurado
+			if (regSuperior === regInferior) {
+				// Mismo registrador para ambas zonas
+				registradores.push({ zona: "superior", zonas: ["superior", "inferior"], id: regSuperior });
 			} else {
-				// Si es el mismo, marcar que el superior también cubre inferior
-				registradores[0].zonas = ["superior", "inferior"];
+				// Registradores diferentes para cada zona
+				registradores.push({ zona: "superior", id: regSuperior });
+				registradores.push({ zona: "inferior", id: regInferior });
 			}
+		} else if (regSuperior) {
+			// Solo hay registrador en superior - asumimos que cubre ambas zonas de la tarjeta
+			registradores.push({ zona: "superior", zonas: ["superior", "inferior"], id: regSuperior });
+		} else if (regInferior) {
+			// Solo hay registrador en inferior - asumimos que cubre ambas zonas de la tarjeta
+			registradores.push({ zona: "inferior", zonas: ["superior", "inferior"], id: regInferior });
 		}
 
 		// Compatibilidad: si no hay registradores en zonas, usar el de la raíz (formato antiguo)
 		if (registradores.length === 0 && alim.registrador_id) {
-			registradores.push({ zona: "legacy", id: alim.registrador_id });
+			registradores.push({ zona: "legacy", zonas: ["superior", "inferior"], id: alim.registrador_id });
 		}
 
 		return registradores;
@@ -361,13 +428,20 @@ const {
 		// Crear intervalos para cada registrador único
 		const intervalos = [];
 
-		registradores.forEach(({ zona, id: registradorId }) => {
-			// Hacer la primera lectura inmediatamente
-			fetchLecturasRegistrador(alim.id, registradorId, zona);
+		registradores.forEach(({ zona, zonas, id: registradorId }) => {
+			// Si el registrador cubre múltiples zonas, usar ese array; si no, usar la zona individual
+			const zonasACubrir = zonas || [zona];
+
+			// Hacer la primera lectura inmediatamente para cada zona que cubre este registrador
+			zonasACubrir.forEach((z) => {
+				fetchLecturasRegistrador(alim.id, registradorId, z);
+			});
 
 			// Configurar intervalo para lecturas periódicas
 			const intervalId = setInterval(() => {
-				fetchLecturasRegistrador(alim.id, registradorId, zona);
+				zonasACubrir.forEach((z) => {
+					fetchLecturasRegistrador(alim.id, registradorId, z);
+				});
 			}, alim.intervalo_consulta_ms);
 
 			intervalos.push(intervalId);
@@ -402,6 +476,18 @@ const {
 			const nuevo = { ...prev };
 			delete nuevo[alimId];
 			return nuevo;
+		});
+		// Limpiar contador de errores de polling para ese alimentador (ambas zonas)
+		setContadoresErrorPolling((prev) => {
+			const claveSup = `${alimId}_superior`;
+			const claveInf = `${alimId}_inferior`;
+			if (prev[claveSup] || prev[claveInf]) {
+				const nuevo = { ...prev };
+				delete nuevo[claveSup];
+				delete nuevo[claveInf];
+				return nuevo;
+			}
+			return prev;
 		});
 	}, []);
 
@@ -452,6 +538,7 @@ const {
 		setAlimentadoresPolling({});
 		setLecturasPolling({});
 		setContadoresPolling({});
+		setContadoresErrorPolling({});
 	}, [puestoSeleccionado?.id]);
 
 	// ===== DRAG & DROP =====
@@ -613,6 +700,7 @@ const {
 							estaPolling={estaPolling}
 							onPlayStopClick={handlePlayStopClick}
 							obtenerContadorPolling={obtenerContadorPolling}
+							obtenerErrorPolling={obtenerErrorPolling}
 						/>
 					</>
 				)}

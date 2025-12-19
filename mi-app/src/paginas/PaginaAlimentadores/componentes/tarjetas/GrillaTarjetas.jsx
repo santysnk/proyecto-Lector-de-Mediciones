@@ -108,6 +108,7 @@ const GrillaTarjetas = ({
 	estaPolling,              // (alimId) => boolean
 	onPlayStopClick,          // (alimId) => void
 	obtenerContadorPolling,   // (alimId) => number - contador de lecturas para animación
+	obtenerErrorPolling,      // (alimId) => { mensaje, timestamp } | null - error de lectura
 }) => {
 	const gridRef = useRef(null);
 	// Posiciones Y de los espacios entre filas (para posicionar los RowGapResizers)
@@ -381,6 +382,7 @@ const GrillaTarjetas = ({
 									onPlayStopClick={() => onPlayStopClick && onPlayStopClick(alim.id)}
 									contadorPolling={obtenerContadorPolling ? obtenerContadorPolling(alim.id) : 0}
 									periodoPolling={(alim.intervalo_consulta_ms || 60000) / 1000}
+									errorPolling={obtenerErrorPolling ? obtenerErrorPolling(alim.id) : null}
 								/>
 							</div>
 							{/* GapResizer a la derecha de cada tarjeta (elemento hermano independiente) */}

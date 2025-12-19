@@ -132,6 +132,7 @@
 
 /* Cuerpo de la tarjeta */
 .alim-card-body {
+	position: relative;
 	padding: 0.8rem 1rem 1rem;
 	background-color: #2b2c2b;
 }
@@ -259,6 +260,84 @@
 	}
 	100% {
 		background-size: 100% 2px, 2px 100%, 100% 2px, 2px 100%;
+	}
+}
+
+/* ===== ESTADO DE ERROR EN LA TARJETA ===== */
+
+/* Borde rojo sutil cuando hay error */
+.alim-card-error {
+	border-color: #dc2626;
+}
+
+/* Overlay semi-transparente sobre el cuerpo de la tarjeta */
+.alim-card-error-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.75);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 10;
+	border-radius: 0 0 12px 12px;
+}
+
+.alim-card-error-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	text-align: center;
+	padding: 1rem;
+}
+
+.alim-card-error-icon {
+	font-size: 2rem;
+	color: #fbbf24;
+	line-height: 1;
+}
+
+.alim-card-error-title {
+	font-size: 0.9rem;
+	font-weight: 700;
+	color: #fbbf24;
+	letter-spacing: 0.1em;
+}
+
+.alim-card-error-message {
+	font-size: 0.8rem;
+	color: #f1f5f9;
+	font-weight: 500;
+}
+
+.alim-card-error-detail {
+	font-size: 0.7rem;
+	color: #94a3b8;
+	font-style: italic;
+}
+
+/* Valor en estado de error */
+.alim-card-meter-value--error {
+	background-color: #450a0a;
+	border-color: #dc2626;
+	color: #ef4444;
+	box-shadow: inset 0 0 6px rgba(239, 68, 68, 0.4);
+}
+
+/* Animación de parpadeo para el overlay de error */
+.alim-card-error-overlay--parpadeo {
+	animation: alim-error-parpadeo 3s ease-in-out infinite;
+}
+
+@keyframes alim-error-parpadeo {
+	0%, 70% {
+		opacity: 1;
+	}
+	85% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
 	}
 }
 
