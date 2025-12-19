@@ -87,7 +87,6 @@ const GrillaTarjetas = ({
 	puestoId,
 	elementoArrastrandoId,
 	onAbrirConfiguracion,
-	onAbrirMapeo,
 	onDragStart,
 	onDragOver,
 	onDrop,
@@ -357,7 +356,6 @@ const GrillaTarjetas = ({
 									nombre={alim.nombre}
 									color={alim.color}
 									onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
-									onMapClick={() => onAbrirMapeo(puestoId, alim)}
 									topSide={lecturasAlim.parteSuperior}
 									bottomSide={lecturasAlim.parteInferior}
 									draggable={true}

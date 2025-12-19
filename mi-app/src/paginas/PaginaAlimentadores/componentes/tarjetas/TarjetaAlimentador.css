@@ -86,11 +86,6 @@
 	text-overflow: ellipsis;    /* poner "..." al final */
 }
 
-/* Botón específico de mapeo (tiene un poco más de padding) */
-.alim-card-map-btn {
-	padding-right: 10px;
-}
-
 /* Botón Play/Stop para polling de lecturas */
 .alim-card-play-btn {
 	border: 1px solid #37415171;

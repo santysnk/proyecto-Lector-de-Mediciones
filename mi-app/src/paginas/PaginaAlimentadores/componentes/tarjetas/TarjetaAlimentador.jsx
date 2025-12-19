@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from "react";   // React + hooks para estado y refs
 import "./TarjetaAlimentador.css";                            // estilos visuales de la tarjeta
 import configIcon from "../../../../assets/imagenes/Config_Icon.png"; // icono de configuración (tuerca)
-import mapIcon from "../../../../assets/imagenes/Mapeo_icon.png";     // icono de mapeo
 import CajaMedicion from "./CajaMedicion.jsx";                // box individual de medición
 import GrupoMedidores from "./GrupoMedidores.jsx";            // grupo de cajas (parte superior/inferior)
 
@@ -52,7 +51,6 @@ const TarjetaAlimentador = ({
   nombre,
   color,
   onConfigClick,           // abre modal de configuración del alimentador
-  onMapClick,              // abre modal de mapeo de mediciones
   topSide,                 // diseño + valores para la parte superior
   bottomSide,              // diseño + valores para la parte inferior
   draggable = false,       // si la tarjeta se puede arrastrar
@@ -190,14 +188,6 @@ const TarjetaAlimentador = ({
             <img src={configIcon} alt="Configurar" className="alim-card-icon" />
           </button>
 
-          <button
-            type="button"
-            className="alim-card-icon-btn alim-card-map-btn"
-            onClick={onMapClick}
-            title="Mapeo"
-          >
-            <img src={mapIcon} alt="Mapeo" className="alim-card-icon" />
-          </button>
         </div>
 
         <span className="alim-card-title">{nombre}</span>

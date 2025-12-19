@@ -13,7 +13,6 @@ import SkeletonCard from "../tarjetas/SkeletonCard.jsx";            // skeleton 
 import ModalNuevoPuesto from "../modales/ModalNuevoPuesto.jsx";     // modal para crear puestos
 import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal para editar/renombrar/eliminar puestos
 import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
-import ModalMapeoMediciones from "../modales/ModalMapeoMediciones.jsx";                   // modal de mapeo de mediciones
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 
@@ -93,7 +92,6 @@ const {
 	const estadoModalNuevoPuesto = obtenerEstado("nuevoPuesto");     // { abierto, datos } para modal de nuevo puesto
 	const estadoModalEditarPuestos = obtenerEstado("editarPuestos"); // idem para modal de edición de puestos
 	const estadoModalAlimentador = obtenerEstado("alimentador");     // idem para modal de configuración de alimentador
-	const estadoModalMapeo = obtenerEstado("mapeo");                 // idem para modal de mapeo de mediciones
 	const estadoModalConfigPuesto = obtenerEstado("configPuesto");   // idem para modal de configuración global del puesto
 
 	const buscarAlimentador = (alimId) =>
@@ -104,10 +102,6 @@ const {
 		: null;
 
 	const modoAlimentador = estadoModalAlimentador.datos?.modo || "crear"; // "crear" o "editar" según cómo se abrió el modal
-
-	const alimentadorParaMapeo = estadoModalMapeo.datos?.alimentadorId
-		? buscarAlimentador(estadoModalMapeo.datos.alimentadorId)
-		: null;
 
 	// Navegacion
 	const handleSalir = () => {
@@ -175,9 +169,6 @@ const {
 	const abrirModalEditarAlim = (_puestoId, alimentador) =>
 		abrirModal("alimentador", { modo: "editar", alimentadorId: alimentador.id });
 
-	const abrirModalMapeo = (_puestoId, alimentador) =>
-		abrirModal("mapeo", { alimentadorId: alimentador.id });
-
 	const handleGuardarAlimentador = async (datos) => {
 		if (!datos || !datos.nombre || !puestoSeleccionado) return;
 
@@ -230,15 +221,6 @@ const {
 
 		eliminarAlimentador(puestoSeleccionado.id, alimentadorEnEdicion.id);
 		cerrarModal("alimentador");
-	};
-
-	const handleGuardarMapeo = (nuevoMapeo) => {
-		if (!puestoSeleccionado || !alimentadorParaMapeo) return;
-
-		actualizarAlimentador(puestoSeleccionado.id, alimentadorParaMapeo.id, {
-			mapeoMediciones: nuevoMapeo,                              // guarda el diseño/mapeo para ese alimentador
-		});
-		cerrarModal("mapeo");
 	};
 
 	// ===== POLLING DE LECTURAS =====
@@ -575,7 +557,6 @@ const {
 							puestoId={puestoSeleccionado.id}
 							elementoArrastrandoId={elementoArrastrandoId}
 							onAbrirConfiguracion={abrirModalEditarAlim}
-							onAbrirMapeo={abrirModalMapeo}
 							onDragStart={handleDragStartAlim}
 							onDragOver={alPasarPorEncima}
 							onDrop={handleDropAlim}
@@ -623,13 +604,6 @@ const {
 				onCancelar={() => cerrarModal("alimentador")}
 				onConfirmar={handleGuardarAlimentador}
 				onEliminar={handleEliminarAlimentador}
-			/>
-
-			<ModalMapeoMediciones
-				abierto={estadoModalMapeo.abierto}
-				alimentador={alimentadorParaMapeo}
-				onCerrar={() => cerrarModal("mapeo")}
-				onGuardar={handleGuardarMapeo}
 			/>
 
 			<ModalConfiguracionPuesto
