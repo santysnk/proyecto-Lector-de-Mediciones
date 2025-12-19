@@ -14,6 +14,49 @@ const GAP_FIJO_MOBILE = 10;
 const ROW_GAP_FIJO_MOBILE = 20;
 
 /**
+ * Verifica si un alimentador tiene la configuración completa para hacer polling.
+ * Requisitos:
+ * - registrador_id definido
+ * - intervalo_consulta_ms definido y > 0
+ * - Al menos un box habilitado (enabled: true) con un índice válido en superior o inferior
+ */
+const puedeHacerPolling = (alim) => {
+	// 1. Verificar registrador_id
+	if (!alim.registrador_id) {
+		return false;
+	}
+
+	// 2. Verificar intervalo_consulta_ms
+	if (!alim.intervalo_consulta_ms || alim.intervalo_consulta_ms <= 0) {
+		return false;
+	}
+
+	// 3. Verificar que haya al menos un box habilitado con índice válido
+	const cardDesign = alim.card_design || {};
+	const superior = cardDesign.superior || {};
+	const inferior = cardDesign.inferior || {};
+
+	const boxesSuperior = superior.boxes || [];
+	const boxesInferior = inferior.boxes || [];
+
+	const tieneBoxHabilitado = (boxes) => {
+		return boxes.some((box) => {
+			if (!box.enabled) return false;
+			// El índice puede estar en 'indice' (formato modal) o 'registro' (formato normalizado)
+			const indice = box.indice !== undefined ? box.indice : box.registro;
+			// Considerar válido si es un número >= 0 o un string numérico no vacío
+			if (indice === null || indice === undefined || indice === "") {
+				return false;
+			}
+			const numIndice = Number(indice);
+			return Number.isFinite(numIndice) && numIndice >= 0;
+		});
+	};
+
+	return tieneBoxHabilitado(boxesSuperior) || tieneBoxHabilitado(boxesInferior);
+};
+
+/**
  * Grilla de tarjetas de alimentadores.
  *
  * Estructura:
@@ -49,6 +92,10 @@ const GrillaTarjetas = ({
 	onRowGapChange,
 	// Skeleton card (opcional, se muestra mientras se guarda)
 	skeletonCard = null,
+	// Polling de lecturas
+	estaPolling,              // (alimId) => boolean
+	onPlayStopClick,          // (alimId) => void
+	obtenerContadorPolling,   // (alimId) => number - contador de lecturas para animación
 }) => {
 	const gridRef = useRef(null);
 	// Posiciones Y de los espacios entre filas (para posicionar los RowGapResizers)
@@ -317,6 +364,12 @@ const GrillaTarjetas = ({
 									timestampInicioAnalizador={obtenerTimestampInicio(alim.id, "analizador")}
 									contadorRele={obtenerContadorLecturas(alim.id, "rele")}
 									contadorAnalizador={obtenerContadorLecturas(alim.id, "analizador")}
+									// Polling de lecturas
+									estaPolling={estaPolling ? estaPolling(alim.id) : false}
+									puedePolling={puedeHacerPolling(alim)}
+									onPlayStopClick={() => onPlayStopClick && onPlayStopClick(alim.id)}
+									contadorPolling={obtenerContadorPolling ? obtenerContadorPolling(alim.id) : 0}
+									periodoPolling={(alim.intervalo_consulta_ms || 60000) / 1000}
 								/>
 							</div>
 							{/* GapResizer a la derecha de cada tarjeta (elemento hermano independiente) */}

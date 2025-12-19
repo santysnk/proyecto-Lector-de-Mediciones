@@ -144,7 +144,9 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
       puestoSeleccionado.alimentadores.forEach((alim) => {
         const regsDelAlim = registrosEnVivo[alim.id] || null;
-        const diseno = obtenerDisenoTarjeta(alim.mapeoMediciones);
+        // Usar card_design (nuevo) o mapeoMediciones (legacy) para compatibilidad
+        const cardDesignData = alim.card_design || alim.mapeoMediciones || {};
+        const diseno = obtenerDisenoTarjeta(cardDesignData);
 
         const parteSuperior = calcularValoresLadoTarjeta(regsDelAlim, diseno.superior);
         const parteInferior = calcularValoresLadoTarjeta(regsDelAlim, diseno.inferior);
@@ -260,6 +262,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       estaMidiendo: medicionesHook.estaMidiendo,
       obtenerTimestampInicio: medicionesHook.obtenerTimestampInicio,
       obtenerContadorLecturas: medicionesHook.obtenerContadorLecturas,
+      actualizarRegistros: medicionesHook.actualizarRegistros,
 
       // Preferencias UI (gaps)
       // Las funciones obtenerGap y obtenerRowGap combinan localStorage + BD

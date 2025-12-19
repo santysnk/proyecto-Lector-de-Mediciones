@@ -91,6 +91,41 @@
 	padding-right: 10px;
 }
 
+/* Botón Play/Stop para polling de lecturas */
+.alim-card-play-btn {
+	border: 1px solid #37415171;
+	border-radius: 10px;
+	background: transparent;
+	cursor: pointer;
+	padding: 4px 8px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 0.9rem;
+	color: #f9fafb;
+	margin-left: auto; /* empuja el botón a la derecha */
+	transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.alim-card-play-btn:hover:not(:disabled) {
+	background-color: rgba(221, 225, 233, 0.6);
+}
+
+.alim-card-play-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
+/* Estado activo (polling en curso) */
+.alim-card-play-btn--active {
+	background-color: rgba(239, 68, 68, 0.3);
+	border-color: #ef4444;
+}
+
+.alim-card-play-btn--active:hover:not(:disabled) {
+	background-color: rgba(239, 68, 68, 0.5);
+}
+
 .alim-card-map-label {
 	font-size: 0.7rem;
 	text-transform: uppercase;

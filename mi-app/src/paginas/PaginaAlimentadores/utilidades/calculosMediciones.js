@@ -22,26 +22,56 @@ export const obtenerListaRegistros = (registrosPorOrigen, origen) => {
 };
 
 /**
- * Obtiene el diseño de la tarjeta desde el mapeo de mediciones.
- * Si no hay mapeo, devuelve el diseño por defecto.
+ * Obtiene el diseño de la tarjeta desde card_design o mapeoMediciones (legacy).
+ * Si no hay configuración, devuelve el diseño por defecto.
  *
- * @param {Object} mapeoMediciones - Configuración de mapeo.
+ * @param {Object} cardDesign - Configuración directa de card_design (nuevo formato)
+ *                              o mapeoMediciones.cardDesign (legacy).
  * @returns {Object} Diseño con estructura { superior: {...}, inferior: {...} }.
  */
-export const obtenerDisenoTarjeta = (mapeoMediciones) => {
-	const diseño = mapeoMediciones?.cardDesign;
+export const obtenerDisenoTarjeta = (cardDesign) => {
+	// Si no hay diseño, usar por defecto
+	if (!cardDesign || Object.keys(cardDesign).length === 0) {
+		return DISEÑO_TARJETA_POR_DEFECTO;
+	}
 
-	if (!diseño) return DISEÑO_TARJETA_POR_DEFECTO;
+	// Nuevo formato: card_design ya tiene { superior, inferior } directamente
+	// Legacy: mapeoMediciones tenía cardDesign.superior/inferior
+	const diseño = cardDesign.cardDesign || cardDesign;
+
+	// Si el diseño tiene superior/inferior, usarlo
+	if (diseño.superior || diseño.inferior) {
+		return {
+			superior: normalizarLadoDiseno(diseño.superior, DISEÑO_TARJETA_POR_DEFECTO.superior),
+			inferior: normalizarLadoDiseno(diseño.inferior, DISEÑO_TARJETA_POR_DEFECTO.inferior),
+		};
+	}
+
+	return DISEÑO_TARJETA_POR_DEFECTO;
+};
+
+/**
+ * Normaliza un lado del diseño, convirtiendo el formato del modal al formato esperado.
+ * El modal guarda: { tituloId, tituloCustom, cantidad, boxes: [{ enabled, label, indice, formula }] }
+ * El cálculo espera: { tituloId, tituloCustom, cantidad, boxes: [{ enabled, label, registro, formula, origen }] }
+ */
+const normalizarLadoDiseno = (lado, ladoDefault) => {
+	if (!lado) return ladoDefault;
+
+	// Normalizar los boxes: convertir 'indice' a 'registro' si es necesario
+	const boxesNormalizados = (lado.boxes || []).map((box) => ({
+		enabled: !!box.enabled,
+		label: box.label || "",
+		// El modal guarda 'indice', el cálculo espera 'registro'
+		registro: box.registro !== undefined ? box.registro : box.indice,
+		formula: box.formula || "",
+		origen: box.origen || "rele", // por defecto relé
+	}));
 
 	return {
-		superior: {
-			...DISEÑO_TARJETA_POR_DEFECTO.superior,
-			...(diseño.superior || {}), // sobreescribe sólo lo que venga del mapeo
-		},
-		inferior: {
-			...DISEÑO_TARJETA_POR_DEFECTO.inferior,
-			...(diseño.inferior || {}),
-		},
+		...ladoDefault,
+		...lado,
+		boxes: boxesNormalizados,
 	};
 };
 

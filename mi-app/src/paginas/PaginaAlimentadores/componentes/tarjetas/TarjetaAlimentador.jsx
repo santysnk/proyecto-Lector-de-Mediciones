@@ -71,13 +71,22 @@ const TarjetaAlimentador = ({
   timestampInicioAnalizador = null,    // idem
   contadorRele = 0,                    // número de lecturas realizadas para relé
   contadorAnalizador = 0,              // número de lecturas realizadas para analizador
+
+  // Play/Stop para polling de lecturas
+  estaPolling = false,                 // indica si está activo el polling de lecturas
+  puedePolling = false,                // indica si la card tiene config completa para polling
+  onPlayStopClick,                     // callback para iniciar/detener polling
+  contadorPolling = 0,                 // número de lecturas realizadas durante polling
+  periodoPolling = 60,                 // periodo de polling en segundos (para animación)
 }) => {
   // Control local de animaciones de borde: solo se activan tras recibir una lectura
   const [mostrarProgresoRele, setMostrarProgresoRele] = useState(false);
   const [mostrarProgresoAnalizador, setMostrarProgresoAnalizador] =
     useState(false);
+  const [mostrarProgresoPolling, setMostrarProgresoPolling] = useState(false);
   const ultimoContadorReleRef = useRef(contadorRele);
   const ultimoContadorAnalizadorRef = useRef(contadorAnalizador);
+  const ultimoContadorPollingRef = useRef(contadorPolling);
 
   // Si se cambia de puesto o se detiene la medición de relé, resetea la animación
   useEffect(() => {
@@ -107,6 +116,20 @@ const TarjetaAlimentador = ({
     }
   }, [contadorAnalizador, mideAnalizador]);
 
+  // Control de animación para polling de lecturas desde BD
+  useEffect(() => {
+    if (!estaPolling) {
+      setMostrarProgresoPolling(false);
+      ultimoContadorPollingRef.current = contadorPolling;
+      return;
+    }
+
+    if (contadorPolling !== ultimoContadorPollingRef.current) {
+      ultimoContadorPollingRef.current = contadorPolling;
+      setMostrarProgresoPolling(contadorPolling > 0);
+    }
+  }, [contadorPolling, estaPolling]);
+
   // Armar lados de la tarjeta con valores por defecto si no hay diseño
   const sup = construirLado(topSide, "CONSUMO (A)");
   const inf = construirLado(bottomSide, "TENSIÓN (kV)");
@@ -134,6 +157,11 @@ const TarjetaAlimentador = ({
       periodoAnalizador={periodoAnalizador}                            // periodo configurado para analizador
       contadorRele={contadorRele}                                      // contador de lecturas del relé
       contadorAnalizador={contadorAnalizador}                          // contador de lecturas del analizador
+      // Polling de lecturas desde BD
+      estaPolling={estaPolling}                                        // indica si hay polling activo
+      mostrarProgresoPolling={mostrarProgresoPolling}                  // controla animación de borde del polling
+      periodoPolling={periodoPolling}                                  // periodo de polling en segundos
+      contadorPolling={contadorPolling}                                // contador de lecturas de polling
     />
   );
 
@@ -173,6 +201,23 @@ const TarjetaAlimentador = ({
         </div>
 
         <span className="alim-card-title">{nombre}</span>
+
+        {/* Botón Play/Stop para polling de lecturas */}
+        <button
+          type="button"
+          className={`alim-card-play-btn ${estaPolling ? "alim-card-play-btn--active" : ""}`}
+          onClick={onPlayStopClick}
+          disabled={!puedePolling}
+          title={
+            !puedePolling
+              ? "Configuración incompleta: necesita registrador, intervalo y al menos un box habilitado con índice"
+              : estaPolling
+                ? "Detener polling"
+                : "Iniciar polling"
+          }
+        >
+          {estaPolling ? "⏹" : "▶"}
+        </button>
       </div>
 
       {/* Cuerpo con los 2 bloques (superior / inferior) */}

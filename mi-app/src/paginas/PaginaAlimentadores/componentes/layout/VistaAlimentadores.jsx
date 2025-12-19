@@ -1,6 +1,6 @@
 // src/paginas/PaginaAlimentadores/componentes/layout/VistaAlimentadores.jsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";                                    // para portal del overlay
 import { useNavigate } from "react-router-dom";                     // navegación entre rutas
 import "./VistaAlimentadores.css";                                  // estilos específicos del layout de alimentadores
@@ -22,6 +22,7 @@ import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook d
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
+import { obtenerUltimasLecturasPorRegistrador } from "../../../../servicios/apiService"; // API para polling de lecturas
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -40,11 +41,10 @@ const VistaAlimentadores = () => {
    reordenarAlimentadores,                // guarda el nuevo orden de alimentadores tras el drag & drop
    lecturasTarjetas,                      // lecturas ya procesadas listas para mostrar en las tarjetas
    estaMidiendo,                          // indica si un alimentador/equipo está midiendo (true/false)
-   obtenerRegistros,                      // obtiene los registros crudos de un alimentador ("rele" / "analizador")
    obtenerTimestampInicio,                // devuelve el timestamp de la última lectura (para animaciones/tiempos)
    obtenerContadorLecturas,               // cuántas lecturas se hicieron desde que arrancó la medición
-   alternarMedicion,                      // prende/apaga la medición de un alimentador/equipo (toggle)
    detenerMedicion,                       // detiene explícitamente la medición de un alimentador/equipo
+   actualizarRegistros,                   // actualiza registros manualmente (para polling de lecturas)
    cargando,                              // estado de carga (Supabase)
    error,                                 // error si hubo problema cargando datos
    // Preferencias UI (gaps) - vienen del contexto para consistencia
@@ -77,6 +77,10 @@ const {
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
+	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
+	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
+	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
+	const pollingIntervalsRef = useRef({}); // { [alimId]: intervalId } - para limpiar intervalos
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -185,12 +189,21 @@ const {
 
 		try {
 			if (modoAlimentador === "crear") {
-				await agregarAlimentador(datos);                      // alta de nuevo alimentador
+				const nuevoAlimentador = await agregarAlimentador(datos); // alta de nuevo alimentador
+				// Establecer gap horizontal inicial de 10px para el nuevo alimentador
+				if (nuevoAlimentador?.id) {
+					establecerGap(nuevoAlimentador.id, 10);
+				}
 			} else if (alimentadorEnEdicion) {
+				// Preservar el gapHorizontal existente durante la edición
+				const gapActual = obtenerGap(alimentadorEnEdicion.id);
 				await actualizarAlimentador(
 					puestoSeleccionado.id,
 					alimentadorEnEdicion.id,
-					datos
+					{
+						...datos,
+						gapHorizontal: gapActual, // mantener el gap actual
+					}
 				);                                                    // edición de alimentador existente
 				cerrarModal("alimentador");                           // en edición, cerrar después de guardar
 			}
@@ -228,18 +241,140 @@ const {
 		cerrarModal("mapeo");
 	};
 
-	// ===== MEDICIONES =====
-	const handleAlternarMedicionRele = (alimId, overrideConfig) => {
-		const alim = buscarAlimentador(alimId);
-		if (!alim) return;
-		alternarMedicion(alim, "rele", overrideConfig);               // start/stop medición de relé
-	};
+	// ===== POLLING DE LECTURAS =====
+	// Verifica si un alimentador está haciendo polling
+	const estaPolling = (alimId) => !!alimentadoresPolling[alimId];
 
-	const handleAlternarMedicionAnalizador = (alimId, overrideConfig) => {
-		const alim = buscarAlimentador(alimId);
-		if (!alim) return;
-		alternarMedicion(alim, "analizador", overrideConfig);         // start/stop medición de analizador
-	};
+	// Obtiene el contador de lecturas de polling para un alimentador
+	const obtenerContadorPolling = (alimId) => contadoresPolling[alimId] || 0;
+
+	// Función para obtener lecturas de un registrador y actualizar el estado
+	const fetchLecturasRegistrador = useCallback(async (alimId, registradorId) => {
+		try {
+			const lecturas = await obtenerUltimasLecturasPorRegistrador(registradorId, 1);
+			if (lecturas && lecturas.length > 0) {
+				const lectura = lecturas[0];
+				setLecturasPolling((prev) => ({
+					...prev,
+					[alimId]: lectura,
+				}));
+
+				// Transformar los valores al formato esperado por calcularValoresLadoTarjeta
+				// La lectura tiene: { id, registrador_id, timestamp, valores: [...], indice_inicial, cantidad_registros, ... }
+				// El formato esperado es: { rele: [{ index, address, value }, ...] }
+				// IMPORTANTE: indice_inicial viene de la lectura, NO del alimentador
+				// Si indice_inicial=137 y cantidad_registros=3, entonces:
+				//   valores[0] = registro 137, valores[1] = registro 138, valores[2] = registro 139
+				if (lectura.valores && Array.isArray(lectura.valores)) {
+					// Usar indice_inicial de la lectura (la BD tiene esta columna)
+					const indiceInicial = lectura.indice_inicial ?? 0;
+
+					const registrosTransformados = lectura.valores.map((valor, idx) => ({
+						index: idx,
+						address: indiceInicial + idx,
+						value: valor,
+					}));
+
+					// Actualizar registrosEnVivo a través del contexto
+					// Por ahora asumimos que el registrador es de tipo "rele"
+					// TODO: En el futuro, el tipo podría venir del registrador
+					actualizarRegistros(alimId, { rele: registrosTransformados });
+
+					// Incrementar contador de lecturas para reiniciar la animación de borde
+					setContadoresPolling((prev) => ({
+						...prev,
+						[alimId]: (prev[alimId] || 0) + 1,
+					}));
+				}
+			}
+		} catch (error) {
+			console.error(`[Polling] Error obteniendo lecturas para alimentador ${alimId}:`, error);
+		}
+	}, [actualizarRegistros]);
+
+	// Inicia el polling para un alimentador
+	const iniciarPolling = useCallback((alim) => {
+		if (!alim.registrador_id || !alim.intervalo_consulta_ms) {
+			console.warn(`[Polling] Alimentador ${alim.id} no tiene configuración completa`);
+			return;
+		}
+
+		// Limpiar intervalo existente si hay uno
+		if (pollingIntervalsRef.current[alim.id]) {
+			clearInterval(pollingIntervalsRef.current[alim.id]);
+		}
+
+		// Hacer la primera lectura inmediatamente
+		// El indice_inicial se obtiene directamente de la lectura en la BD
+		fetchLecturasRegistrador(alim.id, alim.registrador_id);
+
+		// Configurar intervalo para lecturas periódicas
+		const intervalId = setInterval(() => {
+			fetchLecturasRegistrador(alim.id, alim.registrador_id);
+		}, alim.intervalo_consulta_ms);
+
+		pollingIntervalsRef.current[alim.id] = intervalId;
+	}, [fetchLecturasRegistrador]);
+
+	// Detiene el polling para un alimentador
+	const detenerPolling = useCallback((alimId) => {
+		if (pollingIntervalsRef.current[alimId]) {
+			clearInterval(pollingIntervalsRef.current[alimId]);
+			delete pollingIntervalsRef.current[alimId];
+		}
+		// Limpiar las lecturas de polling para ese alimentador
+		setLecturasPolling((prev) => {
+			const nuevo = { ...prev };
+			delete nuevo[alimId];
+			return nuevo;
+		});
+		// Resetear el contador de lecturas para ese alimentador
+		setContadoresPolling((prev) => {
+			const nuevo = { ...prev };
+			delete nuevo[alimId];
+			return nuevo;
+		});
+	}, []);
+
+	// Alterna el polling de un alimentador (play/stop)
+	const handlePlayStopClick = useCallback((alimId) => {
+		const alimentador = buscarAlimentador(alimId);
+		if (!alimentador) return;
+
+		const estaActivo = alimentadoresPolling[alimId];
+
+		if (estaActivo) {
+			// Detener polling
+			detenerPolling(alimId);
+		} else {
+			// Iniciar polling
+			iniciarPolling(alimentador);
+		}
+
+		// Actualizar estado visual
+		setAlimentadoresPolling((prev) => ({
+			...prev,
+			[alimId]: !prev[alimId],
+		}));
+	}, [alimentadoresPolling, buscarAlimentador, detenerPolling, iniciarPolling]);
+
+	// Limpiar todos los intervalos al desmontar el componente
+	useEffect(() => {
+		return () => {
+			Object.values(pollingIntervalsRef.current).forEach(clearInterval);
+		};
+	}, []);
+
+	// Detener polling cuando cambia el puesto seleccionado
+	useEffect(() => {
+		// Limpiar todos los intervalos de polling
+		Object.values(pollingIntervalsRef.current).forEach(clearInterval);
+		pollingIntervalsRef.current = {};
+		// Resetear estados
+		setAlimentadoresPolling({});
+		setLecturasPolling({});
+		setContadoresPolling({});
+	}, [puestoSeleccionado?.id]);
 
 	// ===== DRAG & DROP =====
 	const handleDragStartAlim = (alimId) => {
@@ -384,6 +519,10 @@ const {
 							onGapChange={establecerGap}
 							obtenerRowGap={obtenerRowGap}
 							onRowGapChange={establecerRowGap}
+							// Polling de lecturas
+							estaPolling={estaPolling}
+							onPlayStopClick={handlePlayStopClick}
+							obtenerContadorPolling={obtenerContadorPolling}
 						/>
 					</>
 				)}
@@ -407,39 +546,12 @@ const {
 			<ModalConfiguracionAlimentador
 				abierto={estadoModalAlimentador.abierto}
 				puestoNombre={puestoSeleccionado?.nombre || ""}
+				workspaceId={configuracionSeleccionada?.id}
 				modo={modoAlimentador}
 				initialData={alimentadorEnEdicion}
 				onCancelar={() => cerrarModal("alimentador")}
 				onConfirmar={handleGuardarAlimentador}
 				onEliminar={handleEliminarAlimentador}
-				isMeasuringRele={
-					alimentadorEnEdicion
-						? estaMidiendo(alimentadorEnEdicion.id, "rele")
-						: false
-				}
-				isMeasuringAnalizador={
-					alimentadorEnEdicion
-						? estaMidiendo(alimentadorEnEdicion.id, "analizador")
-						: false
-				}
-				onToggleMedicionRele={(override) =>
-					alimentadorEnEdicion &&
-					handleAlternarMedicionRele(alimentadorEnEdicion.id, override)
-				}
-				onToggleMedicionAnalizador={(override) =>
-					alimentadorEnEdicion &&
-					handleAlternarMedicionAnalizador(alimentadorEnEdicion.id, override)
-				}
-				registrosRele={
-					alimentadorEnEdicion
-						? obtenerRegistros(alimentadorEnEdicion.id, "rele")
-						: []
-				}
-				registrosAnalizador={
-					alimentadorEnEdicion
-						? obtenerRegistros(alimentadorEnEdicion.id, "analizador")
-						: []
-				}
 			/>
 
 			<ModalMapeoMediciones

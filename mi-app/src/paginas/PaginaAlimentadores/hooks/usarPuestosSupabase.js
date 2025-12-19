@@ -145,6 +145,7 @@ export const usarPuestosSupabase = (workspaceId) => {
   /**
    * Transforma un alimentador de la DB al formato del frontend
    * Genera el formato con objetos rele/analizador que espera el modal
+   * También soporta el nuevo formato con registrador_id, intervalo_consulta_ms y card_design
    */
   function transformarAlimentadorDeDB(alim) {
     // Para campos numéricos opcionales: si no hay valor en DB, devolver null/undefined
@@ -158,7 +159,13 @@ export const usarPuestosSupabase = (workspaceId) => {
       color: alim.color || COLORES_SISTEMA[0],
       tipoDispositivo: alim.tipo || "rele",
       // Gap horizontal a la derecha de esta tarjeta
-      gapHorizontal: alim.gap_horizontal != null ? alim.gap_horizontal : 10,
+      gapHorizontal: alim.gap_horizontal != null ? alim.gap_horizontal : 0,
+
+      // === NUEVOS CAMPOS para el modal v2 ===
+      registrador_id: alim.registrador_id || null,
+      intervalo_consulta_ms: alim.intervalo_consulta_ms || 60000,
+      card_design: alim.card_design || {},
+
       // Formato nuevo que espera el modal
       // Si no hay valor guardado, dejamos null para que se muestre el placeholder
       rele: {
@@ -201,9 +208,29 @@ export const usarPuestosSupabase = (workspaceId) => {
   /**
    * Transforma un alimentador del frontend al formato de la DB
    * Acepta tanto el formato plano (legacy) como el formato con objetos rele/analizador anidados
+   * También soporta el nuevo formato con registrador_id, intervalo_consulta_ms y card_design
    */
   function transformarAlimentadorADB(alim) {
-    // Detectar si viene en formato nuevo (con objetos rele/analizador) o formato plano
+    // Base común para todos los formatos
+    const base = {
+      nombre: alim.nombre,
+      color: alim.color,
+    };
+
+    // === NUEVO FORMATO: con registrador_id y card_design ===
+    // El nuevo modal envía: { nombre, color, registrador_id, intervalo_consulta_ms, card_design }
+    if (alim.registrador_id !== undefined || alim.card_design !== undefined || alim.intervalo_consulta_ms !== undefined) {
+      return {
+        ...base,
+        registrador_id: alim.registrador_id || null,
+        intervalo_consulta_ms: alim.intervalo_consulta_ms || 60000,
+        card_design: alim.card_design || {},
+        gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 0,
+        mapeo_mediciones: alim.mapeoMediciones || {},
+      };
+    }
+
+    // === FORMATO LEGACY: con objetos rele/analizador ===
     const tieneFormatoNuevo = alim.rele || alim.analizador;
 
     if (tieneFormatoNuevo) {
@@ -211,8 +238,7 @@ export const usarPuestosSupabase = (workspaceId) => {
       // Preservar null para campos numéricos opcionales (puerto, indiceInicial, cantRegistros)
       // para que al cargar se muestren los placeholders en lugar de valores por defecto
       return {
-        nombre: alim.nombre,
-        color: alim.color,
+        ...base,
         tipo: alim.tipoDispositivo || "rele",
         gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 10,
         config_rele: alim.rele ? {
@@ -238,8 +264,7 @@ export const usarPuestosSupabase = (workspaceId) => {
     // Formato plano (legacy)
     // Preservar null para campos numéricos opcionales
     return {
-      nombre: alim.nombre,
-      color: alim.color,
+      ...base,
       tipo: alim.tipoDispositivo || "rele",
       gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 10,
       config_rele: {

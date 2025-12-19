@@ -1,502 +1,632 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/ModalConfiguracionAlimentador.jsx
+// Modal unificado para configurar alimentador: nombre, color, registrador y diseño de card
 
-import React, { useEffect, useState } from "react";                 // React + hooks para estado y efectos
-import "./ModalConfiguracionAlimentador.css";                       // estilos específicos de este modal
-import { leerRegistrosModbus } from "../../utilidades/clienteModbus"; // helper que hace la llamada Modbus vía backend (para medición)
-import { testConexionModbus } from "../../../../servicios/apiService"; // test real via backend → agente
-import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para los alimentadores
+import { useEffect, useState, useRef } from "react";
+import { HexColorPicker } from "react-colorful";
+import "./ModalConfiguracionAlimentador.css";
+import "./ColorPickerSimple.css";
+import { COLORES_SISTEMA } from "../../constantes/colores";
+import {
+	listarAgentesWorkspace,
+	listarRegistradoresAgente,
+} from "../../../../servicios/apiService";
 
-// Subcomponentes de configuración
-import FormularioDatosBasicos from "./configuracion/FormularioDatosBasicos.jsx"; // nombre + color + período
-import TabConfiguracionRele from "./configuracion/TabConfiguracionRele.jsx";     // pestaña de configuración del relé
-import TabConfiguracionAnalizador from "./configuracion/TabConfiguracionAnalizador.jsx"; // pestaña de configuración del analizador
+// Opciones predefinidas para el título del bloque (magnitudes típicas)
+const OPCIONES_TITULO = [
+	{ id: "tension_linea", label: "Tensión de línea (kV)" },
+	{ id: "tension_entre_lineas", label: "Tensión entre líneas (kV)" },
+	{ id: "corriente_132", label: "Corriente de línea (A) (en 13,2 kV)" },
+	{ id: "corriente_33", label: "Corriente de línea (A) (en 33 kV)" },
+	{ id: "potencia_activa", label: "Potencia activa (kW)" },
+	{ id: "potencia_reactiva", label: "Potencia reactiva (kVAr)" },
+	{ id: "potencia_aparente", label: "Potencia aparente (kVA)" },
+	{ id: "factor_potencia", label: "Factor de Potencia" },
+	{ id: "frecuencia", label: "Frecuencia (Hz)" },
+	{ id: "corriente_neutro", label: "Corriente de Neutro (A)" },
+	{ id: "custom", label: "Otro (personalizado)..." },
+];
+
+// Placeholders sugeridos para las etiquetas de cada box
+const PLACEHOLDERS_BOX = ["Ej: R o L1", "Ej: S o L2", "Ej: T o L3", "Ej: Total"];
+
+// Diseño por defecto para un lado de la card
+const crearSideDesignDefault = (tituloId = "corriente_132") => ({
+	tituloId,
+	tituloCustom: "",
+	cantidad: 3,
+	boxes: [
+		{ enabled: false, label: "", indice: null, formula: "" },
+		{ enabled: false, label: "", indice: null, formula: "" },
+		{ enabled: false, label: "", indice: null, formula: "" },
+		{ enabled: false, label: "", indice: null, formula: "" },
+	],
+});
+
+// Diseño por defecto para toda la card
+const crearCardDesignDefault = () => ({
+	superior: crearSideDesignDefault("corriente_132"),
+	inferior: crearSideDesignDefault("tension_linea"),
+});
 
 const ModalConfiguracionAlimentador = ({
-	abierto,                                              // si es false, el modal no se muestra
-	puestoNombre,                                         // nombre del puesto donde vive este registrador
-	modo = "crear",                                       // "crear" | "editar" (cambia textos y botón Eliminar)
-	initialData,                                          // datos actuales del alimentador (cuando se edita)
-	onCancelar,                                           // callback al cerrar sin guardar
-	onConfirmar,                                          // callback al confirmar los datos
-	onEliminar,                                           // callback al eliminar el registrador
-
-	// Estado/control de medición en tiempo real (por equipo)
-	isMeasuringRele = false,                              // si el relé está midiendo ahora mismo
-	isMeasuringAnalizador = false,                        // si el analizador está midiendo ahora mismo
-	onToggleMedicionRele,                                 // función para arrancar/detener medición de relé
-	onToggleMedicionAnalizador,                           // idem para analizador
-	registrosRele = [],                                   // últimas lecturas del relé (para mostrar en el tab)
-	registrosAnalizador = [],                             // últimas lecturas del analizador
+	abierto,
+	puestoNombre,
+	workspaceId,
+	modo = "crear",
+	initialData,
+	onCancelar,
+	onConfirmar,
+	onEliminar,
 }) => {
-	// Datos básicos del alimentador
-	const [nombre, setNombre] = useState("");             // nombre visible de la tarjeta
-	const [color, setColor] = useState(COLORES_SISTEMA[0]); // color de botón/tarjeta
-	const [tab, setTab] = useState("rele");               // pestaña activa: "rele" | "analizador"
+	// === Estado básico ===
+	const [nombre, setNombre] = useState("");
+	const [color, setColor] = useState(COLORES_SISTEMA[0]);
+	const [mostrarPicker, setMostrarPicker] = useState(false);
+	const [colorPersonalizado, setColorPersonalizado] = useState("#ff6b6b");
+	const [valorHex, setValorHex] = useState("#ff6b6b");
+	const pickerRef = useRef(null);
+	const pickerBtnRef = useRef(null);
 
-	// Config RELÉ (dirección Modbus + rango de registros)
-	const [rele, setRele] = useState({
-		ip: "",
-		puerto: "",
-		indiceInicial: "",
-		cantRegistros: "",
+	// === Estado de registrador ===
+	const [agentesVinculados, setAgentesVinculados] = useState([]);
+	const [registradoresPorAgente, setRegistradoresPorAgente] = useState({});
+	const [registradorSeleccionado, setRegistradorSeleccionado] = useState(null);
+	const [cargandoAgentes, setCargandoAgentes] = useState(false);
+
+	// === Estado de configuración ===
+	const [intervaloConsultaSeg, setIntervaloConsultaSeg] = useState(60); // en segundos (default 60, mínimo 5)
+	const [cardDesign, setCardDesign] = useState(crearCardDesignDefault());
+
+	// === Helpers ===
+	const esColorPersonalizado = !COLORES_SISTEMA.includes(color);
+
+	// === Detección de índices duplicados ===
+	const detectarIndicesDuplicados = () => {
+		const indicesUsados = [];
+		const duplicados = [];
+
+		// Recolectar índices de parte superior
+		const boxesSuperior = cardDesign.superior?.boxes || [];
+		boxesSuperior.forEach((box, idx) => {
+			if (box.indice !== null && box.indice !== undefined && box.indice !== "") {
+				const clave = String(box.indice);
+				const info = { zona: "superior", boxNum: idx + 1, indice: box.indice };
+
+				const existente = indicesUsados.find((r) => r.clave === clave);
+				if (existente) {
+					duplicados.push({ ...info, duplicadoCon: existente.info });
+				} else {
+					indicesUsados.push({ clave, info });
+				}
+			}
+		});
+
+		// Recolectar índices de parte inferior
+		const boxesInferior = cardDesign.inferior?.boxes || [];
+		boxesInferior.forEach((box, idx) => {
+			if (box.indice !== null && box.indice !== undefined && box.indice !== "") {
+				const clave = String(box.indice);
+				const info = { zona: "inferior", boxNum: idx + 1, indice: box.indice };
+
+				const existente = indicesUsados.find((r) => r.clave === clave);
+				if (existente) {
+					duplicados.push({ ...info, duplicadoCon: existente.info });
+				} else {
+					indicesUsados.push({ clave, info });
+				}
+			}
+		});
+
+		return duplicados;
+	};
+
+	const indicesDuplicados = detectarIndicesDuplicados();
+
+	// Crear set de claves duplicadas
+	const clavesDuplicadas = new Set();
+	indicesDuplicados.forEach((dup) => {
+		clavesDuplicadas.add(`${dup.zona}-${dup.boxNum - 1}-${dup.indice}`);
+		clavesDuplicadas.add(`${dup.duplicadoCon.zona}-${dup.duplicadoCon.boxNum - 1}-${dup.duplicadoCon.indice}`);
 	});
-	const [periodoSegundos, setPeriodoSegundos] = useState("60"); // período de lectura para el relé
 
-	// Config ANALIZADOR
-	const [analizador, setAnalizador] = useState({
-		ip: "",
-		puerto: "",
-		indiceInicial: "",
-		cantRegistros: "",
-		periodoSegundos: "60",
-	});
+	// Verificar si un índice específico está duplicado
+	const estaIndiceDuplicado = (zona, index, indice) => {
+		if (indice === null || indice === undefined || indice === "") return false;
+		const clave = `${zona}-${index}-${indice}`;
+		return clavesDuplicadas.has(clave);
+	};
 
-	// Estado de TEST de lectura por equipo (vista previa de registros)
-	const [isTestingRele, setIsTestingRele] = useState(false);
-	const [testErrorRele, setTestErrorRele] = useState("");
-	const [testRowsRele, setTestRowsRele] = useState([]);
-	const [testTiempoMsRele, setTestTiempoMsRele] = useState(null);
+	// Obtener mensaje de duplicado para tooltip
+	const obtenerMensajeDuplicado = (zona, index, indice) => {
+		if (indice === null || indice === undefined || indice === "") return "";
+		const dup = indicesDuplicados.find(
+			(d) => d.zona === zona && d.boxNum === index + 1 && d.indice === indice
+		);
+		if (dup) {
+			return `Este índice ya está usado en ${dup.duplicadoCon.zona === "superior" ? "Parte superior" : "Parte inferior"} Box ${dup.duplicadoCon.boxNum}`;
+		}
+		// También puede ser el índice original que tiene duplicados
+		const original = indicesDuplicados.find(
+			(d) => d.duplicadoCon.zona === zona && d.duplicadoCon.boxNum === index + 1 && d.duplicadoCon.indice === indice
+		);
+		if (original) {
+			return `Este índice también se usa en ${original.zona === "superior" ? "Parte superior" : "Parte inferior"} Box ${original.boxNum}`;
+		}
+		return "";
+	};
 
-	const [isTestingAnalizador, setIsTestingAnalizador] = useState(false);
-	const [testErrorAnalizador, setTestErrorAnalizador] = useState("");
-	const [testRowsAnalizador, setTestRowsAnalizador] = useState([]);
-	const [testTiempoMsAnalizador, setTestTiempoMsAnalizador] = useState(null);
+	// Generar índices arrastrables del registrador seleccionado
+	const indicesRegistrador = registradorSeleccionado
+		? Array.from(
+				{ length: registradorSeleccionado.cantidad_registros },
+				(_, i) => registradorSeleccionado.indice_inicial + i
+		  )
+		: [];
 
-	// === Cargar datos al abrir ===
+	// === Cargar agentes vinculados ===
 	useEffect(() => {
-		if (!abierto) return;                             // si se cerró, no hago nada
+		if (!abierto || !workspaceId) return;
+
+		const cargarAgentes = async () => {
+			setCargandoAgentes(true);
+			try {
+				const agentes = await listarAgentesWorkspace(workspaceId);
+				setAgentesVinculados(agentes || []);
+
+				// Cargar registradores de cada agente
+				const registradoresMap = {};
+				for (const agente of agentes || []) {
+					try {
+						const regs = await listarRegistradoresAgente(agente.id);
+						registradoresMap[agente.id] = regs || [];
+					} catch (err) {
+						console.error(`Error cargando registradores del agente ${agente.id}:`, err);
+						registradoresMap[agente.id] = [];
+					}
+				}
+				setRegistradoresPorAgente(registradoresMap);
+			} catch (err) {
+				console.error("Error cargando agentes:", err);
+			} finally {
+				setCargandoAgentes(false);
+			}
+		};
+
+		cargarAgentes();
+	}, [abierto, workspaceId]);
+
+	// === Cargar datos iniciales ===
+	useEffect(() => {
+		if (!abierto) return;
 
 		if (initialData) {
-			// Modo edición: cargo valores guardados
 			setNombre(initialData.nombre || "");
 			setColor(initialData.color || COLORES_SISTEMA[0]);
-			setTab("rele");
+			// Convertir ms a segundos para la UI
+			const intervaloMs = initialData.intervalo_consulta_ms || 60000;
+			setIntervaloConsultaSeg(Math.max(5, Math.round(intervaloMs / 1000)));
+			setCardDesign(initialData.card_design || crearCardDesignDefault());
 
-			setRele({
-				ip: initialData.rele?.ip || "",
-				puerto:
-					initialData.rele?.puerto != null
-						? String(initialData.rele.puerto)
-						: "",
-				indiceInicial:
-					initialData.rele?.indiceInicial != null
-						? String(initialData.rele.indiceInicial)
-						: "",
-				cantRegistros:
-					initialData.rele?.cantRegistros != null
-						? String(initialData.rele.cantRegistros)
-						: "",
-			});
-
-			setPeriodoSegundos(
-				initialData.periodoSegundos != null
-					? String(initialData.periodoSegundos)
-					: "60"
-			);
-
-			setAnalizador({
-				ip: initialData.analizador?.ip || "",
-				puerto:
-					initialData.analizador?.puerto != null
-						? String(initialData.analizador.puerto)
-						: "",
-				indiceInicial:
-					initialData.analizador?.indiceInicial != null
-						? String(initialData.analizador.indiceInicial)
-						: "",
-				cantRegistros:
-					initialData.analizador?.cantRegistros != null
-						? String(initialData.analizador.cantRegistros)
-						: "",
-				periodoSegundos:
-					initialData.analizador?.periodoSegundos != null
-						? String(initialData.analizador.periodoSegundos)
-						: "60",
-			});
+			// Buscar registrador seleccionado si existe
+			if (initialData.registrador_id) {
+				// Se buscará cuando se carguen los registradores
+				setTimeout(() => {
+					for (const agente of agentesVinculados) {
+						const regs = registradoresPorAgente[agente.id] || [];
+						const reg = regs.find((r) => r.id === initialData.registrador_id);
+						if (reg) {
+							setRegistradorSeleccionado(reg);
+							break;
+						}
+					}
+				}, 500);
+			}
 		} else {
-			// Modo creación: arranco con valores por defecto
 			setNombre("");
 			setColor(COLORES_SISTEMA[0]);
-			setTab("rele");
-
-			setRele({
-				ip: "",
-				puerto: "",
-				indiceInicial: "",
-				cantRegistros: "",
-			});
-			setPeriodoSegundos("60");
-
-			setAnalizador({
-				ip: "",
-				puerto: "",
-				indiceInicial: "",
-				cantRegistros: "",
-				periodoSegundos: "60",
-			});
+			setIntervaloConsultaSeg(60); // default 60 segundos
+			setCardDesign(crearCardDesignDefault());
+			setRegistradorSeleccionado(null);
 		}
-
-		// Reset del estado de tests cada vez que se abre
-		setIsTestingRele(false);
-		setTestErrorRele("");
-		setTestRowsRele([]);
-		setTestTiempoMsRele(null);
-
-		setIsTestingAnalizador(false);
-		setTestErrorAnalizador("");
-		setTestRowsAnalizador([]);
-		setTestTiempoMsAnalizador(null);
 	}, [abierto, initialData]);
 
-	if (!abierto) return null;                            // si el modal está cerrado, no renderizo nada
-
-	// === TEST CONEXIÓN RELÉ ===
-	const handleTestConexionRele = async () => {
-		const ip = rele.ip.trim();
-		const puerto = Number(rele.puerto);
-		const indiceInicial = Number(rele.indiceInicial) || 0;
-		const cantRegistros = Number(rele.cantRegistros) || 10;
-
-		if (!ip || !puerto) {
-			setTestErrorRele(
-				"Completa IP y puerto antes de probar."
-			);
-			setTestRowsRele([]);
-			return;
-		}
-
-		setIsTestingRele(true);
-		setTestErrorRele("");
-		setTestRowsRele([]);
-		setTestTiempoMsRele(null);
-
-		try {
-			// Llamar al backend → agente para test real de conexión con lectura de registros
-			const resultado = await testConexionModbus(ip, puerto, 1, indiceInicial, cantRegistros);
-
-			if (resultado.cacheado) {
-				// La IP fue testeada recientemente, mostrar mensaje
-				setTestTiempoMsRele(null);
-				setTestRowsRele([{
-					index: 0,
-					address: '-',
-					value: `Conexión verificada (caché: ${resultado.tiempoRestante}s)`,
-				}]);
-			} else if (resultado.exito) {
-				// Conexión exitosa - guardar tiempo y mostrar los registros leídos
-				setTestTiempoMsRele(resultado.tiempoMs);
-				if (resultado.registros && resultado.registros.length > 0) {
-					setTestRowsRele(resultado.registros.map(reg => ({
-						index: reg.indice,
-						address: reg.direccion,
-						value: reg.valor,
-					})));
-				} else {
-					setTestRowsRele([{
-						index: 0,
-						address: '-',
-						value: resultado.mensaje || `Conexión exitosa (${resultado.tiempoMs}ms)`,
-					}]);
-				}
-			} else {
-				// Conexión fallida
-				setTestTiempoMsRele(null);
-				setTestErrorRele(resultado.error || "No se pudo conectar al dispositivo.");
-				setTestRowsRele([]);
-			}
-		} catch (err) {
-			console.error(err);
-			setTestTiempoMsRele(null);
-			setTestErrorRele(
-				err?.message || "Error de red o al intentar conectar."
-			);
-			setTestRowsRele([]);
-		} finally {
-			setIsTestingRele(false);
+	// === Handlers color ===
+	const handleHexInputChange = (e) => {
+		const valor = e.target.value;
+		setValorHex(valor);
+		if (/^#[0-9A-Fa-f]{6}$/.test(valor)) {
+			setColor(valor);
+			setColorPersonalizado(valor);
 		}
 	};
 
-	// === TEST CONEXIÓN ANALIZADOR ===
-	const handleTestConexionAnalizador = async () => {
-		const ip = analizador.ip.trim();
-		const puerto = Number(analizador.puerto);
-		const indiceInicial = Number(analizador.indiceInicial) || 0;
-		const cantRegistros = Number(analizador.cantRegistros) || 10;
+	const copiarColor = () => {
+		const colorActual = esColorPersonalizado ? color : colorPersonalizado;
+		navigator.clipboard.writeText(colorActual);
+	};
 
-		if (!ip || !puerto) {
-			setTestErrorAnalizador(
-				"Completa IP y puerto antes de probar."
-			);
-			setTestRowsAnalizador([]);
+	// Cerrar picker al hacer click fuera
+	useEffect(() => {
+		const handleClickOutside = (event) => {
+			if (
+				pickerRef.current &&
+				!pickerRef.current.contains(event.target) &&
+				pickerBtnRef.current &&
+				!pickerBtnRef.current.contains(event.target)
+			) {
+				setMostrarPicker(false);
+			}
+		};
+
+		if (mostrarPicker) {
+			document.addEventListener("mousedown", handleClickOutside);
+		}
+		return () => document.removeEventListener("mousedown", handleClickOutside);
+	}, [mostrarPicker]);
+
+	// === Handlers registrador ===
+	const handleSeleccionarRegistrador = (e) => {
+		const regId = e.target.value;
+		if (!regId) {
+			setRegistradorSeleccionado(null);
 			return;
 		}
 
-		setIsTestingAnalizador(true);
-		setTestErrorAnalizador("");
-		setTestRowsAnalizador([]);
-		setTestTiempoMsAnalizador(null);
-
-		try {
-			// Llamar al backend → agente para test real de conexión con lectura de registros
-			const resultado = await testConexionModbus(ip, puerto, 2, indiceInicial, cantRegistros);
-
-			if (resultado.cacheado) {
-				// La IP fue testeada recientemente, mostrar mensaje
-				setTestTiempoMsAnalizador(null);
-				setTestRowsAnalizador([{
-					index: 0,
-					address: '-',
-					value: `Conexión verificada (caché: ${resultado.tiempoRestante}s)`,
-				}]);
-			} else if (resultado.exito) {
-				// Conexión exitosa - guardar tiempo y mostrar los registros leídos
-				setTestTiempoMsAnalizador(resultado.tiempoMs);
-				if (resultado.registros && resultado.registros.length > 0) {
-					setTestRowsAnalizador(resultado.registros.map(reg => ({
-						index: reg.indice,
-						address: reg.direccion,
-						value: reg.valor,
-					})));
-				} else {
-					setTestRowsAnalizador([{
-						index: 0,
-						address: '-',
-						value: resultado.mensaje || `Conexión exitosa (${resultado.tiempoMs}ms)`,
-					}]);
-				}
-			} else {
-				// Conexión fallida
-				setTestTiempoMsAnalizador(null);
-				setTestErrorAnalizador(resultado.error || "No se pudo conectar al dispositivo.");
-				setTestRowsAnalizador([]);
+		// Buscar el registrador
+		for (const agente of agentesVinculados) {
+			const regs = registradoresPorAgente[agente.id] || [];
+			const reg = regs.find((r) => r.id === regId);
+			if (reg) {
+				setRegistradorSeleccionado(reg);
+				return;
 			}
-		} catch (err) {
-			console.error(err);
-			setTestTiempoMsAnalizador(null);
-			setTestErrorAnalizador(
-				err?.message || "Error de red o al intentar conectar."
-			);
-			setTestRowsAnalizador([]);
-		} finally {
-			setIsTestingAnalizador(false);
 		}
 	};
 
-	// === SUBMIT GENERAL ===
+	// === Handlers card design ===
+	const actualizarSide = (zona, campo, valor) => {
+		setCardDesign((prev) => ({
+			...prev,
+			[zona]: {
+				...prev[zona],
+				[campo]: valor,
+			},
+		}));
+	};
+
+	const actualizarBox = (zona, index, campo, valor) => {
+		setCardDesign((prev) => {
+			const newBoxes = [...prev[zona].boxes];
+			newBoxes[index] = { ...newBoxes[index], [campo]: valor };
+			return {
+				...prev,
+				[zona]: {
+					...prev[zona],
+					boxes: newBoxes,
+				},
+			};
+		});
+	};
+
+	// === Drag & Drop ===
+	const handleDragStart = (e, indice) => {
+		e.dataTransfer.setData("text/plain", String(indice));
+		e.dataTransfer.effectAllowed = "copy";
+	};
+
+	const handleDragOver = (e) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+	};
+
+	const handleDrop = (e, zona, boxIndex) => {
+		e.preventDefault();
+		const indice = parseInt(e.dataTransfer.getData("text/plain"), 10);
+		if (!isNaN(indice)) {
+			actualizarBox(zona, boxIndex, "indice", indice);
+		}
+	};
+
+	// === Submit ===
 	const handleSubmit = (e) => {
 		e.preventDefault();
 		const limpioNombre = nombre.trim();
-		if (!limpioNombre) return;                        // si no hay nombre, no confirmo
+		if (!limpioNombre) return;
 
-		// Armo un objeto "plano" con números donde corresponde
-		const datos = {
+		onConfirmar({
 			nombre: limpioNombre,
 			color,
-			periodoSegundos: periodoSegundos ? Number(periodoSegundos) : null,
-
-			rele: {
-				...rele,
-				puerto: rele.puerto ? Number(rele.puerto) : null,
-				indiceInicial: rele.indiceInicial
-					? Number(rele.indiceInicial)
-					: null,
-				cantRegistros: rele.cantRegistros
-					? Number(rele.cantRegistros)
-					: null,
-			},
-
-			analizador: {
-				ip: analizador.ip,
-				puerto: analizador.puerto ? Number(analizador.puerto) : null,
-				indiceInicial: analizador.indiceInicial
-					? Number(analizador.indiceInicial)
-					: null,
-				cantRegistros: analizador.cantRegistros
-					? Number(analizador.cantRegistros)
-					: null,
-				periodoSegundos: analizador.periodoSegundos
-					? Number(analizador.periodoSegundos)
-					: null,
-			},
-		};
-
-		onConfirmar(datos);                                // devuelvo todos los datos al componente padre
+			registrador_id: registradorSeleccionado?.id || null,
+			intervalo_consulta_ms: intervaloConsultaSeg * 1000, // convertir a ms para guardar
+			card_design: cardDesign,
+		});
 	};
 
 	const handleEliminarClick = () => {
 		if (!onEliminar) return;
-		const seguro = window.confirm(
-			"¿Seguro que querés eliminar este registrador?"
-		);
+		const seguro = window.confirm("¿Seguro que querés eliminar este alimentador?");
 		if (seguro) {
 			onEliminar();
 		}
 	};
 
-	// === Handlers para cambios de formularios ===
-	const handleChangeDatosBasicos = (campo, valor) => {
-		if (campo === "nombre") setNombre(valor);
-		else if (campo === "color") setColor(valor);
-		else if (campo === "periodoSegundos") setPeriodoSegundos(valor);
-	};
+	if (!abierto) return null;
 
-	const handleChangeRele = (campo, valor) => {
-		setRele((prev) => ({ ...prev, [campo]: valor }));
-	};
-
-	const handleChangeAnalizador = (campo, valor) => {
-		setAnalizador((prev) => ({ ...prev, [campo]: valor }));
-	};
-
-	// === Helpers para overrides de medición (sin guardar) ===
-	// Sirven para arrancar/detener lecturas en vivo sin tocar aún los datos persistidos.
-	const buildOverrideRele = () => ({
-		periodoSegundos: periodoSegundos ? Number(periodoSegundos) : undefined,
-		rele: {
-			ip: rele.ip.trim(),
-			puerto: rele.puerto ? Number(rele.puerto) : undefined,
-			indiceInicial: rele.indiceInicial
-				? Number(rele.indiceInicial)
-				: undefined,
-			cantRegistros: rele.cantRegistros
-				? Number(rele.cantRegistros)
-				: undefined,
-		},
-	});
-
-	const buildOverrideAnalizador = () => ({
-		analizador: {
-			ip: analizador.ip.trim(),
-			puerto: analizador.puerto ? Number(analizador.puerto) : undefined,
-			indiceInicial: analizador.indiceInicial
-				? Number(analizador.indiceInicial)
-				: undefined,
-			cantRegistros: analizador.cantRegistros
-				? Number(analizador.cantRegistros)
-				: undefined,
-			periodoSegundos: analizador.periodoSegundos
-				? Number(analizador.periodoSegundos)
-				: undefined,
-		},
-	});
+	// Agrupar todos los registradores para el combobox
+	const todosRegistradores = [];
+	for (const agente of agentesVinculados) {
+		const regs = registradoresPorAgente[agente.id] || [];
+		for (const reg of regs) {
+			todosRegistradores.push({ ...reg, agenteNombre: agente.nombre });
+		}
+	}
 
 	return (
 		<div className="alim-modal-overlay">
-			<div className="alim-modal">
+			<div className="alim-modal alim-modal--grande">
 				<h2>
-					{modo === "editar"
-						? "EDITAR REGISTRADOR: EN "
-						: "NUEVO REGISTRADOR: EN "}
-					{puestoNombre}
+					{modo === "editar" ? "Editar alimentador" : "Nuevo alimentador"}
+					{puestoNombre && `: ${puestoNombre}`}
 				</h2>
 
 				<form onSubmit={handleSubmit}>
-					<div className="alim-modal-layout">
-						{/* === COLUMNA IZQUIERDA: CONFIG BÁSICA === */}
-						<div className="alim-modal-left">
-							{/* Formulario de datos básicos (nombre, color, período general) */}
-							<FormularioDatosBasicos
-								nombre={nombre}
-								color={color}
-								onChange={handleChangeDatosBasicos}
-							/>
-
-							{/* Tabs RELÉ / ANALIZADOR */}
-							<div className="alim-tabs">
-								<button
-									type="button"
-									className={
-										"alim-tab" +
-										(tab === "rele" ? " alim-tab-active" : "")
-									}
-									onClick={() => setTab("rele")}
-								>
-									RELÉ
-								</button>
-								<button
-									type="button"
-									className={
-										"alim-tab" +
-										(tab === "analizador" ? " alim-tab-active" : "")
-									}
-									onClick={() => setTab("analizador")}
-								>
-									ANALIZADOR
-								</button>
+					<div className="alim-modal-content">
+						{/* === SECCIÓN: Nombre y Color === */}
+						<div className="alim-modal-seccion">
+							<div className="alim-modal-campo">
+								<label>Nombre del Alimentador</label>
+								<input
+									id="nombre-alimentador"
+									type="text"
+									className="alim-modal-input"
+									value={nombre}
+									onChange={(e) => setNombre(e.target.value)}
+									placeholder="Ej: ALIMENTADOR 1"
+									required
+									autoComplete="off"
+									autoCorrect="off"
+									spellCheck={false}
+									autoFocus
+								/>
 							</div>
 
-							{/* === TAB RELÉ === */}
-							{tab === "rele" && (
-								<TabConfiguracionRele
-									config={rele}
-									periodoSegundos={periodoSegundos}
-									onChange={handleChangeRele}
-									onChangePeriodo={setPeriodoSegundos}
-									onTestConexion={handleTestConexionRele}
-									isTesting={isTestingRele}
-									testError={testErrorRele}
-									testRows={testRowsRele}
-									testTiempoMs={testTiempoMsRele}
-									isMeasuring={isMeasuringRele}
-									onToggleMedicion={() =>
-										onToggleMedicionRele &&
-										onToggleMedicionRele(buildOverrideRele())
-									}
-									registrosMedicion={registrosRele}
-									disabled={isMeasuringRele}
+							<div className="alim-color-grid">
+								{COLORES_SISTEMA.map((c) => (
+									<button
+										key={c}
+										type="button"
+										className={`alim-color-swatch ${
+											color === c ? "alim-color-swatch-selected" : ""
+										}`}
+										style={{ backgroundColor: c }}
+										onClick={() => {
+											setColor(c);
+											setMostrarPicker(false);
+										}}
+										aria-label={`Elegir color ${c}`}
+									/>
+								))}
+								{/* Botón color personalizado */}
+								<button
+									ref={pickerBtnRef}
+									type="button"
+									className={`alim-color-swatch alim-color-custom ${
+										esColorPersonalizado ? "alim-color-swatch-selected" : ""
+									}`}
+									onClick={() => {
+										setMostrarPicker(!mostrarPicker);
+										if (!mostrarPicker) {
+											setValorHex(esColorPersonalizado ? color : colorPersonalizado);
+										}
+									}}
+									aria-label="Color personalizado"
 								/>
+							</div>
+							{/* Picker flotante */}
+							{mostrarPicker && (
+								<div
+									ref={pickerRef}
+									className="color-picker-simple-popover alim-color-picker-popover"
+								>
+									<HexColorPicker
+										color={esColorPersonalizado ? color : colorPersonalizado}
+										onChange={(nuevoColor) => {
+											setColor(nuevoColor);
+											setColorPersonalizado(nuevoColor);
+											setValorHex(nuevoColor);
+										}}
+									/>
+									<div className="color-picker-hex-input-wrapper">
+										<input
+											type="text"
+											value={valorHex}
+											onChange={handleHexInputChange}
+											className="color-picker-hex-input"
+											placeholder="#000000"
+											maxLength={7}
+										/>
+										<button
+											type="button"
+											className="color-picker-copy-btn"
+											onClick={copiarColor}
+											title="Copiar color"
+										>
+											📋
+										</button>
+									</div>
+								</div>
 							)}
+						</div>
 
-							{/* === TAB ANALIZADOR === */}
-							{tab === "analizador" && (
-								<TabConfiguracionAnalizador
-									config={analizador}
-									onChange={handleChangeAnalizador}
-									onTestConexion={handleTestConexionAnalizador}
-									isTesting={isTestingAnalizador}
-									testError={testErrorAnalizador}
-									testRows={testRowsAnalizador}
-									testTiempoMs={testTiempoMsAnalizador}
-									isMeasuring={isMeasuringAnalizador}
-									onToggleMedicion={() =>
-										onToggleMedicionAnalizador &&
-										onToggleMedicionAnalizador(
-											buildOverrideAnalizador()
-										)
-									}
-									registrosMedicion={registrosAnalizador}
-									disabled={isMeasuringAnalizador}
-								/>
+						{/* === SECCIÓN: Vinculación con Registrador === */}
+						<div className="alim-modal-seccion">
+							<h3 className="alim-modal-seccion-titulo">Fuente de datos</h3>
+
+							{cargandoAgentes ? (
+								<p className="alim-modal-cargando">Cargando agentes...</p>
+							) : agentesVinculados.length === 0 ? (
+								<p className="alim-modal-aviso">
+									No hay agentes vinculados a este workspace. Vinculá un agente desde el
+									panel de configuración.
+								</p>
+							) : (
+								<>
+									<div className="alim-modal-campo">
+										<label>Registrador</label>
+										<select
+											className="alim-modal-select"
+											value={registradorSeleccionado?.id || ""}
+											onChange={handleSeleccionarRegistrador}
+										>
+											<option value="">-- Sin registrador --</option>
+											{todosRegistradores.map((reg) => (
+												<option key={reg.id} value={reg.id}>
+													{reg.nombre} ({reg.agenteNombre}) - {reg.ip}:{reg.puerto} | Reg:{" "}
+													{reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1}
+												</option>
+											))}
+										</select>
+									</div>
+
+									{registradorSeleccionado && (
+										<div className="alim-modal-registrador-detalles">
+											<div className="alim-modal-registrador-info">
+												<span>
+													<strong>IP:</strong> {registradorSeleccionado.ip}:
+													{registradorSeleccionado.puerto}
+												</span>
+												<span>
+													<strong>Unit ID:</strong> {registradorSeleccionado.unit_id}
+												</span>
+												<span>
+													<strong>Registros:</strong> {registradorSeleccionado.indice_inicial} -{" "}
+													{registradorSeleccionado.indice_inicial +
+														registradorSeleccionado.cantidad_registros -
+														1}
+												</span>
+												<span>
+													<strong>Intervalo polling:</strong>{" "}
+													{registradorSeleccionado.intervalo_segundos}s
+												</span>
+											</div>
+
+											<div className="alim-modal-indices">
+												<span className="alim-modal-indices-label">
+													Índices arrastrables:
+												</span>
+												<div className="alim-modal-indices-chips">
+													{indicesRegistrador.map((indice) => (
+														<span
+															key={indice}
+															className="alim-modal-indice-chip"
+															draggable
+															onDragStart={(e) => handleDragStart(e, indice)}
+														>
+															{indice}
+														</span>
+													))}
+												</div>
+											</div>
+										</div>
+									)}
+								</>
 							)}
+						</div>
+
+						{/* === SECCIÓN 3: Diseño de Card === */}
+						{registradorSeleccionado && (
+							<div className="alim-modal-seccion">
+								<h3 className="alim-modal-seccion-titulo">Diseño de la tarjeta</h3>
+								<p className="alim-modal-seccion-ayuda">
+									Arrastrá los índices a los campos de registro para configurar qué valor
+									se muestra en cada box.
+								</p>
+
+								{/* Parte Superior */}
+								<SeccionCardDesign
+									titulo="Parte superior"
+									zona="superior"
+									design={cardDesign.superior}
+									onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
+									onChangeTituloCustom={(val) =>
+										actualizarSide("superior", "tituloCustom", val)
+									}
+									onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
+									onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
+									onDragOver={handleDragOver}
+									onDrop={(e, idx) => handleDrop(e, "superior", idx)}
+									estaIndiceDuplicado={estaIndiceDuplicado}
+									obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+								/>
+
+								{/* Parte Inferior */}
+								<SeccionCardDesign
+									titulo="Parte inferior"
+									zona="inferior"
+									design={cardDesign.inferior}
+									onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
+									onChangeTituloCustom={(val) =>
+										actualizarSide("inferior", "tituloCustom", val)
+									}
+									onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
+									onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
+									onDragOver={handleDragOver}
+									onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
+									estaIndiceDuplicado={estaIndiceDuplicado}
+									obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+								/>
+							</div>
+						)}
+
+						{/* === SECCIÓN: Intervalo de consulta === */}
+						<div className="alim-modal-seccion">
+							<h3 className="alim-modal-seccion-titulo">Intervalo de consulta</h3>
+							<div className="alim-modal-campo">
+								<label>Segundos entre consultas a la Base de Datos</label>
+								<input
+									type="number"
+									className="alim-modal-input-numero"
+									value={intervaloConsultaSeg}
+									onChange={(e) => {
+										const valor = Number(e.target.value);
+										setIntervaloConsultaSeg(Math.max(5, valor)); // mínimo 5 segundos
+									}}
+									min={5}
+									step={1}
+								/>
+								<span className="alim-modal-campo-ayuda">
+									Cada cuánto el frontend consulta la última lectura (mín. 5s)
+								</span>
+							</div>
 						</div>
 					</div>
 
 					{/* Botones inferiores */}
 					<div className="alim-modal-actions">
+						{/* Botón eliminar a la izquierda (solo en modo edición) */}
 						{modo === "editar" && (
 							<button
 								type="button"
-								className="alim-modal-btn alim-modal-btn-eliminar"
+								className="alim-modal-btn-eliminar"
 								onClick={handleEliminarClick}
 							>
 								Eliminar
 							</button>
 						)}
 
-						<button
-							type="button"
-							className="alim-modal-btn alim-modal-btn-cancelar"
-							onClick={onCancelar}
-						>
-							Cancelar
-						</button>
+						<div className="alim-modal-actions-right">
+							<button
+								type="button"
+								className="alim-modal-btn alim-modal-btn-cancelar"
+								onClick={onCancelar}
+							>
+								Cancelar
+							</button>
 
-						<button
-							type="submit"
-							className="alim-modal-btn alim-modal-btn-aceptar"
-						>
-							Guardar
-						</button>
+							<button type="submit" className="alim-modal-btn alim-modal-btn-guardar">
+								Guardar
+							</button>
+						</div>
 					</div>
 				</form>
 			</div>
@@ -504,452 +634,151 @@ const ModalConfiguracionAlimentador = ({
 	);
 };
 
+// === Subcomponente: Sección de diseño de card (superior/inferior) ===
+const SeccionCardDesign = ({
+	titulo,
+	zona,
+	design,
+	onChangeTitulo,
+	onChangeTituloCustom,
+	onChangeCantidad,
+	onChangeBox,
+	onDragOver,
+	onDrop,
+	estaIndiceDuplicado,
+	obtenerMensajeDuplicado,
+}) => {
+	const [expandido, setExpandido] = useState(false);
+	const [tooltipIdx, setTooltipIdx] = useState(null); // índice del box que muestra tooltip
+	const cant = design.cantidad || 3;
+
+	return (
+		<div className={`alim-modal-card-section ${expandido ? "alim-modal-card-section--expandido" : ""}`}>
+			<button
+				type="button"
+				className="alim-modal-card-section-header"
+				onClick={() => setExpandido(!expandido)}
+			>
+				<span className={`alim-modal-card-section-arrow ${expandido ? "alim-modal-card-section-arrow--expandido" : ""}`}>
+					▶
+				</span>
+				<span className="alim-modal-card-section-titulo">{titulo}</span>
+			</button>
+
+			{expandido && (
+				<div className="alim-modal-card-section-content">
+					<div className="alim-modal-card-header">
+						<div className="alim-modal-campo">
+							<label>Título</label>
+							<select
+								className="alim-modal-select"
+								value={design.tituloId || "corriente_132"}
+								onChange={(e) => onChangeTitulo(e.target.value)}
+							>
+								{OPCIONES_TITULO.map((op) => (
+									<option key={op.id} value={op.id}>
+										{op.label}
+									</option>
+								))}
+							</select>
+						</div>
+
+						{design.tituloId === "custom" && (
+							<div className="alim-modal-campo">
+								<label>Título personalizado</label>
+								<input
+									type="text"
+									className="alim-modal-input"
+									placeholder="Ej: CONSUMO (A)"
+									value={design.tituloCustom || ""}
+									onChange={(e) => onChangeTituloCustom(e.target.value)}
+								/>
+							</div>
+						)}
+
+						<div className="alim-modal-campo alim-modal-campo--small">
+							<label>Cantidad boxes</label>
+							<select
+								className="alim-modal-select"
+								value={cant}
+								onChange={(e) => onChangeCantidad(Number(e.target.value))}
+							>
+								{[1, 2, 3, 4].map((n) => (
+									<option key={n} value={n}>
+										{n}
+									</option>
+								))}
+							</select>
+						</div>
+					</div>
+
+					<div className="alim-modal-boxes">
+						{Array.from({ length: cant }).map((_, idx) => {
+							const box = design.boxes[idx] || {};
+							return (
+								<div key={`${zona}-box-${idx}`} className="alim-modal-box">
+									<span className="alim-modal-box-titulo">Box {idx + 1}</span>
+									<div className="alim-modal-box-row">
+										<label className="alim-modal-box-check">
+											<input
+												type="checkbox"
+												checked={!!box.enabled}
+												onChange={(e) => onChangeBox(idx, "enabled", e.target.checked)}
+											/>
+										</label>
+
+										<input
+											type="text"
+											className="alim-modal-input alim-modal-box-label"
+											placeholder={PLACEHOLDERS_BOX[idx] || `Ej: R o L1`}
+											value={box.label || ""}
+											onChange={(e) => onChangeBox(idx, "label", e.target.value)}
+										/>
+
+										<div className="alim-modal-box-indice-wrapper">
+										<input
+											type="number"
+											className={`alim-modal-input alim-modal-box-indice ${estaIndiceDuplicado(zona, idx, box.indice) ? "alim-modal-box-indice--duplicado" : ""}`}
+											placeholder="Índice"
+											value={box.indice ?? ""}
+											onChange={(e) =>
+												onChangeBox(idx, "indice", e.target.value ? Number(e.target.value) : null)
+											}
+											onDragOver={onDragOver}
+											onDrop={(e) => onDrop(e, idx)}
+										/>
+										{estaIndiceDuplicado(zona, idx, box.indice) && (
+											<span
+												className="alim-modal-box-warning"
+												onMouseEnter={() => setTooltipIdx(idx)}
+												onMouseLeave={() => setTooltipIdx(null)}
+											>
+												⚠️
+												{tooltipIdx === idx && (
+													<div className="alim-modal-box-warning-tooltip">
+														{obtenerMensajeDuplicado(zona, idx, box.indice)}
+													</div>
+												)}
+											</span>
+										)}
+									</div>
+
+										<input
+											type="text"
+											className="alim-modal-input alim-modal-box-formula"
+											placeholder="Fórmula (ej: x*250/1000)"
+											value={box.formula || ""}
+											onChange={(e) => onChangeBox(idx, "formula", e.target.value)}
+										/>
+									</div>
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			)}
+		</div>
+	);
+};
+
 export default ModalConfiguracionAlimentador;
-
-{/*---------------------------------------------------------------------------
- NOTA SOBRE ESTE ARCHIVO (ModalConfiguracionAlimentador.jsx)
-
- - Este modal es el "panel de configuración profunda" de cada registrador
-   (alimentador). Acá defino nombre, color y cómo se conectan el relé y el
-   analizador (IP, puerto, rango de registros y períodos de lectura).
-
- - `initialData` se usa para distinguir entre modo creación y edición. El
-   efecto `useEffect` inicializa todos los estados locales a partir de esos
-   datos o de valores por defecto cuando no hay nada guardado.
-
- - Las funciones `handleTestConexionRele` y `handleTestConexionAnalizador`
-   hacen una prueba puntual de lectura usando `leerRegistrosModbus`, sólo
-   para verificar conectividad y rango de registros sin guardar todavía la
-   configuración.
-
- - `handleSubmit` construye un objeto plano `datos` con números ya convertidos
-   (en vez de strings) y lo envía al padre vía `onConfirmar`, que es quien
-   realmente persiste el alimentador.
-
- - Los helpers `buildOverrideRele` y `buildOverrideAnalizador` sirven para
-   arrancar/detener mediciones en tiempo real sobre configuraciones que aún
-   no fueron guardadas definitivamente, ideal para "probar" antes de confirmar.
----------------------------------------------------------------------------*/}
-
-/*---------------------------------------------------------------------------
-CÓDIGO + EXPLICACIÓN DE CADA PARTE (ModalConfiguracionAlimentador.jsx)
-
-0) Visión general del componente
-
-   `ModalConfiguracionAlimentador` es el panel de configuración completa de un
-   registrador (alimentador). Desde acá se define:
-
-   - Identidad visual:
-       • nombre de la tarjeta,
-       • color de botón/fondo del alimentador.
-
-   - Conexión del relé:
-       • IP, puerto, índice inicial y cantidad de registros Modbus,
-       • período de lectura.
-
-   - Conexión del analizador:
-       • parámetros equivalentes para el equipo analizador,
-       • período de lectura propio.
-
-   También permite:
-   - Probar la lectura de registros (TEST) sin guardar la configuración.
-   - Encender/apagar mediciones en tiempo real (usando “overrides” temporales).
-   - Eliminar el alimentador en modo edición.
-
-
-1) Props del componente
-
-   const ModalConfiguracionAlimentador = ({
-     abierto,
-     puestoNombre,
-     modo = "crear",
-     initialData,
-     onCancelar,
-     onConfirmar,
-     onEliminar,
-     isMeasuringRele,
-     isMeasuringAnalizador,
-     onToggleMedicionRele,
-     onToggleMedicionAnalizador,
-     registrosRele,
-     registrosAnalizador,
-   }) => { ... }
-
-   - `abierto` (boolean):
-       • false → el modal no se renderiza (devuelve `null`).
-       • true  → se dibuja overlay + contenido del modal.
-
-   - `puestoNombre` (string):
-       • nombre del puesto donde está este registrador,
-       • se muestra en el título del modal.
-
-   - `modo` ("crear" | "editar"):
-       • cambia el texto del título,
-       • en modo "editar" se habilita el botón “Eliminar”.
-
-   - `initialData` (objeto o undefined):
-       • datos actuales del alimentador (al editar),
-       • si no existe, se asumen valores por defecto (modo alta).
-
-   - `onCancelar()`:
-       • se llama al pulsar “Cancelar”.
-
-   - `onConfirmar(datos)`:
-       • recibe un objeto con toda la configuración:
-         { nombre, color, periodoSegundos, rele: {...}, analizador: {...} }
-       • el padre se encarga de persistirlo.
-
-   - `onEliminar()` (opcional):
-       • si viene definido, se invoca tras una confirmación con `window.confirm`.
-
-   - `isMeasuringRele` / `isMeasuringAnalizador`:
-       • indican si actualmente hay medición en vivo en cada equipo.
-
-   - `onToggleMedicionRele(override?)` / `onToggleMedicionAnalizador(override?)`:
-       • funciones que prenden/apagan la medición utilizando, si se pasa,
-         una configuración “override” temporal (sin tocar lo persistido).
-
-   - `registrosRele` / `registrosAnalizador`:
-       • últimas lecturas reales, usadas para mostrar tablas/listas de registros
-         en las pestañas.
-
-
-2) Estado local principal
-
-   - Datos básicos:
-
-     const [nombre, setNombre] = useState("");
-     const [color, setColor] = useState(COLORES_SISTEMA[0]);
-     const [tab, setTab] = useState("rele");
-
-     • `nombre`: texto que se muestra en la tarjeta/alimentador.
-     • `color`: color base que se usará en la UI.
-     • `tab`: pestaña activa ("rele" o "analizador").
-
-   - Configuración relé:
-
-     const [rele, setRele] = useState({
-       ip: "",
-       puerto: "",
-       indiceInicial: "",
-       cantRegistros: "",
-     });
-     const [periodoSegundos, setPeriodoSegundos] = useState("60");
-
-     • `rele`: guarda los campos de configuración Modbus del relé en formato string.
-     • `periodoSegundos`: período de lectura general del relé (string en la UI,
-       luego se convierte a número en el submit).
-
-   - Configuración analizador:
-
-     const [analizador, setAnalizador] = useState({
-       ip: "",
-       puerto: "",
-       indiceInicial: "",
-       cantRegistros: "",
-       periodoSegundos: "60",
-     });
-
-     • Similar a `rele`, pero con `periodoSegundos` específico del analizador.
-
-   - Estado de TEST:
-
-     Para cada equipo (relé / analizador) se guarda:
-
-     • `isTestingRele` / `isTestingAnalizador`: bandera de “estoy probando”.
-     • `testErrorRele` / `testErrorAnalizador`: mensaje de error si falla el test.
-     • `testRowsRele` / `testRowsAnalizador`: registros devueltos en la prueba.
-
-
-3) Carga de datos al abrir (useEffect)
-
-   useEffect(() => {
-     if (!abierto) return;
-
-     if (initialData) {
-       // modo edición: cargo valores guardados
-       ...
-     } else {
-       // modo creación: valores por defecto
-       ...
-     }
-
-     // reset de estados de test
-     ...
-   }, [abierto, initialData]);
-
-   - El efecto se dispara cuando:
-       • el modal pasa a `abierto = true`,
-       • o cambian los datos iniciales (`initialData`).
-
-   - Modo edición:
-       • `setNombre(initialData.nombre || "")`,
-       • `setColor(initialData.color || COLORES_SISTEMA[0])`,
-       • rellena objetos `rele` y `analizador` a partir de `initialData.rele`
-         e `initialData.analizador`,
-       • todos los campos numéricos (puerto, índice, cantidad, períodos) se
-         transforman a string para mostrarlos en inputs de texto.
-
-   - Modo creación:
-       • limpia nombre,
-       • setea color por defecto,
-       • deja IP/puerto/índices/cantidades vacíos,
-       • períodos en "60".
-
-   - Siempre que se abre:
-       • se resetean estados de test (`isTesting*`, `testError*`, `testRows*`),
-       • para evitar que queden mensajes o resultados de pruebas anteriores.
-
-
-4) Test de conexión del relé
-
-   const handleTestConexionRele = async () => {
-     const ip = rele.ip.trim();
-     const puerto = Number(rele.puerto);
-     const inicio = Number(rele.indiceInicial);
-     const cantidad = Number(rele.cantRegistros);
-
-     // validación mínima
-     if (!ip || !puerto || isNaN(inicio) || isNaN(cantidad) || cantidad <= 0) {
-       ...
-       return;
-     }
-
-     setIsTestingRele(true);
-     setTestErrorRele("");
-     setTestRowsRele([]);
-
-     try {
-       const fetched = await leerRegistrosModbus({...});
-       setTestRowsRele(fetched || []);
-     } catch (err) {
-       setTestErrorRele(...);
-       setTestRowsRele([]);
-     } finally {
-       setIsTestingRele(false);
-     }
-   };
-
-   - Objetivo: hacer una lectura puntual para verificar:
-       • que la IP responde,
-       • que el puerto está escuchando,
-       • que el rango de registros es válido.
-
-   - Pasos:
-       1) Toma los valores del estado `rele`, los convierte a número.
-       2) Valida que estén completos y bien formados.
-       3) Marca `isTestingRele = true` y limpia errores/resultados previos.
-       4) Llama a `leerRegistrosModbus` (cliente que habla con el backend).
-       5) Si funciona, guarda las filas en `testRowsRele` (para mostrarlas en la UI).
-       6) Si falla, captura el mensaje en `testErrorRele`.
-       7) En el `finally`, deja `isTestingRele = false` (se terminó la prueba).
-
-
-5) Test de conexión del analizador
-
-   - `handleTestConexionAnalizador` es simétrico a la función del relé, pero
-     trabajando sobre el objeto `analizador` y sus estados de test.
-
-   - Permite comprobar la conexión de ese equipo sin afectar la configuración
-     guardada ni el ciclo normal de mediciones.
-
-
-6) Submit general (guardar configuración)
-
-   const handleSubmit = (e) => {
-     e.preventDefault();
-     const limpioNombre = nombre.trim();
-     if (!limpioNombre) return;
-
-     const datos = {
-       nombre: limpioNombre,
-       color,
-       periodoSegundos: periodoSegundos ? Number(periodoSegundos) : null,
-       rele: { ... },
-       analizador: { ... },
-     };
-
-     onConfirmar(datos);
-   };
-
-   - Se ejecuta al enviar el formulario principal.
-
-   - Valida que haya un nombre no vacío:
-       • si el nombre queda vacío, simplemente no hace nada.
-
-   - Construye un objeto `datos`:
-       • `nombre` sin espacios sobrantes,
-       • `color` tal cual,
-       • `periodoSegundos` convertido a número o `null` si está vacío,
-       • `rele` y `analizador` con sus campos numéricos ya parseados.
-
-   - Llama a `onConfirmar(datos)`:
-       • el componente padre decidirá si ese objeto se guarda como nuevo
-         alimentador o actualiza uno existente.
-
-
-7) Eliminación del registrador
-
-   const handleEliminarClick = () => {
-     if (!onEliminar) return;
-     const seguro = window.confirm("¿Seguro que querés eliminar este registrador?");
-     if (seguro) onEliminar();
-   };
-
-   - Solo tiene sentido en modo edición (por eso el botón se muestra solo cuando
-     `modo === "editar"`).
-
-   - Pide confirmación al usuario con `window.confirm`.
-   - Si el usuario acepta, llama a `onEliminar()` y el padre se encarga de:
-       • detener mediciones,
-       • quitar el alimentador de la lista,
-       • persistir el cambio.
-
-
-8) Handlers de los subformularios
-
-   - Datos básicos:
-
-     const handleChangeDatosBasicos = (campo, valor) => {
-       if (campo === "nombre") setNombre(valor);
-       else if (campo === "color") setColor(valor);
-       else if (campo === "periodoSegundos") setPeriodoSegundos(valor);
-     };
-
-     • `FormularioDatosBasicos` llama a este handler con pares (campo, valor).
-     • Centraliza cómo se mapean esos cambios al estado principal.
-
-   - Relé:
-
-     const handleChangeRele = (campo, valor) => {
-       setRele((prev) => ({ ...prev, [campo]: valor }));
-     };
-
-   - Analizador:
-
-     const handleChangeAnalizador = (campo, valor) => {
-       setAnalizador((prev) => ({ ...prev, [campo]: valor }));
-     };
-
-   - En ambos casos se usa el patrón inmutable:
-       • copiar el estado anterior,
-       • sobreescribir solo la propiedad modificada.
-
-
-9) Overrides de medición (prueba sin guardar)
-
-   - buildOverrideRele:
-
-     const buildOverrideRele = () => ({
-       periodoSegundos: periodoSegundos ? Number(periodoSegundos) : undefined,
-       rele: {
-         ip: rele.ip.trim(),
-         puerto: rele.puerto ? Number(rele.puerto) : undefined,
-         indiceInicial: ...,
-         cantRegistros: ...,
-       },
-     });
-
-   - buildOverrideAnalizador:
-
-     const buildOverrideAnalizador = () => ({
-       analizador: {
-         ip: analizador.ip.trim(),
-         puerto: ...,
-         indiceInicial: ...,
-         cantRegistros: ...,
-         periodoSegundos: ...,
-       },
-     });
-
-   - Idea de “override”:
-       • Es un objeto parcial de configuración que se pasa a `onToggleMedicion*`.
-       • Le dice al sistema de mediciones:
-           “Para esta medición puntual, usá estos parámetros en vez de los
-            guardados en el alimentador”.
-       • No modifica la copia persistida; solo afecta a la medición en vivo.
-
-   - Uso en los tabs:
-
-     onToggleMedicion={() =>
-       onToggleMedicionRele &&
-       onToggleMedicionRele(buildOverrideRele())
-     }
-
-     • Si existe `onToggleMedicionRele`, se llama pasándole el override armado
-       con los datos que el usuario ve actualmente en el modal.
-
-
-10) JSX y estructura general
-
-   - Overlay y contenedor:
-
-     <div className="alim-modal-overlay">
-       <div className="alim-modal">
-         <h2>...</h2>
-         <form onSubmit={handleSubmit}>...</form>
-       </div>
-     </div>
-
-     • `alim-modal-overlay` oscurece el fondo.
-     • `alim-modal` es la caja central del diálogo.
-
-   - Título:
-
-     {modo === "editar" ? "EDITAR REGISTRADOR: EN " : "NUEVO REGISTRADOR: EN "}
-     {puestoNombre}
-
-     • Cambia el texto según se esté creando o editando.
-     • Siempre muestra el nombre del puesto al final.
-
-   - Layout principal:
-
-     <div className="alim-modal-layout">
-       <div className="alim-modal-left">
-         <FormularioDatosBasicos ... />
-         // tabs RELÉ / ANALIZADOR
-         // contenido de cada tab (TabConfiguracionRele / TabConfiguracionAnalizador)
-       </div>
-     </div>
-
-     • La columna izquierda concentra:
-         - datos básicos,
-         - tabs de configuración de relé y analizador,
-         - formularios completos de cada equipo.
-
-   - Tabs:
-
-     Dos botones:
-       • “RELÉ” → activa `tab === "rele"`,
-       • “ANALIZADOR” → activa `tab === "analizador"`.
-
-     La clase `"alim-tab-active"` marca visualmente la pestaña activa.
-
-   - Subcomponentes de pestañas:
-
-     • `TabConfiguracionRele` recibe:
-         - `config` (IP/puerto/índices/cantRegistros),
-         - `periodoSegundos` del relé,
-         - handlers de cambio y test,
-         - estado de test,
-         - flags de medición en vivo,
-         - `registrosMedicion` para mostrar lecturas de prueba o en vivo,
-         - `disabled` para deshabilitar campos si ya está midiendo.
-
-     • `TabConfiguracionAnalizador` recibe argumentos análogos, pero específicos
-       del analizador.
-
-   - Botones inferiores:
-
-     • “Eliminar” (solo en modo edición):
-         - llama a `handleEliminarClick`.
-
-     • “Cancelar”:
-         - llama a `onCancelar`,
-         - no guarda nada.
-
-     • “Guardar”:
-         - envía el formulario (`handleSubmit`),
-         - dispara `onConfirmar(datos)`.
-
----------------------------------------------------------------------------*/

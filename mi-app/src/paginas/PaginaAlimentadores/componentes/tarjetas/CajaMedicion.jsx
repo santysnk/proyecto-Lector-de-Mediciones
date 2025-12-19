@@ -17,31 +17,65 @@ const CajaMedicion = ({
 	periodoAnalizador,                // periodo configurado (segundos) para analizador
 	contadorRele,                     // cuántas lecturas se hicieron para relé
 	contadorAnalizador,               // cuántas lecturas se hicieron para analizador
+	// Polling de lecturas desde BD
+	estaPolling = false,              // indica si hay polling activo
+	mostrarProgresoPolling = false,   // activa animación de borde para polling
+	periodoPolling = 60,              // periodo de polling en segundos
+	contadorPolling = 0,              // cuántas lecturas se hicieron durante polling
 }) => {
 	const esDelRele = box.origen === "rele" || !box.origen;       // si no se especifica origen, asumimos relé
 	const esDelAnalizador = box.origen === "analizador";
 
+	// ===== MODO POLLING (tiene prioridad cuando está activo) =====
+	// En modo polling, todas las cajas habilitadas muestran animación
+	const pollingActivo = estaPolling && box.enabled;
+	const progresoPollingHabilitado = pollingActivo && mostrarProgresoPolling;
+
+	// ===== MODO MEDICIÓN TRADICIONAL (rele/analizador) =====
 	const medicionActiva =
+		!estaPolling &&                                            // solo si NO hay polling activo
 		box.enabled &&                                             // la caja debe estar habilitada
 		((esDelRele && mideRele) || (esDelAnalizador && mideAnalizador)); // y el equipo correspondiente debe estar midiendo
 
-	const progresoHabilitado =
+	const progresoTradicionalHabilitado =
 		(esDelRele && mostrarProgresoRele) ||
 		(esDelAnalizador && mostrarProgresoAnalizador);            // control global de cuándo mostrar borde animado
 
-	const equipo = esDelAnalizador ? "analizador" : "rele";       // texto para identificar el equipo
-	const duracionAnimacion = esDelAnalizador                    // duración del borde animado según equipo
-		? periodoAnalizador
-		: periodoRele;
-	const contadorLecturas = esDelAnalizador                     // contador usado para forzar reinicio de animación
-		? contadorAnalizador
-		: contadorRele;
+	// ===== DECIDIR QUÉ ANIMACIÓN USAR =====
+	// Prioridad: polling > medición tradicional
+	let duracionAnimacion;
+	let contadorLecturas;
+	let propiedadDuracion;
+	let usarAnimacion = false;
+
+	if (pollingActivo && progresoPollingHabilitado) {
+		// Usar animación de polling (reutiliza el CSS de relé)
+		duracionAnimacion = periodoPolling;
+		contadorLecturas = contadorPolling;
+		propiedadDuracion = "--rw-progress-duration-rele";          // reutiliza la animación del relé
+		usarAnimacion = true;
+	} else if (medicionActiva && progresoTradicionalHabilitado) {
+		// Usar animación tradicional
+		duracionAnimacion = esDelAnalizador ? periodoAnalizador : periodoRele;
+		contadorLecturas = esDelAnalizador ? contadorAnalizador : contadorRele;
+		propiedadDuracion = esDelRele
+			? "--rw-progress-duration-rele"
+			: "--rw-progress-duration-analizador";
+		usarAnimacion = true;
+	} else {
+		// Sin animación
+		duracionAnimacion = 60;
+		contadorLecturas = 0;
+		propiedadDuracion = "--rw-progress-duration-rele";
+	}
+
+	const equipo = pollingActivo ? "polling" : (esDelAnalizador ? "analizador" : "rele");
 
 	let clasesValor = "alim-card-meter-value";                    // clase base del valor
 
-	// si hay medición activa y el progreso está habilitado, agregamos la clase de animación correspondiente
-	if (medicionActiva && progresoHabilitado) {
-		if (esDelRele) {
+	// si hay animación activa, agregar la clase correspondiente
+	if (usarAnimacion) {
+		if (pollingActivo || esDelRele) {
 			clasesValor += " alim-meter-progress-rele";
 		} else if (esDelAnalizador) {
 			clasesValor += " alim-meter-progress-analizador";
@@ -50,10 +84,6 @@ const CajaMedicion = ({
 
 	// Key que incluye el contador de lecturas para reiniciar animación
 	const claveValor = `${zona}-${indice}-${equipo}-c${contadorLecturas}`;
-	// variable CSS que controla la duración de la animación del borde
-	const propiedadDuracion = esDelRele
-		? "--rw-progress-duration-rele"
-		: "--rw-progress-duration-analizador";
 
 	return (
 		<div key={`${zona}-${indice}`} className="alim-card-meter">
@@ -62,7 +92,7 @@ const CajaMedicion = ({
 				key={claveValor}
 				className={clasesValor}
 				style={
-					medicionActiva && progresoHabilitado
+					usarAnimacion
 						? {
 								[propiedadDuracion]: `${duracionAnimacion}s`, // pasa el periodo como variable CSS
 						  }

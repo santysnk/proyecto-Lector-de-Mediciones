@@ -233,6 +233,15 @@ export async function obtenerLecturasHistoricas(alimentadorId, desde, hasta, tip
   return fetchConAuth(url);
 }
 
+/**
+ * Obtiene las últimas lecturas de un registrador
+ * @param {string} registradorId - ID del registrador
+ * @param {number} limite - Cantidad de lecturas a obtener (default 1)
+ */
+export async function obtenerUltimasLecturasPorRegistrador(registradorId, limite = 1) {
+  return fetchConAuth(`/api/registradores/${registradorId}/lecturas?limite=${limite}`);
+}
+
 // ============================================
 // PREFERENCIAS
 // ============================================
@@ -561,6 +570,7 @@ export default {
   // Lecturas
   obtenerUltimasLecturas,
   obtenerLecturasHistoricas,
+  obtenerUltimasLecturasPorRegistrador,
   // Preferencias
   obtenerPreferencias,
   guardarPreferencias,
