@@ -127,22 +127,27 @@
    width: 48px;
    height: 48px;
    border-radius: 50%;
-   background-color: #334155;
-   border: 1px solid #475569;
-   color: #94a3b8;
+   background-color: #0ea5e9;
+   border: none;
+   color: #ffffff;
    display: flex;
    align-items: center;
    justify-content: center;
    cursor: pointer;
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-   transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
    z-index: 50;
+   /* Invisible por defecto, transición lenta al desaparecer */
+   opacity: 0;
+   transition: opacity 0.5s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
 .grilla-btn-editar-diagrama:hover {
-   background-color: #475569;
-   color: #e2e8f0;
+   background-color: #0284c7;
+   color: #ffffff;
    transform: scale(1.1);
+   /* Visible al pasar el ratón, transición rápida al aparecer */
+   opacity: 1;
+   transition: opacity 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
 .grilla-btn-editar-diagrama:active {
@@ -154,6 +159,74 @@
    .grilla-btn-editar-diagrama {
       bottom: 16px;
       right: 16px;
+      width: 44px;
+      height: 44px;
+   }
+}
+
+/* =========================================================
+   BOTONES FLOTANTES PARA GUARDAR/CARGAR DIAGRAMA
+   ========================================================= */
+.grilla-btns-archivo {
+   position: fixed;
+   bottom: 20px;
+   right: 20px;
+   display: flex;
+   flex-direction: column;
+   gap: 10px;
+   z-index: 102;
+}
+
+.grilla-btn-archivo {
+   width: 48px;
+   height: 48px;
+   border-radius: 50%;
+   border: none;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+   transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.grilla-btn-archivo:hover {
+   transform: scale(1.1);
+}
+
+.grilla-btn-archivo:active {
+   transform: scale(0.95);
+}
+
+/* Botón guardar - color celeste */
+.grilla-btn-archivo--guardar {
+   background-color: #0ea5e9;
+   color: #ffffff;
+}
+
+.grilla-btn-archivo--guardar:hover {
+   background-color: #0284c7;
+}
+
+/* Botón abrir - color celeste */
+.grilla-btn-archivo--abrir {
+   background-color: #0ea5e9;
+   color: #ffffff;
+}
+
+.grilla-btn-archivo--abrir:hover {
+   background-color: #0284c7;
+}
+
+/* En móvil, ajustar posición y tamaño */
+@media (max-width: 600px) {
+   .grilla-btns-archivo {
+      bottom: 16px;
+      right: 16px;
+      gap: 8px;
+   }
+
+   .grilla-btn-archivo {
       width: 44px;
       height: 44px;
    }

@@ -443,6 +443,83 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	}, [guardarDatos]);
 
 	/**
+	 * Exportar el dibujo a un archivo JSON
+	 */
+	const exportarAArchivo = useCallback(() => {
+		const datos = {
+			version: 1,
+			celdas,
+			textos,
+			grosor: grosorLinea,
+			exportadoEn: new Date().toISOString(),
+		};
+
+		const blob = new Blob([JSON.stringify(datos, null, 2)], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = `diagrama-unifiliar-${puestoId || "sin-puesto"}.json`;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		URL.revokeObjectURL(url);
+	}, [celdas, textos, grosorLinea, puestoId]);
+
+	/**
+	 * Importar un dibujo desde un archivo JSON
+	 * @param {File} archivo - Archivo JSON a importar
+	 * @returns {Promise<boolean>} - true si se importó correctamente
+	 */
+	const importarDesdeArchivo = useCallback((archivo) => {
+		return new Promise((resolve) => {
+			const reader = new FileReader();
+
+			reader.onload = (e) => {
+				try {
+					const datos = JSON.parse(e.target.result);
+
+					// Validar estructura básica
+					if (!datos || typeof datos !== "object") {
+						console.error("Archivo inválido: no es un objeto JSON");
+						resolve(false);
+						return;
+					}
+
+					// Extraer datos (compatible con formato antiguo y nuevo)
+					const nuevasCeldas = datos.celdas || (datos.version ? {} : datos);
+					const nuevosTextos = datos.textos || [];
+					const nuevoGrosor = datos.grosor || GROSORES_LINEA[1].valor;
+
+					// Validar que celdas sea un objeto
+					if (typeof nuevasCeldas !== "object" || Array.isArray(nuevasCeldas)) {
+						console.error("Archivo inválido: celdas no es un objeto");
+						resolve(false);
+						return;
+					}
+
+					// Aplicar los datos importados
+					setCeldas(nuevasCeldas);
+					setTextos(nuevosTextos);
+					setGrosorLinea(nuevoGrosor);
+					guardarDatos(nuevasCeldas, nuevosTextos, nuevoGrosor);
+
+					resolve(true);
+				} catch (error) {
+					console.error("Error al parsear archivo JSON:", error);
+					resolve(false);
+				}
+			};
+
+			reader.onerror = () => {
+				console.error("Error al leer archivo");
+				resolve(false);
+			};
+
+			reader.readAsText(archivo);
+		});
+	}, [guardarDatos]);
+
+	/**
 	 * Verificar si hay celdas o textos dibujados
 	 */
 	const tieneDibujo = Object.keys(celdas).length > 0 || textos.length > 0;
@@ -496,6 +573,10 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 
 		// Grosor de línea
 		cambiarGrosor,
+
+		// Importar/Exportar archivo
+		exportarAArchivo,
+		importarDesdeArchivo,
 	};
 };
 

@@ -368,6 +368,47 @@ const GrillaTarjetas = ({
 				</button>
 			)}
 
+			{/* Botones flotantes para guardar/cargar diagrama - solo en modo edición */}
+			{grillaUnifilar.modoEdicion && (
+				<div className="grilla-btns-archivo">
+					{/* Botón guardar (arriba) */}
+					<button
+						type="button"
+						className="grilla-btn-archivo grilla-btn-archivo--guardar"
+						onClick={grillaUnifilar.exportarAArchivo}
+						title="Guardar diagrama a archivo"
+					>
+						<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+							<path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+						</svg>
+					</button>
+					{/* Botón abrir (abajo) */}
+					<label
+						className="grilla-btn-archivo grilla-btn-archivo--abrir"
+						title="Cargar diagrama desde archivo"
+					>
+						<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+							<path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+						</svg>
+						<input
+							type="file"
+							accept=".json"
+							style={{ display: "none" }}
+							onChange={async (e) => {
+								const archivo = e.target.files?.[0];
+								if (archivo) {
+									const exito = await grillaUnifilar.importarDesdeArchivo(archivo);
+									if (!exito) {
+										alert("Error al cargar el archivo. Verifica que sea un archivo JSON válido.");
+									}
+								}
+								e.target.value = "";
+							}}
+						/>
+					</label>
+				</div>
+			)}
+
 			{/* RowGapResizer para la primera fila (separación del menú) - solo en desktop */}
 			{!elementoArrastrandoId && !esModoMobile && (
 				<RowGapResizer
