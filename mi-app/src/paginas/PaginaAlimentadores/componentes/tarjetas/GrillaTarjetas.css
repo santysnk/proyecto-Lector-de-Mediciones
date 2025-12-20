@@ -31,12 +31,23 @@
    .alim-cards-grid {
       justify-content: center;
       padding-left: 0;
+      padding-right: 0;
       gap: 1rem; /* gap fijo entre tarjetas en modo móvil */
    }
 
-   /* Alinear las tarjetas normales con la tarjeta "Nuevo Registrador" */
+   /* Centrar las tarjetas sin margin extra */
    .alim-card-wrapper {
-      margin-left: 24px;
+      margin-left: 0;
+   }
+
+   /* Centrar también la tarjeta de agregar */
+   .alim-card-add {
+      margin-left: 0;
+   }
+
+   /* Ocultar los gap-spacers en modo móvil para que el centrado funcione */
+   .gap-spacer {
+      display: none;
    }
 }
 
