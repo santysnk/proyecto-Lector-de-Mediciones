@@ -203,23 +203,23 @@ label.recordarme {
 		height: 100vh;
 		width: 100vw;
 		display: flex;
+		overflow-y: auto;
 	}
 
 	/* Contenedor del logo arriba */
 	.izquierda {
 		position: absolute;
-		top: 32px;
+		top: 20px;
 		left: 50%;
 		transform: translateX(-50%);
 		width: 100%;
 		height: auto;
 		background: transparent;
-		/* sin fondo negro */
 		justify-content: center;
 		align-items: center;
 		display: flex;
 		pointer-events: none;
-		/* para que no bloquee clics */
+		z-index: 10;
 	}
 
 	/* Disco con degradado detrás del logo */
@@ -229,25 +229,21 @@ label.recordarme {
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		width: 180px;
-		/* tamaño del círculo */
-		height: 180px;
+		width: 140px;
+		height: 140px;
 		border-radius: 50%;
 		background-image: radial-gradient(circle at center,
 				#142230 0%,
-				/* azul claro en el centro */
 				#325a80 100%
-				/* mismo azul oscuro que las esquinas de la derecha */
 			);
 		z-index: 0;
 	}
 
 	.logo {
-		max-width: 140px;
+		max-width: 100px;
 		height: auto;
 		position: relative;
 		z-index: 1;
-		/* para que quede por encima del degradado */
 	}
 
 	/* El panel celeste ocupa toda la pantalla */
@@ -256,25 +252,55 @@ label.recordarme {
 		width: 100%;
 		margin: 0;
 		border-radius: 0;
-		padding: 120px 24px 32px;
-		/* espacio arriba para el logo + círculo */
+		padding: 180px 24px 32px;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
 	}
 
 	.login {
-		max-width: 420px;
+		max-width: 100%;
+		width: 100%;
 		margin: 0 auto;
 	}
 
+	/* Labels más pequeños y con menos margin en móvil */
 	.usuario {
 		text-align: center;
+		font-size: 22px;
+		margin-top: 20px;
+		margin-bottom: 8px;
+	}
+
+	/* Primer label sin margin-top extra */
+	.login .usuario:first-of-type {
+		margin-top: 0;
+	}
+
+	.input {
+		padding: 14px 16px;
+		font-size: 16px;
 	}
 
 	.acciones {
 		align-items: center;
+		margin-top: 24px;
 	}
 
-	.texto {
-		text-align: center;
+	.boton {
+		margin-top: 24px;
+		padding: 12px 20px;
+		font-size: 20px;
+	}
+
+	.recordarme,
+	.registrarse {
+		font-size: 16px;
+	}
+
+	.ojito {
+		top: 14px;
+		font-size: 20px;
 	}
 }
 

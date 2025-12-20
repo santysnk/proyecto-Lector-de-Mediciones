@@ -84,3 +84,61 @@
   font-weight: bold;
 }
 
+/* === VISTA MOBILE PARA REGISTRO === */
+@media (max-width: 768px) {
+	/* En móvil, ocultar el logo para dar más espacio al formulario */
+	form.registro-page .container .izquierda {
+		display: none !important;
+	}
+
+	/* Panel celeste ocupa toda la pantalla sin espacio para logo */
+	form.registro-page .container .derecha {
+		padding: 60px 20px 32px;
+		margin: 0;
+		border-radius: 0;
+	}
+
+	/* Botón volver ajustado para móvil */
+	.registro-page .btn-volver {
+		top: 16px;
+		left: 20px;
+		padding: 6px 16px;
+		font-size: 14px;
+	}
+
+	/* Título más pequeño */
+	.registro-page .titulo-registro {
+		font-size: 24px;
+		margin: 0 0 12px;
+	}
+
+	/* Labels más compactos */
+	.registro-page .label-registro {
+		font-size: 18px;
+		margin: 8px 0 2px 0;
+	}
+
+	/* Inputs más compactos */
+	.registro-page .input {
+		padding: 12px 14px;
+		font-size: 15px;
+		margin-bottom: 4px;
+	}
+
+	/* Acciones con menos margen */
+	.registro-page .acciones {
+		margin-top: 16px;
+	}
+
+	/* Botón crear cuenta */
+	.registro-page .boton {
+		margin-top: 16px;
+		padding: 10px 18px;
+		font-size: 18px;
+	}
+
+	/* Error text más pequeño */
+	.registro-page .error-text {
+		font-size: 13px;
+	}
+}
