@@ -682,6 +682,7 @@ const {
 							alimentadores={puestoSeleccionado.alimentadores}
 							lecturas={lecturasTarjetas}
 							puestoId={puestoSeleccionado.id}
+							workspaceId={configuracionSeleccionada?.id}
 							elementoArrastrandoId={elementoArrastrandoId}
 							onAbrirConfiguracion={abrirModalEditarAlim}
 							onDragStart={handleDragStartAlim}

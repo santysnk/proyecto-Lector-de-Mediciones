@@ -4,6 +4,8 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
 import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
+import GrillaUnifilar from "./GrillaUnifilar.jsx";
+import usarGrillaUnifilar from "../../hooks/usarGrillaUnifilar.js";
 import "./GrillaTarjetas.css";
 
 // Breakpoint para desactivar los controles de gap en móviles/tablets
@@ -85,6 +87,7 @@ const GrillaTarjetas = ({
 	alimentadores,
 	lecturas,
 	puestoId,
+	workspaceId,             // ID del workspace para la grilla unifiliar
 	elementoArrastrandoId,
 	onAbrirConfiguracion,
 	onDragStart,
@@ -129,6 +132,9 @@ const GrillaTarjetas = ({
 	const [filasPorTarjeta, setFilasPorTarjeta] = useState({});
 	// Primera tarjeta de cada fila (para saber dónde poner el RowGapResizer)
 	const [primerasTarjetasPorFila, setPrimerasTarjetasPorFila] = useState({});
+
+	// Hook para la grilla unifiliar (dibujo de diagramas)
+	const grillaUnifilar = usarGrillaUnifilar(puestoId, workspaceId);
 
 	// Detectar las posiciones entre filas y manejar gaps de tarjetas que cambian de fila
 	const detectarFilasYFinales = useCallback(() => {
@@ -314,6 +320,49 @@ const GrillaTarjetas = ({
 
 	return (
 		<div className="grilla-con-row-gaps">
+			{/* Grilla unifiliar para dibujar diagramas */}
+			<GrillaUnifilar
+				celdas={grillaUnifilar.celdas}
+				textos={grillaUnifilar.textos}
+				modoEdicion={grillaUnifilar.modoEdicion}
+				colorSeleccionado={grillaUnifilar.colorSeleccionado}
+				herramienta={grillaUnifilar.herramienta}
+				estaPintando={grillaUnifilar.estaPintando}
+				coloresDisponibles={grillaUnifilar.coloresDisponibles}
+				fuentesDisponibles={grillaUnifilar.fuentesDisponibles}
+				tamanosDisponibles={grillaUnifilar.tamanosDisponibles}
+				configTexto={grillaUnifilar.configTexto}
+				onConfigTextoChange={grillaUnifilar.setConfigTexto}
+				textoSeleccionadoId={grillaUnifilar.textoSeleccionadoId}
+				onTextoSeleccionadoChange={grillaUnifilar.setTextoSeleccionadoId}
+				onPintarCelda={grillaUnifilar.pintarCelda}
+				onIniciarPintado={grillaUnifilar.iniciarPintado}
+				onDetenerPintado={grillaUnifilar.detenerPintado}
+				onCambiarColor={grillaUnifilar.setColorSeleccionado}
+				onSeleccionarPincel={grillaUnifilar.seleccionarPincel}
+				onSeleccionarBorrador={grillaUnifilar.seleccionarBorrador}
+				onSeleccionarTexto={grillaUnifilar.seleccionarTexto}
+				onAgregarTexto={grillaUnifilar.agregarTexto}
+				onActualizarTexto={grillaUnifilar.actualizarTexto}
+				onEliminarTexto={grillaUnifilar.eliminarTexto}
+				onLimpiarTodo={grillaUnifilar.limpiarTodo}
+				onCerrarEdicion={grillaUnifilar.desactivarEdicion}
+			/>
+
+			{/* Botón flotante para activar/desactivar modo edición de diagrama */}
+			{!grillaUnifilar.modoEdicion && (
+				<button
+					type="button"
+					className="grilla-btn-editar-diagrama"
+					onClick={grillaUnifilar.activarEdicion}
+					title="Editar diagrama unifiliar"
+				>
+					<svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+						<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.996.996 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+					</svg>
+				</button>
+			)}
+
 			{/* RowGapResizer para la primera fila (separación del menú) - solo en desktop */}
 			{!elementoArrastrandoId && !esModoMobile && (
 				<RowGapResizer

@@ -10,9 +10,12 @@
 
 /* Contenedor principal que incluye row gaps y la grilla */
 .grilla-con-row-gaps {
+   position: relative; /* para posicionar la grilla unifiliar */
    display: flex;
    flex-direction: column;
    width: 100%;
+   min-height: 500px; /* altura mínima para que la grilla unifiliar sea visible */
+   flex: 1; /* ocupar todo el espacio disponible del padre */
 }
 
 /* Contenedor de la grilla de tarjetas */
@@ -112,4 +115,46 @@
    color: #020202;
    font-size: 0.95rem;
    margin: 0 0 1rem 1.2rem;
+}
+
+/* =========================================================
+   BOTÓN FLOTANTE PARA EDITAR DIAGRAMA UNIFILIAR
+   ========================================================= */
+.grilla-btn-editar-diagrama {
+   position: fixed;
+   bottom: 20px;
+   right: 20px;
+   width: 48px;
+   height: 48px;
+   border-radius: 50%;
+   background-color: #334155;
+   border: 1px solid #475569;
+   color: #94a3b8;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+   transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+   z-index: 50;
+}
+
+.grilla-btn-editar-diagrama:hover {
+   background-color: #475569;
+   color: #e2e8f0;
+   transform: scale(1.1);
+}
+
+.grilla-btn-editar-diagrama:active {
+   transform: scale(0.95);
+}
+
+/* En móvil, ajustar posición del botón */
+@media (max-width: 600px) {
+   .grilla-btn-editar-diagrama {
+      bottom: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+   }
 }

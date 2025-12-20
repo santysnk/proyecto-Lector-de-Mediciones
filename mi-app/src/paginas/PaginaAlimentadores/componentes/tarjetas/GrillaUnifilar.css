@@ -1,0 +1,368 @@
+/* src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaUnifilar.css */
+
+/*
+   NOTA SOBRE ESTE ARCHIVO (GrillaUnifilar.css)
+   - Estilos para la grilla de dibujo unifiliar que permite crear diagramas
+     sobre las tarjetas de alimentadores.
+
+   - La grilla tiene dos modos:
+     1. Modo edición (--editando): aparece al frente con z-index alto,
+        muestra la cuadrícula y permite dibujar.
+     2. Modo fondo (--fondo): queda detrás de las tarjetas, solo muestra
+        el dibujo como imagen de fondo transparente.
+*/
+
+/* Contenedor principal de la grilla */
+.grilla-unifilar {
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   pointer-events: none;
+}
+
+/* Modo fondo: detrás de las tarjetas */
+.grilla-unifilar--fondo {
+   z-index: 0;
+}
+
+/* Modo edición: al frente pero dentro del contenedor padre */
+.grilla-unifilar--editando {
+   z-index: 100;
+   pointer-events: auto;
+   background-color: rgba(15, 23, 42, 0.6);
+}
+
+/* Canvas de dibujo */
+.grilla-unifilar__canvas {
+   width: 100%;
+   height: 100%;
+   display: block;
+}
+
+.grilla-unifilar--editando .grilla-unifilar__canvas {
+   pointer-events: auto;
+}
+
+/* =========================================================
+   BARRA DE HERRAMIENTAS
+   ========================================================= */
+.grilla-unifilar__toolbar {
+   position: fixed;
+   bottom: 20px;
+   left: 50%;
+   transform: translateX(-50%);
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   padding: 10px 16px;
+   background-color: #1e293b;
+   border: 1px solid #334155;
+   border-radius: 12px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+   z-index: 101;
+}
+
+/* Contenedor de colores */
+.grilla-unifilar__colores {
+   display: flex;
+   gap: 6px;
+}
+
+/* Botón de color individual */
+.grilla-unifilar__color {
+   width: 24px;
+   height: 24px;
+   border-radius: 50%;
+   border: 2px solid transparent;
+   cursor: pointer;
+   transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.grilla-unifilar__color:hover {
+   transform: scale(1.15);
+}
+
+.grilla-unifilar__color--activo {
+   border-color: #fff;
+   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Botón multicolor (arcoiris) */
+.grilla-unifilar__color--multicolor {
+   background: conic-gradient(
+      red, yellow, lime, aqua, blue, magenta, red
+   );
+   position: relative;
+}
+
+.grilla-unifilar__color-muestra {
+   width: 14px;
+   height: 14px;
+   border-radius: 50%;
+   border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+/* Wrapper para el color picker */
+.grilla-unifilar__color-picker-wrapper {
+   position: relative;
+}
+
+/* Popover del color picker */
+.grilla-unifilar__color-picker-popover {
+   position: absolute;
+   bottom: 100%;
+   left: 50%;
+   transform: translateX(-50%);
+   margin-bottom: 10px;
+   background-color: #1e293b;
+   border: 1px solid #475569;
+   border-radius: 12px;
+   padding: 12px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+   z-index: 200;
+}
+
+.grilla-unifilar__color-picker-popover .react-colorful {
+   width: 180px;
+   height: 150px;
+}
+
+.grilla-unifilar__color-picker-hex {
+   margin-top: 10px;
+}
+
+.grilla-unifilar__color-picker-hex input {
+   width: 100%;
+   background-color: #0f172a;
+   border: 1px solid #475569;
+   border-radius: 6px;
+   color: #e2e8f0;
+   padding: 6px 10px;
+   font-size: 0.85rem;
+   font-family: monospace;
+   text-align: center;
+   outline: none;
+}
+
+.grilla-unifilar__color-picker-hex input:focus {
+   border-color: #22d3ee;
+}
+
+/* Separador entre colores y herramientas */
+.grilla-unifilar__colores::after {
+   content: "";
+   width: 1px;
+   height: 24px;
+   background-color: #475569;
+   margin-left: 6px;
+}
+
+/* Contenedor de herramientas */
+.grilla-unifilar__herramientas {
+   display: flex;
+   gap: 4px;
+}
+
+/* Botón de herramienta genérico */
+.grilla-unifilar__btn {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 6px;
+   padding: 8px;
+   background-color: transparent;
+   border: 1px solid #475569;
+   border-radius: 8px;
+   color: #94a3b8;
+   cursor: pointer;
+   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.grilla-unifilar__btn:hover {
+   background-color: rgba(51, 65, 85, 0.5);
+   color: #e2e8f0;
+}
+
+.grilla-unifilar__btn--activo {
+   background-color: #334155;
+   color: #22d3ee;
+   border-color: #22d3ee;
+}
+
+.grilla-unifilar__btn--peligro {
+   color: #f87171;
+   border-color: rgba(248, 113, 113, 0.4);
+}
+
+.grilla-unifilar__btn--peligro:hover {
+   background-color: rgba(248, 113, 113, 0.15);
+   border-color: #f87171;
+}
+
+/* Botón cerrar/listo */
+.grilla-unifilar__btn--cerrar {
+   padding: 8px 14px;
+   background-color: #22d3ee;
+   border-color: #22d3ee;
+   color: #0f172a;
+   font-weight: 600;
+   font-size: 0.85rem;
+}
+
+.grilla-unifilar__btn--cerrar:hover {
+   background-color: #06b6d4;
+   border-color: #06b6d4;
+   color: #0f172a;
+}
+
+/* Separador antes del botón cerrar */
+.grilla-unifilar__herramientas::after {
+   content: "";
+   width: 1px;
+   height: 24px;
+   background-color: #475569;
+   margin-right: 6px;
+}
+
+/* Botón de formato (B, I) */
+.grilla-unifilar__btn--formato {
+   min-width: 32px;
+   font-size: 14px;
+}
+
+/* =========================================================
+   INPUT DE TEXTO FLOTANTE
+   ========================================================= */
+.grilla-unifilar__input-texto {
+   position: absolute;
+   z-index: 102;
+}
+
+.grilla-unifilar__input-texto input {
+   background-color: rgba(30, 41, 59, 0.95);
+   border: 1px solid #475569;
+   border-radius: 4px;
+   padding: 4px 8px;
+   min-width: 150px;
+   outline: none;
+}
+
+.grilla-unifilar__input-texto input:focus {
+   border-color: #22d3ee;
+   box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+}
+
+.grilla-unifilar__input-texto input::placeholder {
+   color: #64748b;
+}
+
+/* =========================================================
+   OPCIONES DE TEXTO
+   ========================================================= */
+.grilla-unifilar__texto-opciones {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   padding-left: 6px;
+   border-left: 1px solid #475569;
+   margin-left: 6px;
+}
+
+.grilla-unifilar__select {
+   background-color: #1e293b;
+   border: 1px solid #475569;
+   border-radius: 6px;
+   color: #e2e8f0;
+   padding: 4px 8px;
+   font-size: 0.8rem;
+   cursor: pointer;
+   outline: none;
+}
+
+.grilla-unifilar__select:hover {
+   border-color: #64748b;
+}
+
+.grilla-unifilar__select:focus {
+   border-color: #22d3ee;
+}
+
+.grilla-unifilar__select--tamano {
+   width: 70px;
+}
+
+/* =========================================================
+   INDICADOR DE SHIFT
+   ========================================================= */
+.grilla-unifilar__shift-indicator {
+   background-color: rgba(34, 211, 238, 0.2);
+   border: 1px solid #22d3ee;
+   border-radius: 4px;
+   padding: 4px 8px;
+   font-size: 0.75rem;
+   color: #22d3ee;
+   font-weight: 500;
+}
+
+/* =========================================================
+   RESPONSIVE - MÓVIL
+   ========================================================= */
+@media (max-width: 600px) {
+   .grilla-unifilar__toolbar {
+      bottom: 10px;
+      padding: 8px 12px;
+      gap: 8px;
+      max-width: calc(100vw - 20px);
+      flex-wrap: wrap;
+      justify-content: center;
+   }
+
+   .grilla-unifilar__colores {
+      gap: 4px;
+   }
+
+   .grilla-unifilar__color {
+      width: 20px;
+      height: 20px;
+   }
+
+   .grilla-unifilar__btn {
+      padding: 6px;
+   }
+
+   .grilla-unifilar__btn--cerrar {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+   }
+
+   .grilla-unifilar__btn--cerrar span {
+      display: none;
+   }
+
+   .grilla-unifilar__texto-opciones {
+      width: 100%;
+      justify-content: center;
+      border-left: none;
+      border-top: 1px solid #475569;
+      padding-left: 0;
+      padding-top: 8px;
+      margin-left: 0;
+      margin-top: 4px;
+   }
+
+   .grilla-unifilar__select {
+      font-size: 0.75rem;
+      padding: 3px 6px;
+   }
+
+   .grilla-unifilar__select--tamano {
+      width: 60px;
+   }
+
+   .grilla-unifilar__shift-indicator {
+      font-size: 0.7rem;
+      padding: 3px 6px;
+   }
+}
