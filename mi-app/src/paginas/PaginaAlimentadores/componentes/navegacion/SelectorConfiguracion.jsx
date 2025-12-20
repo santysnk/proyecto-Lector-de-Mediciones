@@ -425,18 +425,20 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   </button>
                 )}
 
-                {/* Opción nuevo puesto */}
-                <button
-                  type="button"
-                  className="selector-config__opcion-secundaria"
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    onAbrirModalNuevoPuesto?.();
-                  }}
-                >
-                  <span className="selector-config__opcion-icono">+</span>
-                  Nuevo puesto
-                </button>
+                {/* Opción nuevo puesto (solo admin/superadmin) */}
+                {(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+                  <button
+                    type="button"
+                    className="selector-config__opcion-secundaria"
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      onAbrirModalNuevoPuesto?.();
+                    }}
+                  >
+                    <span className="selector-config__opcion-icono">+</span>
+                    Nuevo puesto
+                  </button>
+                )}
 
                 {/* Opción editar puestos */}
                 <button
@@ -452,18 +454,20 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   Editar puestos
                 </button>
 
-                {/* Opción configurar agente */}
-                <button
-                  type="button"
-                  className="selector-config__opcion-secundaria"
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    onAbrirModalConfigurarAgente?.();
-                  }}
-                >
-                  <span className="selector-config__opcion-icono">⚙</span>
-                  Configurar Agente
-                </button>
+                {/* Opción configurar agente (solo admin/superadmin) */}
+                {(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+                  <button
+                    type="button"
+                    className="selector-config__opcion-secundaria"
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      onAbrirModalConfigurarAgente?.();
+                    }}
+                  >
+                    <span className="selector-config__opcion-icono">⚙</span>
+                    Configurar Agente
+                  </button>
+                )}
 
                 {/* Opción eliminar workspace activo (solo si hay más de uno y es creador/admin) */}
                 {configuraciones.length > 1 && configuracionSeleccionada?.esCreador && (

@@ -28,7 +28,7 @@ import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarReg
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
 	const { logout } = useAuth();                                    // función de logout del contexto de auth
-	const { configuracionSeleccionada, perfil } = usarContextoConfiguracion(); // workspace activo + perfil usuario
+	const { configuracionSeleccionada, perfil, rolGlobal } = usarContextoConfiguracion(); // workspace activo + perfil usuario + rol
 
 	const {
    puestos,                               // lista completa de puestos configurados en el sistema
@@ -721,6 +721,7 @@ const {
 				puestos={puestos}
 				onCerrar={() => cerrarModal("editarPuestos")}
 				onGuardar={handleGuardarPuestos}
+				rolGlobal={rolGlobal}
 			/>
 
 			<ModalConfiguracionAlimentador

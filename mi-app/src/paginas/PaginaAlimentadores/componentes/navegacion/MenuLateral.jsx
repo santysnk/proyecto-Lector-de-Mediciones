@@ -171,14 +171,17 @@ const MenuLateral = ({
 							</button>
 						)}
 
-						<button
-							type="button"
-							className="alim-drawer-btn-action alim-drawer-btn-add"
-							onClick={() => handleAccion(onAbrirModalNuevoPuesto)}
-						>
-							<span className="alim-drawer-btn-icon">+</span>
-							<span>Nuevo puesto</span>
-						</button>
+						{/* Nuevo puesto (solo admin/superadmin) */}
+						{(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+							<button
+								type="button"
+								className="alim-drawer-btn-action alim-drawer-btn-add"
+								onClick={() => handleAccion(onAbrirModalNuevoPuesto)}
+							>
+								<span className="alim-drawer-btn-icon">+</span>
+								<span>Nuevo puesto</span>
+							</button>
+						)}
 
 						<button
 							type="button"
@@ -192,14 +195,17 @@ const MenuLateral = ({
 							<span>Editar puestos</span>
 						</button>
 
-						<button
-							type="button"
-							className="alim-drawer-btn-action alim-drawer-btn-config"
-							onClick={() => handleAccion(onAbrirModalConfigurarAgente)}
-						>
-							<span className="alim-drawer-btn-icon">⚙</span>
-							Configurar Agente
-						</button>
+						{/* Configurar Agente (solo admin/superadmin) */}
+						{(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+							<button
+								type="button"
+								className="alim-drawer-btn-action alim-drawer-btn-config"
+								onClick={() => handleAccion(onAbrirModalConfigurarAgente)}
+							>
+								<span className="alim-drawer-btn-icon">⚙</span>
+								Configurar Agente
+							</button>
+						)}
 
 						{/* Crear nuevo workspace (solo si tiene permisos) */}
 						{puedeCrearWorkspaces && (

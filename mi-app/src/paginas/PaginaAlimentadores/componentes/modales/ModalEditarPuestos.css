@@ -178,9 +178,11 @@
       padding: 0.9rem 1rem;
    }
 
-   /* Input a lo ancho */
+   /* Input a lo ancho, quitando max-width y usando box-sizing */
    .editar-nombre {
       width: 100%;
+      max-width: none;
+      box-sizing: border-box;
    }
 
    /* Contenedor de colores + eliminar en GRID:

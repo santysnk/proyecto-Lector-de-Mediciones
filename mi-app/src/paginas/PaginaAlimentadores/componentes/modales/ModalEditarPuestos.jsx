@@ -9,8 +9,12 @@ const ModalEditarPuestos = ({
 	puestos,                                              // lista original de puestos proveniente del contexto
 	onCerrar,                                             // callback para cerrar sin guardar
 	onGuardar,                                            // callback que recibe los puestos modificados
+	rolGlobal,                                            // rol del usuario para controlar permisos de edición
 }) => {
 	const [puestosEditados, setPuestosEditados] = useState([]); // copia editable local
+
+	// Solo superadmin y admin pueden editar nombres y eliminar puestos
+	const puedeEditarNombre = rolGlobal === 'superadmin' || rolGlobal === 'admin';
 
 	useEffect(() => {
 		if (abierto) {
@@ -62,6 +66,7 @@ const ModalEditarPuestos = ({
 								className="editar-nombre"
 								value={p.nombre}
 								onChange={(e) => cambiarNombre(p.id, e.target.value)} // actualiza nombre en la copia local
+								disabled={!puedeEditarNombre}                         // solo admin/superadmin pueden editar nombre
 							/>
 
 							<div className="editar-controles">
@@ -77,13 +82,16 @@ const ModalEditarPuestos = ({
 									label="Fondo"
 								/>
 
-								<button
-									type="button"
-									className="editar-eliminar"
-									onClick={() => eliminar(p.id)}             // elimina el puesto de la lista local
-								>
-									Eliminar
-								</button>
+								{/* Solo admin/superadmin pueden eliminar puestos */}
+								{puedeEditarNombre && (
+									<button
+										type="button"
+										className="editar-eliminar"
+										onClick={() => eliminar(p.id)}             // elimina el puesto de la lista local
+									>
+										Eliminar
+									</button>
+								)}
 							</div>
 						</div>
 					))}
