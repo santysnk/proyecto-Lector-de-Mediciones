@@ -1,7 +1,7 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaUnifilar.jsx
 
 import React, { useRef, useEffect, useCallback, useState } from "react";
-import { HexColorPicker } from "react-colorful";
+import ColorPickerSimple from "../modales/ColorPickerSimple";
 import "./GrillaUnifilar.css";
 
 /**
@@ -61,7 +61,6 @@ const GrillaUnifilar = ({
 }) => {
 	const canvasRef = useRef(null);
 	const contenedorRef = useRef(null);
-	const colorPickerRef = useRef(null);
 	const [dimensiones, setDimensiones] = useState({ ancho: 0, alto: 0 });
 	// Estado para el input de texto (nuevo o edición)
 	// valorOriginal guarda el texto antes de editar para poder descartarlo
@@ -71,8 +70,6 @@ const GrillaUnifilar = ({
 	const textareaRef = useRef(null);
 	// Estado para saber si Shift está presionado
 	const [shiftPresionado, setShiftPresionado] = useState(false);
-	// Estado para el color picker
-	const [mostrarColorPicker, setMostrarColorPicker] = useState(false);
 	// Estado para arrastrar texto
 	const [arrastrando, setArrastrando] = useState({ activo: false, textoId: null, offsetX: 0, offsetY: 0 });
 	// Estado para arrastrar líneas conectadas
@@ -174,25 +171,6 @@ const GrillaUnifilar = ({
 			window.removeEventListener("keyup", handleKeyUp);
 		};
 	}, [textoSeleccionadoId, herramienta, inputTexto.visible, onEliminarTexto, textos, textoCopiado, modoEdicion, onAgregarTexto, onActualizarTexto]);
-
-	/**
-	 * Cerrar color picker al hacer click fuera
-	 */
-	useEffect(() => {
-		const handleClickOutside = (e) => {
-			if (colorPickerRef.current && !colorPickerRef.current.contains(e.target)) {
-				setMostrarColorPicker(false);
-			}
-		};
-
-		if (mostrarColorPicker) {
-			document.addEventListener("mousedown", handleClickOutside);
-		}
-
-		return () => {
-			document.removeEventListener("mousedown", handleClickOutside);
-		};
-	}, [mostrarColorPicker]);
 
 	/**
 	 * Calcular dimensiones - siempre usa el contenedor padre (para que las coordenadas coincidan)
@@ -473,6 +451,12 @@ const GrillaUnifilar = ({
 		if (e.button !== 0) return;
 		e.preventDefault();
 
+		// Si el menú contextual está abierto, solo cerrarlo y no hacer nada más
+		if (menuContextual.visible) {
+			setMenuContextual(prev => ({ ...prev, visible: false }));
+			return;
+		}
+
 		// Si el modo gotero está activo, capturar el color
 		if (modoGotero) {
 			capturarColorGotero(e);
@@ -496,8 +480,12 @@ const GrillaUnifilar = ({
 					offsetY: coords.y - textoEncontrado.y
 				});
 			} else {
+				// Si hay un texto seleccionado, solo deseleccionarlo sin crear nuevo input
+				if (textoSeleccionadoId) {
+					onTextoSeleccionadoChange?.(null);
+					return;
+				}
 				// Mostrar input para nuevo texto
-				onTextoSeleccionadoChange?.(null);
 				setInputTexto({
 					visible: true,
 					x: coords.x,
@@ -552,7 +540,7 @@ const GrillaUnifilar = ({
 				onPintarCelda(coords.x, coords.y, shiftPresionado);
 			}
 		}
-	}, [modoEdicion, modoGotero, capturarColorGotero, herramienta, obtenerCoordenadas, obtenerCoordenadasPixel, textoEnPunto, onIniciarPintado, onPintarCelda, onRellenarConectadas, onObtenerCeldasConectadas, onTextoSeleccionadoChange, shiftPresionado, hayCeldaEn, celdas]);
+	}, [modoEdicion, modoGotero, capturarColorGotero, herramienta, obtenerCoordenadas, obtenerCoordenadasPixel, textoEnPunto, onIniciarPintado, onPintarCelda, onRellenarConectadas, onObtenerCeldasConectadas, onTextoSeleccionadoChange, shiftPresionado, hayCeldaEn, celdas, menuContextual.visible, textoSeleccionadoId]);
 
 	/**
 	 * Doble clic - editar texto existente
@@ -778,6 +766,12 @@ const GrillaUnifilar = ({
 		e.preventDefault();
 		e.stopPropagation();
 
+		// Si el menú contextual ya está abierto, solo cerrarlo
+		if (menuContextual.visible) {
+			setMenuContextual(prev => ({ ...prev, visible: false }));
+			return;
+		}
+
 		const coords = obtenerCoordenadasPixel(e);
 		if (!coords) return;
 
@@ -786,8 +780,12 @@ const GrillaUnifilar = ({
 		if (textoEncontrado) {
 			onTextoSeleccionadoChange?.(textoEncontrado.id);
 		} else {
-			// Si no hay texto en la posición, deseleccionar
-			onTextoSeleccionadoChange?.(null);
+			// Si hay un texto seleccionado y se hace click derecho fuera de él,
+			// solo deseleccionar sin mostrar el menú contextual
+			if (textoSeleccionadoId) {
+				onTextoSeleccionadoChange?.(null);
+				return;
+			}
 		}
 
 		// Obtener posición relativa al canvas para el menú
@@ -803,7 +801,7 @@ const GrillaUnifilar = ({
 			// Guardar si hay texto seleccionado en el momento del click
 			hayTextoEnPosicion: !!textoEncontrado,
 		});
-	}, [modoEdicion, herramienta, obtenerCoordenadasPixel, textoEnPunto, onTextoSeleccionadoChange]);
+	}, [modoEdicion, herramienta, obtenerCoordenadasPixel, textoEnPunto, onTextoSeleccionadoChange, textoSeleccionadoId, menuContextual.visible]);
 
 	/**
 	 * Copiar texto seleccionado
@@ -814,9 +812,11 @@ const GrillaUnifilar = ({
 			if (textoACopiar) {
 				setTextoCopiado({ ...textoACopiar });
 			}
+			// Quitar la selección después de copiar
+			onTextoSeleccionadoChange?.(null);
 		}
 		setMenuContextual(prev => ({ ...prev, visible: false }));
-	}, [textoSeleccionadoId, textos]);
+	}, [textoSeleccionadoId, textos, onTextoSeleccionadoChange]);
 
 	/**
 	 * Pegar texto copiado
@@ -1233,73 +1233,53 @@ const GrillaUnifilar = ({
 								title={c.nombre}
 							/>
 						))}
-						{/* Botón para abrir color picker - muestra el color seleccionado */}
-						<div className="grilla-unifilar__color-picker-wrapper" ref={colorPickerRef}>
-							<button
-								type="button"
-								className="grilla-unifilar__color grilla-unifilar__color--picker"
-								style={{ backgroundColor: colorSeleccionado }}
-								onClick={() => setMostrarColorPicker(!mostrarColorPicker)}
-								title="Elegir color personalizado"
-							></button>
-							{mostrarColorPicker && (
-								<div className="grilla-unifilar__color-picker-popover">
-									<HexColorPicker
-										color={colorSeleccionado}
-										onChange={(color) => {
-											onCambiarColor(color);
-											if (herramienta !== "texto") {
-												onSeleccionarPincel();
-											}
-										}}
-									/>
-									<div className="grilla-unifilar__color-picker-hex">
-										<input
-											type="text"
-											value={colorSeleccionado}
-											onChange={(e) => {
-												const val = e.target.value;
-												if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-													onCambiarColor(val);
-												}
-											}}
-											maxLength={7}
-										/>
-										<button
-											type="button"
-											className={`grilla-unifilar__btn-gotero ${modoGotero ? "grilla-unifilar__btn-gotero--activo" : ""}`}
-											onClick={() => {
-												setModoGotero(!modoGotero);
-												setMostrarColorPicker(false);
-											}}
-											title="Gotero - clic en el canvas para copiar color"
-										>
-											<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-												<path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.41-1.42 1.42 1.41 1.41-7.83 7.83a2 2 0 00-.59 1.42V19h2.83c.53 0 1.04-.21 1.42-.59l7.83-7.83 1.41 1.41 1.42-1.42-1.41-1.41 3.12-3.12a1 1 0 00.09-1.41zM6.41 18H5v-1.41l7.83-7.83 1.41 1.41L6.41 18z"/>
-											</svg>
-										</button>
-									</div>
-								</div>
-							)}
-						</div>
+						{/* Separador entre negro y color picker */}
+						<div className="grilla-unifilar__separador" />
+						{/* Color picker personalizado */}
+						<ColorPickerSimple
+							color={colorSeleccionado}
+							onChange={(color) => {
+								onCambiarColor(color);
+								if (herramienta !== "texto") {
+									onSeleccionarPincel();
+								}
+							}}
+							label=""
+							posicionArriba={true}
+						/>
 					</div>
 
-					{/* Selector de grosor de línea */}
-					<select
-						className="grilla-unifilar__select grilla-unifilar__select--grosor"
-						value={grosorLinea}
-						onChange={(e) => onCambiarGrosor?.(Number(e.target.value))}
-						title="Grosor de línea"
-					>
-						{grosoresDisponibles.map((g) => (
-							<option key={g.id} value={g.valor}>
-								{g.nombre}
-							</option>
-						))}
-					</select>
+					{/* Sección de grosor y gotero */}
+					<div className="grilla-unifilar__seccion-grosor">
+						{/* Selector de grosor de línea */}
+						<select
+							className="grilla-unifilar__select grilla-unifilar__select--grosor"
+							value={grosorLinea}
+							onChange={(e) => onCambiarGrosor?.(Number(e.target.value))}
+							title="Grosor de línea"
+						>
+							{grosoresDisponibles.map((g) => (
+								<option key={g.id} value={g.valor}>
+									{g.nombre}
+								</option>
+							))}
+						</select>
+						{/* Gotero - copiar color del canvas */}
+						<button
+							type="button"
+							className={`grilla-unifilar__btn ${modoGotero ? "grilla-unifilar__btn--activo" : ""}`}
+							onClick={() => setModoGotero(!modoGotero)}
+							title="Gotero - clic en el canvas para copiar color"
+						>
+							<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+								<path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.41-1.42 1.42 1.41 1.41-7.83 7.83a2 2 0 00-.59 1.42V19h2.83c.53 0 1.04-.21 1.42-.59l7.83-7.83 1.41 1.41 1.42-1.42-1.41-1.41 3.12-3.12a1 1 0 00.09-1.41zM6.41 18H5v-1.41l7.83-7.83 1.41 1.41L6.41 18z"/>
+							</svg>
+						</button>
+					</div>
 
 					{/* Herramientas */}
 					<div className="grilla-unifilar__herramientas">
+						{/* Pincel */}
 						<button
 							type="button"
 							className={`grilla-unifilar__btn ${herramienta === "pincel" ? "grilla-unifilar__btn--activo" : ""}`}

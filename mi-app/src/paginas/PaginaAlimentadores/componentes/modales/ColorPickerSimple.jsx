@@ -2,24 +2,61 @@
 // Componente minimalista de selector de color con picker inline
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { HexColorPicker, HexColorInput } from "react-colorful";
 import "./ColorPickerSimple.css";
 
-const ColorPickerSimple = ({ color, onChange, label }) => {
+const ColorPickerSimple = ({ color, onChange, label, posicionArriba = false }) => {
 	const [mostrarPicker, setMostrarPicker] = useState(false);
 	const [posicion, setPosicion] = useState({ top: 0, left: 0 });
 	const [valorHex, setValorHex] = useState(color);
 	const pickerRef = useRef(null);
 	const buttonRef = useRef(null);
 
-	// Calcular posición del picker al abrirlo
-	const abrirPicker = () => {
+	// Calcular posición del picker al abrirlo/cerrarlo (toggle)
+	const togglePicker = (e) => {
+		e.stopPropagation();
+
+		// Si ya está abierto, cerrarlo
+		if (mostrarPicker) {
+			setMostrarPicker(false);
+			return;
+		}
+
 		if (buttonRef.current) {
 			const rect = buttonRef.current.getBoundingClientRect();
-			setPosicion({
-				top: rect.bottom + 8,
-				left: rect.left + rect.width / 2 - 100, // centrado (200px/2 = 100)
-			});
+			// Altura aproximada del popover (picker + input hex)
+			const alturaPopover = 260;
+			const anchoPopover = 240;
+
+			// Calcular posición vertical
+			let top;
+			if (posicionArriba) {
+				top = rect.top - alturaPopover - 8;
+				// Si no cabe arriba, mostrar abajo
+				if (top < 10) {
+					top = rect.bottom + 8;
+				}
+			} else {
+				top = rect.bottom + 8;
+				// Si no cabe abajo, mostrar arriba
+				if (top + alturaPopover > window.innerHeight - 10) {
+					top = rect.top - alturaPopover - 8;
+				}
+			}
+
+			// Calcular posición horizontal centrada
+			let left = rect.left + rect.width / 2 - anchoPopover / 2;
+			// Asegurar que no se salga por la izquierda
+			if (left < 10) {
+				left = 10;
+			}
+			// Asegurar que no se salga por la derecha
+			if (left + anchoPopover > window.innerWidth - 10) {
+				left = window.innerWidth - anchoPopover - 10;
+			}
+
+			setPosicion({ top, left });
 			setMostrarPicker(true);
 		}
 	};
@@ -48,6 +85,8 @@ const ColorPickerSimple = ({ color, onChange, label }) => {
 
 	// Cerrar el picker al hacer click fuera
 	useEffect(() => {
+		if (!mostrarPicker) return;
+
 		const handleClickOutside = (event) => {
 			if (
 				pickerRef.current &&
@@ -59,11 +98,13 @@ const ColorPickerSimple = ({ color, onChange, label }) => {
 			}
 		};
 
-		if (mostrarPicker) {
+		// Agregar listener después de un pequeño delay para evitar que el mismo click que abre el picker lo cierre
+		const timeoutId = setTimeout(() => {
 			document.addEventListener("mousedown", handleClickOutside);
-		}
+		}, 10);
 
 		return () => {
+			clearTimeout(timeoutId);
 			document.removeEventListener("mousedown", handleClickOutside);
 		};
 	}, [mostrarPicker]);
@@ -77,35 +118,39 @@ const ColorPickerSimple = ({ color, onChange, label }) => {
 					type="button"
 					className="color-picker-simple-button"
 					style={{ backgroundColor: color }}
-					onClick={abrirPicker}
+					onClick={togglePicker}
 				/>
-				{mostrarPicker && (
-					<div
-						ref={pickerRef}
-						className="color-picker-simple-popover"
-						style={{ top: `${posicion.top}px`, left: `${posicion.left}px` }}
-					>
-						<HexColorPicker color={color} onChange={handleColorChange} />
-					<div className="color-picker-hex-input-wrapper">
-						<input
-							type="text"
-							value={valorHex}
-							onChange={handleInputChange}
-							className="color-picker-hex-input"
-							placeholder="#000000"
-							maxLength={7}
-						/>
-						<button
-							type="button"
-							className="color-picker-copy-btn"
-							onClick={copiarColor}
-							title="Copiar color"
+				{mostrarPicker &&
+					createPortal(
+						<div
+							ref={pickerRef}
+							className="color-picker-simple-popover"
+							style={{ top: `${posicion.top}px`, left: `${posicion.left}px` }}
+							onClick={(e) => e.stopPropagation()}
+							onMouseDown={(e) => e.stopPropagation()}
 						>
-							📋
-						</button>
-					</div>
-					</div>
-				)}
+							<HexColorPicker color={color} onChange={handleColorChange} />
+							<div className="color-picker-hex-input-wrapper">
+								<input
+									type="text"
+									value={valorHex}
+									onChange={handleInputChange}
+									className="color-picker-hex-input"
+									placeholder="#000000"
+									maxLength={7}
+								/>
+								<button
+									type="button"
+									className="color-picker-copy-btn"
+									onClick={copiarColor}
+									title="Copiar color"
+								>
+									📋
+								</button>
+							</div>
+						</div>,
+						document.body
+					)}
 			</div>
 		</div>
 	);
