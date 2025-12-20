@@ -89,19 +89,19 @@
    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 
-/* Botón multicolor (arcoiris) */
-.grilla-unifilar__color--multicolor {
-   background: conic-gradient(
-      red, yellow, lime, aqua, blue, magenta, red
-   );
-   position: relative;
+/* Color negro con borde blanco para que se vea */
+.grilla-unifilar__color--negro {
+   border: 2px solid #6b7280;
 }
 
-.grilla-unifilar__color-muestra {
-   width: 14px;
-   height: 14px;
-   border-radius: 50%;
-   border: 2px solid rgba(255, 255, 255, 0.8);
+.grilla-unifilar__color--negro.grilla-unifilar__color--activo {
+   border-color: #fff;
+}
+
+/* Botón del color picker - muestra el color seleccionado */
+.grilla-unifilar__color--picker {
+   position: relative;
+   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
 
 /* Wrapper para el color picker */
@@ -117,9 +117,9 @@
    transform: translateX(-50%);
    margin-bottom: 10px;
    background-color: #1e293b;
-   border: 1px solid #475569;
-   border-radius: 12px;
-   padding: 12px;
+   border: none;
+   border-radius: 8px;
+   padding: 8px;
    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
    z-index: 200;
 }
@@ -127,27 +127,71 @@
 .grilla-unifilar__color-picker-popover .react-colorful {
    width: 180px;
    height: 150px;
+   border-radius: 6px;
+}
+
+.grilla-unifilar__color-picker-popover .react-colorful__saturation {
+   border-radius: 4px 4px 0 0;
+}
+
+.grilla-unifilar__color-picker-popover .react-colorful__hue {
+   border-radius: 0 0 4px 4px;
 }
 
 .grilla-unifilar__color-picker-hex {
-   margin-top: 10px;
+   margin-top: 8px;
+   display: flex;
+   align-items: center;
+   gap: 4px;
 }
 
 .grilla-unifilar__color-picker-hex input {
-   width: 100%;
+   flex: 1;
+   min-width: 0;
    background-color: #0f172a;
-   border: 1px solid #475569;
-   border-radius: 6px;
+   border: none;
+   border-radius: 4px;
    color: #e2e8f0;
-   padding: 6px 10px;
-   font-size: 0.85rem;
+   padding: 5px 6px;
+   font-size: 0.8rem;
    font-family: monospace;
    text-align: center;
    outline: none;
 }
 
 .grilla-unifilar__color-picker-hex input:focus {
-   border-color: #22d3ee;
+   box-shadow: 0 0 0 1px #22d3ee;
+}
+
+/* Botón gotero (eyedropper) */
+.grilla-unifilar__btn-gotero {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 24px;
+   height: 24px;
+   padding: 0;
+   background-color: #334155;
+   border: none;
+   border-radius: 4px;
+   color: #94a3b8;
+   cursor: pointer;
+   transition: background-color 0.15s ease, color 0.15s ease;
+   flex-shrink: 0;
+}
+
+.grilla-unifilar__btn-gotero:hover {
+   background-color: #475569;
+   color: #e2e8f0;
+}
+
+.grilla-unifilar__btn-gotero--activo {
+   background-color: #22d3ee;
+   color: #0f172a;
+}
+
+.grilla-unifilar__btn-gotero--activo:hover {
+   background-color: #06b6d4;
 }
 
 /* Separador entre colores y herramientas */
@@ -233,29 +277,196 @@
 }
 
 /* =========================================================
-   INPUT DE TEXTO FLOTANTE
+   TEXTAREA DE TEXTO FLOTANTE REDIMENSIONABLE
    ========================================================= */
 .grilla-unifilar__input-texto {
    position: absolute;
    z-index: 102;
 }
 
-.grilla-unifilar__input-texto input {
+.grilla-unifilar__textarea-container {
+   position: relative;
+   min-width: 100px;
+   min-height: 30px;
+}
+
+.grilla-unifilar__textarea-container textarea {
+   width: 100%;
+   height: 100%;
    background-color: rgba(30, 41, 59, 0.95);
-   border: 1px solid #475569;
+   border: 2px solid #22d3ee;
    border-radius: 4px;
    padding: 4px 8px;
-   min-width: 150px;
    outline: none;
+   display: block;
+   line-height: 1.2;
+   white-space: pre-wrap;
+   word-wrap: break-word;
+   resize: none;
+   overflow: auto;
+   box-sizing: border-box;
 }
 
-.grilla-unifilar__input-texto input:focus {
-   border-color: #22d3ee;
-   box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+.grilla-unifilar__textarea-container textarea:focus {
+   box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.3);
 }
 
-.grilla-unifilar__input-texto input::placeholder {
+.grilla-unifilar__textarea-container textarea::placeholder {
    color: #64748b;
+}
+
+/* =========================================================
+   HANDLES DE REDIMENSIONAMIENTO (discretos)
+   ========================================================= */
+.grilla-unifilar__resize-handle {
+   position: absolute;
+   background-color: rgba(34, 211, 238, 0.6);
+   z-index: 103;
+   transition: background-color 0.15s ease;
+}
+
+/* Handles de esquinas (cuadrados pequeños) */
+.grilla-unifilar__resize-handle--nw,
+.grilla-unifilar__resize-handle--ne,
+.grilla-unifilar__resize-handle--sw,
+.grilla-unifilar__resize-handle--se {
+   width: 6px;
+   height: 6px;
+   border-radius: 1px;
+}
+
+.grilla-unifilar__resize-handle--nw {
+   top: -3px;
+   left: -3px;
+   cursor: nw-resize;
+}
+
+.grilla-unifilar__resize-handle--ne {
+   top: -3px;
+   right: -3px;
+   cursor: ne-resize;
+}
+
+.grilla-unifilar__resize-handle--sw {
+   bottom: -3px;
+   left: -3px;
+   cursor: sw-resize;
+}
+
+.grilla-unifilar__resize-handle--se {
+   bottom: -3px;
+   right: -3px;
+   cursor: se-resize;
+}
+
+/* Handles de lados (rectangulares finos) */
+.grilla-unifilar__resize-handle--n,
+.grilla-unifilar__resize-handle--s {
+   width: 20px;
+   height: 4px;
+   left: 50%;
+   transform: translateX(-50%);
+   border-radius: 2px;
+}
+
+.grilla-unifilar__resize-handle--n {
+   top: -2px;
+   cursor: n-resize;
+}
+
+.grilla-unifilar__resize-handle--s {
+   bottom: -2px;
+   cursor: s-resize;
+}
+
+.grilla-unifilar__resize-handle--e,
+.grilla-unifilar__resize-handle--w {
+   width: 4px;
+   height: 20px;
+   top: 50%;
+   transform: translateY(-50%);
+   border-radius: 2px;
+}
+
+.grilla-unifilar__resize-handle--e {
+   right: -2px;
+   cursor: e-resize;
+}
+
+.grilla-unifilar__resize-handle--w {
+   left: -2px;
+   cursor: w-resize;
+}
+
+/* Hover en handles - más visible al pasar el mouse */
+.grilla-unifilar__resize-handle:hover {
+   background-color: #22d3ee;
+}
+
+/* =========================================================
+   WRAPPER Y BOTONES DE ACCIÓN DEL INPUT
+   ========================================================= */
+.grilla-unifilar__input-wrapper {
+   display: flex;
+   align-items: flex-start;
+   gap: 6px;
+}
+
+.grilla-unifilar__input-acciones {
+   display: flex;
+   flex-direction: column;
+   gap: 4px;
+}
+
+.grilla-unifilar__input-btn {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 24px;
+   height: 24px;
+   padding: 0;
+   border: none;
+   border-radius: 4px;
+   cursor: pointer;
+   transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Botón Aceptar - verde */
+.grilla-unifilar__input-btn--aceptar {
+   background-color: #16a34a;
+   color: #ffffff;
+}
+
+.grilla-unifilar__input-btn--aceptar:hover {
+   background-color: #15803d;
+}
+
+/* Botón Descartar - gris/naranja */
+.grilla-unifilar__input-btn--descartar {
+   background-color: #475569;
+   color: #e2e8f0;
+}
+
+.grilla-unifilar__input-btn--descartar:hover:not(:disabled) {
+   background-color: #f59e0b;
+   color: #ffffff;
+}
+
+/* Botón Eliminar - rojo */
+.grilla-unifilar__input-btn--eliminar {
+   background-color: #475569;
+   color: #e2e8f0;
+}
+
+.grilla-unifilar__input-btn--eliminar:hover:not(:disabled) {
+   background-color: #dc2626;
+   color: #ffffff;
+}
+
+/* Estado deshabilitado */
+.grilla-unifilar__input-btn--disabled {
+   opacity: 0.3;
+   cursor: not-allowed;
 }
 
 /* =========================================================
@@ -291,6 +502,10 @@
 
 .grilla-unifilar__select--tamano {
    width: 70px;
+}
+
+.grilla-unifilar__select--grosor {
+   width: 85px;
 }
 
 /* =========================================================

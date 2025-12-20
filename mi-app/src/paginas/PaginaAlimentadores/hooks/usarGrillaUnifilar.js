@@ -11,14 +11,16 @@ const CLAVE_BASE = "rw-grilla-unifilar";
  * Colores predefinidos para dibujar el diagrama unifiliar
  */
 export const COLORES_UNIFILAR = [
-	{ id: "negro", color: "#1f2937", nombre: "Negro" },
 	{ id: "rojo", color: "#dc2626", nombre: "Rojo" },
 	{ id: "azul", color: "#2563eb", nombre: "Azul" },
 	{ id: "verde", color: "#16a34a", nombre: "Verde" },
 	{ id: "amarillo", color: "#ca8a04", nombre: "Amarillo" },
 	{ id: "naranja", color: "#ea580c", nombre: "Naranja" },
+	{ id: "rosa", color: "#db2777", nombre: "Rosa" },
 	{ id: "violeta", color: "#7c3aed", nombre: "Violeta" },
 	{ id: "celeste", color: "#0891b2", nombre: "Celeste" },
+	{ id: "blanco", color: "#ffffff", nombre: "Blanco" },
+	{ id: "negro", color: "#000000", nombre: "Negro" },
 ];
 
 /**
@@ -39,6 +41,17 @@ export const FUENTES_DISPONIBLES = [
 export const TAMANOS_FUENTE = [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48];
 
 /**
+ * Grosores de línea disponibles (en píxeles)
+ */
+export const GROSORES_LINEA = [
+	{ id: "fino", valor: 8, nombre: "Fino" },
+	{ id: "normal", valor: 12, nombre: "Normal" },
+	{ id: "medio", valor: 16, nombre: "Medio" },
+	{ id: "grueso", valor: 20, nombre: "Grueso" },
+	{ id: "extra", valor: 28, nombre: "Extra" },
+];
+
+/**
  * Hook para manejar la grilla de dibujo unifiliar
  *
  * @param {string} puestoId - ID del puesto actual
@@ -54,8 +67,10 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	const [modoEdicion, setModoEdicion] = useState(false);
 	// Color seleccionado para pintar
 	const [colorSeleccionado, setColorSeleccionado] = useState(COLORES_UNIFILAR[0].color);
-	// Herramienta activa: "pincel", "borrador" o "texto"
+	// Herramienta activa: "pincel", "borrador", "texto" o "balde"
 	const [herramienta, setHerramienta] = useState("pincel");
+	// Grosor de línea seleccionado (tamaño de celda en píxeles)
+	const [grosorLinea, setGrosorLinea] = useState(GROSORES_LINEA[1].valor); // Normal por defecto
 	// Estado de pintando (mouse presionado)
 	const [estaPintando, setEstaPintando] = useState(false);
 	// Punto inicial para líneas rectas con Shift
@@ -90,6 +105,7 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		if (!clave) {
 			setCeldas({});
 			setTextos([]);
+			setGrosorLinea(GROSORES_LINEA[1].valor);
 			return;
 		}
 
@@ -101,26 +117,30 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 				if (parsed && typeof parsed === "object" && !parsed.celdas) {
 					setCeldas(parsed);
 					setTextos([]);
+					setGrosorLinea(GROSORES_LINEA[1].valor);
 				} else {
-					// Formato nuevo con celdas y textos
+					// Formato nuevo con celdas, textos y grosor
 					setCeldas(parsed.celdas || {});
 					setTextos(parsed.textos || []);
+					setGrosorLinea(parsed.grosor || GROSORES_LINEA[1].valor);
 				}
 			} else {
 				setCeldas({});
 				setTextos([]);
+				setGrosorLinea(GROSORES_LINEA[1].valor);
 			}
 		} catch (error) {
 			console.error("Error al cargar grilla unifiliar:", error);
 			setCeldas({});
 			setTextos([]);
+			setGrosorLinea(GROSORES_LINEA[1].valor);
 		}
 	}, [obtenerClave]);
 
 	/**
-	 * Guardar en localStorage (celdas y textos)
+	 * Guardar en localStorage (celdas, textos y grosor)
 	 */
-	const guardarDatos = useCallback((nuevasCeldas, nuevosTextos) => {
+	const guardarDatos = useCallback((nuevasCeldas, nuevosTextos, nuevoGrosor = null) => {
 		const clave = obtenerClave();
 		if (!clave) return;
 
@@ -134,12 +154,13 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 				localStorage.setItem(clave, JSON.stringify({
 					celdas: nuevasCeldas,
 					textos: nuevosTextos,
+					grosor: nuevoGrosor !== null ? nuevoGrosor : grosorLinea,
 				}));
 			}
 		} catch (error) {
 			console.error("Error al guardar grilla unifiliar:", error);
 		}
-	}, [obtenerClave]);
+	}, [obtenerClave, grosorLinea]);
 
 	/**
 	 * Pintar una celda con el color seleccionado
@@ -276,6 +297,75 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	}, []);
 
 	/**
+	 * Seleccionar herramienta balde (flood fill)
+	 */
+	const seleccionarBalde = useCallback(() => {
+		setHerramienta("balde");
+		setTextoSeleccionadoId(null);
+	}, []);
+
+	/**
+	 * Rellenar todas las celdas conectadas con el color seleccionado (flood fill)
+	 * Busca celdas adyacentes (arriba, abajo, izquierda, derecha) del mismo color original
+	 * @param {number} x - Coordenada X de la celda inicial
+	 * @param {number} y - Coordenada Y de la celda inicial
+	 */
+	const rellenarConectadas = useCallback((x, y) => {
+		const claveCelda = `${x},${y}`;
+
+		setCeldas(prev => {
+			// Verificar que la celda inicial existe y tiene un color
+			const colorOriginal = prev[claveCelda];
+			if (!colorOriginal) return prev; // No hay celda pintada en esa posición
+
+			// Si el color original es igual al seleccionado, no hacer nada
+			if (colorOriginal === colorSeleccionado) return prev;
+
+			// Conjunto de celdas visitadas
+			const visitadas = new Set();
+			// Cola para BFS (Breadth-First Search)
+			const cola = [[x, y]];
+			// Celdas a cambiar
+			const celdasARellenar = [];
+
+			while (cola.length > 0) {
+				const [cx, cy] = cola.shift();
+				const claveActual = `${cx},${cy}`;
+
+				// Si ya visitamos esta celda, saltar
+				if (visitadas.has(claveActual)) continue;
+				visitadas.add(claveActual);
+
+				// Si la celda no existe o no tiene el color original, saltar
+				if (prev[claveActual] !== colorOriginal) continue;
+
+				// Agregar a la lista de celdas a rellenar
+				celdasARellenar.push(claveActual);
+
+				// Agregar vecinos a la cola (arriba, abajo, izquierda, derecha)
+				cola.push([cx, cy - 1]); // arriba
+				cola.push([cx, cy + 1]); // abajo
+				cola.push([cx - 1, cy]); // izquierda
+				cola.push([cx + 1, cy]); // derecha
+			}
+
+			// Crear nuevo objeto de celdas con las celdas rellenadas
+			const nuevasCeldas = { ...prev };
+			celdasARellenar.forEach(clave => {
+				nuevasCeldas[clave] = colorSeleccionado;
+			});
+
+			// Guardar
+			setTextos(currentTextos => {
+				guardarDatos(nuevasCeldas, currentTextos);
+				return currentTextos;
+			});
+
+			return nuevasCeldas;
+		});
+	}, [colorSeleccionado, guardarDatos]);
+
+	/**
 	 * Agregar un nuevo texto
 	 * @param {number} x - Coordenada X en píxeles
 	 * @param {number} y - Coordenada Y en píxeles
@@ -338,6 +428,21 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	}, [guardarDatos]);
 
 	/**
+	 * Cambiar el grosor de línea y guardar
+	 */
+	const cambiarGrosor = useCallback((nuevoGrosor) => {
+		setGrosorLinea(nuevoGrosor);
+		// Guardar inmediatamente con el nuevo grosor
+		setCeldas(currentCeldas => {
+			setTextos(currentTextos => {
+				guardarDatos(currentCeldas, currentTextos, nuevoGrosor);
+				return currentTextos;
+			});
+			return currentCeldas;
+		});
+	}, [guardarDatos]);
+
+	/**
 	 * Verificar si hay celdas o textos dibujados
 	 */
 	const tieneDibujo = Object.keys(celdas).length > 0 || textos.length > 0;
@@ -351,6 +456,7 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		herramienta,
 		estaPintando,
 		tieneDibujo,
+		grosorLinea,
 
 		// Configuración de texto
 		configTexto,
@@ -358,10 +464,11 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		textoSeleccionadoId,
 		setTextoSeleccionadoId,
 
-		// Colores y fuentes disponibles
+		// Colores, fuentes y grosores disponibles
 		coloresDisponibles: COLORES_UNIFILAR,
 		fuentesDisponibles: FUENTES_DISPONIBLES,
 		tamanosDisponibles: TAMANOS_FUENTE,
+		grosoresDisponibles: GROSORES_LINEA,
 
 		// Acciones de edición
 		toggleEdicion,
@@ -373,6 +480,7 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		limpiarTodo,
 		iniciarPintado,
 		detenerPintado,
+		rellenarConectadas,
 
 		// Acciones de texto
 		agregarTexto,
@@ -384,6 +492,10 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		seleccionarPincel,
 		seleccionarBorrador,
 		seleccionarTexto,
+		seleccionarBalde,
+
+		// Grosor de línea
+		cambiarGrosor,
 	};
 };
 
