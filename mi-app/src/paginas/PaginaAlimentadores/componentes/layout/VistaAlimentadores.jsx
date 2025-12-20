@@ -647,6 +647,8 @@ const {
 					onSeleccionarPuesto={seleccionarPuesto}
 					onAbrirModalNuevoPuesto={abrirModalNuevoPuesto}
 					onAbrirModalEditarPuestos={abrirModalEditarPuestos}
+					onAbrirModalConfigurarAgente={abrirModalConfigurarAgente}
+					onAbrirModalGestionarAccesos={abrirModalGestionarAccesos}
 					onSalir={handleSalir}
 					coloresSistema={COLORES_SISTEMA}
 				/>

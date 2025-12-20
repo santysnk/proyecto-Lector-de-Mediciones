@@ -1,11 +1,12 @@
 // src/paginas/PaginaAlimentadores/componentes/navegacion/MenuLateral.jsx
 
-import React from "react";              
+import React, { useState } from "react";
 import "./MenuLateral.css";             // estilos del drawer lateral
+import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 
 /**
  * Menú lateral (drawer) para modo compacto.
- * Muestra puestos y acciones en un panel deslizante.
+ * Muestra puestos, workspaces y acciones en un panel deslizante.
  */
 const MenuLateral = ({
 	abierto,                            // boolean: controla si el drawer está visible
@@ -15,17 +16,56 @@ const MenuLateral = ({
 	onSeleccionarPuesto,                // callback al elegir un puesto
 	onAbrirModalNuevoPuesto,            // callback para abrir modal "Nuevo puesto"
 	onAbrirModalEditarPuestos,          // callback para abrir modal "Editar puestos"
+	onAbrirModalConfigurarAgente,       // callback para abrir modal "Configurar Agente"
+	onAbrirModalGestionarAccesos,       // callback para abrir modal "Gestionar Accesos"
 	onSalir,                            // callback para salir al login
 	coloresSistema,                     // paleta de colores para botones de puesto
 }) => {
+	const {
+		configuraciones,
+		configuracionSeleccionada,
+		seleccionarConfiguracion,
+		agregarConfiguracion,
+		puedeCrearWorkspaces,
+		rolGlobal,
+		perfil,
+	} = usarContextoConfiguracion();
+
+	const [submenuWorkspaceAbierto, setSubmenuWorkspaceAbierto] = useState(false);
+	const [mostrarFormNuevoWorkspace, setMostrarFormNuevoWorkspace] = useState(false);
+	const [nombreNuevoWorkspace, setNombreNuevoWorkspace] = useState("");
+	const [creandoWorkspace, setCreandoWorkspace] = useState(false);
+
 	const handleSeleccionarPuesto = (id) => {
 		onSeleccionarPuesto(id);        // selecciona el puesto
 		onCerrar();                     // cierra el menú después de elegir
 	};
 
 	const handleAccion = (accion) => {
+		if (!accion) return;
 		onCerrar();                     // primero cierra el menú
 		accion();                       // luego ejecuta la acción (nuevo, editar, salir)
+	};
+
+	const handleSeleccionarWorkspace = (id) => {
+		seleccionarConfiguracion(id);
+		setSubmenuWorkspaceAbierto(false);
+	};
+
+	const handleCrearWorkspace = async (e) => {
+		e.preventDefault();
+		if (!nombreNuevoWorkspace.trim()) return;
+
+		try {
+			setCreandoWorkspace(true);
+			await agregarConfiguracion(nombreNuevoWorkspace.trim());
+			setNombreNuevoWorkspace("");
+			setMostrarFormNuevoWorkspace(false);
+		} catch (err) {
+			console.error("Error creando workspace:", err);
+		} finally {
+			setCreandoWorkspace(false);
+		}
 	};
 
 	return (
@@ -48,6 +88,46 @@ const MenuLateral = ({
 						</p>
 					)}
 				</header>
+
+				{/* Info del usuario */}
+				{perfil && (
+					<div className="alim-drawer-usuario">
+						<span className="alim-drawer-usuario-nombre">{perfil.nombre || perfil.email}</span>
+						<span className="alim-drawer-usuario-rol">{perfil.roles?.nombre || rolGlobal}</span>
+					</div>
+				)}
+
+				{/* Sección Workspace */}
+				<section className="alim-drawer-section">
+					<h3 className="alim-drawer-section-title">Workspace</h3>
+
+					{/* Botón para expandir/colapsar lista de workspaces */}
+					<button
+						type="button"
+						className="alim-drawer-workspace-trigger"
+						onClick={() => setSubmenuWorkspaceAbierto(!submenuWorkspaceAbierto)}
+					>
+						<span className={`alim-drawer-workspace-flecha ${submenuWorkspaceAbierto ? 'alim-drawer-workspace-flecha--abierto' : ''}`}>▶</span>
+						<span>{configuracionSeleccionada?.nombre || "Sin workspace"}</span>
+					</button>
+
+					{/* Lista de workspaces (submenú) */}
+					{submenuWorkspaceAbierto && (
+						<div className="alim-drawer-workspace-lista">
+							{configuraciones.map((config) => (
+								<button
+									key={config.id}
+									type="button"
+									className={`alim-drawer-workspace-item ${config.id === configuracionSeleccionada?.id ? 'alim-drawer-workspace-item--activo' : ''}`}
+									onClick={() => handleSeleccionarWorkspace(config.id)}
+								>
+									{config.nombre}
+									{!config.esCreador && <em className="alim-drawer-workspace-invitado">(invitado)</em>}
+								</button>
+							))}
+						</div>
+					)}
+				</section>
 
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Puestos</h3>
@@ -77,32 +157,105 @@ const MenuLateral = ({
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Acciones</h3>
 					<div className="alim-drawer-actions">
+						{/* Gestionar Accesos (solo admin/superadmin o creador) */}
+						{(rolGlobal === 'superadmin' || rolGlobal === 'admin' || configuracionSeleccionada?.esCreador) && (
+							<button
+								type="button"
+								className="alim-drawer-btn-action alim-drawer-btn-accesos"
+								onClick={() => handleAccion(onAbrirModalGestionarAccesos)}
+							>
+								<svg className="alim-drawer-btn-icon-svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+									<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+								</svg>
+								Gestionar Accesos
+							</button>
+						)}
+
 						<button
 							type="button"
-							className="alim-btn alim-drawer-btn-action alim-drawer-btn-add"
+							className="alim-drawer-btn-action alim-drawer-btn-add"
 							onClick={() => handleAccion(onAbrirModalNuevoPuesto)}
 						>
-							<span className="alim-drawer-btn-add-icon">+</span>
+							<span className="alim-drawer-btn-icon">+</span>
 							<span>Nuevo puesto</span>
 						</button>
 
 						<button
 							type="button"
-							className="alim-btn alim-drawer-btn-action alim-btn-edit"
+							className="alim-drawer-btn-action alim-drawer-btn-edit"
 							onClick={() =>
 								handleAccion(onAbrirModalEditarPuestos)
 							}
 							disabled={puestos.length === 0} // deshabilitado si no hay puestos
 						>
-							✎ Editar puestos
+							<span className="alim-drawer-btn-icon">✎</span>
+							<span>Editar puestos</span>
 						</button>
 
 						<button
 							type="button"
-							className="alim-btn-exit alim-drawer-btn-action"
+							className="alim-drawer-btn-action alim-drawer-btn-config"
+							onClick={() => handleAccion(onAbrirModalConfigurarAgente)}
+						>
+							<span className="alim-drawer-btn-icon">⚙</span>
+							Configurar Agente
+						</button>
+
+						{/* Crear nuevo workspace (solo si tiene permisos) */}
+						{puedeCrearWorkspaces && (
+							<>
+								{mostrarFormNuevoWorkspace ? (
+									<form className="alim-drawer-form-workspace" onSubmit={handleCrearWorkspace}>
+										<input
+											type="text"
+											className="alim-drawer-input"
+											placeholder="Nombre del workspace"
+											value={nombreNuevoWorkspace}
+											onChange={(e) => setNombreNuevoWorkspace(e.target.value)}
+											autoFocus
+											disabled={creandoWorkspace}
+										/>
+										<div className="alim-drawer-form-btns">
+											<button
+												type="button"
+												className="alim-drawer-btn-cancelar"
+												onClick={() => {
+													setMostrarFormNuevoWorkspace(false);
+													setNombreNuevoWorkspace("");
+												}}
+												disabled={creandoWorkspace}
+											>
+												Cancelar
+											</button>
+											<button
+												type="submit"
+												className="alim-drawer-btn-crear"
+												disabled={!nombreNuevoWorkspace.trim() || creandoWorkspace}
+											>
+												{creandoWorkspace ? "..." : "Crear"}
+											</button>
+										</div>
+									</form>
+								) : (
+									<button
+										type="button"
+										className="alim-drawer-btn-action alim-drawer-btn-nuevo-workspace"
+										onClick={() => setMostrarFormNuevoWorkspace(true)}
+									>
+										<span className="alim-drawer-btn-icon">+</span>
+										Nuevo workspace
+									</button>
+								)}
+							</>
+						)}
+
+						<button
+							type="button"
+							className="alim-drawer-btn-action alim-drawer-btn-salir"
 							onClick={() => handleAccion(onSalir)}
 						>
-							Salir
+							<span className="alim-drawer-btn-icon">↩</span>
+							<span>Salir</span>
 						</button>
 					</div>
 				</section>

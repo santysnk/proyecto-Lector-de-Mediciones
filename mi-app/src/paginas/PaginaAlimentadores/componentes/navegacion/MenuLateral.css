@@ -100,26 +100,258 @@
    justify-content: center;
 }
 
-/* Botón "+ Nuevo puesto" dentro del drawer */
-.alim-drawer-btn-add {
-   background-color: transparent;
-   border: 1px dashed #9ca3af;
-   color: #e5e7eb;
+
+/* =========================================================
+   INFO DEL USUARIO
+   ========================================================= */
+.alim-drawer-usuario {
+   display: flex;
+   flex-direction: column;
+   padding: 0.6rem 0.8rem;
+   background-color: rgba(30, 41, 59, 0.5);
+   border-radius: 8px;
+   margin-bottom: 0.5rem;
+}
+
+.alim-drawer-usuario-nombre {
+   font-weight: 600;
+   font-size: 0.95rem;
+   color: #f1f5f9;
+}
+
+.alim-drawer-usuario-rol {
+   font-size: 0.75rem;
+   color: #22d3ee;
+   text-transform: capitalize;
+}
+
+/* =========================================================
+   SELECTOR DE WORKSPACE
+   ========================================================= */
+.alim-drawer-workspace-trigger {
+   width: 100%;
    display: flex;
    align-items: center;
-   justify-content: center;
-   gap: 0.35rem;
-   font-weight: 500;
+   gap: 0.5rem;
+   padding: 0.6rem 0.8rem;
+   background-color: rgba(30, 41, 59, 0.6);
+   border: 1px solid #334155;
+   border-radius: 8px;
+   color: #e5e7eb;
+   font-size: 0.9rem;
+   cursor: pointer;
+   transition: background-color 0.15s ease;
 }
 
-/* Hover del botón "+ Nuevo puesto" */
+.alim-drawer-workspace-trigger:hover {
+   background-color: rgba(51, 65, 85, 0.8);
+}
+
+.alim-drawer-workspace-flecha {
+   font-size: 0.7rem;
+   transition: transform 0.2s ease;
+}
+
+.alim-drawer-workspace-flecha--abierto {
+   transform: rotate(90deg);
+}
+
+.alim-drawer-workspace-lista {
+   display: flex;
+   flex-direction: column;
+   gap: 0.25rem;
+   margin-top: 0.4rem;
+   padding-left: 1rem;
+}
+
+.alim-drawer-workspace-item {
+   width: 100%;
+   padding: 0.5rem 0.7rem;
+   background-color: transparent;
+   border: none;
+   border-radius: 6px;
+   color: #9ca3af;
+   font-size: 0.85rem;
+   text-align: left;
+   cursor: pointer;
+   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.alim-drawer-workspace-item:hover {
+   background-color: rgba(51, 65, 85, 0.5);
+   color: #e5e7eb;
+}
+
+.alim-drawer-workspace-item--activo {
+   background-color: rgba(34, 211, 238, 0.15);
+   color: #22d3ee;
+}
+
+.alim-drawer-workspace-invitado {
+   margin-left: 0.4rem;
+   font-size: 0.75rem;
+   color: #6b7280;
+}
+
+/* =========================================================
+   BOTONES DE ACCIÓN ADICIONALES
+   ========================================================= */
+.alim-drawer-btn-action {
+   width: 100%;
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   padding: 0.6rem 0.8rem;
+   background-color: rgba(30, 41, 59, 0.4);
+   border: 1px solid #334155;
+   border-radius: 8px;
+   color: #e5e7eb;
+   font-size: 0.9rem;
+   cursor: pointer;
+   transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.alim-drawer-btn-action:hover {
+   background-color: rgba(51, 65, 85, 0.6);
+   border-color: #475569;
+}
+
+.alim-drawer-btn-action:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+}
+
+.alim-drawer-btn-icon {
+   font-size: 1rem;
+}
+
+.alim-drawer-btn-icon-svg {
+   width: 18px;
+   height: 18px;
+}
+
+/* Botón Gestionar Accesos */
+.alim-drawer-btn-accesos {
+   color: #60a5fa;
+   border-color: rgba(96, 165, 250, 0.4);
+}
+
+.alim-drawer-btn-accesos:hover {
+   border-color: #60a5fa;
+}
+
+/* Botón Configurar Agente */
+.alim-drawer-btn-config {
+   color: #a78bfa;
+   border-color: rgba(167, 139, 250, 0.4);
+}
+
+.alim-drawer-btn-config:hover {
+   border-color: #a78bfa;
+}
+
+/* Botón Nuevo Puesto */
+.alim-drawer-btn-add {
+   color: #34d399;
+   border-color: rgba(52, 211, 153, 0.4);
+}
+
 .alim-drawer-btn-add:hover {
-   background-color: rgba(148, 163, 184, 0.2);
+   border-color: #34d399;
 }
 
-/* Icono "+" dentro del botón de nuevo puesto */
-.alim-drawer-btn-add-icon {
-   font-size: 1.1rem;
-   line-height: 1;
-   transform: translateY(-1px);
+/* Botón Editar Puestos */
+.alim-drawer-btn-edit {
+   color: #fbbf24;
+   border-color: rgba(251, 191, 36, 0.4);
+}
+
+.alim-drawer-btn-edit:hover {
+   border-color: #fbbf24;
+}
+
+/* Botón Nuevo Workspace */
+.alim-drawer-btn-nuevo-workspace {
+   color: #34d399;
+   border: 1px dashed rgba(52, 211, 153, 0.6);
+}
+
+.alim-drawer-btn-nuevo-workspace:hover {
+   border-color: #34d399;
+}
+
+/* Botón Salir */
+.alim-drawer-btn-salir {
+   color: #f87171;
+   border-color: rgba(248, 113, 113, 0.4);
+}
+
+.alim-drawer-btn-salir:hover {
+   border-color: #f87171;
+}
+
+/* =========================================================
+   FORMULARIO NUEVO WORKSPACE
+   ========================================================= */
+.alim-drawer-form-workspace {
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+   margin-top: 0.5rem;
+}
+
+.alim-drawer-input {
+   width: 100%;
+   padding: 0.5rem 0.7rem;
+   background-color: #1e293b;
+   border: 1px solid #334155;
+   border-radius: 6px;
+   color: #e5e7eb;
+   font-size: 0.85rem;
+}
+
+.alim-drawer-input:focus {
+   outline: none;
+   border-color: #22d3ee;
+}
+
+.alim-drawer-form-btns {
+   display: flex;
+   gap: 0.5rem;
+}
+
+.alim-drawer-btn-cancelar,
+.alim-drawer-btn-crear {
+   flex: 1;
+   padding: 0.4rem 0.6rem;
+   border-radius: 6px;
+   font-size: 0.8rem;
+   cursor: pointer;
+   transition: background-color 0.15s ease;
+}
+
+.alim-drawer-btn-cancelar {
+   background-color: transparent;
+   border: 1px solid #475569;
+   color: #9ca3af;
+}
+
+.alim-drawer-btn-cancelar:hover {
+   background-color: rgba(71, 85, 105, 0.3);
+}
+
+.alim-drawer-btn-crear {
+   background-color: #22d3ee;
+   border: none;
+   color: #0f172a;
+   font-weight: 600;
+}
+
+.alim-drawer-btn-crear:hover {
+   background-color: #06b6d4;
+}
+
+.alim-drawer-btn-crear:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
 }
