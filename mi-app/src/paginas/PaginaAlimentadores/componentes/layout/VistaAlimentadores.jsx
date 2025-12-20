@@ -85,7 +85,12 @@ const {
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
 	const pollingIntervalsRef = useRef({}); // { [alimId]: intervalId } - para limpiar intervalos
 	const [registradores, setRegistradores] = useState([]); // Lista de registradores del workspace
-	const [contadoresErrorPolling, setContadoresErrorPolling] = useState({}); // { [alimId_zona]: number } - contador de errores consecutivos por registrador/zona
+	// Errores de lectura: el agente no pudo leer del equipo Modbus (exito === false)
+	const [contadoresErrorLectura, setContadoresErrorLectura] = useState({}); // { [alimId_zona]: number }
+	// Errores de red: el frontend no pudo comunicarse con el backend (fetch falló)
+	const [contadoresErrorRed, setContadoresErrorRed] = useState({}); // { [alimId_zona]: number }
+	// Estado global de conexión con el backend
+	const [hayProblemaConexion, setHayProblemaConexion] = useState(false);
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -256,22 +261,25 @@ const {
 	// Obtiene el contador de lecturas de polling para un alimentador
 	const obtenerContadorPolling = (alimId) => contadoresPolling[alimId] || 0;
 
-	// Obtiene el error de polling de un alimentador por zona
+	// Obtiene el error de LECTURA de un alimentador por zona
+	// (errores de red NO activan el overlay de tarjeta, solo el banner global)
 	// Devuelve objeto con:
 	//   - superior/inferior: boolean - true si hay AL MENOS 1 error (para mostrar "ERROR" en box)
 	//   - superiorCritico/inferiorCritico: boolean - true si hay 3+ errores (para mostrar overlay)
 	const obtenerErrorPolling = (alimId) => {
-		const contadorSuperior = contadoresErrorPolling[`${alimId}_superior`] || 0;
-		const contadorInferior = contadoresErrorPolling[`${alimId}_inferior`] || 0;
+		// Solo usamos contadoresErrorLectura (NO contadoresErrorRed)
+		// Los errores de red se muestran en el banner global, no en las tarjetas
+		const contadorSuperior = contadoresErrorLectura[`${alimId}_superior`] || 0;
+		const contadorInferior = contadoresErrorLectura[`${alimId}_inferior`] || 0;
 
-		// Si no hay errores en ninguna zona, devolver null
+		// Si no hay errores de lectura en ninguna zona, devolver null
 		if (contadorSuperior === 0 && contadorInferior === 0) return null;
 
 		return {
-			// Para mostrar "ERROR" en los boxes (desde el primer error)
+			// Para mostrar "ERROR" en los boxes (desde el primer error de lectura)
 			superior: contadorSuperior >= 1,
 			inferior: contadorInferior >= 1,
-			// Para mostrar overlay de ATENCIÓN (después de 3 errores consecutivos)
+			// Para mostrar overlay de ATENCIÓN (después de 3 errores de lectura consecutivos)
 			superiorCritico: contadorSuperior >= 3,
 			inferiorCritico: contadorInferior >= 3,
 		};
@@ -284,6 +292,21 @@ const {
 
 		try {
 			const lecturas = await obtenerUltimasLecturasPorRegistrador(registradorId, 1);
+
+			// Si el fetch fue exitoso, resetear errores de red para esta zona
+			// y actualizar estado global de conexión
+			setContadoresErrorRed((prev) => {
+				if (prev[claveError]) {
+					const nuevo = { ...prev };
+					delete nuevo[claveError];
+					// Si ya no hay errores de red en ninguna zona, conexión OK
+					if (Object.keys(nuevo).length === 0) {
+						setHayProblemaConexion(false);
+					}
+					return nuevo;
+				}
+				return prev;
+			});
 
 			// Si no hay lecturas disponibles, simplemente no hacer nada (no es un error)
 			if (!lecturas || lecturas.length === 0) {
@@ -299,12 +322,13 @@ const {
 				[clavePolling]: lectura,
 			}));
 
-			// Verificar si la lectura tiene error (exito === false o valores vacíos)
-			const tieneError = lectura.exito === false || !lectura.valores || lectura.valores.length === 0;
+			// Verificar si la lectura tiene error (exito === false)
+			// Esto indica que el AGENTE no pudo leer del equipo Modbus
+			const tieneErrorLectura = lectura.exito === false;
 
-			if (tieneError) {
-				// Incrementar contador de errores consecutivos para esta zona/registrador
-				setContadoresErrorPolling((prev) => ({
+			if (tieneErrorLectura) {
+				// Incrementar contador de errores de LECTURA (agente no pudo leer del Modbus)
+				setContadoresErrorLectura((prev) => ({
 					...prev,
 					[claveError]: (prev[claveError] || 0) + 1,
 				}));
@@ -313,11 +337,11 @@ const {
 					...prev,
 					[alimId]: (prev[alimId] || 0) + 1,
 				}));
-				return; // No actualizar valores si hay error
+				return; // No actualizar valores si hay error de lectura
 			}
 
-			// Si llegamos aquí, la lectura es exitosa - resetear contador de errores para esta zona
-			setContadoresErrorPolling((prev) => {
+			// Si llegamos aquí, la lectura es exitosa - resetear contador de errores de lectura
+			setContadoresErrorLectura((prev) => {
 				if (prev[claveError]) {
 					const nuevo = { ...prev };
 					delete nuevo[claveError];
@@ -358,11 +382,15 @@ const {
 				}));
 			}
 		} catch (error) {
-			console.error(`[Polling] Error obteniendo lecturas para alimentador ${alimId}:`, error);
-			setContadoresErrorPolling((prev) => ({
+			// Error de RED: el frontend no pudo comunicarse con el backend
+			// (usuario sin internet, backend caído, timeout, etc.)
+			console.error(`[Polling] Error de red obteniendo lecturas para alimentador ${alimId}:`, error);
+			setContadoresErrorRed((prev) => ({
 				...prev,
 				[claveError]: (prev[claveError] || 0) + 1,
 			}));
+			// Marcar que hay problema de conexión global
+			setHayProblemaConexion(true);
 		}
 	}, [actualizarRegistros]);
 
@@ -477,14 +505,30 @@ const {
 			delete nuevo[alimId];
 			return nuevo;
 		});
-		// Limpiar contador de errores de polling para ese alimentador (ambas zonas)
-		setContadoresErrorPolling((prev) => {
+		// Limpiar contadores de errores de lectura para ese alimentador (ambas zonas)
+		setContadoresErrorLectura((prev) => {
 			const claveSup = `${alimId}_superior`;
 			const claveInf = `${alimId}_inferior`;
 			if (prev[claveSup] || prev[claveInf]) {
 				const nuevo = { ...prev };
 				delete nuevo[claveSup];
 				delete nuevo[claveInf];
+				return nuevo;
+			}
+			return prev;
+		});
+		// Limpiar contadores de errores de red para ese alimentador (ambas zonas)
+		setContadoresErrorRed((prev) => {
+			const claveSup = `${alimId}_superior`;
+			const claveInf = `${alimId}_inferior`;
+			if (prev[claveSup] || prev[claveInf]) {
+				const nuevo = { ...prev };
+				delete nuevo[claveSup];
+				delete nuevo[claveInf];
+				// Si ya no hay errores de red, actualizar estado global
+				if (Object.keys(nuevo).length === 0) {
+					setHayProblemaConexion(false);
+				}
 				return nuevo;
 			}
 			return prev;
@@ -538,7 +582,9 @@ const {
 		setAlimentadoresPolling({});
 		setLecturasPolling({});
 		setContadoresPolling({});
-		setContadoresErrorPolling({});
+		setContadoresErrorLectura({});
+		setContadoresErrorRed({});
+		setHayProblemaConexion(false);
 	}, [puestoSeleccionado?.id]);
 
 	// ===== DRAG & DROP =====
@@ -619,6 +665,7 @@ const {
 				document.body
 			)}
 
+
 			{/* ===== NAV SUPERIOR ===== */}
 			<BarraNavegacion
 				esCompacto={esCompacto}
@@ -659,6 +706,19 @@ const {
 				className="alim-main"
 				style={{ backgroundColor: puestoSeleccionado?.bgColor || "#e5e7eb" }} // usa bgColor del puesto o gris por defecto
 			>
+				{/* Overlay de problema de conexión (errores de red) */}
+				{hayProblemaConexion && (
+					<div className="alim-overlay-conexion">
+						<div className="alim-overlay-conexion__contenido">
+							<span className="alim-overlay-conexion__icono">⚠</span>
+							<span className="alim-overlay-conexion__titulo">SIN CONEXIÓN</span>
+							<span className="alim-overlay-conexion__texto">
+								No se pueden obtener lecturas del servidor
+							</span>
+						</div>
+					</div>
+				)}
+
 				{/* Caso 1: Sin workspace asignado */}
 				{!configuracionSeleccionada ? (
 					<div className="alim-sin-workspace">

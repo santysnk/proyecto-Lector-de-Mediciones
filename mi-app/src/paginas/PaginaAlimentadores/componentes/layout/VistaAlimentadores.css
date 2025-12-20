@@ -239,3 +239,112 @@
 }
 
 /* =========================================================
+   OVERLAY DE PROBLEMA DE CONEXIÓN
+   ========================================================= */
+.alim-overlay-conexion {
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   z-index: 100;
+   display: flex;
+   align-items: flex-start;
+   justify-content: center;
+   padding-top: 15vh;
+}
+
+/* Capa de blur constante */
+.alim-overlay-conexion::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   backdrop-filter: blur(2px);
+}
+
+/* Capa de oscuridad constante */
+.alim-overlay-conexion::after {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background: rgba(0, 0, 0, 0.6);
+}
+
+.alim-overlay-conexion__contenido {
+   position: relative;
+   z-index: 1;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 0.5rem;
+   padding: 1.5rem 2rem;
+   background: rgba(30, 20, 0, 0.95);
+   border: 2px solid #f59e0b;
+   border-radius: 12px;
+   box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+   animation: contenidoPulse 3.5s ease-in-out infinite;
+}
+
+.alim-overlay-conexion__icono {
+   font-size: 2rem;
+   color: #fbbf24;
+   animation: iconoPulse 3.5s ease-in-out infinite;
+}
+
+.alim-overlay-conexion__titulo {
+   font-size: 1.25rem;
+   font-weight: 700;
+   color: #fbbf24;
+   letter-spacing: 0.05em;
+}
+
+.alim-overlay-conexion__texto {
+   font-size: 0.9rem;
+   color: #fcd34d;
+   text-align: center;
+}
+
+/* Animación continua del fondo (breathing) */
+@keyframes fondoPulse {
+   0%, 100% {
+      opacity: 0.4;
+   }
+   50% {
+      opacity: 1;
+   }
+}
+
+/* Animación continua del contenido/cartel (breathing con pausa en máximo) */
+@keyframes contenidoPulse {
+   0%, 100% {
+      transform: scale(0.88);
+   }
+   45%, 55% {
+      transform: scale(1.12);
+   }
+}
+
+/* Animación del icono (con pausa en máximo) */
+@keyframes iconoPulse {
+   0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+   }
+   45%, 55% {
+      transform: scale(1.55);
+      opacity: 0.85;
+   }
+}
+
+/* El main necesita position relative para que el overlay absolute funcione */
+.alim-main {
+   position: relative;
+}
+
+/* =========================================================
