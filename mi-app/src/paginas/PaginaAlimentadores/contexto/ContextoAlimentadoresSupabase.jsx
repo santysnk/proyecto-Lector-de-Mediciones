@@ -158,19 +158,6 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     });
   }, [puestoSeleccionado, registrosEnVivo]);
 
-  // Helpers sobre mediciones
-  const iniciarMedicionConCalculo = async (alimentador, equipo, override) => {
-    await medicionesHook.iniciarMedicion(alimentador, equipo, override);
-  };
-
-  const alternarMedicion = (alimentador, equipo, override) => {
-    if (medicionesHook.estaMidiendo(alimentador.id, equipo)) {
-      medicionesHook.detenerMedicion(alimentador.id, equipo);
-    } else {
-      iniciarMedicionConCalculo(alimentador, equipo, override);
-    }
-  };
-
   // ===== FUNCIONES DE GAP COMBINADAS (localStorage + BD) =====
   // Prioridad: localStorage > BD > default
 
@@ -253,11 +240,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       lecturasTarjetas,
       registrosEnVivo: medicionesHook.registrosEnVivo,
 
-      iniciarMedicion: medicionesHook.iniciarMedicion,
       detenerMedicion: medicionesHook.detenerMedicion,
-      iniciarMedicionConCalculo,
-      alternarMedicion,
-
       obtenerRegistros: medicionesHook.obtenerRegistros,
       estaMidiendo: medicionesHook.estaMidiendo,
       obtenerTimestampInicio: medicionesHook.obtenerTimestampInicio,
