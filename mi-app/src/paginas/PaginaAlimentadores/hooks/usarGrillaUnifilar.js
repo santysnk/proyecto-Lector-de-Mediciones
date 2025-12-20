@@ -67,7 +67,7 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	const [modoEdicion, setModoEdicion] = useState(false);
 	// Color seleccionado para pintar
 	const [colorSeleccionado, setColorSeleccionado] = useState(COLORES_UNIFILAR[0].color);
-	// Herramienta activa: "pincel", "borrador", "texto" o "balde"
+	// Herramienta activa: "pincel", "borrador", "texto", "balde" o "mover"
 	const [herramienta, setHerramienta] = useState("pincel");
 	// Grosor de línea seleccionado (tamaño de celda en píxeles)
 	const [grosorLinea, setGrosorLinea] = useState(GROSORES_LINEA[1].valor); // Normal por defecto
@@ -303,6 +303,132 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		setHerramienta("balde");
 		setTextoSeleccionadoId(null);
 	}, []);
+
+	/**
+	 * Seleccionar herramienta mover (arrastrar líneas conectadas)
+	 */
+	const seleccionarMover = useCallback(() => {
+		setHerramienta("mover");
+		setTextoSeleccionadoId(null);
+	}, []);
+
+	/**
+	 * Obtener todas las celdas conectadas a una celda dada (BFS)
+	 * Retorna un array de claves "x,y" de las celdas conectadas del mismo color
+	 * @param {number} x - Coordenada X de la celda inicial
+	 * @param {number} y - Coordenada Y de la celda inicial
+	 * @param {Object} celdasActuales - Objeto de celdas actual
+	 * @returns {Array<string>} Array de claves de celdas conectadas
+	 */
+	const obtenerCeldasConectadas = useCallback((x, y, celdasActuales) => {
+		const claveCelda = `${x},${y}`;
+		const colorOriginal = celdasActuales[claveCelda];
+
+		if (!colorOriginal) return []; // No hay celda pintada en esa posición
+
+		const visitadas = new Set();
+		const cola = [[x, y]];
+		const celdasConectadas = [];
+
+		while (cola.length > 0) {
+			const [cx, cy] = cola.shift();
+			const claveActual = `${cx},${cy}`;
+
+			if (visitadas.has(claveActual)) continue;
+			visitadas.add(claveActual);
+
+			// Solo incluir celdas que tengan el mismo color
+			if (celdasActuales[claveActual] !== colorOriginal) continue;
+
+			celdasConectadas.push(claveActual);
+
+			// Agregar vecinos a la cola (arriba, abajo, izquierda, derecha)
+			cola.push([cx, cy - 1]); // arriba
+			cola.push([cx, cy + 1]); // abajo
+			cola.push([cx - 1, cy]); // izquierda
+			cola.push([cx + 1, cy]); // derecha
+		}
+
+		return celdasConectadas;
+	}, []);
+
+	/**
+	 * Mover todas las celdas conectadas por un delta
+	 * @param {Array<string>} celdasAMover - Array de claves "x,y" a mover
+	 * @param {number} deltaX - Desplazamiento en X (en unidades de celda)
+	 * @param {number} deltaY - Desplazamiento en Y (en unidades de celda)
+	 */
+	const moverCeldasConectadas = useCallback((celdasAMover, deltaX, deltaY) => {
+		if (deltaX === 0 && deltaY === 0) return;
+		if (celdasAMover.length === 0) return;
+
+		setCeldas(prev => {
+			const nuevasCeldas = { ...prev };
+
+			// Primero, remover todas las celdas que vamos a mover
+			const coloresOriginales = {};
+			celdasAMover.forEach(clave => {
+				coloresOriginales[clave] = prev[clave];
+				delete nuevasCeldas[clave];
+			});
+
+			// Luego, agregar las celdas en sus nuevas posiciones
+			celdasAMover.forEach(clave => {
+				const [x, y] = clave.split(",").map(Number);
+				const nuevaClave = `${x + deltaX},${y + deltaY}`;
+				nuevasCeldas[nuevaClave] = coloresOriginales[clave];
+			});
+
+			// Guardar
+			setTextos(currentTextos => {
+				guardarDatos(nuevasCeldas, currentTextos);
+				return currentTextos;
+			});
+
+			return nuevasCeldas;
+		});
+	}, [guardarDatos]);
+
+	/**
+	 * Borrar todas las celdas dentro de un área rectangular
+	 * @param {number} x1 - Coordenada X de la esquina inicial
+	 * @param {number} y1 - Coordenada Y de la esquina inicial
+	 * @param {number} x2 - Coordenada X de la esquina final
+	 * @param {number} y2 - Coordenada Y de la esquina final
+	 */
+	const borrarArea = useCallback((x1, y1, x2, y2) => {
+		// Normalizar coordenadas (asegurar que min <= max)
+		const minX = Math.min(x1, x2);
+		const maxX = Math.max(x1, x2);
+		const minY = Math.min(y1, y2);
+		const maxY = Math.max(y1, y2);
+
+		setCeldas(prev => {
+			const nuevasCeldas = { ...prev };
+			let huboCambios = false;
+
+			// Iterar sobre todas las celdas del área y eliminarlas
+			for (let x = minX; x <= maxX; x++) {
+				for (let y = minY; y <= maxY; y++) {
+					const clave = `${x},${y}`;
+					if (nuevasCeldas[clave]) {
+						delete nuevasCeldas[clave];
+						huboCambios = true;
+					}
+				}
+			}
+
+			if (!huboCambios) return prev;
+
+			// Guardar
+			setTextos(currentTextos => {
+				guardarDatos(nuevasCeldas, currentTextos);
+				return currentTextos;
+			});
+
+			return nuevasCeldas;
+		});
+	}, [guardarDatos]);
 
 	/**
 	 * Rellenar todas las celdas conectadas con el color seleccionado (flood fill)
@@ -558,6 +684,7 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		iniciarPintado,
 		detenerPintado,
 		rellenarConectadas,
+		borrarArea,
 
 		// Acciones de texto
 		agregarTexto,
@@ -570,6 +697,11 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		seleccionarBorrador,
 		seleccionarTexto,
 		seleccionarBalde,
+		seleccionarMover,
+
+		// Funciones para mover líneas conectadas
+		obtenerCeldasConectadas,
+		moverCeldasConectadas,
 
 		// Grosor de línea
 		cambiarGrosor,

@@ -286,8 +286,8 @@
 
 .grilla-unifilar__textarea-container {
    position: relative;
-   min-width: 100px;
-   min-height: 30px;
+   min-width: 80px;
+   min-height: 24px;
 }
 
 .grilla-unifilar__textarea-container textarea {
@@ -296,7 +296,7 @@
    background-color: rgba(30, 41, 59, 0.95);
    border: 2px solid #22d3ee;
    border-radius: 4px;
-   padding: 4px 8px;
+   padding: 2px 6px;
    outline: none;
    display: block;
    line-height: 1.2;
@@ -305,6 +305,7 @@
    resize: none;
    overflow: auto;
    box-sizing: border-box;
+   font-size: 0.85rem;
 }
 
 .grilla-unifilar__textarea-container textarea:focus {
@@ -441,32 +442,37 @@
    background-color: #15803d;
 }
 
-/* Botón Descartar - gris/naranja */
-.grilla-unifilar__input-btn--descartar {
-   background-color: #475569;
-   color: #e2e8f0;
+/* Botón Cerrar (X) - rojo oscuro para nuevo texto */
+.grilla-unifilar__input-btn--cerrar {
+   background-color: #7f1d1d;
+   color: #fecaca;
 }
 
-.grilla-unifilar__input-btn--descartar:hover:not(:disabled) {
-   background-color: #f59e0b;
+.grilla-unifilar__input-btn--cerrar:hover {
+   background-color: #991b1b;
    color: #ffffff;
 }
 
-/* Botón Eliminar - rojo */
+/* Botón Volver (undo) - amarillo claro para edición */
+.grilla-unifilar__input-btn--volver {
+   background-color: #a16207;
+   color: #fef9c3;
+}
+
+.grilla-unifilar__input-btn--volver:hover {
+   background-color: #ca8a04;
+   color: #fefce8;
+}
+
+/* Botón Eliminar (tacho) - rojo oscuro como el botón cerrar */
 .grilla-unifilar__input-btn--eliminar {
-   background-color: #475569;
-   color: #e2e8f0;
+   background-color: #7f1d1d;
+   color: #fecaca;
 }
 
-.grilla-unifilar__input-btn--eliminar:hover:not(:disabled) {
-   background-color: #dc2626;
+.grilla-unifilar__input-btn--eliminar:hover {
+   background-color: #991b1b;
    color: #ffffff;
-}
-
-/* Estado deshabilitado */
-.grilla-unifilar__input-btn--disabled {
-   opacity: 0.3;
-   cursor: not-allowed;
 }
 
 /* =========================================================
@@ -580,4 +586,77 @@
       font-size: 0.7rem;
       padding: 3px 6px;
    }
+}
+
+/* =========================================================
+   MENÚ CONTEXTUAL (click derecho)
+   ========================================================= */
+.grilla-unifilar__menu-contextual {
+   position: absolute;
+   z-index: 200;
+   background-color: #1e293b;
+   border: 1px solid #475569;
+   border-radius: 8px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+   padding: 4px;
+   min-width: 160px;
+}
+
+.grilla-unifilar__menu-item {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   width: 100%;
+   padding: 8px 12px;
+   background-color: transparent;
+   border: none;
+   border-radius: 4px;
+   color: #e2e8f0;
+   font-size: 0.85rem;
+   cursor: pointer;
+   transition: background-color 0.15s ease;
+   text-align: left;
+}
+
+.grilla-unifilar__menu-item:hover:not(:disabled) {
+   background-color: rgba(51, 65, 85, 0.8);
+}
+
+.grilla-unifilar__menu-item:active:not(:disabled) {
+   background-color: rgba(51, 65, 85, 1);
+}
+
+.grilla-unifilar__menu-item--disabled {
+   opacity: 0.4;
+   cursor: not-allowed;
+}
+
+.grilla-unifilar__menu-item svg {
+   flex-shrink: 0;
+   color: #94a3b8;
+}
+
+.grilla-unifilar__menu-item span:first-of-type {
+   flex: 1;
+}
+
+.grilla-unifilar__menu-shortcut {
+   font-size: 0.75rem;
+   color: #64748b;
+   margin-left: auto;
+}
+
+.grilla-unifilar__menu-separator {
+   height: 1px;
+   background-color: #475569;
+   margin: 4px 8px;
+}
+
+.grilla-unifilar__menu-item--eliminar:hover:not(:disabled) {
+   background-color: rgba(220, 38, 38, 0.2);
+   color: #fca5a5;
+}
+
+.grilla-unifilar__menu-item--eliminar:hover:not(:disabled) svg {
+   color: #f87171;
 }

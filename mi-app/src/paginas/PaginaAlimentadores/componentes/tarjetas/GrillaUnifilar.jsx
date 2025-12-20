@@ -48,7 +48,11 @@ const GrillaUnifilar = ({
 	onSeleccionarBorrador,
 	onSeleccionarTexto,
 	onSeleccionarBalde,
+	onSeleccionarMover,
 	onRellenarConectadas,
+	onBorrarArea,
+	onObtenerCeldasConectadas,
+	onMoverCeldasConectadas,
 	onAgregarTexto,
 	onActualizarTexto,
 	onEliminarTexto,
@@ -61,7 +65,7 @@ const GrillaUnifilar = ({
 	const [dimensiones, setDimensiones] = useState({ ancho: 0, alto: 0 });
 	// Estado para el input de texto (nuevo o edición)
 	// valorOriginal guarda el texto antes de editar para poder descartarlo
-	const [inputTexto, setInputTexto] = useState({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 200, alto: 40, valorOriginal: "" });
+	const [inputTexto, setInputTexto] = useState({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
 	// Estado para redimensionar el textarea
 	const [redimensionando, setRedimensionando] = useState({ activo: false, handle: null, inicioX: 0, inicioY: 0, anchoInicial: 0, altoInicial: 0 });
 	const textareaRef = useRef(null);
@@ -71,13 +75,45 @@ const GrillaUnifilar = ({
 	const [mostrarColorPicker, setMostrarColorPicker] = useState(false);
 	// Estado para arrastrar texto
 	const [arrastrando, setArrastrando] = useState({ activo: false, textoId: null, offsetX: 0, offsetY: 0 });
+	// Estado para arrastrar líneas conectadas
+	const [arrastrandoLineas, setArrastrandoLineas] = useState({
+		activo: false,
+		celdasConectadas: [],    // Array de claves "x,y" de las celdas conectadas
+		celdaInicialX: 0,        // Celda donde se hizo click inicial
+		celdaInicialY: 0,
+		ultimaCeldaX: 0,         // Última celda donde estaba el mouse (para calcular delta)
+		ultimaCeldaY: 0,
+	});
 	// Estado para saber si el mouse está sobre un texto (para cambiar cursor)
 	const [sobreTexto, setSobreTexto] = useState(false);
+	// Estado para saber si el mouse está sobre una línea (para cambiar cursor)
+	const [sobreLinea, setSobreLinea] = useState(false);
 	// Estado para modo gotero (eyedropper)
 	const [modoGotero, setModoGotero] = useState(false);
+	// Estado para selección de área del borrador (como en Paint)
+	const [areaBorrador, setAreaBorrador] = useState({
+		activo: false,
+		inicioX: 0,      // Coordenada de celda inicial X
+		inicioY: 0,      // Coordenada de celda inicial Y
+		actualX: 0,      // Coordenada de celda actual X
+		actualY: 0,      // Coordenada de celda actual Y
+	});
+	// Estado para texto copiado (portapapeles interno)
+	const [textoCopiado, setTextoCopiado] = useState(null);
+	// Estado para menú contextual
+	const [menuContextual, setMenuContextual] = useState({
+		visible: false,
+		x: 0,
+		y: 0,
+		pixelX: 0,  // Posición en píxeles donde pegar
+		pixelY: 0,
+		hayTextoEnPosicion: false,  // Si hay un texto donde se hizo click
+	});
+	// Posición actual del mouse (para pegar en la posición correcta)
+	const posicionMouseRef = useRef({ x: 0, y: 0 });
 
 	/**
-	 * Detectar teclas Shift presionadas y Delete para eliminar texto
+	 * Detectar teclas Shift, Delete, Ctrl+C y Ctrl+V
 	 */
 	useEffect(() => {
 		const handleKeyDown = (e) => {
@@ -88,6 +124,40 @@ const GrillaUnifilar = ({
 			if ((e.key === "Delete" || e.key === "Backspace") && textoSeleccionadoId && herramienta === "texto" && !inputTexto.visible) {
 				e.preventDefault();
 				onEliminarTexto?.(textoSeleccionadoId);
+			}
+			// Ctrl+C para copiar texto seleccionado
+			if (e.ctrlKey && e.key === "c" && textoSeleccionadoId && herramienta === "texto" && modoEdicion && !inputTexto.visible) {
+				e.preventDefault();
+				const textoACopiar = textos.find(t => t.id === textoSeleccionadoId);
+				if (textoACopiar) {
+					setTextoCopiado({ ...textoACopiar });
+				}
+			}
+			// Ctrl+V para pegar texto
+			if (e.ctrlKey && e.key === "v" && textoCopiado && herramienta === "texto" && modoEdicion && !inputTexto.visible) {
+				e.preventDefault();
+				// Pegar en la posición actual del mouse
+				const nuevoTexto = {
+					...textoCopiado,
+					id: `texto-${Date.now()}`,
+					x: posicionMouseRef.current.x,
+					y: posicionMouseRef.current.y,
+				};
+				onAgregarTexto?.(nuevoTexto.x, nuevoTexto.y, nuevoTexto.texto);
+				// Actualizar el texto recién pegado con los estilos del copiado
+				setTimeout(() => {
+					// Buscar el último texto agregado y actualizarlo con los estilos
+					const ultimoTexto = textos[textos.length - 1];
+					if (ultimoTexto) {
+						onActualizarTexto?.(ultimoTexto.id, {
+							color: textoCopiado.color,
+							fuente: textoCopiado.fuente,
+							tamano: textoCopiado.tamano,
+							negrita: textoCopiado.negrita,
+							cursiva: textoCopiado.cursiva,
+						});
+					}
+				}, 50);
 			}
 		};
 		const handleKeyUp = (e) => {
@@ -103,7 +173,7 @@ const GrillaUnifilar = ({
 			window.removeEventListener("keydown", handleKeyDown);
 			window.removeEventListener("keyup", handleKeyUp);
 		};
-	}, [textoSeleccionadoId, herramienta, inputTexto.visible, onEliminarTexto]);
+	}, [textoSeleccionadoId, herramienta, inputTexto.visible, onEliminarTexto, textos, textoCopiado, modoEdicion, onAgregarTexto, onActualizarTexto]);
 
 	/**
 	 * Cerrar color picker al hacer click fuera
@@ -250,7 +320,31 @@ const GrillaUnifilar = ({
 				ctx.setLineDash([]);
 			}
 		});
-	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea]);
+
+		// Dibujar rectángulo de selección del borrador (si está activo)
+		if (areaBorrador.activo) {
+			const minX = Math.min(areaBorrador.inicioX, areaBorrador.actualX);
+			const maxX = Math.max(areaBorrador.inicioX, areaBorrador.actualX);
+			const minY = Math.min(areaBorrador.inicioY, areaBorrador.actualY);
+			const maxY = Math.max(areaBorrador.inicioY, areaBorrador.actualY);
+
+			const rectX = minX * grosorLinea;
+			const rectY = minY * grosorLinea;
+			const rectW = (maxX - minX + 1) * grosorLinea;
+			const rectH = (maxY - minY + 1) * grosorLinea;
+
+			// Fondo semitransparente rojo
+			ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
+			ctx.fillRect(rectX, rectY, rectW, rectH);
+
+			// Borde rojo punteado
+			ctx.strokeStyle = "#ef4444";
+			ctx.lineWidth = 2;
+			ctx.setLineDash([6, 3]);
+			ctx.strokeRect(rectX, rectY, rectW, rectH);
+			ctx.setLineDash([]);
+		}
+	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea, areaBorrador]);
 
 	/**
 	 * Obtener coordenadas de celda desde evento de mouse
@@ -279,6 +373,17 @@ const GrillaUnifilar = ({
 			y: e.clientY - rect.top
 		};
 	}, []);
+
+	/**
+	 * Verificar si hay una celda pintada en las coordenadas de celda dadas
+	 * @param {number} x - Coordenada X de celda
+	 * @param {number} y - Coordenada Y de celda
+	 * @returns {boolean} true si hay una celda pintada
+	 */
+	const hayCeldaEn = useCallback((x, y) => {
+		const claveCelda = `${x},${y}`;
+		return !!celdas[claveCelda];
+	}, [celdas]);
 
 	/**
 	 * Verificar si un punto está sobre un texto y devolver el texto
@@ -360,9 +465,12 @@ const GrillaUnifilar = ({
 
 	/**
 	 * Mouse down - iniciar pintado, manejar texto, o iniciar arrastre
+	 * Solo responde al botón izquierdo del mouse (button 0)
 	 */
 	const handleMouseDown = useCallback((e) => {
 		if (!modoEdicion) return;
+		// Ignorar clicks que no sean del botón izquierdo (0 = izquierdo, 2 = derecho)
+		if (e.button !== 0) return;
 		e.preventDefault();
 
 		// Si el modo gotero está activo, capturar el color
@@ -396,8 +504,8 @@ const GrillaUnifilar = ({
 					y: coords.y,
 					valor: "",
 					editandoId: null,
-					ancho: 200,
-					alto: 40,
+					ancho: 220,
+					alto: 55,
 					valorOriginal: ""
 				});
 			}
@@ -407,15 +515,44 @@ const GrillaUnifilar = ({
 			if (coords) {
 				onRellenarConectadas?.(coords.x, coords.y);
 			}
+		} else if (herramienta === "mover") {
+			// Herramienta mover: iniciar arrastre de líneas conectadas
+			const coords = obtenerCoordenadas(e);
+			if (coords && hayCeldaEn(coords.x, coords.y)) {
+				// Obtener todas las celdas conectadas desde esta posición
+				const celdasConectadas = onObtenerCeldasConectadas?.(coords.x, coords.y, celdas) || [];
+				if (celdasConectadas.length > 0) {
+					setArrastrandoLineas({
+						activo: true,
+						celdasConectadas,
+						celdaInicialX: coords.x,
+						celdaInicialY: coords.y,
+						ultimaCeldaX: coords.x,
+						ultimaCeldaY: coords.y,
+					});
+				}
+			}
+		} else if (herramienta === "borrador") {
+			// Borrador: iniciar selección de área
+			const coords = obtenerCoordenadas(e);
+			if (coords) {
+				setAreaBorrador({
+					activo: true,
+					inicioX: coords.x,
+					inicioY: coords.y,
+					actualX: coords.x,
+					actualY: coords.y,
+				});
+			}
 		} else {
-			// Pincel o borrador
+			// Pincel
 			const coords = obtenerCoordenadas(e);
 			if (coords) {
 				onIniciarPintado(coords.x, coords.y);
 				onPintarCelda(coords.x, coords.y, shiftPresionado);
 			}
 		}
-	}, [modoEdicion, modoGotero, capturarColorGotero, herramienta, obtenerCoordenadas, obtenerCoordenadasPixel, textoEnPunto, onIniciarPintado, onPintarCelda, onRellenarConectadas, onTextoSeleccionadoChange, shiftPresionado]);
+	}, [modoEdicion, modoGotero, capturarColorGotero, herramienta, obtenerCoordenadas, obtenerCoordenadasPixel, textoEnPunto, onIniciarPintado, onPintarCelda, onRellenarConectadas, onObtenerCeldasConectadas, onTextoSeleccionadoChange, shiftPresionado, hayCeldaEn, celdas]);
 
 	/**
 	 * Doble clic - editar texto existente
@@ -470,10 +607,16 @@ const GrillaUnifilar = ({
 	}, [modoEdicion, herramienta, obtenerCoordenadasPixel, textoEnPunto, onTextoSeleccionadoChange, onCambiarColor, onConfigTextoChange]);
 
 	/**
-	 * Mouse move - continuar pintado o arrastre de texto
+	 * Mouse move - continuar pintado o arrastre de texto/líneas
 	 */
 	const handleMouseMove = useCallback((e) => {
 		if (!modoEdicion) return;
+
+		// Guardar posición del mouse para Ctrl+V
+		const coordsPixel = obtenerCoordenadasPixel(e);
+		if (coordsPixel) {
+			posicionMouseRef.current = { x: coordsPixel.x, y: coordsPixel.y };
+		}
 
 		// Mover texto si está arrastrando
 		if (arrastrando.activo && arrastrando.textoId) {
@@ -487,6 +630,48 @@ const GrillaUnifilar = ({
 			return;
 		}
 
+		// Mover líneas conectadas si está arrastrando
+		if (arrastrandoLineas.activo && arrastrandoLineas.celdasConectadas.length > 0) {
+			const coords = obtenerCoordenadas(e);
+			if (coords) {
+				const deltaX = coords.x - arrastrandoLineas.ultimaCeldaX;
+				const deltaY = coords.y - arrastrandoLineas.ultimaCeldaY;
+
+				if (deltaX !== 0 || deltaY !== 0) {
+					// Mover las celdas
+					onMoverCeldasConectadas?.(arrastrandoLineas.celdasConectadas, deltaX, deltaY);
+
+					// Actualizar las posiciones de las celdas conectadas (sumar el delta)
+					const nuevasCeldasConectadas = arrastrandoLineas.celdasConectadas.map(clave => {
+						const [x, y] = clave.split(",").map(Number);
+						return `${x + deltaX},${y + deltaY}`;
+					});
+
+					// Actualizar el estado con la nueva posición
+					setArrastrandoLineas(prev => ({
+						...prev,
+						celdasConectadas: nuevasCeldasConectadas,
+						ultimaCeldaX: coords.x,
+						ultimaCeldaY: coords.y,
+					}));
+				}
+			}
+			return;
+		}
+
+		// Actualizar área del borrador si está seleccionando
+		if (areaBorrador.activo) {
+			const coords = obtenerCoordenadas(e);
+			if (coords) {
+				setAreaBorrador(prev => ({
+					...prev,
+					actualX: coords.x,
+					actualY: coords.y,
+				}));
+			}
+			return;
+		}
+
 		// Detectar si el mouse está sobre un texto (para cambiar cursor)
 		if (herramienta === "texto") {
 			const coords = obtenerCoordenadasPixel(e);
@@ -496,18 +681,52 @@ const GrillaUnifilar = ({
 			}
 		}
 
-		if (!estaPintando || herramienta === "texto") return;
+		// Detectar si el mouse está sobre una línea (para cambiar cursor en herramienta mover)
+		if (herramienta === "mover") {
+			const coords = obtenerCoordenadas(e);
+			if (coords) {
+				setSobreLinea(hayCeldaEn(coords.x, coords.y));
+			}
+		}
+
+		if (!estaPintando || herramienta === "texto" || herramienta === "mover" || herramienta === "borrador") return;
 		manejarPintado(e);
-	}, [modoEdicion, arrastrando, estaPintando, herramienta, obtenerCoordenadasPixel, onActualizarTexto, manejarPintado, textoEnPunto]);
+	}, [modoEdicion, arrastrando, arrastrandoLineas, areaBorrador.activo, estaPintando, herramienta, obtenerCoordenadas, obtenerCoordenadasPixel, onActualizarTexto, onMoverCeldasConectadas, manejarPintado, textoEnPunto, hayCeldaEn]);
 
 	/**
 	 * Mouse up - detener pintado o arrastre
 	 */
 	const handleMouseUp = useCallback(() => {
 		if (!modoEdicion) return;
+
+		// Si estaba seleccionando área para borrar, ejecutar el borrado
+		if (areaBorrador.activo) {
+			onBorrarArea?.(
+				areaBorrador.inicioX,
+				areaBorrador.inicioY,
+				areaBorrador.actualX,
+				areaBorrador.actualY
+			);
+			setAreaBorrador({
+				activo: false,
+				inicioX: 0,
+				inicioY: 0,
+				actualX: 0,
+				actualY: 0,
+			});
+		}
+
 		onDetenerPintado();
 		setArrastrando({ activo: false, textoId: null, offsetX: 0, offsetY: 0 });
-	}, [modoEdicion, onDetenerPintado]);
+		setArrastrandoLineas({
+			activo: false,
+			celdasConectadas: [],
+			celdaInicialX: 0,
+			celdaInicialY: 0,
+			ultimaCeldaX: 0,
+			ultimaCeldaY: 0,
+		});
+	}, [modoEdicion, onDetenerPintado, areaBorrador, onBorrarArea]);
 
 	/**
 	 * Mouse leave - detener pintado si sale del canvas
@@ -519,8 +738,140 @@ const GrillaUnifilar = ({
 		if (arrastrando.activo) {
 			setArrastrando({ activo: false, textoId: null, offsetX: 0, offsetY: 0 });
 		}
+		if (arrastrandoLineas.activo) {
+			setArrastrandoLineas({
+				activo: false,
+				celdasConectadas: [],
+				celdaInicialX: 0,
+				celdaInicialY: 0,
+				ultimaCeldaX: 0,
+				ultimaCeldaY: 0,
+			});
+		}
+		// Cancelar selección de área del borrador si sale del canvas
+		if (areaBorrador.activo) {
+			setAreaBorrador({
+				activo: false,
+				inicioX: 0,
+				inicioY: 0,
+				actualX: 0,
+				actualY: 0,
+			});
+		}
 		setSobreTexto(false);
-	}, [estaPintando, arrastrando.activo, onDetenerPintado]);
+		setSobreLinea(false);
+	}, [estaPintando, arrastrando.activo, arrastrandoLineas.activo, areaBorrador.activo, onDetenerPintado]);
+
+	/**
+	 * Click derecho - mostrar menú contextual para copiar/pegar
+	 */
+	const handleContextMenu = useCallback((e) => {
+		// Siempre prevenir menú del browser en modo edición
+		if (!modoEdicion) return;
+
+		// Si no es herramienta texto, solo prevenir el menú del browser pero no mostrar nuestro menú
+		if (herramienta !== "texto") {
+			e.preventDefault();
+			return;
+		}
+
+		e.preventDefault();
+		e.stopPropagation();
+
+		const coords = obtenerCoordenadasPixel(e);
+		if (!coords) return;
+
+		// Verificar si hay un texto en esta posición para seleccionarlo
+		const textoEncontrado = textoEnPunto(coords.x, coords.y);
+		if (textoEncontrado) {
+			onTextoSeleccionadoChange?.(textoEncontrado.id);
+		} else {
+			// Si no hay texto en la posición, deseleccionar
+			onTextoSeleccionadoChange?.(null);
+		}
+
+		// Obtener posición relativa al canvas para el menú
+		const canvas = canvasRef.current;
+		const rect = canvas.getBoundingClientRect();
+
+		setMenuContextual({
+			visible: true,
+			x: e.clientX - rect.left,
+			y: e.clientY - rect.top,
+			pixelX: coords.x,
+			pixelY: coords.y,
+			// Guardar si hay texto seleccionado en el momento del click
+			hayTextoEnPosicion: !!textoEncontrado,
+		});
+	}, [modoEdicion, herramienta, obtenerCoordenadasPixel, textoEnPunto, onTextoSeleccionadoChange]);
+
+	/**
+	 * Copiar texto seleccionado
+	 */
+	const copiarTexto = useCallback(() => {
+		if (textoSeleccionadoId) {
+			const textoACopiar = textos.find(t => t.id === textoSeleccionadoId);
+			if (textoACopiar) {
+				setTextoCopiado({ ...textoACopiar });
+			}
+		}
+		setMenuContextual(prev => ({ ...prev, visible: false }));
+	}, [textoSeleccionadoId, textos]);
+
+	/**
+	 * Pegar texto copiado
+	 */
+	const pegarTexto = useCallback(() => {
+		if (textoCopiado) {
+			onAgregarTexto?.(menuContextual.pixelX, menuContextual.pixelY, textoCopiado.texto);
+			// Actualizar el texto recién pegado con los estilos del copiado
+			setTimeout(() => {
+				const ultimoTexto = textos[textos.length - 1];
+				if (ultimoTexto) {
+					onActualizarTexto?.(ultimoTexto.id, {
+						color: textoCopiado.color,
+						fuente: textoCopiado.fuente,
+						tamano: textoCopiado.tamano,
+						negrita: textoCopiado.negrita,
+						cursiva: textoCopiado.cursiva,
+					});
+				}
+			}, 50);
+		}
+		setMenuContextual(prev => ({ ...prev, visible: false }));
+	}, [textoCopiado, menuContextual.pixelX, menuContextual.pixelY, onAgregarTexto, onActualizarTexto, textos]);
+
+	/**
+	 * Eliminar texto seleccionado desde el menú contextual
+	 */
+	const eliminarTextoMenu = useCallback(() => {
+		if (textoSeleccionadoId) {
+			onEliminarTexto?.(textoSeleccionadoId);
+		}
+		setMenuContextual(prev => ({ ...prev, visible: false }));
+	}, [textoSeleccionadoId, onEliminarTexto]);
+
+	/**
+	 * Cerrar menú contextual al hacer click fuera
+	 */
+	useEffect(() => {
+		const handleClick = () => {
+			if (menuContextual.visible) {
+				setMenuContextual(prev => ({ ...prev, visible: false }));
+			}
+		};
+
+		if (menuContextual.visible) {
+			// Usar setTimeout para evitar que el click que abre el menú lo cierre
+			setTimeout(() => {
+				window.addEventListener("click", handleClick);
+			}, 0);
+		}
+
+		return () => {
+			window.removeEventListener("click", handleClick);
+		};
+	}, [menuContextual.visible]);
 
 	// Touch events para móvil
 	const handleTouchStart = useCallback((e) => {
@@ -570,21 +921,21 @@ const GrillaUnifilar = ({
 			// Si el texto queda vacío al editar, eliminar
 			onEliminarTexto?.(inputTexto.editandoId);
 		}
-		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 200, alto: 40, valorOriginal: "" });
+		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
 	}, [inputTexto, colorSeleccionado, configTexto, onAgregarTexto, onActualizarTexto, onEliminarTexto]);
 
 	/**
 	 * Cancelar input de texto (para nuevo texto, simplemente cierra)
 	 */
 	const cancelarTexto = useCallback(() => {
-		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 200, alto: 40, valorOriginal: "" });
+		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
 	}, []);
 
 	/**
 	 * Descartar cambios y volver al valor original (solo para edición)
 	 */
 	const descartarCambios = useCallback(() => {
-		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 200, alto: 40, valorOriginal: "" });
+		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
 	}, []);
 
 	/**
@@ -594,7 +945,7 @@ const GrillaUnifilar = ({
 		if (inputTexto.editandoId) {
 			onEliminarTexto?.(inputTexto.editandoId);
 		}
-		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 200, alto: 40, valorOriginal: "" });
+		setInputTexto({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
 	}, [inputTexto.editandoId, onEliminarTexto]);
 
 	/**
@@ -698,8 +1049,14 @@ const GrillaUnifilar = ({
 		// Si el modo gotero está activo, mostrar cursor de cuentagotas
 		if (modoGotero) return "crosshair";
 		if (arrastrando.activo) return "grabbing";
+		if (arrastrandoLineas.activo) return "grabbing";
 		if (herramienta === "borrador") return "crosshair";
 		if (herramienta === "balde") return "crosshair";
+		if (herramienta === "mover") {
+			// Mostrar manito si está sobre una línea
+			if (sobreLinea) return "grab";
+			return "move";
+		}
 		if (herramienta === "texto") {
 			// Mostrar manito si está sobre un texto existente
 			if (sobreTexto) return "grab";
@@ -713,6 +1070,7 @@ const GrillaUnifilar = ({
 		<div
 			ref={contenedorRef}
 			className={`grilla-unifilar ${modoEdicion ? "grilla-unifilar--editando" : "grilla-unifilar--fondo"}`}
+			onContextMenu={handleContextMenu}
 		>
 			<canvas
 				ref={canvasRef}
@@ -722,11 +1080,64 @@ const GrillaUnifilar = ({
 				onMouseUp={handleMouseUp}
 				onMouseLeave={handleMouseLeave}
 				onDoubleClick={handleDoubleClick}
+				onContextMenu={handleContextMenu}
 				onTouchStart={handleTouchStart}
 				onTouchMove={handleTouchMove}
 				onTouchEnd={handleTouchEnd}
 				style={{ cursor: getCursor() }}
 			/>
+
+			{/* Menú contextual para copiar/pegar texto */}
+			{menuContextual.visible && (
+				<div
+					className="grilla-unifilar__menu-contextual"
+					style={{ left: menuContextual.x, top: menuContextual.y }}
+					onClick={(e) => e.stopPropagation()}
+					onContextMenu={(e) => e.preventDefault()}
+				>
+					<button
+						type="button"
+						className={`grilla-unifilar__menu-item ${!menuContextual.hayTextoEnPosicion ? "grilla-unifilar__menu-item--disabled" : ""}`}
+						onClick={copiarTexto}
+						disabled={!menuContextual.hayTextoEnPosicion}
+					>
+						<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+							<path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+						</svg>
+						<span>Copiar</span>
+						<span className="grilla-unifilar__menu-shortcut">Ctrl+C</span>
+					</button>
+					<button
+						type="button"
+						className={`grilla-unifilar__menu-item ${!textoCopiado ? "grilla-unifilar__menu-item--disabled" : ""}`}
+						onClick={pegarTexto}
+						disabled={!textoCopiado}
+					>
+						<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+							<path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/>
+						</svg>
+						<span>Pegar</span>
+						<span className="grilla-unifilar__menu-shortcut">Ctrl+V</span>
+					</button>
+					{/* Separador */}
+					{menuContextual.hayTextoEnPosicion && (
+						<div className="grilla-unifilar__menu-separator" />
+					)}
+					{/* Eliminar - solo si hay texto en la posición */}
+					<button
+						type="button"
+						className={`grilla-unifilar__menu-item grilla-unifilar__menu-item--eliminar ${!menuContextual.hayTextoEnPosicion ? "grilla-unifilar__menu-item--disabled" : ""}`}
+						onClick={eliminarTextoMenu}
+						disabled={!menuContextual.hayTextoEnPosicion}
+					>
+						<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+							<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+						</svg>
+						<span>Eliminar</span>
+						<span className="grilla-unifilar__menu-shortcut">Delete</span>
+					</button>
+				</div>
+			)}
 
 			{/* Textarea flotante redimensionable para texto */}
 			{inputTexto.visible && (
@@ -778,29 +1189,24 @@ const GrillaUnifilar = ({
 									<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
 								</svg>
 							</button>
-							{/* Descartar - solo si está editando */}
+							{/* Cerrar/Volver - cambia según si es nuevo texto o edición */}
 							<button
 								type="button"
-								className={`grilla-unifilar__input-btn grilla-unifilar__input-btn--descartar ${!inputTexto.editandoId ? "grilla-unifilar__input-btn--disabled" : ""}`}
-								onClick={descartarCambios}
-								disabled={!inputTexto.editandoId}
-								title="Descartar cambios (Esc)"
+								className={`grilla-unifilar__input-btn ${inputTexto.editandoId ? "grilla-unifilar__input-btn--volver" : "grilla-unifilar__input-btn--cerrar"}`}
+								onClick={cancelarTexto}
+								title={inputTexto.editandoId ? "Volver (Esc)" : "Cerrar (Esc)"}
 							>
-								<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-									<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
-								</svg>
-							</button>
-							{/* Eliminar - solo si está editando */}
-							<button
-								type="button"
-								className={`grilla-unifilar__input-btn grilla-unifilar__input-btn--eliminar ${!inputTexto.editandoId ? "grilla-unifilar__input-btn--disabled" : ""}`}
-								onClick={eliminarTextoActual}
-								disabled={!inputTexto.editandoId}
-								title="Eliminar texto"
-							>
-								<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-									<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-								</svg>
+								{inputTexto.editandoId ? (
+									/* Icono de undo (deshacer) para edición */
+									<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+										<path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/>
+									</svg>
+								) : (
+									/* X para cerrar nuevo texto */
+									<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+										<path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+									</svg>
+								)}
 							</button>
 						</div>
 					</div>
@@ -936,6 +1342,16 @@ const GrillaUnifilar = ({
 						</button>
 						<button
 							type="button"
+							className={`grilla-unifilar__btn ${herramienta === "mover" ? "grilla-unifilar__btn--activo" : ""}`}
+							onClick={onSeleccionarMover}
+							title="Mover líneas (arrastra líneas conectadas)"
+						>
+							<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+								<path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/>
+							</svg>
+						</button>
+						<button
+							type="button"
 							className="grilla-unifilar__btn grilla-unifilar__btn--peligro"
 							onClick={onLimpiarTodo}
 							title="Limpiar todo"
@@ -953,7 +1369,15 @@ const GrillaUnifilar = ({
 							<select
 								className="grilla-unifilar__select"
 								value={configTexto.fuente}
-								onChange={(e) => onConfigTextoChange?.({ ...configTexto, fuente: e.target.value })}
+								onChange={(e) => {
+									const nuevaFuente = e.target.value;
+									// Siempre actualizar configTexto para el textarea visible
+									onConfigTextoChange?.({ ...configTexto, fuente: nuevaFuente });
+									// Si hay un texto seleccionado (sin textarea abierto), actualizarlo directamente
+									if (!inputTexto.visible && textoSeleccionadoId) {
+										onActualizarTexto?.(textoSeleccionadoId, { fuente: nuevaFuente });
+									}
+								}}
 								title="Fuente"
 							>
 								{fuentesDisponibles.map((f) => (
@@ -967,7 +1391,15 @@ const GrillaUnifilar = ({
 							<select
 								className="grilla-unifilar__select grilla-unifilar__select--tamano"
 								value={configTexto.tamano}
-								onChange={(e) => onConfigTextoChange?.({ ...configTexto, tamano: Number(e.target.value) })}
+								onChange={(e) => {
+									const nuevoTamano = Number(e.target.value);
+									// Siempre actualizar configTexto para el textarea visible
+									onConfigTextoChange?.({ ...configTexto, tamano: nuevoTamano });
+									// Si hay un texto seleccionado (sin textarea abierto), actualizarlo directamente
+									if (!inputTexto.visible && textoSeleccionadoId) {
+										onActualizarTexto?.(textoSeleccionadoId, { tamano: nuevoTamano });
+									}
+								}}
 								title="Tamaño"
 							>
 								{tamanosDisponibles.map((t) => (
