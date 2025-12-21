@@ -133,8 +133,9 @@
 /* Cuerpo de la tarjeta */
 .alim-card-body {
 	position: relative;
-	padding: 0.8rem 1rem 1rem;
+	padding: 0.8rem 1rem 1.2rem; /* padding inferior para el triángulo de escala */
 	background-color: #2b2c2b;
+	border-radius: 0 0 16px 16px;
 }
 
 .alim-card-section {
@@ -341,16 +342,12 @@
 	}
 }
 
-/* ===== FOOTER DE ESCALA (triángulo) ===== */
-.alim-card-scale-footer {
-	display: flex;
-	justify-content: center;
-	padding: 4px 0 6px;
-	background-color: #1f2937;
-	border-radius: 0 0 16px 16px;
-}
-
+/* ===== TRIÁNGULO DE ESCALA (dentro del body) ===== */
 .alim-card-scale-btn {
+	position: absolute;
+	bottom: 4px;
+	left: 50%;
+	transform: translateX(-50%);
 	display: inline-flex;
 	align-items: center;
 	gap: 4px;
@@ -362,6 +359,7 @@
 	border-radius: 4px;
 	font-size: 0.7rem;
 	transition: color 0.15s ease, background-color 0.15s ease;
+	z-index: 5;
 }
 
 .alim-card-scale-btn:hover {
@@ -406,16 +404,53 @@
 	text-align: center;
 }
 
+.alim-card-scale-controls {
+	display: flex;
+	align-items: stretch;
+	gap: 6px;
+	height: 32px;
+}
+
+.alim-card-scale-pm-btn {
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #374151;
+	border: 1px solid #475569;
+	border-radius: 4px;
+	color: #f1f5f9;
+	font-size: 1.2rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background-color 0.15s ease, border-color 0.15s ease;
+	flex-shrink: 0;
+	line-height: 1;
+}
+
+.alim-card-scale-pm-btn:hover:not(:disabled) {
+	background-color: #4b5563;
+	border-color: #60a5fa;
+}
+
+.alim-card-scale-pm-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+
 .alim-card-scale-input {
-	width: 100%;
-	padding: 6px 8px;
+	width: 60px;
+	height: 32px;
+	padding: 0 4px;
 	background-color: #0f172a;
 	border: 1px solid #475569;
 	border-radius: 4px;
 	color: #f1f5f9;
-	font-size: 0.9rem;
+	font-size: 0.85rem;
 	text-align: center;
 	font-family: "DS-Digital", "Courier New", monospace;
+	box-sizing: border-box;
 }
 
 .alim-card-scale-input:focus {
@@ -423,18 +458,29 @@
 	border-color: #60a5fa;
 }
 
+/* Ocultar flechas del input number */
+.alim-card-scale-input::-webkit-outer-spin-button,
+.alim-card-scale-input::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+.alim-card-scale-input[type="number"] {
+	-moz-appearance: textfield;
+}
+
 .alim-card-scale-actions {
 	display: flex;
 	justify-content: center;
-	margin-top: 8px;
+	margin-top: 10px;
 }
 
 .alim-card-scale-reset {
+	width: 100%;
+	height: 28px;
 	background: transparent;
 	border: 1px solid #475569;
 	border-radius: 4px;
 	color: #9ca3af;
-	padding: 4px 8px;
 	font-size: 0.7rem;
 	cursor: pointer;
 	transition: background-color 0.15s ease, color 0.15s ease;

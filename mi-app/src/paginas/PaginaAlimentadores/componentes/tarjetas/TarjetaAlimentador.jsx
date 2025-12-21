@@ -187,24 +187,45 @@ const TarjetaAlimentador = ({
     };
   }, [mostrarPopoverEscala]);
 
-  // Aplicar escala al presionar Enter
+  // Aplicar escala inmediatamente al cambiar el input
+  const handleEscalaInputChange = (e) => {
+    const valorStr = e.target.value;
+    setValorEscalaInput(valorStr);
+
+    // Aplicar inmediatamente si es un valor válido
+    const valor = parseFloat(valorStr);
+    if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
+      onEscalaChange?.(valor);
+    }
+  };
+
+  // Cerrar con Escape
   const handleEscalaKeyDown = (e) => {
-    if (e.key === "Enter") {
-      const valor = parseFloat(valorEscalaInput);
-      if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
-        onEscalaChange?.(valor);
-        setMostrarPopoverEscala(false);
-      }
-    } else if (e.key === "Escape") {
-      setValorEscalaInput(escala.toString());
+    if (e.key === "Escape") {
       setMostrarPopoverEscala(false);
     }
   };
 
+  // Incrementar escala
+  const handleIncrementarEscala = () => {
+    const valorActual = parseFloat(valorEscalaInput) || escala;
+    const nuevoValor = Math.min(ESCALA_MAX, Math.round((valorActual + 0.01) * 100) / 100);
+    setValorEscalaInput(nuevoValor.toString());
+    onEscalaChange?.(nuevoValor);
+  };
+
+  // Decrementar escala
+  const handleDecrementarEscala = () => {
+    const valorActual = parseFloat(valorEscalaInput) || escala;
+    const nuevoValor = Math.max(ESCALA_MIN, Math.round((valorActual - 0.01) * 100) / 100);
+    setValorEscalaInput(nuevoValor.toString());
+    onEscalaChange?.(nuevoValor);
+  };
+
   // Resetear escala a 1.0
   const handleResetearEscala = () => {
+    setValorEscalaInput("1");
     onEscalaChange?.(1.0);
-    setMostrarPopoverEscala(false);
   };
 
   // Armar lados de la tarjeta con valores por defecto si no hay diseño
@@ -332,25 +353,24 @@ const TarjetaAlimentador = ({
               </div>
             </div>
           )}
-        </div>
 
-      {/* ===== TRIÁNGULO DE ESCALA ===== */}
-      {onEscalaChange && (
-        <div className="alim-card-scale-footer">
-          <button
-            ref={triangleRef}
-            type="button"
-            className={`alim-card-scale-btn${escalaModificada ? " alim-card-scale-btn--active" : ""}`}
-            onClick={togglePopoverEscala}
-            title={`Escala: ${escala}x (click para cambiar)`}
-          >
-            <span className="alim-card-scale-triangle">▼</span>
-            {escalaModificada && (
-              <span className="alim-card-scale-value">{escala}x</span>
-            )}
-          </button>
+          {/* ===== TRIÁNGULO DE ESCALA ===== */}
+          {/* Posicionado absolutamente dentro del body para no agregar altura */}
+          {onEscalaChange && (
+            <button
+              ref={triangleRef}
+              type="button"
+              className={`alim-card-scale-btn${escalaModificada ? " alim-card-scale-btn--active" : ""}`}
+              onClick={togglePopoverEscala}
+              title={`Escala: ${escala}x (click para cambiar)`}
+            >
+              <span className="alim-card-scale-triangle">▼</span>
+              {escalaModificada && (
+                <span className="alim-card-scale-value">{escala}x</span>
+              )}
+            </button>
+          )}
         </div>
-      )}
 
       {/* Popover de escala (portal) */}
       {mostrarPopoverEscala &&
@@ -365,17 +385,37 @@ const TarjetaAlimentador = ({
             <label className="alim-card-scale-label">
               Escala ({ESCALA_MIN} - {ESCALA_MAX})
             </label>
-            <input
-              type="number"
-              step="0.1"
-              min={ESCALA_MIN}
-              max={ESCALA_MAX}
-              value={valorEscalaInput}
-              onChange={(e) => setValorEscalaInput(e.target.value)}
-              onKeyDown={handleEscalaKeyDown}
-              className="alim-card-scale-input"
-              autoFocus
-            />
+            <div className="alim-card-scale-controls">
+              <button
+                type="button"
+                className="alim-card-scale-pm-btn"
+                onClick={handleDecrementarEscala}
+                disabled={parseFloat(valorEscalaInput) <= ESCALA_MIN}
+                title="Reducir escala"
+              >
+                -
+              </button>
+              <input
+                type="number"
+                step="0.01"
+                min={ESCALA_MIN}
+                max={ESCALA_MAX}
+                value={valorEscalaInput}
+                onChange={handleEscalaInputChange}
+                onKeyDown={handleEscalaKeyDown}
+                className="alim-card-scale-input"
+                autoFocus
+              />
+              <button
+                type="button"
+                className="alim-card-scale-pm-btn"
+                onClick={handleIncrementarEscala}
+                disabled={parseFloat(valorEscalaInput) >= ESCALA_MAX}
+                title="Aumentar escala"
+              >
+                +
+              </button>
+            </div>
             <div className="alim-card-scale-actions">
               <button
                 type="button"
