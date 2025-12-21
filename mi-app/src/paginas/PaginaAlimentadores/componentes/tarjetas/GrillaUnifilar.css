@@ -630,22 +630,65 @@
    border: 1px solid #475569;
    border-radius: 12px;
    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-   padding: 16px;
-   min-width: 220px;
+   padding: 14px 16px;
    z-index: 102;
+}
+
+.grilla-unifilar__panel-header {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 16px;
+   margin-bottom: 12px;
+   padding-bottom: 10px;
+   border-bottom: 1px solid #475569;
 }
 
 .grilla-unifilar__panel-titulo {
    font-size: 0.9rem;
    font-weight: 600;
    color: #e2e8f0;
-   margin-bottom: 14px;
-   padding-bottom: 8px;
-   border-bottom: 1px solid #475569;
+}
+
+.grilla-unifilar__panel-info-inline {
+   font-size: 0.7rem;
+   color: #64748b;
+}
+
+.grilla-unifilar__panel-columnas {
+   display: flex;
+   gap: 20px;
+}
+
+.grilla-unifilar__panel-columna {
+   flex: 1;
+   min-width: 180px;
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+}
+
+.grilla-unifilar__panel-columna:first-child {
+   padding-right: 16px;
+   border-right: 1px solid #334155;
+}
+
+.grilla-unifilar__panel-fila {
+   display: flex;
+   gap: 12px;
+   align-items: flex-end;
 }
 
 .grilla-unifilar__panel-campo {
-   margin-bottom: 12px;
+   margin-bottom: 0;
+}
+
+.grilla-unifilar__panel-campo--flex {
+   flex: 1;
+}
+
+.grilla-unifilar__panel-campo--color {
+   flex-shrink: 0;
 }
 
 .grilla-unifilar__panel-campo label {
@@ -748,13 +791,51 @@
    color: #e2e8f0;
 }
 
-.grilla-unifilar__panel-info {
-   margin-top: 14px;
-   padding-top: 10px;
-   border-top: 1px solid #475569;
-   font-size: 0.75rem;
-   color: #64748b;
+
+/* Slider + Input numérico en línea */
+.grilla-unifilar__panel-slider-input {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+}
+
+.grilla-unifilar__panel-slider-input input[type="range"] {
+   flex: 1;
+   min-width: 0;
+}
+
+.grilla-unifilar__panel-number {
+   width: 52px;
+   padding: 4px 6px;
+   border: 1px solid #475569;
+   border-radius: 4px;
+   background-color: #334155;
+   color: #e2e8f0;
+   font-size: 0.8rem;
    text-align: center;
+   outline: none;
+   transition: border-color 0.15s ease;
+   -moz-appearance: textfield;
+}
+
+.grilla-unifilar__panel-number::-webkit-outer-spin-button,
+.grilla-unifilar__panel-number::-webkit-inner-spin-button {
+   -webkit-appearance: none;
+   margin: 0;
+}
+
+.grilla-unifilar__panel-number:focus {
+   border-color: #22d3ee;
+}
+
+.grilla-unifilar__panel-number:hover {
+   border-color: #64748b;
+}
+
+.grilla-unifilar__panel-unidad {
+   font-size: 0.7rem;
+   color: #64748b;
+   min-width: 32px;
 }
 
 /* Botón animando - efecto de brillo */
