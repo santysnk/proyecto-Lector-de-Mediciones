@@ -2,7 +2,7 @@
 
 import { useState } from "react";                  // hook para manejar estado local (email y alertas)
 import { useNavigate } from "react-router-dom";    // navegación: volver a /login u otras rutas
-import "./RecuperarContraseña.css";                // estilos específicos de la pantalla de recuperación
+import "./recuperarContraseña.css";                // estilos específicos de la pantalla de recuperación
 
 const RecuperarContrasena = () => {
    const [email, setEmail] = useState("");         // email que escribe el usuario
@@ -105,7 +105,7 @@ export default RecuperarContrasena;
    enviar nada, usando también `navigate("/")`.
 
  - Todo el aspecto visual (fondo, caja, colores de alerta, etc.) se define en
-   `RecuperarContraseña.css`.
+   `recuperarContraseña.css`.
 ---------------------------------------------------------------------------*/}
 
 /*---------------------------------------------------------------------------
@@ -120,13 +120,13 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (recuperarContraseña.jsx)
      de confirmación y luego redirige de vuelta al login.
 
    - Toda la parte visual (fondo, caja central, colores de alerta, etc.)
-     se define en el archivo de estilos `RecuperarContraseña.css`.
+     se define en el archivo de estilos `recuperarContraseña.css`.
 
 1) Imports y setup básico
 
    import { useState } from "react";
    import { Link, useNavigate } from "react-router-dom";
-   import "./RecuperarContraseña.css";
+   import "./recuperarContraseña.css";
 
    - useState:
        • se usa para manejar el email escrito por el usuario y la estructura
