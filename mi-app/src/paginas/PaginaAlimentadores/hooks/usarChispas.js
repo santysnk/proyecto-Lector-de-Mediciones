@@ -14,6 +14,9 @@ const MAX_CHISPAS = 100;
 /**
  * Hook para manejar la animación de chispas en el diagrama unifilar.
  *
+ * OPTIMIZADO: Las chispas se manejan con refs mutables, sin usar setState
+ * durante la animación. Esto elimina los re-renders de React y el GC.
+ *
  * @param {Object} params - Parámetros del hook
  * @param {Array} params.bornes - Array de bornes
  * @param {Object} params.celdas - Objeto de celdas pintadas
@@ -27,12 +30,13 @@ const usarChispas = ({
 	chispasConfig = {},
 	grosorLinea = 12,
 }) => {
-	// Estado de animación activa
+	// Estado de animación activa (solo este causa re-render, y solo al iniciar/detener)
 	const [animando, setAnimando] = useState(false);
 	const animandoRef = useRef(false);
 
-	// Chispas activas: [{ id, ruta, posicion, progreso, emisorId, receptorId, estela }]
-	const [chispas, setChispas] = useState([]);
+	// *** CAMBIO CLAVE: Las chispas son un REF, no un estado ***
+	// Esto evita re-renders durante la animación
+	const chispasRef = useRef([]);
 
 	// Referencias para el loop de animación
 	const animationFrameRef = useRef(null);
@@ -50,6 +54,10 @@ const usarChispas = ({
 	// Refs para la configuración actual (para evitar closures obsoletos)
 	const configRef = useRef(chispasConfig);
 	const bornesRef = useRef(bornes);
+	const grosorLineaRef = useRef(grosorLinea);
+
+	// ID counter para chispas (evita Date.now() y Math.random())
+	const chispaIdRef = useRef(0);
 
 	// Mantener refs actualizados
 	useEffect(() => {
@@ -59,6 +67,10 @@ const usarChispas = ({
 	useEffect(() => {
 		bornesRef.current = bornes;
 	}, [bornes]);
+
+	useEffect(() => {
+		grosorLineaRef.current = grosorLinea;
+	}, [grosorLinea]);
 
 	/**
 	 * Recalcular el grafo cuando cambian las celdas
@@ -95,23 +107,31 @@ const usarChispas = ({
 		// Elegir una ruta aleatoria si hay varias
 		const rutaElegida = rutas[Math.floor(Math.random() * rutas.length)];
 
+		chispaIdRef.current += 1;
+
 		return {
-			id: `chispa-${emisor.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			id: chispaIdRef.current,
 			ruta: rutaElegida.ruta,
 			posicion: 0,
 			progreso: 0, // 0-1 entre celdas
 			emisorId: emisor.id,
 			receptorId: rutaElegida.receptorId,
-			estela: [], // Últimas posiciones para efecto visual
+			estela: [], // Array mutable - se modifica in-place
 		};
 	}, []);
 
 	/**
 	 * Emitir una chispa desde un emisor específico
+	 * *** MODIFICADO: Agrega directamente al ref, sin setState ***
 	 */
 	const emitirDesdeEmisor = useCallback((emisorId) => {
 		const emisor = bornesRef.current.find(b => b.id === emisorId && b.tipo === "EMISOR");
 		if (!emisor || !emisor.activo) {
+			return;
+		}
+
+		// Verificar límite de chispas
+		if (chispasRef.current.length >= MAX_CHISPAS) {
 			return;
 		}
 
@@ -120,17 +140,13 @@ const usarChispas = ({
 			return;
 		}
 
-		setChispas(prev => {
-			// Verificar límite de chispas
-			if (prev.length >= MAX_CHISPAS) {
-				return prev;
-			}
-			return [...prev, nuevaChispa];
-		});
+		// *** Agregar directamente al array del ref ***
+		chispasRef.current.push(nuevaChispa);
 	}, [crearChispa]);
 
 	/**
 	 * Loop de animación - actualiza posiciones de chispas
+	 * *** MODIFICADO: Modifica el ref directamente, sin setState ***
 	 */
 	const loopAnimacion = useCallback((timestamp) => {
 		if (!animandoRef.current) {
@@ -140,56 +156,51 @@ const usarChispas = ({
 		const deltaTime = lastTimeRef.current === 0 ? 16 : timestamp - lastTimeRef.current;
 		lastTimeRef.current = timestamp;
 
-		// Velocidad en celdas por segundo (reducida para movimiento más suave)
+		// Velocidad en celdas por segundo
 		const velocidad = configRef.current.velocidad || 8;
 		const longitudEstela = configRef.current.longitudEstela || 5;
 
-		// Calcular cuánto avanzar - usar progreso fraccionario más fino
-		// deltaTime está en ms, queremos celdas/segundo
+		// Calcular cuánto avanzar
 		const avance = (velocidad * deltaTime) / 1000;
 
-		setChispas(prev => {
-			if (prev.length === 0) {
-				return prev;
-			}
+		const chispas = chispasRef.current;
 
-			const nuevasChispas = [];
+		// Actualizar chispas IN-PLACE
+		for (let i = chispas.length - 1; i >= 0; i--) {
+			const chispa = chispas[i];
+			chispa.progreso += avance;
 
-			prev.forEach(chispa => {
-				let nuevoProgreso = chispa.progreso + avance;
-				let nuevaPosicion = chispa.posicion;
-				let nuevaEstela = [...chispa.estela];
+			// Manejar múltiples avances de celda si la velocidad es muy alta
+			while (chispa.progreso >= 1) {
+				const estela = chispa.estela;
 
-				// Manejar múltiples avances de celda si la velocidad es muy alta
-				while (nuevoProgreso >= 1) {
-					// Agregar posición actual a la estela antes de avanzar
-					nuevaEstela = [
-						chispa.ruta[nuevaPosicion],
-						...nuevaEstela.slice(0, longitudEstela - 1),
-					];
+				// Shift estela hacia el final (in-place)
+				for (let j = Math.min(estela.length, longitudEstela - 1); j > 0; j--) {
+					estela[j] = estela[j - 1];
+				}
+				// Agregar posición actual al inicio
+				estela[0] = chispa.ruta[chispa.posicion];
 
-					nuevaPosicion += 1;
-					nuevoProgreso -= 1;
-
-					// Verificar si llegamos al final de la ruta
-					if (nuevaPosicion >= chispa.ruta.length - 1) {
-						// Chispa llegó al receptor - no agregarla
-						return;
-					}
+				// Ajustar longitud de estela
+				if (estela.length < longitudEstela) {
+					estela.length = Math.min(estela.length + 1, longitudEstela);
+				} else if (estela.length > longitudEstela) {
+					estela.length = longitudEstela;
 				}
 
-				nuevasChispas.push({
-					...chispa,
-					posicion: nuevaPosicion,
-					progreso: nuevoProgreso,
-					estela: nuevaEstela,
-				});
-			});
+				chispa.posicion += 1;
+				chispa.progreso -= 1;
 
-			return nuevasChispas;
-		});
+				// Verificar si llegamos al final de la ruta
+				if (chispa.posicion >= chispa.ruta.length - 1) {
+					// Eliminar chispa del array (in-place)
+					chispas.splice(i, 1);
+					break;
+				}
+			}
+		}
 
-		// Continuar el loop - siempre, incluso si no hay chispas
+		// Continuar el loop
 		animationFrameRef.current = requestAnimationFrame(loopAnimacion);
 	}, []);
 
@@ -269,6 +280,9 @@ const usarChispas = ({
 		setAnimando(true);
 		lastTimeRef.current = 0;
 
+		// Limpiar chispas anteriores
+		chispasRef.current = [];
+
 		// Iniciar emisiones
 		iniciarEmisiones();
 
@@ -283,7 +297,7 @@ const usarChispas = ({
 		animandoRef.current = false;
 		setAnimando(false);
 		detenerEmisiones();
-		setChispas([]);
+		chispasRef.current = [];
 
 		if (animationFrameRef.current) {
 			cancelAnimationFrame(animationFrameRef.current);
@@ -311,6 +325,7 @@ const usarChispas = ({
 	 */
 	const obtenerPosicionPixel = useCallback((chispa) => {
 		const { ruta, posicion, progreso } = chispa;
+		const grosor = grosorLineaRef.current;
 
 		if (!ruta || ruta.length === 0) {
 			return { x: 0, y: 0 };
@@ -322,8 +337,8 @@ const usarChispas = ({
 		// Si estamos al final de la ruta, retornar la última posición
 		if (posicion >= ruta.length - 1) {
 			return {
-				x: x1 * grosorLinea + grosorLinea / 2,
-				y: y1 * grosorLinea + grosorLinea / 2,
+				x: x1 * grosor + grosor / 2,
+				y: y1 * grosor + grosor / 2,
 			};
 		}
 
@@ -331,11 +346,11 @@ const usarChispas = ({
 		const [x2, y2] = ruta[posicion + 1].split(",").map(Number);
 
 		// Interpolación lineal simple - movimiento constante sin aceleración
-		const x = (x1 + (x2 - x1) * progreso) * grosorLinea + grosorLinea / 2;
-		const y = (y1 + (y2 - y1) * progreso) * grosorLinea + grosorLinea / 2;
+		const x = (x1 + (x2 - x1) * progreso) * grosor + grosor / 2;
+		const y = (y1 + (y2 - y1) * progreso) * grosor + grosor / 2;
 
 		return { x, y };
-	}, [grosorLinea]);
+	}, []);
 
 	/**
 	 * Obtener posiciones de la estela de una chispa
@@ -345,20 +360,25 @@ const usarChispas = ({
 	 */
 	const obtenerEstelaPixeles = useCallback((chispa) => {
 		const { estela } = chispa;
+		const grosor = grosorLineaRef.current;
 
 		if (!estela || estela.length === 0) {
 			return [];
 		}
 
-		return estela.map((clave, index) => {
+		const resultado = [];
+		for (let i = 0; i < estela.length; i++) {
+			const clave = estela[i];
+			if (!clave) continue;
 			const [x, y] = clave.split(",").map(Number);
-			return {
-				x: x * grosorLinea + grosorLinea / 2,
-				y: y * grosorLinea + grosorLinea / 2,
-				opacidad: 1 - (index + 1) / (estela.length + 1),
-			};
-		});
-	}, [grosorLinea]);
+			resultado.push({
+				x: x * grosor + grosor / 2,
+				y: y * grosor + grosor / 2,
+				opacidad: 1 - (i + 1) / (estela.length + 1),
+			});
+		}
+		return resultado;
+	}, []);
 
 	/**
 	 * Limpiar al desmontar
@@ -370,13 +390,17 @@ const usarChispas = ({
 			if (animationFrameRef.current) {
 				cancelAnimationFrame(animationFrameRef.current);
 			}
+			chispasRef.current = [];
 		};
 	}, [detenerEmisiones]);
 
 	return {
 		// Estado
 		animando,
-		chispas,
+		// *** CAMBIO: Devolver la referencia al array de chispas ***
+		// El componente que usa este hook debe leer chispasRef.current
+		chispas: chispasRef.current,
+		chispasRef, // También exponer el ref directamente
 
 		// Acciones
 		iniciarAnimacion,

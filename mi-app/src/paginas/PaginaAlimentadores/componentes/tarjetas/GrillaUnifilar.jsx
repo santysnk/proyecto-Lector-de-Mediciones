@@ -69,14 +69,18 @@ const GrillaUnifilar = ({
 	// Estado de animación de chispas (controlado externamente)
 	animandoChispas = false,
 	onToggleAnimacionChispas,
-	// Chispas activas para renderizar
-	chispas = [],
+	// Ref a chispas activas (mutable, no causa re-renders)
+	chispasRef: chispasRefProp,
 	onObtenerPosicionPixelChispa,
 	onObtenerEstelaPixeles,
 }) => {
 	const canvasRef = useRef(null);
+	const canvasChispasRef = useRef(null); // Canvas separado para chispas
 	const contenedorRef = useRef(null);
 	const [dimensiones, setDimensiones] = useState({ ancho: 0, alto: 0 });
+	const chispasAnimationRef = useRef(null); // Ref para el loop de animación de chispas
+	// Refs para acceder a valores actuales en el loop de animación sin re-renderizar
+	const chispasPropsRef = useRef({ onObtenerPosicionPixelChispa, onObtenerEstelaPixeles });
 	// Estado para el input de texto (nuevo o edición)
 	// valorOriginal guarda el texto antes de editar para poder descartarlo
 	const [inputTexto, setInputTexto] = useState({ visible: false, x: 0, y: 0, valor: "", editandoId: null, ancho: 220, alto: 55, valorOriginal: "" });
@@ -342,181 +346,8 @@ const GrillaUnifilar = ({
 			ctx.fillText(borne.tipo === "EMISOR" ? "E" : "R", centroX, centroY);
 		});
 
-		// Dibujar chispas (si hay animación activa)
-		if (chispas.length > 0 && onObtenerPosicionPixelChispa) {
-			const colorChispa = chispasConfig.color || "#fef08a";
-			const tamanoChispa = chispasConfig.tamano || 4;
-			const mostrarEstela = chispasConfig.estela !== false;
-			const formaChispa = chispasConfig.forma || "circulo";
-
-			// Convertir color hex a RGB para usar en rgba()
-			const hexToRgb = (hex) => {
-				const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-				return result ? {
-					r: parseInt(result[1], 16),
-					g: parseInt(result[2], 16),
-					b: parseInt(result[3], 16)
-				} : { r: 254, g: 240, b: 138 };
-			};
-			const rgb = hexToRgb(colorChispa);
-
-			// Función para calcular ángulo de dirección de la chispa
-			const calcularAngulo = (chispa) => {
-				const { ruta, posicion } = chispa;
-				if (!ruta || ruta.length < 2 || posicion >= ruta.length - 1) return 0;
-				const [x1, y1] = ruta[posicion].split(",").map(Number);
-				const [x2, y2] = ruta[posicion + 1].split(",").map(Number);
-				return Math.atan2(y2 - y1, x2 - x1);
-			};
-
-			// Funciones para dibujar cada forma
-			const dibujarForma = (x, y, tamano, color, angulo = 0, opacidad = 1) => {
-				ctx.save();
-				ctx.translate(x, y);
-				ctx.rotate(angulo);
-				ctx.globalAlpha = opacidad;
-
-				switch (formaChispa) {
-					case "cuadrado":
-						ctx.fillStyle = color;
-						ctx.fillRect(-tamano, -tamano, tamano * 2, tamano * 2);
-						break;
-
-					case "estrella":
-						// Estrella de 4 puntas
-						ctx.fillStyle = color;
-						ctx.beginPath();
-						for (let i = 0; i < 8; i++) {
-							const radio = i % 2 === 0 ? tamano * 1.2 : tamano * 0.4;
-							const a = (i * Math.PI) / 4;
-							if (i === 0) ctx.moveTo(Math.cos(a) * radio, Math.sin(a) * radio);
-							else ctx.lineTo(Math.cos(a) * radio, Math.sin(a) * radio);
-						}
-						ctx.closePath();
-						ctx.fill();
-						break;
-
-					case "rayo":
-						// Forma de rayo/relámpago (rotado 90° - horizontal)
-						ctx.fillStyle = color;
-						ctx.beginPath();
-						ctx.moveTo(-tamano * 1.2, -tamano * 0.3);
-						ctx.lineTo(-tamano * 0.3, tamano * 0.5);
-						ctx.lineTo(-tamano * 0.3, 0);
-						ctx.lineTo(tamano * 1.2, tamano * 0.3);
-						ctx.lineTo(tamano * 0.3, -tamano * 0.5);
-						ctx.lineTo(tamano * 0.3, 0);
-						ctx.closePath();
-						ctx.fill();
-						break;
-
-					case "flecha":
-						// Triángulo apuntando en dirección del movimiento
-						ctx.fillStyle = color;
-						ctx.beginPath();
-						ctx.moveTo(tamano * 1.2, 0);
-						ctx.lineTo(-tamano * 0.8, -tamano * 0.8);
-						ctx.lineTo(-tamano * 0.4, 0);
-						ctx.lineTo(-tamano * 0.8, tamano * 0.8);
-						ctx.closePath();
-						ctx.fill();
-						break;
-
-					case "gota":
-						// Gota apuntando en dirección del movimiento
-						ctx.fillStyle = color;
-						ctx.beginPath();
-						ctx.moveTo(tamano * 1.2, 0);
-						ctx.quadraticCurveTo(0, -tamano * 0.8, -tamano * 0.8, 0);
-						ctx.quadraticCurveTo(0, tamano * 0.8, tamano * 1.2, 0);
-						ctx.fill();
-						break;
-
-					case "anillo":
-						// Solo contorno circular
-						ctx.strokeStyle = color;
-						ctx.lineWidth = tamano * 0.4;
-						ctx.beginPath();
-						ctx.arc(0, 0, tamano * 0.8, 0, Math.PI * 2);
-						ctx.stroke();
-						break;
-
-					case "barra":
-						// Barra con efecto de difuminado lateral (estilo barra de progreso)
-						// Solo dibujar el efecto glow si es la chispa principal (color hex)
-						if (color.startsWith("#")) {
-							const gradientBarra = ctx.createLinearGradient(-tamano * 6, 0, tamano * 6, 0);
-							gradientBarra.addColorStop(0, "transparent");
-							gradientBarra.addColorStop(0.15, `${color}15`);
-							gradientBarra.addColorStop(0.3, `${color}40`);
-							gradientBarra.addColorStop(0.45, `${color}80`);
-							gradientBarra.addColorStop(0.5, color);
-							gradientBarra.addColorStop(0.55, `${color}80`);
-							gradientBarra.addColorStop(0.7, `${color}40`);
-							gradientBarra.addColorStop(0.85, `${color}15`);
-							gradientBarra.addColorStop(1, "transparent");
-							ctx.fillStyle = gradientBarra;
-							ctx.fillRect(-tamano * 6, -tamano * 1.2, tamano * 12, tamano * 2.4);
-						}
-						// Centro sólido de la barra
-						ctx.fillStyle = color;
-						ctx.fillRect(-tamano * 0.4, -tamano * 1.2, tamano * 0.8, tamano * 2.4);
-						break;
-
-					case "circulo":
-					default:
-						// Círculo (forma por defecto)
-						ctx.fillStyle = color;
-						ctx.beginPath();
-						ctx.arc(0, 0, tamano, 0, Math.PI * 2);
-						ctx.fill();
-						break;
-				}
-
-				ctx.restore();
-			};
-
-			chispas.forEach((chispa) => {
-				const angulo = calcularAngulo(chispa);
-
-				// Dibujar estela primero (detrás de la chispa)
-				if (mostrarEstela && onObtenerEstelaPixeles) {
-					const estelaPixeles = onObtenerEstelaPixeles(chispa);
-					estelaPixeles.forEach((punto) => {
-						dibujarForma(
-							punto.x,
-							punto.y,
-							tamanoChispa * 0.6,
-							`rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${punto.opacidad * 0.6})`,
-							angulo,
-							punto.opacidad * 0.6
-						);
-					});
-				}
-
-				// Dibujar chispa principal
-				const pos = onObtenerPosicionPixelChispa(chispa);
-
-				// Efecto de brillo (glow) - solo para algunas formas
-				if (["circulo", "estrella", "anillo"].includes(formaChispa)) {
-					const gradient = ctx.createRadialGradient(
-						pos.x, pos.y, 0,
-						pos.x, pos.y, tamanoChispa * 2
-					);
-					gradient.addColorStop(0, colorChispa);
-					gradient.addColorStop(0.5, `${colorChispa}80`);
-					gradient.addColorStop(1, "transparent");
-
-					ctx.beginPath();
-					ctx.arc(pos.x, pos.y, tamanoChispa * 2, 0, Math.PI * 2);
-					ctx.fillStyle = gradient;
-					ctx.fill();
-				}
-
-				// Dibujar la forma principal
-				dibujarForma(pos.x, pos.y, tamanoChispa, colorChispa, angulo);
-			});
-		}
+		// NOTA: Las chispas ahora se dibujan en un canvas separado (canvasChispasRef)
+		// para evitar redibujar todo el canvas 60 veces por segundo
 
 		// Dibujar rectángulo de selección del borrador (si está activo)
 		if (areaBorrador.activo) {
@@ -541,7 +372,226 @@ const GrillaUnifilar = ({
 			ctx.strokeRect(rectX, rectY, rectW, rectH);
 			ctx.setLineDash([]);
 		}
-	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea, areaBorrador, bornes, chispas, chispasConfig, onObtenerPosicionPixelChispa, onObtenerEstelaPixeles]);
+	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea, areaBorrador, bornes]);
+
+	// Mantener ref actualizado con los props de chispas
+	useEffect(() => {
+		chispasPropsRef.current = { onObtenerPosicionPixelChispa, onObtenerEstelaPixeles };
+	}, [onObtenerPosicionPixelChispa, onObtenerEstelaPixeles]);
+
+	/**
+	 * Canvas separado para chispas - usa requestAnimationFrame independiente
+	 * Esto evita redibujar todo el canvas principal 60 veces por segundo
+	 */
+	useEffect(() => {
+		const canvasChispas = canvasChispasRef.current;
+		if (!canvasChispas || dimensiones.ancho === 0) return;
+
+		// Ajustar tamaño del canvas de chispas
+		canvasChispas.width = dimensiones.ancho;
+		canvasChispas.height = dimensiones.alto;
+
+		const ctx = canvasChispas.getContext("2d");
+
+		// Configuración de chispas
+		const colorChispa = chispasConfig.color || "#fef08a";
+		const tamanoChispa = chispasConfig.tamano || 4;
+		const mostrarEstela = chispasConfig.estela !== false;
+		const formaChispa = chispasConfig.forma || "circulo";
+
+		// Convertir color hex a RGB
+		const hexToRgb = (hex) => {
+			const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+			return result ? {
+				r: parseInt(result[1], 16),
+				g: parseInt(result[2], 16),
+				b: parseInt(result[3], 16)
+			} : { r: 254, g: 240, b: 138 };
+		};
+		const rgb = hexToRgb(colorChispa);
+
+		// Función para calcular ángulo de dirección
+		const calcularAngulo = (chispa) => {
+			const { ruta, posicion } = chispa;
+			if (!ruta || ruta.length < 2 || posicion >= ruta.length - 1) return 0;
+			const [x1, y1] = ruta[posicion].split(",").map(Number);
+			const [x2, y2] = ruta[posicion + 1].split(",").map(Number);
+			return Math.atan2(y2 - y1, x2 - x1);
+		};
+
+		// Función para dibujar formas
+		const dibujarForma = (x, y, tamano, color, angulo = 0, opacidad = 1) => {
+			ctx.save();
+			ctx.translate(x, y);
+			ctx.rotate(angulo);
+			ctx.globalAlpha = opacidad;
+
+			switch (formaChispa) {
+				case "cuadrado":
+					ctx.fillStyle = color;
+					ctx.fillRect(-tamano, -tamano, tamano * 2, tamano * 2);
+					break;
+
+				case "estrella":
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					for (let i = 0; i < 8; i++) {
+						const radio = i % 2 === 0 ? tamano * 1.2 : tamano * 0.4;
+						const a = (i * Math.PI) / 4;
+						if (i === 0) ctx.moveTo(Math.cos(a) * radio, Math.sin(a) * radio);
+						else ctx.lineTo(Math.cos(a) * radio, Math.sin(a) * radio);
+					}
+					ctx.closePath();
+					ctx.fill();
+					break;
+
+				case "rayo":
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					ctx.moveTo(-tamano * 1.2, -tamano * 0.3);
+					ctx.lineTo(-tamano * 0.3, tamano * 0.5);
+					ctx.lineTo(-tamano * 0.3, 0);
+					ctx.lineTo(tamano * 1.2, tamano * 0.3);
+					ctx.lineTo(tamano * 0.3, -tamano * 0.5);
+					ctx.lineTo(tamano * 0.3, 0);
+					ctx.closePath();
+					ctx.fill();
+					break;
+
+				case "flecha":
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					ctx.moveTo(tamano * 1.2, 0);
+					ctx.lineTo(-tamano * 0.8, -tamano * 0.8);
+					ctx.lineTo(-tamano * 0.4, 0);
+					ctx.lineTo(-tamano * 0.8, tamano * 0.8);
+					ctx.closePath();
+					ctx.fill();
+					break;
+
+				case "gota":
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					ctx.moveTo(tamano * 1.2, 0);
+					ctx.quadraticCurveTo(0, -tamano * 0.8, -tamano * 0.8, 0);
+					ctx.quadraticCurveTo(0, tamano * 0.8, tamano * 1.2, 0);
+					ctx.fill();
+					break;
+
+				case "anillo":
+					ctx.strokeStyle = color;
+					ctx.lineWidth = tamano * 0.4;
+					ctx.beginPath();
+					ctx.arc(0, 0, tamano * 0.8, 0, Math.PI * 2);
+					ctx.stroke();
+					break;
+
+				case "barra":
+					if (color.startsWith("#")) {
+						const gradientBarra = ctx.createLinearGradient(-tamano * 6, 0, tamano * 6, 0);
+						gradientBarra.addColorStop(0, "transparent");
+						gradientBarra.addColorStop(0.15, `${color}15`);
+						gradientBarra.addColorStop(0.3, `${color}40`);
+						gradientBarra.addColorStop(0.45, `${color}80`);
+						gradientBarra.addColorStop(0.5, color);
+						gradientBarra.addColorStop(0.55, `${color}80`);
+						gradientBarra.addColorStop(0.7, `${color}40`);
+						gradientBarra.addColorStop(0.85, `${color}15`);
+						gradientBarra.addColorStop(1, "transparent");
+						ctx.fillStyle = gradientBarra;
+						ctx.fillRect(-tamano * 6, -tamano * 1.2, tamano * 12, tamano * 2.4);
+					}
+					ctx.fillStyle = color;
+					ctx.fillRect(-tamano * 0.4, -tamano * 1.2, tamano * 0.8, tamano * 2.4);
+					break;
+
+				case "circulo":
+				default:
+					ctx.fillStyle = color;
+					ctx.beginPath();
+					ctx.arc(0, 0, tamano, 0, Math.PI * 2);
+					ctx.fill();
+					break;
+			}
+
+			ctx.restore();
+		};
+
+		// Loop de dibujo de chispas
+		const dibujarChispas = () => {
+			// Limpiar canvas de chispas
+			ctx.clearRect(0, 0, dimensiones.ancho, dimensiones.alto);
+
+			// Obtener chispas directamente del ref (mutable, sin pasar por React)
+			const chispasActuales = chispasRefProp?.current || [];
+			// Obtener funciones desde el ref de props
+			const { onObtenerPosicionPixelChispa: getPosicion, onObtenerEstelaPixeles: getEstela } = chispasPropsRef.current;
+
+			if (chispasActuales.length > 0 && getPosicion) {
+				for (let i = 0; i < chispasActuales.length; i++) {
+					const chispa = chispasActuales[i];
+					const angulo = calcularAngulo(chispa);
+
+					// Dibujar estela
+					if (mostrarEstela && getEstela) {
+						const estelaPixeles = getEstela(chispa);
+						for (let j = 0; j < estelaPixeles.length; j++) {
+							const punto = estelaPixeles[j];
+							dibujarForma(
+								punto.x,
+								punto.y,
+								tamanoChispa * 0.6,
+								`rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${punto.opacidad * 0.6})`,
+								angulo,
+								punto.opacidad * 0.6
+							);
+						}
+					}
+
+					// Dibujar chispa principal
+					const pos = getPosicion(chispa);
+
+					// Efecto de brillo (glow)
+					if (["circulo", "estrella", "anillo"].includes(formaChispa)) {
+						const gradient = ctx.createRadialGradient(
+							pos.x, pos.y, 0,
+							pos.x, pos.y, tamanoChispa * 2
+						);
+						gradient.addColorStop(0, colorChispa);
+						gradient.addColorStop(0.5, `${colorChispa}80`);
+						gradient.addColorStop(1, "transparent");
+
+						ctx.beginPath();
+						ctx.arc(pos.x, pos.y, tamanoChispa * 2, 0, Math.PI * 2);
+						ctx.fillStyle = gradient;
+						ctx.fill();
+					}
+
+					dibujarForma(pos.x, pos.y, tamanoChispa, colorChispa, angulo);
+				}
+			}
+
+			// Continuar el loop si hay animación activa
+			if (animandoChispas) {
+				chispasAnimationRef.current = requestAnimationFrame(dibujarChispas);
+			}
+		};
+
+		// Iniciar o detener el loop según el estado
+		if (animandoChispas) {
+			chispasAnimationRef.current = requestAnimationFrame(dibujarChispas);
+		} else {
+			// Limpiar canvas cuando se detiene la animación
+			ctx.clearRect(0, 0, dimensiones.ancho, dimensiones.alto);
+		}
+
+		// Cleanup
+		return () => {
+			if (chispasAnimationRef.current) {
+				cancelAnimationFrame(chispasAnimationRef.current);
+			}
+		};
+	}, [dimensiones, animandoChispas, chispasConfig]);
 
 	/**
 	 * Obtener coordenadas de celda desde evento de mouse
@@ -1319,6 +1369,12 @@ const GrillaUnifilar = ({
 				onTouchMove={handleTouchMove}
 				onTouchEnd={handleTouchEnd}
 				style={{ cursor: getCursor() }}
+			/>
+			{/* Canvas overlay para chispas - separado para mejor rendimiento */}
+			<canvas
+				ref={canvasChispasRef}
+				className="grilla-unifilar__canvas-chispas"
+				style={{ pointerEvents: "none" }}
 			/>
 
 			{/* Menú contextual para copiar/pegar texto */}

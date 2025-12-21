@@ -381,7 +381,7 @@ const GrillaTarjetas = ({
 				// Estado y control de animación de chispas
 				animandoChispas={chispasHook.animando}
 				onToggleAnimacionChispas={chispasHook.toggleAnimacion}
-				chispas={chispasHook.chispas}
+				chispasRef={chispasHook.chispasRef}
 				onObtenerPosicionPixelChispa={chispasHook.obtenerPosicionPixel}
 				onObtenerEstelaPixeles={chispasHook.obtenerEstelaPixeles}
 			/>
