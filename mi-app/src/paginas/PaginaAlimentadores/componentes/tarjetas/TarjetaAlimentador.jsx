@@ -20,11 +20,13 @@ const construirLado = (side, tituloDefault) => {                         // side
     return {
       titulo: tituloDefault,                                             // usa el título por defecto
       boxes: cajasPorDefecto,                                           // y las cajas básicas
+      oculto: false,                                                     // por defecto no está oculto
     };
   }
 
   const titulo =
     (side.titulo && String(side.titulo).trim()) || tituloDefault;       // toma el título de la config o cae al default
+  const oculto = !!side.oculto;                                          // si está marcado como oculto
 
   let boxes = Array.isArray(side.boxes) ? side.boxes : [];              // garantiza que boxes sea un array
   boxes = boxes.slice(0, 4);                                            // máximo 4 cajas por lado
@@ -45,7 +47,7 @@ const construirLado = (side, tituloDefault) => {                         // side
     }));
   }
 
-  return { titulo, boxes };                                             // devuelve título final y lista de cajas normalizada
+  return { titulo, boxes, oculto };                                     // devuelve título final, lista de cajas y si está oculto
 };
 
 const TarjetaAlimentador = ({
@@ -307,7 +309,9 @@ const TarjetaAlimentador = ({
         {/* Header con nombre y botones de acciones */}
         <div
           className="alim-card-header"
-          style={{ backgroundColor: color || "#0ea5e9" }}
+          style={{
+            background: `linear-gradient(to right, ${color || "#0ea5e9"}, ${color || "#0ea5e9"}80)`
+          }}
         >
           <div className="alim-card-icons">
             <button
@@ -326,20 +330,24 @@ const TarjetaAlimentador = ({
         {/* Cuerpo con los 2 bloques (superior / inferior) */}
         <div className="alim-card-body">
           {/* ===== PARTE SUPERIOR ===== */}
-          <GrupoMedidores
-            titulo={sup.titulo}
-            boxes={sup.boxes}
-            zona="sup"
-            renderizarCaja={renderizarCaja}
-          />
+          {!sup.oculto && (
+            <GrupoMedidores
+              titulo={sup.titulo}
+              boxes={sup.boxes}
+              zona="sup"
+              renderizarCaja={renderizarCaja}
+            />
+          )}
 
           {/* ===== PARTE INFERIOR ===== */}
-          <GrupoMedidores
-            titulo={inf.titulo}
-            boxes={inf.boxes}
-            zona="inf"
-            renderizarCaja={renderizarCaja}
-          />
+          {!inf.oculto && (
+            <GrupoMedidores
+              titulo={inf.titulo}
+              boxes={inf.boxes}
+              zona="inf"
+              renderizarCaja={renderizarCaja}
+            />
+          )}
 
           {/* ===== OVERLAY DE ERROR ===== */}
           {/* Mostrar overlay solo cuando hay 3+ errores consecutivos (error crítico) */}

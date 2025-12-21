@@ -60,6 +60,7 @@ const VistaAlimentadores = () => {
    establecerEscalaGlobal,                // establece escala global
    obtenerEscalaEfectiva,                 // obtiene escala efectiva (individual > puesto > global > default)
    establecerEscalaTarjeta,               // establece escala individual de un alimentador
+   resetearEscalaTarjeta,                 // resetea escala individual de un alimentador
    obtenerEscalaPuesto,                   // obtiene escala de un puesto específico
    establecerEscalaPuesto,                // establece escala de un puesto
    ESCALA_MIN,                            // escala mínima permitida
@@ -202,6 +203,20 @@ const {
 			setGuardandoPuestos(false);
 		}
 	};
+
+	// Handler para cambio de escala de puesto: establece la escala y limpia las escalas individuales
+	const handleEscalaPuestoChange = useCallback((puestoId, escala) => {
+		// Encontrar el puesto para obtener sus alimentadores
+		const puesto = puestos.find(p => p.id === puestoId);
+		if (puesto && puesto.alimentadores) {
+			// Limpiar las escalas individuales de todos los alimentadores del puesto
+			puesto.alimentadores.forEach(alim => {
+				resetearEscalaTarjeta(alim.id);
+			});
+		}
+		// Establecer la nueva escala del puesto
+		establecerEscalaPuesto(puestoId, escala);
+	}, [puestos, establecerEscalaPuesto, resetearEscalaTarjeta]);
 
 	// ===== MODALES ALIMENTADORES =====
 	const abrirModalNuevoAlim = () => abrirModal("alimentador", { modo: "crear" });
@@ -788,7 +803,7 @@ const {
 				onGuardar={handleGuardarPuestos}
 				rolGlobal={rolGlobal}
 				obtenerEscalaPuesto={obtenerEscalaPuesto}
-				onEscalaPuestoChange={establecerEscalaPuesto}
+				onEscalaPuestoChange={handleEscalaPuestoChange}
 				ESCALA_MIN={ESCALA_MIN}
 				ESCALA_MAX={ESCALA_MAX}
 			/>

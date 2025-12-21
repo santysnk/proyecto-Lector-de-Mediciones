@@ -35,6 +35,7 @@ const crearSideDesignDefault = (tituloId = "corriente_132") => ({
 	tituloCustom: "",
 	registrador_id: null, // cada zona tiene su propio registrador
 	cantidad: 3,
+	oculto: false, // si true, oculta título y boxes de esta zona en la tarjeta
 	boxes: [
 		{ enabled: false, label: "", indice: null, formula: "" },
 		{ enabled: false, label: "", indice: null, formula: "" },
@@ -520,25 +521,48 @@ const ModalConfiguracionAlimentador = ({
 							)}
 						</div>
 
-						{/* === SECCIÓN: Intervalo de consulta === */}
+						{/* === SECCIÓN: Intervalo de consulta + Ocultar zonas === */}
 						<div className="alim-modal-seccion">
 							<h3 className="alim-modal-seccion-titulo">Intervalo de consulta</h3>
-							<div className="alim-modal-campo">
-								<label>Segundos entre consultas a la Base de Datos</label>
-								<input
-									type="number"
-									className="alim-modal-input-numero"
-									value={intervaloConsultaSeg}
-									onChange={(e) => {
-										const valor = Number(e.target.value);
-										setIntervaloConsultaSeg(Math.max(5, valor)); // mínimo 5 segundos
-									}}
-									min={5}
-									step={1}
-								/>
-								<span className="alim-modal-campo-ayuda">
-									Cada cuánto el frontend consulta la última lectura (mín. 5s)
-								</span>
+							<div className="alim-modal-intervalo-wrapper">
+								<div className="alim-modal-campo">
+									<label>Segundos entre consultas a la Base de Datos</label>
+									<input
+										type="number"
+										className="alim-modal-input-numero"
+										value={intervaloConsultaSeg}
+										onChange={(e) => {
+											const valor = Number(e.target.value);
+											setIntervaloConsultaSeg(Math.max(5, valor)); // mínimo 5 segundos
+										}}
+										min={5}
+										step={1}
+									/>
+									<span className="alim-modal-campo-ayuda">
+										Cada cuánto el frontend consulta la última lectura (mín. 5s)
+									</span>
+								</div>
+
+								{/* Checkboxes para ocultar zonas */}
+								<div className="alim-modal-ocultar-zonas">
+									<span className="alim-modal-ocultar-zonas-titulo">Ocultar en tarjeta</span>
+									<label className="alim-modal-ocultar-zona-item">
+										<input
+											type="checkbox"
+											checked={cardDesign.superior?.oculto || false}
+											onChange={(e) => actualizarSide("superior", "oculto", e.target.checked)}
+										/>
+										<span>Parte superior</span>
+									</label>
+									<label className="alim-modal-ocultar-zona-item">
+										<input
+											type="checkbox"
+											checked={cardDesign.inferior?.oculto || false}
+											onChange={(e) => actualizarSide("inferior", "oculto", e.target.checked)}
+										/>
+										<span>Parte inferior</span>
+									</label>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -598,9 +622,10 @@ const SeccionCardDesign = ({
 	const [expandido, setExpandido] = useState(false);
 	const [tooltipIdx, setTooltipIdx] = useState(null); // índice del box que muestra tooltip
 	const cant = design.cantidad || 3;
+	const estaOculto = design.oculto || false;
 
 	return (
-		<div className={`alim-modal-card-section ${expandido ? "alim-modal-card-section--expandido" : ""}`}>
+		<div className={`alim-modal-card-section ${expandido ? "alim-modal-card-section--expandido" : ""} ${estaOculto ? "alim-modal-card-section--oculto" : ""}`}>
 			<button
 				type="button"
 				className="alim-modal-card-section-header"
@@ -610,9 +635,14 @@ const SeccionCardDesign = ({
 					▶
 				</span>
 				<span className="alim-modal-card-section-titulo">{titulo}</span>
-				{registradorActual && (
+				{registradorActual && !estaOculto && (
 					<span className="alim-modal-card-section-registrador">
 						{registradorActual.nombre}
+					</span>
+				)}
+				{estaOculto && (
+					<span className="alim-modal-card-section-oculto-badge">
+						OCULTO
 					</span>
 				)}
 			</button>

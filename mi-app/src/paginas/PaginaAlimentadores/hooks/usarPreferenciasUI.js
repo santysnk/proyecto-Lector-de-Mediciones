@@ -231,11 +231,12 @@ export const usarPreferenciasUI = () => {
 
 	const resetearEscalaTarjeta = useCallback((alimId) => {
 		if (!alimId) return;
-		setEscalasPorTarjetaState(prev => {
-			const nuevo = { ...prev };
-			delete nuevo[alimId];
-			return nuevo;
-		});
+		// Guardamos null para indicar "ignorar escala individual (incluso de BD)"
+		// Esto permite que la escala del puesto tenga efecto
+		setEscalasPorTarjetaState(prev => ({
+			...prev,
+			[alimId]: null
+		}));
 	}, []);
 
 	const resetearTodasLasEscalasTarjetas = useCallback(() => {

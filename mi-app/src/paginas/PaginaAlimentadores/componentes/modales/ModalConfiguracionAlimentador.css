@@ -444,6 +444,58 @@
    max-width: 150px;
 }
 
+/* Wrapper para intervalo + checkboxes de ocultar */
+.alim-modal-intervalo-wrapper {
+   display: flex;
+   align-items: flex-start;
+   gap: 2rem;
+}
+
+.alim-modal-intervalo-wrapper > .alim-modal-campo {
+   flex: 1;
+}
+
+/* Checkboxes para ocultar zonas */
+.alim-modal-ocultar-zonas {
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+   padding: 0.5rem 0.75rem;
+   background: rgba(255, 255, 255, 0.03);
+   border-radius: 8px;
+   border: 1px solid #334155;
+   align-self: flex-start;
+   margin-top: -1.5rem;
+}
+
+.alim-modal-ocultar-zonas-titulo {
+   font-size: 0.75rem;
+   color: #94a3b8;
+   font-weight: 500;
+   margin-bottom: 0.25rem;
+}
+
+.alim-modal-ocultar-zona-item {
+   display: flex;
+   align-items: center;
+   gap: 0.5rem;
+   cursor: pointer;
+   font-size: 0.8rem;
+   color: #e2e8f0;
+   padding: 0.25rem 0;
+}
+
+.alim-modal-ocultar-zona-item:hover {
+   color: #f1f5f9;
+}
+
+.alim-modal-ocultar-zona-item input[type="checkbox"] {
+   width: 16px;
+   height: 16px;
+   cursor: pointer;
+   accent-color: #fbbf24;
+}
+
 
 /* Estados de carga y avisos */
 .alim-modal-cargando {
@@ -549,6 +601,11 @@
    padding: 0.75rem;
 }
 
+/* Sección marcada como oculta */
+.alim-modal-card-section--oculto {
+   opacity: 0.6;
+}
+
 .alim-modal-card-section-header {
    display: flex;
    align-items: center;
@@ -591,6 +648,18 @@
    background: #334155;
    padding: 0.15rem 0.5rem;
    border-radius: 4px;
+}
+
+/* Badge que indica sección oculta */
+.alim-modal-card-section-oculto-badge {
+   margin-left: auto;
+   font-size: 0.65rem;
+   font-weight: 600;
+   color: #fbbf24;
+   background: rgba(251, 191, 36, 0.15);
+   padding: 0.15rem 0.5rem;
+   border-radius: 4px;
+   letter-spacing: 0.05em;
 }
 
 .alim-modal-card-section-content {

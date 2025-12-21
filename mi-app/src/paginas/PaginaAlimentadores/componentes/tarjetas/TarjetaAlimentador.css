@@ -14,13 +14,13 @@
 
 /* Tarjeta base (card de alimentador) */
 .alim-card {
-	background-color: #111827;
-	border-radius: 16px;
+	background-color: #2b2c2b; /* mismo color que el body para que no se vea diferencia */
+	border-radius: 6px;
 	overflow: hidden;
 	box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
 	color: #f9fafb;
-	border: 1px solid #1f2937;
-	min-height: 230px;
+	border: 1px solid #64748b;
+	/* sin min-height para que se ajuste al contenido cuando hay zonas ocultas */
 
 	/* Ancho fijo de la tarjeta */
 	width: 304px;
@@ -53,7 +53,7 @@
 /* Botón base para iconos (tuerca y mapeo) */
 .alim-card-icon-btn,
 .alim-card-config-btn {
-	border: 1px solid #37415171;
+	border: 0px solid #37415171;
 	border-radius: 10px;
 	background: transparent;
 	cursor: pointer;
@@ -135,7 +135,7 @@
 	position: relative;
 	padding: 0.8rem 1rem 1.2rem; /* padding inferior para el triángulo de escala */
 	background-color: #2b2c2b;
-	border-radius: 0 0 16px 16px;
+	border-radius: 0 0 6px 6px;
 }
 
 .alim-card-section {
@@ -143,15 +143,20 @@
 }
 
 .alim-card-section-title {
-	margin: 0 0 0.4rem;
+	margin: 0 -1rem 0.4rem -1rem;
 	font-size: 0.8rem;
 	letter-spacing: 0.05em;
+	background: linear-gradient(to right, #47556999, #47556900);
+	padding: 0.25rem 1rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .alim-card-meters {
 	display: flex;
-	justify-content: space-evenly; /* reparte espacios iguales entre cajas */
-	gap: 8px;
+	justify-content: center;       /* centra el grupo de boxes */
+	gap: 18px;
 	position: relative;            /* necesario para posicionar el borde animado */
 	overflow: visible;             /* el borde puede sobresalir un poquito */
 }
@@ -398,7 +403,7 @@
 
 .alim-card-scale-label {
 	display: block;
-	font-size: 0.7rem;
+	font-size: 0.85rem;
 	color: #9ca3af;
 	margin-bottom: 6px;
 	text-align: center;
@@ -447,7 +452,7 @@
 	border: 1px solid #475569;
 	border-radius: 4px;
 	color: #f1f5f9;
-	font-size: 0.85rem;
+	font-size: 1rem;
 	text-align: center;
 	font-family: "DS-Digital", "Courier New", monospace;
 	box-sizing: border-box;
@@ -481,7 +486,7 @@
 	border: 1px solid #475569;
 	border-radius: 4px;
 	color: #9ca3af;
-	font-size: 0.7rem;
+	font-size: 0.8rem;
 	cursor: pointer;
 	transition: background-color 0.15s ease, color 0.15s ease;
 }

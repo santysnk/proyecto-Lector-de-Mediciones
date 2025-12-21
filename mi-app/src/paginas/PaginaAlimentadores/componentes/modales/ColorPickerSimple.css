@@ -6,7 +6,6 @@
 	flex-direction: column;
 	gap: 1px;
 	align-items: center;
-	margin-top: -2px;
 }
 
 .color-picker-simple-label {

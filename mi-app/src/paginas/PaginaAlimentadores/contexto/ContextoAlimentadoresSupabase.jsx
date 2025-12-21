@@ -274,6 +274,11 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
     // 1. Primero mirar localStorage
     const escalaLocal = escalasPorTarjeta[alimId];
+    // Si es null explícito, significa "ignorar escala individual" (usar puesto/global)
+    if (escalaLocal === null) {
+      return null;
+    }
+    // Si tiene un valor numérico, usarlo
     if (escalaLocal !== undefined) {
       return escalaLocal;
     }

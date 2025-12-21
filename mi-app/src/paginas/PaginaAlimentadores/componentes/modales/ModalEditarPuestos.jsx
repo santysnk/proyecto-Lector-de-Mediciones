@@ -4,6 +4,49 @@ import React, { useState, useEffect } from "react";      // React + hooks para e
 import "./ModalEditarPuestos.css";                       // estilos específicos de este modal
 import ColorPickerSimple from "./ColorPickerSimple";     // selector de color minimalista
 
+// Componente interno para el input de escala con estado local
+const InputEscala = ({ valor, onChange, min, max }) => {
+	const [valorLocal, setValorLocal] = useState(valor?.toString() ?? "1");
+
+	// Sincronizar cuando cambia el valor externo
+	useEffect(() => {
+		setValorLocal(valor?.toString() ?? "1");
+	}, [valor]);
+
+	const aplicarCambio = () => {
+		const valorNum = parseFloat(valorLocal);
+		if (!isNaN(valorNum)) {
+			const valorClamped = Math.max(min, Math.min(max, valorNum));
+			onChange(valorClamped);
+			setValorLocal(valorClamped.toString());
+		} else {
+			// Si no es válido, restaurar al valor original
+			setValorLocal(valor?.toString() ?? "1");
+		}
+	};
+
+	const handleKeyDown = (e) => {
+		if (e.key === "Enter") {
+			aplicarCambio();
+			e.target.blur();
+		}
+	};
+
+	return (
+		<input
+			type="number"
+			step="0.1"
+			min={min}
+			max={max}
+			value={valorLocal}
+			onChange={(e) => setValorLocal(e.target.value)}
+			onBlur={aplicarCambio}
+			onKeyDown={handleKeyDown}
+			className="editar-escala-input"
+		/>
+	);
+};
+
 const ModalEditarPuestos = ({
 	abierto,                                              // si es false, el modal no se renderiza
 	puestos,                                              // lista original de puestos proveniente del contexto
@@ -90,20 +133,12 @@ const ModalEditarPuestos = ({
 								{/* Control de escala por puesto */}
 								{obtenerEscalaPuesto && onEscalaPuestoChange && (
 									<div className="editar-escala">
-										<label className="editar-escala-label">Escala</label>
-										<input
-											type="number"
-											step="0.1"
+										<label className="editar-escala-label">(0.5 - 2)</label>
+										<InputEscala
+											valor={obtenerEscalaPuesto(p.id) ?? 1.0}
+											onChange={(nuevoValor) => onEscalaPuestoChange(p.id, nuevoValor)}
 											min={ESCALA_MIN}
 											max={ESCALA_MAX}
-											value={obtenerEscalaPuesto(p.id) ?? 1.0}
-											onChange={(e) => {
-												const valor = parseFloat(e.target.value);
-												if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
-													onEscalaPuestoChange(p.id, valor);
-												}
-											}}
-											className="editar-escala-input"
 										/>
 									</div>
 								)}

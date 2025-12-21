@@ -72,6 +72,7 @@ const normalizarLadoDiseno = (lado, ladoDefault) => {
 		...ladoDefault,
 		...lado,
 		boxes: boxesNormalizados,
+		oculto: !!lado.oculto, // preservar si la zona está marcada como oculta
 	};
 };
 
@@ -178,7 +179,7 @@ export const calcularValoresLadoTarjeta = (registrosPorOrigen, diseñoLado) => {
 		});
 	}
 
-	return { titulo, boxes: boxesSalida };
+	return { titulo, boxes: boxesSalida, oculto: !!diseñoLado.oculto };
 };
 
 {/*---------------------------------------------------------------------------
