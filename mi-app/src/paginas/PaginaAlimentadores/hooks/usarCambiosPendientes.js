@@ -24,8 +24,10 @@ import {
  * Trackea:
  * - Colores de puestos (color, bgColor)
  * - Gaps verticales de puestos (por fila)
+ * - Escala de puestos
  * - Colores de alimentadores
  * - Gaps horizontales de alimentadores
+ * - Escala de alimentadores (individual)
  * - Orden de alimentadores
  * - Cantidad de alimentadores (elementos nuevos/eliminados)
  *
@@ -37,8 +39,8 @@ import {
 export const usarCambiosPendientes = () => {
   // Snapshot original de los datos cargados de BD (Pbase)
   const snapshotRef = useRef({
-    puestos: {},      // { [id]: { color, bgColor, gapsVerticales, cantidadAlimentadores } }
-    alimentadores: {}, // { [id]: { color, gapHorizontal, orden, puestoId } }
+    puestos: {},      // { [id]: { color, bgColor, gapsVerticales, cantidadAlimentadores, escala } }
+    alimentadores: {}, // { [id]: { color, gapHorizontal, orden, puestoId, escala } }
     alimentadoresIds: new Set(), // Set de IDs de alimentadores en Pbase
   });
 
@@ -69,6 +71,7 @@ export const usarCambiosPendientes = () => {
         bgColor: puesto.bgColor || puesto.bg_color,
         gapsVerticales: JSON.stringify(puesto.gapsVerticales || { "0": 40 }),
         cantidadAlimentadores: alimentadoresDelPuesto.length,
+        escala: puesto.escala, // null si no está definida en BD
       };
 
       alimentadoresDelPuesto.forEach((alim, index) => {
@@ -78,6 +81,7 @@ export const usarCambiosPendientes = () => {
           gapHorizontal: alim.gapHorizontal ?? 10,
           orden: index,
           puestoId: puestoIdStr, // también string
+          escala: alim.escala, // null si no está definida en BD
         };
         snapshot.alimentadoresIds.add(alimIdStr);
       });
@@ -98,12 +102,14 @@ export const usarCambiosPendientes = () => {
    * @param {Array} puestosActuales - Lista actual de puestos con alimentadores
    * @param {Object} gapsPorTarjeta - Gaps horizontales de localStorage { alimId: gap }
    * @param {Object} gapsPorFilaPorPuesto - Gaps verticales de localStorage por puesto { puestoId: { "0": gap, ... } }
+   * @param {Object} escalasPorPuesto - Escalas por puesto de localStorage { puestoId: escala }
+   * @param {Object} escalasPorTarjeta - Escalas por tarjeta de localStorage { alimId: escala }
    * @returns {Object} { hayCambios, cambios, hayNuevosElementos, hayElementosEliminados }
    */
-  const detectarCambios = useCallback((puestosActuales, gapsPorTarjeta = {}, gapsPorFilaPorPuesto = {}) => {
+  const detectarCambios = useCallback((puestosActuales, gapsPorTarjeta = {}, gapsPorFilaPorPuesto = {}, escalasPorPuesto = {}, escalasPorTarjeta = {}) => {
     const cambios = {
-      puestos: [],      // [{ id, campos: { color?, bgColor?, gapsVerticales? } }]
-      alimentadores: [], // [{ id, campos: { color?, gapHorizontal? } }]
+      puestos: [],      // [{ id, campos: { color?, bgColor?, gapsVerticales?, escala? } }]
+      alimentadores: [], // [{ id, campos: { color?, gapHorizontal?, escala? } }]
       ordenPorPuesto: {}, // { puestoId: [alimentadorIds en nuevo orden] }
     };
 
@@ -185,6 +191,16 @@ export const usarCambiosPendientes = () => {
         }
       }
 
+      // Escala del puesto: preferir localStorage, luego valor del objeto
+      // Si hay escala en localStorage, usarla; si no, usar la del puesto
+      const puestoIdStrLS = String(puesto.id);
+      const escalaLocalPuesto = escalasPorPuesto[puestoIdStrLS] ?? escalasPorPuesto[puesto.id];
+      const escalaActualPuesto = escalaLocalPuesto !== undefined ? escalaLocalPuesto : puesto.escala;
+      // Comparar con el snapshot (ambos pueden ser null)
+      if (escalaActualPuesto !== original.escala) {
+        cambiosPuesto.escala = escalaActualPuesto;
+      }
+
       if (Object.keys(cambiosPuesto).length > 0) {
         cambios.puestos.push({ id: puesto.id, campos: cambiosPuesto });
       }
@@ -215,6 +231,14 @@ export const usarCambiosPendientes = () => {
         const gapActual = gapsPorTarjeta[alimIdStr] ?? gapsPorTarjeta[alim.id] ?? alim.gapHorizontal ?? 10;
         if (gapActual !== originalAlim.gapHorizontal) {
           cambiosAlim.gapHorizontal = gapActual;
+        }
+
+        // Escala individual: preferir localStorage, luego valor del objeto
+        const escalaLocalAlim = escalasPorTarjeta[alimIdStr] ?? escalasPorTarjeta[alim.id];
+        const escalaActualAlim = escalaLocalAlim !== undefined ? escalaLocalAlim : alim.escala;
+        // Comparar con el snapshot (ambos pueden ser null)
+        if (escalaActualAlim !== originalAlim.escala) {
+          cambiosAlim.escala = escalaActualAlim;
         }
 
         if (Object.keys(cambiosAlim).length > 0) {
@@ -275,6 +299,7 @@ export const usarCambiosPendientes = () => {
         if (campos.color !== undefined) datosAPI.color = campos.color;
         if (campos.bgColor !== undefined) datosAPI.bg_color = campos.bgColor;
         if (campos.gapsVerticales !== undefined) datosAPI.gaps_verticales = campos.gapsVerticales;
+        if (campos.escala !== undefined) datosAPI.escala = campos.escala;
 
         await actualizarPuestoAPI(id, datosAPI);
       }
@@ -284,6 +309,7 @@ export const usarCambiosPendientes = () => {
         const datosAPI = {};
         if (campos.color !== undefined) datosAPI.color = campos.color;
         if (campos.gapHorizontal !== undefined) datosAPI.gap_horizontal = campos.gapHorizontal;
+        if (campos.escala !== undefined) datosAPI.escala = campos.escala;
 
         await actualizarAlimentadorAPI(id, datosAPI);
       }

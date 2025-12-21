@@ -10,6 +10,11 @@ const ModalEditarPuestos = ({
 	onCerrar,                                             // callback para cerrar sin guardar
 	onGuardar,                                            // callback que recibe los puestos modificados
 	rolGlobal,                                            // rol del usuario para controlar permisos de edición
+	// Props de escala por puesto
+	obtenerEscalaPuesto,                                  // (puestoId) => number | undefined
+	onEscalaPuestoChange,                                 // (puestoId, escala) => void
+	ESCALA_MIN = 0.5,
+	ESCALA_MAX = 2.0,
 }) => {
 	const [puestosEditados, setPuestosEditados] = useState([]); // copia editable local
 
@@ -81,6 +86,27 @@ const ModalEditarPuestos = ({
 									onChange={(newColor) => cambiarColorFondo(p.id, newColor)}
 									label="Fondo"
 								/>
+
+								{/* Control de escala por puesto */}
+								{obtenerEscalaPuesto && onEscalaPuestoChange && (
+									<div className="editar-escala">
+										<label className="editar-escala-label">Escala</label>
+										<input
+											type="number"
+											step="0.1"
+											min={ESCALA_MIN}
+											max={ESCALA_MAX}
+											value={obtenerEscalaPuesto(p.id) ?? 1.0}
+											onChange={(e) => {
+												const valor = parseFloat(e.target.value);
+												if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
+													onEscalaPuestoChange(p.id, valor);
+												}
+											}}
+											className="editar-escala-input"
+										/>
+									</div>
+								)}
 
 								{/* Solo admin/superadmin pueden eliminar puestos */}
 								{puedeEditarNombre && (

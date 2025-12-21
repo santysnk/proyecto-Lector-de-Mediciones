@@ -74,6 +74,8 @@ export const usarPuestosSupabase = (workspaceId) => {
       bg_color: puesto.bg_color || "#e5e7eb",
       // Gaps verticales por fila
       gapsVerticales,
+      // Escala del puesto (puede ser null si no está definida)
+      escala: puesto.escala != null ? puesto.escala : null,
     };
   }
 
@@ -160,6 +162,8 @@ export const usarPuestosSupabase = (workspaceId) => {
       tipoDispositivo: alim.tipo || "rele",
       // Gap horizontal a la derecha de esta tarjeta
       gapHorizontal: alim.gap_horizontal != null ? alim.gap_horizontal : 0,
+      // Escala individual de la tarjeta (puede ser null si no está definida)
+      escala: alim.escala != null ? alim.escala : null,
 
       // === NUEVOS CAMPOS para el modal v2 ===
       registrador_id: alim.registrador_id || null,

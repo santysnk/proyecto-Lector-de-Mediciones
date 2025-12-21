@@ -1,6 +1,7 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/TarjetaAlimentador.jsx
 
 import React, { useEffect, useRef, useState } from "react";   // React + hooks para estado y refs
+import { createPortal } from "react-dom";
 import "./TarjetaAlimentador.css";                            // estilos visuales de la tarjeta
 import configIcon from "../../../../assets/imagenes/Config_Icon.png"; // icono de configuración (tuerca)
 import CajaMedicion from "./CajaMedicion.jsx";                // box individual de medición
@@ -77,6 +78,12 @@ const TarjetaAlimentador = ({
   contadorPolling = 0,                 // número de lecturas realizadas durante polling
   periodoPolling = 60,                 // periodo de polling en segundos (para animación)
   errorPolling = null,                 // { mensaje, timestamp } si hay error de lectura
+
+  // Escala de la tarjeta
+  escala = 1.0,                        // escala efectiva a aplicar (ya calculada)
+  onEscalaChange,                      // callback para cambiar escala individual
+  ESCALA_MIN = 0.5,                    // límites de escala
+  ESCALA_MAX = 2.0,
 }) => {
   // Control local de animaciones de borde: solo se activan tras recibir una lectura
   const [mostrarProgresoRele, setMostrarProgresoRele] = useState(false);
@@ -86,6 +93,13 @@ const TarjetaAlimentador = ({
   const ultimoContadorReleRef = useRef(contadorRele);
   const ultimoContadorAnalizadorRef = useRef(contadorAnalizador);
   const ultimoContadorPollingRef = useRef(contadorPolling);
+
+  // Control del popover de escala
+  const [mostrarPopoverEscala, setMostrarPopoverEscala] = useState(false);
+  const [posicionPopover, setPosicionPopover] = useState({ top: 0, left: 0 });
+  const [valorEscalaInput, setValorEscalaInput] = useState(escala.toString());
+  const triangleRef = useRef(null);
+  const popoverRef = useRef(null);
 
   // Si se cambia de puesto o se detiene la medición de relé, resetea la animación
   useEffect(() => {
@@ -128,6 +142,70 @@ const TarjetaAlimentador = ({
       setMostrarProgresoPolling(contadorPolling > 0);
     }
   }, [contadorPolling, estaPolling]);
+
+  // Sincronizar input con escala cuando cambia externamente
+  useEffect(() => {
+    setValorEscalaInput(escala.toString());
+  }, [escala]);
+
+  // Toggle del popover de escala
+  const togglePopoverEscala = (e) => {
+    e.stopPropagation();
+    if (mostrarPopoverEscala) {
+      setMostrarPopoverEscala(false);
+      return;
+    }
+    if (triangleRef.current) {
+      const rect = triangleRef.current.getBoundingClientRect();
+      setPosicionPopover({
+        top: rect.bottom + 8,
+        left: rect.left + rect.width / 2 - 60, // centrar popover (120px / 2)
+      });
+      setMostrarPopoverEscala(true);
+    }
+  };
+
+  // Cerrar popover al hacer click fuera
+  useEffect(() => {
+    if (!mostrarPopoverEscala) return;
+    const handleClickOutside = (event) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(event.target) &&
+        triangleRef.current &&
+        !triangleRef.current.contains(event.target)
+      ) {
+        setMostrarPopoverEscala(false);
+      }
+    };
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [mostrarPopoverEscala]);
+
+  // Aplicar escala al presionar Enter
+  const handleEscalaKeyDown = (e) => {
+    if (e.key === "Enter") {
+      const valor = parseFloat(valorEscalaInput);
+      if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
+        onEscalaChange?.(valor);
+        setMostrarPopoverEscala(false);
+      }
+    } else if (e.key === "Escape") {
+      setValorEscalaInput(escala.toString());
+      setMostrarPopoverEscala(false);
+    }
+  };
+
+  // Resetear escala a 1.0
+  const handleResetearEscala = () => {
+    onEscalaChange?.(1.0);
+    setMostrarPopoverEscala(false);
+  };
 
   // Armar lados de la tarjeta con valores por defecto si no hay diseño
   const sup = construirLado(topSide, "CONSUMO (A)");
@@ -183,66 +261,133 @@ const TarjetaAlimentador = ({
     );
   };
 
+  // Determinar si la escala es diferente al default (para mostrar indicador)
+  const escalaModificada = escala !== 1.0;
+
+  // Calcular estilos de escala para el contenedor
+  const estiloEscala = escala !== 1.0 ? {
+    transform: `scale(${escala})`,
+    transformOrigin: "top left",
+  } : {};
+
   return (
     <div
       className={clasesCard.join(" ")}
-      style={{ cursor: draggable ? "grab" : "default" }}
+      style={{
+        cursor: draggable ? "grab" : "default",
+        ...estiloEscala,
+      }}
       draggable={draggable}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      {/* Header con nombre y botones de acciones */}
-      <div
-        className="alim-card-header"
-        style={{ backgroundColor: color || "#0ea5e9" }}
-      >
-        <div className="alim-card-icons">
-          <button
-            type="button"
-            className="alim-card-icon-btn"
-            onClick={onConfigClick}
-            title="Configurar registrador"
-          >
-            <img src={configIcon} alt="Configurar" className="alim-card-icon" />
-          </button>
+        {/* Header con nombre y botones de acciones */}
+        <div
+          className="alim-card-header"
+          style={{ backgroundColor: color || "#0ea5e9" }}
+        >
+          <div className="alim-card-icons">
+            <button
+              type="button"
+              className="alim-card-icon-btn"
+              onClick={onConfigClick}
+              title="Configurar registrador"
+            >
+              <img src={configIcon} alt="Configurar" className="alim-card-icon" />
+            </button>
+          </div>
+
+          <span className="alim-card-title">{nombre}</span>
         </div>
 
-        <span className="alim-card-title">{nombre}</span>
-      </div>
+        {/* Cuerpo con los 2 bloques (superior / inferior) */}
+        <div className="alim-card-body">
+          {/* ===== PARTE SUPERIOR ===== */}
+          <GrupoMedidores
+            titulo={sup.titulo}
+            boxes={sup.boxes}
+            zona="sup"
+            renderizarCaja={renderizarCaja}
+          />
 
-      {/* Cuerpo con los 2 bloques (superior / inferior) */}
-      <div className="alim-card-body">
-        {/* ===== PARTE SUPERIOR ===== */}
-        <GrupoMedidores
-          titulo={sup.titulo}
-          boxes={sup.boxes}
-          zona="sup"
-          renderizarCaja={renderizarCaja}
-        />
+          {/* ===== PARTE INFERIOR ===== */}
+          <GrupoMedidores
+            titulo={inf.titulo}
+            boxes={inf.boxes}
+            zona="inf"
+            renderizarCaja={renderizarCaja}
+          />
 
-        {/* ===== PARTE INFERIOR ===== */}
-        <GrupoMedidores
-          titulo={inf.titulo}
-          boxes={inf.boxes}
-          zona="inf"
-          renderizarCaja={renderizarCaja}
-        />
-
-        {/* ===== OVERLAY DE ERROR ===== */}
-        {/* Mostrar overlay solo cuando hay 3+ errores consecutivos (error crítico) */}
-        {tieneErrorCritico && (
-          <div className="alim-card-error-overlay alim-card-error-overlay--parpadeo">
-            <div className="alim-card-error-content">
-              <span className="alim-card-error-icon">⚠</span>
-              <span className="alim-card-error-title">ATENCIÓN</span>
-              <span className="alim-card-error-message">Posiblemente fuera de servicio</span>
-              <span className="alim-card-error-detail">Las últimas 3 lecturas no fueron válidas o dieron error</span>
+          {/* ===== OVERLAY DE ERROR ===== */}
+          {/* Mostrar overlay solo cuando hay 3+ errores consecutivos (error crítico) */}
+          {tieneErrorCritico && (
+            <div className="alim-card-error-overlay alim-card-error-overlay--parpadeo">
+              <div className="alim-card-error-content">
+                <span className="alim-card-error-icon">⚠</span>
+                <span className="alim-card-error-title">ATENCIÓN</span>
+                <span className="alim-card-error-message">Posiblemente fuera de servicio</span>
+                <span className="alim-card-error-detail">Las últimas 3 lecturas no fueron válidas o dieron error</span>
+              </div>
             </div>
-          </div>
+          )}
+        </div>
+
+      {/* ===== TRIÁNGULO DE ESCALA ===== */}
+      {onEscalaChange && (
+        <div className="alim-card-scale-footer">
+          <button
+            ref={triangleRef}
+            type="button"
+            className={`alim-card-scale-btn${escalaModificada ? " alim-card-scale-btn--active" : ""}`}
+            onClick={togglePopoverEscala}
+            title={`Escala: ${escala}x (click para cambiar)`}
+          >
+            <span className="alim-card-scale-triangle">▼</span>
+            {escalaModificada && (
+              <span className="alim-card-scale-value">{escala}x</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Popover de escala (portal) */}
+      {mostrarPopoverEscala &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="alim-card-scale-popover"
+            style={{ top: `${posicionPopover.top}px`, left: `${posicionPopover.left}px` }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <label className="alim-card-scale-label">
+              Escala ({ESCALA_MIN} - {ESCALA_MAX})
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              min={ESCALA_MIN}
+              max={ESCALA_MAX}
+              value={valorEscalaInput}
+              onChange={(e) => setValorEscalaInput(e.target.value)}
+              onKeyDown={handleEscalaKeyDown}
+              className="alim-card-scale-input"
+              autoFocus
+            />
+            <div className="alim-card-scale-actions">
+              <button
+                type="button"
+                className="alim-card-scale-reset"
+                onClick={handleResetearEscala}
+              >
+                Reset (1.0)
+              </button>
+            </div>
+          </div>,
+          document.body
         )}
-      </div>
     </div>
   );
 };

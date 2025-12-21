@@ -13,15 +13,25 @@ const ROW_GAP_DEFAULT = 40;
 const ROW_GAP_MIN = 0;
 const ROW_GAP_MAX = 200;
 
+// Valores por defecto - Escala de tarjetas
+const ESCALA_DEFAULT = 1.0;
+const ESCALA_MIN = 0.5;
+const ESCALA_MAX = 2.0;
+
 /**
  * Hook para manejar preferencias de UI:
  * - Espaciado horizontal individual por tarjeta
  * - Espaciado vertical por fila (índice de fila + puestoId)
+ * - Escala de tarjetas (global, por puesto, individual)
  *
  * Persiste automáticamente en localStorage.
  *
  * Gaps horizontales: { "alimId1": 10, "alimId2": 50, ... }
  * Gaps verticales: { "puestoId:rowIndex": 20, ... } (combinación puesto+fila como key)
+ * Escala global: número (ej: 1.0)
+ * Escala por puesto: { "puestoId": 0.8, ... }
+ * Escala por tarjeta: { "alimId": 1.2, ... }
+ * Prioridad: Individual > Por puesto > Global > Default (1.0)
  */
 export const usarPreferenciasUI = () => {
 	// ===== GAPS HORIZONTALES (entre tarjetas) =====
@@ -121,6 +131,149 @@ export const usarPreferenciasUI = () => {
 		setGapsPorFilaState({});
 	}, []);
 
+	// ===== ESCALA GLOBAL =====
+	const [escalaGlobal, setEscalaGlobalState] = useState(() => {
+		const guardado = localStorage.getItem(CLAVES_STORAGE.ESCALA_GLOBAL);
+		if (guardado) {
+			const valor = parseFloat(guardado);
+			if (!isNaN(valor)) return valor;
+		}
+		return ESCALA_DEFAULT;
+	});
+
+	useEffect(() => {
+		localStorage.setItem(CLAVES_STORAGE.ESCALA_GLOBAL, escalaGlobal.toString());
+	}, [escalaGlobal]);
+
+	const establecerEscalaGlobal = useCallback((nuevaEscala) => {
+		const escalaValidada = Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, nuevaEscala));
+		setEscalaGlobalState(escalaValidada);
+	}, []);
+
+	const resetearEscalaGlobal = useCallback(() => {
+		setEscalaGlobalState(ESCALA_DEFAULT);
+	}, []);
+
+	// ===== ESCALA POR PUESTO =====
+	const [escalasPorPuesto, setEscalasPorPuestoState] = useState(() => {
+		const guardado = localStorage.getItem(CLAVES_STORAGE.ESCALA_PUESTOS);
+		if (guardado) {
+			try {
+				return JSON.parse(guardado);
+			} catch {
+				return {};
+			}
+		}
+		return {};
+	});
+
+	useEffect(() => {
+		localStorage.setItem(CLAVES_STORAGE.ESCALA_PUESTOS, JSON.stringify(escalasPorPuesto));
+	}, [escalasPorPuesto]);
+
+	const obtenerEscalaPuesto = useCallback((puestoId) => {
+		if (!puestoId) return null;
+		return escalasPorPuesto[puestoId];
+	}, [escalasPorPuesto]);
+
+	const establecerEscalaPuesto = useCallback((puestoId, nuevaEscala) => {
+		if (!puestoId) return;
+		const escalaValidada = Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, nuevaEscala));
+		setEscalasPorPuestoState(prev => ({
+			...prev,
+			[puestoId]: escalaValidada
+		}));
+	}, []);
+
+	const resetearEscalaPuesto = useCallback((puestoId) => {
+		if (!puestoId) return;
+		setEscalasPorPuestoState(prev => {
+			const nuevo = { ...prev };
+			delete nuevo[puestoId];
+			return nuevo;
+		});
+	}, []);
+
+	const resetearTodasLasEscalasPuestos = useCallback(() => {
+		setEscalasPorPuestoState({});
+	}, []);
+
+	// ===== ESCALA POR TARJETA (individual) =====
+	const [escalasPorTarjeta, setEscalasPorTarjetaState] = useState(() => {
+		const guardado = localStorage.getItem(CLAVES_STORAGE.ESCALA_TARJETAS);
+		if (guardado) {
+			try {
+				return JSON.parse(guardado);
+			} catch {
+				return {};
+			}
+		}
+		return {};
+	});
+
+	useEffect(() => {
+		localStorage.setItem(CLAVES_STORAGE.ESCALA_TARJETAS, JSON.stringify(escalasPorTarjeta));
+	}, [escalasPorTarjeta]);
+
+	const obtenerEscalaTarjeta = useCallback((alimId) => {
+		if (!alimId) return null;
+		return escalasPorTarjeta[alimId];
+	}, [escalasPorTarjeta]);
+
+	const establecerEscalaTarjeta = useCallback((alimId, nuevaEscala) => {
+		if (!alimId) return;
+		const escalaValidada = Math.max(ESCALA_MIN, Math.min(ESCALA_MAX, nuevaEscala));
+		setEscalasPorTarjetaState(prev => ({
+			...prev,
+			[alimId]: escalaValidada
+		}));
+	}, []);
+
+	const resetearEscalaTarjeta = useCallback((alimId) => {
+		if (!alimId) return;
+		setEscalasPorTarjetaState(prev => {
+			const nuevo = { ...prev };
+			delete nuevo[alimId];
+			return nuevo;
+		});
+	}, []);
+
+	const resetearTodasLasEscalasTarjetas = useCallback(() => {
+		setEscalasPorTarjetaState({});
+	}, []);
+
+	/**
+	 * Obtiene la escala efectiva de una tarjeta considerando la jerarquía:
+	 * Individual > Por puesto > Global > Default
+	 * @param {string} alimId - ID del alimentador
+	 * @param {string} puestoId - ID del puesto (opcional, para escala por puesto)
+	 * @returns {number} Escala efectiva a aplicar
+	 */
+	const obtenerEscalaEfectiva = useCallback((alimId, puestoId) => {
+		// 1. Escala individual (máxima prioridad)
+		const escalaIndividual = escalasPorTarjeta[alimId];
+		if (escalaIndividual !== undefined) return escalaIndividual;
+
+		// 2. Escala por puesto
+		if (puestoId) {
+			const escalaPuesto = escalasPorPuesto[puestoId];
+			if (escalaPuesto !== undefined) return escalaPuesto;
+		}
+
+		// 3. Escala global
+		if (escalaGlobal !== ESCALA_DEFAULT) return escalaGlobal;
+
+		// 4. Default
+		return ESCALA_DEFAULT;
+	}, [escalasPorTarjeta, escalasPorPuesto, escalaGlobal]);
+
+	// Resetear todas las escalas
+	const resetearTodasLasEscalas = useCallback(() => {
+		setEscalaGlobalState(ESCALA_DEFAULT);
+		setEscalasPorPuestoState({});
+		setEscalasPorTarjetaState({});
+	}, []);
+
 	return {
 		// Gaps horizontales
 		gapsPorTarjeta,
@@ -140,5 +293,28 @@ export const usarPreferenciasUI = () => {
 		ROW_GAP_MIN,
 		ROW_GAP_MAX,
 		ROW_GAP_DEFAULT,
+		// Escala global
+		escalaGlobal,
+		establecerEscalaGlobal,
+		resetearEscalaGlobal,
+		// Escala por puesto
+		escalasPorPuesto,
+		obtenerEscalaPuesto,
+		establecerEscalaPuesto,
+		resetearEscalaPuesto,
+		resetearTodasLasEscalasPuestos,
+		// Escala por tarjeta (individual)
+		escalasPorTarjeta,
+		obtenerEscalaTarjeta,
+		establecerEscalaTarjeta,
+		resetearEscalaTarjeta,
+		resetearTodasLasEscalasTarjetas,
+		// Escala efectiva (combina jerarquía)
+		obtenerEscalaEfectiva,
+		resetearTodasLasEscalas,
+		// Constantes de escala
+		ESCALA_MIN,
+		ESCALA_MAX,
+		ESCALA_DEFAULT,
 	};
 };

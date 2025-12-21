@@ -112,6 +112,11 @@ const GrillaTarjetas = ({
 	onPlayStopClick,          // (alimId) => void
 	obtenerContadorPolling,   // (alimId) => number - contador de lecturas para animación
 	obtenerErrorPolling,      // (alimId) => { mensaje, timestamp } | null - error de lectura
+	// Escala de tarjetas
+	obtenerEscalaEfectiva,    // (alimId, puestoId) => number - escala efectiva considerando jerarquía
+	onEscalaChange,           // (alimId, nuevaEscala) => void - callback para cambiar escala individual
+	ESCALA_MIN = 0.5,
+	ESCALA_MAX = 2.0,
 }) => {
 	const gridRef = useRef(null);
 	// Posiciones Y de los espacios entre filas (para posicionar los RowGapResizers)
@@ -482,6 +487,11 @@ const GrillaTarjetas = ({
 									contadorPolling={obtenerContadorPolling ? obtenerContadorPolling(alim.id) : 0}
 									periodoPolling={(alim.intervalo_consulta_ms || 60000) / 1000}
 									errorPolling={obtenerErrorPolling ? obtenerErrorPolling(alim.id) : null}
+									// Escala de tarjetas
+									escala={obtenerEscalaEfectiva ? obtenerEscalaEfectiva(alim.id, puestoId) : 1.0}
+									onEscalaChange={onEscalaChange ? (nuevaEscala) => onEscalaChange(alim.id, nuevaEscala) : undefined}
+									ESCALA_MIN={ESCALA_MIN}
+									ESCALA_MAX={ESCALA_MAX}
 								/>
 							</div>
 							{/* GapResizer a la derecha de cada tarjeta (elemento hermano independiente) */}

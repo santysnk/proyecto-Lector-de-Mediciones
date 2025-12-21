@@ -39,7 +39,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
   const { registrosEnVivo } = medicionesHook;
   const { puestoSeleccionado, puestos, cargando: cargandoPuestos } = puestosHook;
-  const { gapsPorTarjeta, gapsPorFila } = preferenciasHook;
+  const { gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta } = preferenciasHook;
   const { guardarSnapshot, detectarCambios, sincronizarConBD, sincronizando, errorSincronizacion } = cambiosPendientesHook;
 
   const [lecturasTarjetas, setLecturasTarjetas] = useState({});
@@ -88,10 +88,10 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
       });
 
-      const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
+      const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
       setHayCambiosPendientes(hayCambios);
     }
-  }, [puestos, gapsPorTarjeta, gapsPorFila, detectarCambios]);
+  }, [puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios]);
 
   // Función para sincronizar cambios con BD
   const sincronizarCambios = useCallback(async () => {
@@ -110,7 +110,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
     });
 
-    const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
+    const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
 
     await sincronizarConBD(
       cambios,
@@ -120,6 +120,10 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         // Esto evita que queden gaps huérfanos de alimentadores eliminados
         preferenciasHook.resetearTodosLosGaps();
         preferenciasHook.resetearTodosLosRowGaps();
+        // Limpiar escalas del localStorage (por puesto y por tarjeta)
+        // La escala global NO se limpia porque es preferencia del usuario, no se guarda en BD
+        preferenciasHook.resetearTodasLasEscalasPuestos();
+        preferenciasHook.resetearTodasLasEscalasTarjetas();
         // Resetear flag para que se guarde nuevo snapshot al recargar
         setSnapshotGuardado(false);
         // Recargar datos para actualizar snapshot (Pbase = Pnavegador)
@@ -130,7 +134,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         console.error("Error al sincronizar:", error);
       }
     );
-  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
+  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
 
   // Función para descartar cambios
   // Limpia localStorage y recarga datos de BD para restaurar orden original
@@ -138,6 +142,9 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     // Limpiar localStorage de gaps
     preferenciasHook.resetearTodosLosGaps();
     preferenciasHook.resetearTodosLosRowGaps();
+    // Limpiar localStorage de escalas (por puesto y por tarjeta)
+    preferenciasHook.resetearTodasLasEscalasPuestos();
+    preferenciasHook.resetearTodasLasEscalasTarjetas();
     // Resetear flag y recargar datos de BD para restaurar orden original
     setSnapshotGuardado(false);
     await puestosHook.cargarPuestos();
@@ -228,6 +235,86 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     return preferenciasHook.ROW_GAP_DEFAULT;
   }, [gapsPorFila, puestos, preferenciasHook.ROW_GAP_DEFAULT]);
 
+  // ===== FUNCIONES DE ESCALA COMBINADAS (localStorage + BD) =====
+  // Prioridad: localStorage > BD > null (sin escala definida)
+
+  /**
+   * Obtiene la escala de un puesto.
+   * Prioriza localStorage (cambios no guardados) sobre BD.
+   * @param {string} puestoId - ID del puesto
+   * @returns {number|null} Escala del puesto o null si no está definida
+   */
+  const obtenerEscalaPuestoCombinada = useCallback((puestoId) => {
+    if (!puestoId) return null;
+
+    // 1. Primero mirar localStorage
+    const escalaLocal = escalasPorPuesto[puestoId];
+    if (escalaLocal !== undefined) {
+      return escalaLocal;
+    }
+
+    // 2. Buscar en los datos de BD
+    const puesto = puestos.find(p => String(p.id) === String(puestoId));
+    if (puesto && puesto.escala !== undefined && puesto.escala !== null) {
+      return puesto.escala;
+    }
+
+    // 3. No hay escala definida (usar jerarquía global)
+    return null;
+  }, [escalasPorPuesto, puestos]);
+
+  /**
+   * Obtiene la escala de un alimentador (tarjeta individual).
+   * Prioriza localStorage (cambios no guardados) sobre BD.
+   * @param {string} alimId - ID del alimentador
+   * @returns {number|null} Escala del alimentador o null si no está definida
+   */
+  const obtenerEscalaTarjetaCombinada = useCallback((alimId) => {
+    if (!alimId) return null;
+
+    // 1. Primero mirar localStorage
+    const escalaLocal = escalasPorTarjeta[alimId];
+    if (escalaLocal !== undefined) {
+      return escalaLocal;
+    }
+
+    // 2. Buscar en los datos de BD (en el puesto seleccionado)
+    if (puestoSeleccionado) {
+      const alimentador = puestoSeleccionado.alimentadores.find(a => String(a.id) === String(alimId));
+      if (alimentador && alimentador.escala !== undefined && alimentador.escala !== null) {
+        return alimentador.escala;
+      }
+    }
+
+    // 3. No hay escala definida (usar jerarquía puesto/global)
+    return null;
+  }, [escalasPorTarjeta, puestoSeleccionado]);
+
+  /**
+   * Obtiene la escala efectiva de una tarjeta considerando toda la jerarquía:
+   * Individual (localStorage > BD) > Por puesto (localStorage > BD) > Global > Default
+   * @param {string} alimId - ID del alimentador
+   * @param {string} puestoId - ID del puesto
+   * @returns {number} Escala efectiva a aplicar
+   */
+  const obtenerEscalaEfectivaCombinada = useCallback((alimId, puestoId) => {
+    // 1. Escala individual (máxima prioridad)
+    const escalaIndividual = obtenerEscalaTarjetaCombinada(alimId);
+    if (escalaIndividual !== null) return escalaIndividual;
+
+    // 2. Escala por puesto
+    const escalaPuesto = obtenerEscalaPuestoCombinada(puestoId);
+    if (escalaPuesto !== null) return escalaPuesto;
+
+    // 3. Escala global (solo localStorage, no se guarda en BD)
+    if (preferenciasHook.escalaGlobal !== preferenciasHook.ESCALA_DEFAULT) {
+      return preferenciasHook.escalaGlobal;
+    }
+
+    // 4. Default
+    return preferenciasHook.ESCALA_DEFAULT;
+  }, [obtenerEscalaTarjetaCombinada, obtenerEscalaPuestoCombinada, preferenciasHook.escalaGlobal, preferenciasHook.ESCALA_DEFAULT]);
+
   // Objeto de contexto
   const valorContexto = useMemo(
     () => ({
@@ -283,6 +370,25 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       ROW_GAP_MAX: preferenciasHook.ROW_GAP_MAX,
       ROW_GAP_DEFAULT: preferenciasHook.ROW_GAP_DEFAULT,
 
+      // Escala de tarjetas
+      // Las funciones obtenerEscala* combinan localStorage + BD
+      escalaGlobal: preferenciasHook.escalaGlobal,
+      establecerEscalaGlobal: preferenciasHook.establecerEscalaGlobal,
+      resetearEscalaGlobal: preferenciasHook.resetearEscalaGlobal,
+      escalasPorPuesto: preferenciasHook.escalasPorPuesto,
+      obtenerEscalaPuesto: obtenerEscalaPuestoCombinada,
+      establecerEscalaPuesto: preferenciasHook.establecerEscalaPuesto,
+      resetearEscalaPuesto: preferenciasHook.resetearEscalaPuesto,
+      escalasPorTarjeta: preferenciasHook.escalasPorTarjeta,
+      obtenerEscalaTarjeta: obtenerEscalaTarjetaCombinada,
+      establecerEscalaTarjeta: preferenciasHook.establecerEscalaTarjeta,
+      resetearEscalaTarjeta: preferenciasHook.resetearEscalaTarjeta,
+      obtenerEscalaEfectiva: obtenerEscalaEfectivaCombinada,
+      resetearTodasLasEscalas: preferenciasHook.resetearTodasLasEscalas,
+      ESCALA_MIN: preferenciasHook.ESCALA_MIN,
+      ESCALA_MAX: preferenciasHook.ESCALA_MAX,
+      ESCALA_DEFAULT: preferenciasHook.ESCALA_DEFAULT,
+
       // Cambios pendientes (draft/publish)
       hayCambiosPendientes,
       sincronizando,
@@ -293,7 +399,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       // Limpieza al salir
       limpiarPreferenciasUI,
     }),
-    [puestosHook, medicionesHook, preferenciasHook, lecturasTarjetas, configuracionSeleccionada, cargando, hayCambiosPendientes, sincronizando, errorSincronizacion, sincronizarCambios, descartarCambios, obtenerGapCombinado, obtenerRowGapCombinado, limpiarPreferenciasUI]
+    [puestosHook, medicionesHook, preferenciasHook, lecturasTarjetas, configuracionSeleccionada, cargando, hayCambiosPendientes, sincronizando, errorSincronizacion, sincronizarCambios, descartarCambios, obtenerGapCombinado, obtenerRowGapCombinado, obtenerEscalaPuestoCombinada, obtenerEscalaTarjetaCombinada, obtenerEscalaEfectivaCombinada, limpiarPreferenciasUI]
   );
 
   return (

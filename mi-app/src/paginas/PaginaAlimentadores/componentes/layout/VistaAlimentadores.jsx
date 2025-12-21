@@ -55,6 +55,15 @@ const VistaAlimentadores = () => {
    obtenerRowGap,                         // obtiene gap vertical de una fila (localStorage > BD > default)
    establecerRowGap,                      // establece gap vertical de una fila
    GAP_DEFAULT,                           // valor por defecto para gaps horizontales
+   // Escala de tarjetas
+   escalaGlobal,                          // escala global para todas las tarjetas
+   establecerEscalaGlobal,                // establece escala global
+   obtenerEscalaEfectiva,                 // obtiene escala efectiva (individual > puesto > global > default)
+   establecerEscalaTarjeta,               // establece escala individual de un alimentador
+   obtenerEscalaPuesto,                   // obtiene escala de un puesto específico
+   establecerEscalaPuesto,                // establece escala de un puesto
+   ESCALA_MIN,                            // escala mínima permitida
+   ESCALA_MAX,                            // escala máxima permitida
    // Limpieza al salir
    limpiarPreferenciasUI,                 // limpia localStorage de gaps al salir
    // Estado de sincronización
@@ -684,6 +693,10 @@ const {
 					onAbrirModalGestionarAccesos={abrirModalGestionarAccesos}
 					onSalir={handleSalir}
 					coloresSistema={COLORES_SISTEMA}
+					escalaGlobal={escalaGlobal}
+					onEscalaGlobalChange={establecerEscalaGlobal}
+					ESCALA_MIN={ESCALA_MIN}
+					ESCALA_MAX={ESCALA_MAX}
 				/>
 			)}
 
@@ -750,6 +763,11 @@ const {
 							onPlayStopClick={handlePlayStopClick}
 							obtenerContadorPolling={obtenerContadorPolling}
 							obtenerErrorPolling={obtenerErrorPolling}
+							// Escala de tarjetas
+							obtenerEscalaEfectiva={obtenerEscalaEfectiva}
+							onEscalaChange={establecerEscalaTarjeta}
+							ESCALA_MIN={ESCALA_MIN}
+							ESCALA_MAX={ESCALA_MAX}
 						/>
 					</>
 				)}
@@ -769,6 +787,10 @@ const {
 				onCerrar={() => cerrarModal("editarPuestos")}
 				onGuardar={handleGuardarPuestos}
 				rolGlobal={rolGlobal}
+				obtenerEscalaPuesto={obtenerEscalaPuesto}
+				onEscalaPuestoChange={establecerEscalaPuesto}
+				ESCALA_MIN={ESCALA_MIN}
+				ESCALA_MAX={ESCALA_MAX}
 			/>
 
 			<ModalConfiguracionAlimentador

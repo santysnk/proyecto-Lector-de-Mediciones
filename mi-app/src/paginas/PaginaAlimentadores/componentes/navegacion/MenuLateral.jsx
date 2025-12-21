@@ -20,6 +20,11 @@ const MenuLateral = ({
 	onAbrirModalGestionarAccesos,       // callback para abrir modal "Gestionar Accesos"
 	onSalir,                            // callback para salir al login
 	coloresSistema,                     // paleta de colores para botones de puesto
+	// Props de escala global
+	escalaGlobal,                       // número actual de escala global
+	onEscalaGlobalChange,               // (escala) => void
+	ESCALA_MIN = 0.5,
+	ESCALA_MAX = 2.0,
 }) => {
 	const {
 		configuraciones,
@@ -153,6 +158,49 @@ const MenuLateral = ({
 						))}
 					</div>
 				</section>
+
+				{/* Sección Escala Global */}
+				{onEscalaGlobalChange && (
+					<section className="alim-drawer-section">
+						<h3 className="alim-drawer-section-title">Escala Global</h3>
+						<div className="alim-drawer-escala">
+							<input
+								type="range"
+								min={ESCALA_MIN}
+								max={ESCALA_MAX}
+								step="0.1"
+								value={escalaGlobal ?? 1.0}
+								onChange={(e) => onEscalaGlobalChange(parseFloat(e.target.value))}
+								className="alim-drawer-escala-slider"
+							/>
+							<div className="alim-drawer-escala-valor">
+								<input
+									type="number"
+									step="0.1"
+									min={ESCALA_MIN}
+									max={ESCALA_MAX}
+									value={escalaGlobal ?? 1.0}
+									onChange={(e) => {
+										const valor = parseFloat(e.target.value);
+										if (!isNaN(valor) && valor >= ESCALA_MIN && valor <= ESCALA_MAX) {
+											onEscalaGlobalChange(valor);
+										}
+									}}
+									className="alim-drawer-escala-input"
+								/>
+								<span className="alim-drawer-escala-x">x</span>
+							</div>
+							<button
+								type="button"
+								className="alim-drawer-escala-reset"
+								onClick={() => onEscalaGlobalChange(1.0)}
+								disabled={escalaGlobal === 1.0}
+							>
+								Reset
+							</button>
+						</div>
+					</section>
+				)}
 
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Acciones</h3>

@@ -11,6 +11,9 @@ export const CLAVES_STORAGE = {
 	USUARIOS_RECORDADOS: "usuariosRecordados",     // lista de usuarios recordados (login)
 	GAP_TARJETAS: "rw-gap-tarjetas",          // espaciado horizontal entre tarjetas (en px)
 	GAP_FILAS: "rw-gap-filas",                // espaciado vertical entre filas (en px)
+	ESCALA_GLOBAL: "rw-escala-global",        // escala global de todas las tarjetas
+	ESCALA_PUESTOS: "rw-escala-puestos",      // escala por puesto { puestoId: escala }
+	ESCALA_TARJETAS: "rw-escala-tarjetas",    // escala individual por tarjeta { alimId: escala }
 };
 
 {/*---------------------------------------------------------------------------
