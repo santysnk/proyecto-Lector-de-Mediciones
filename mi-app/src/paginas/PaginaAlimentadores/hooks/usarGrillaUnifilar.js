@@ -52,6 +52,26 @@ export const GROSORES_LINEA = [
 ];
 
 /**
+ * Tipos de bornes para el sistema de chispas
+ */
+export const TIPOS_BORNE = {
+	EMISOR: "EMISOR",
+	RECEPTOR: "RECEPTOR",
+};
+
+/**
+ * Configuración por defecto de chispas
+ */
+export const CONFIG_CHISPAS_DEFAULT = {
+	velocidad: 8,        // celdas por segundo
+	tamano: 4,           // radio en píxeles
+	color: "#fef08a",    // amarillo brillante
+	estela: true,        // mostrar estela
+	longitudEstela: 5,   // cantidad de posiciones en la estela
+	frecuenciaEmision: 2000, // ms entre emisiones
+};
+
+/**
  * Hook para manejar la grilla de dibujo unifiliar
  *
  * @param {string} puestoId - ID del puesto actual
@@ -89,6 +109,12 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	// Texto seleccionado para editar/eliminar
 	const [textoSeleccionadoId, setTextoSeleccionadoId] = useState(null);
 
+	// === SISTEMA DE BORNES Y CHISPAS ===
+	// Bornes: array de { id, tipo, x, y, color, activo, frecuenciaMs, nombre }
+	const [bornes, setBornes] = useState([]);
+	// Configuración de chispas
+	const [chispasConfig, setChispasConfig] = useState(CONFIG_CHISPAS_DEFAULT);
+
 	/**
 	 * Genera la clave única de localStorage para este puesto/workspace
 	 */
@@ -106,6 +132,8 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 			setCeldas({});
 			setTextos([]);
 			setGrosorLinea(GROSORES_LINEA[1].valor);
+			setBornes([]);
+			setChispasConfig(CONFIG_CHISPAS_DEFAULT);
 			return;
 		}
 
@@ -118,49 +146,61 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 					setCeldas(parsed);
 					setTextos([]);
 					setGrosorLinea(GROSORES_LINEA[1].valor);
+					setBornes([]);
+					setChispasConfig(CONFIG_CHISPAS_DEFAULT);
 				} else {
-					// Formato nuevo con celdas, textos y grosor
+					// Formato nuevo con celdas, textos, grosor, bornes y chispasConfig
 					setCeldas(parsed.celdas || {});
 					setTextos(parsed.textos || []);
 					setGrosorLinea(parsed.grosor || GROSORES_LINEA[1].valor);
+					setBornes(parsed.bornes || []);
+					setChispasConfig(parsed.chispasConfig || CONFIG_CHISPAS_DEFAULT);
 				}
 			} else {
 				setCeldas({});
 				setTextos([]);
 				setGrosorLinea(GROSORES_LINEA[1].valor);
+				setBornes([]);
+				setChispasConfig(CONFIG_CHISPAS_DEFAULT);
 			}
 		} catch (error) {
 			console.error("Error al cargar grilla unifiliar:", error);
 			setCeldas({});
 			setTextos([]);
 			setGrosorLinea(GROSORES_LINEA[1].valor);
+			setBornes([]);
+			setChispasConfig(CONFIG_CHISPAS_DEFAULT);
 		}
 	}, [obtenerClave]);
 
 	/**
-	 * Guardar en localStorage (celdas, textos y grosor)
+	 * Guardar en localStorage (celdas, textos, grosor, bornes y chispasConfig)
 	 */
-	const guardarDatos = useCallback((nuevasCeldas, nuevosTextos, nuevoGrosor = null) => {
+	const guardarDatos = useCallback((nuevasCeldas, nuevosTextos, nuevoGrosor = null, nuevosBornes = null, nuevaChispasConfig = null) => {
 		const clave = obtenerClave();
 		if (!clave) return;
 
 		try {
 			const sinCeldas = Object.keys(nuevasCeldas).length === 0;
 			const sinTextos = nuevosTextos.length === 0;
+			const bornesAGuardar = nuevosBornes !== null ? nuevosBornes : bornes;
+			const sinBornes = bornesAGuardar.length === 0;
 
-			if (sinCeldas && sinTextos) {
+			if (sinCeldas && sinTextos && sinBornes) {
 				localStorage.removeItem(clave);
 			} else {
 				localStorage.setItem(clave, JSON.stringify({
 					celdas: nuevasCeldas,
 					textos: nuevosTextos,
 					grosor: nuevoGrosor !== null ? nuevoGrosor : grosorLinea,
+					bornes: bornesAGuardar,
+					chispasConfig: nuevaChispasConfig !== null ? nuevaChispasConfig : chispasConfig,
 				}));
 			}
 		} catch (error) {
 			console.error("Error al guardar grilla unifiliar:", error);
 		}
-	}, [obtenerClave, grosorLinea]);
+	}, [obtenerClave, grosorLinea, bornes, chispasConfig]);
 
 	/**
 	 * Pintar una celda con el color seleccionado
@@ -568,6 +608,148 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		});
 	}, [guardarDatos]);
 
+	// === FUNCIONES CRUD PARA BORNES ===
+
+	/**
+	 * Seleccionar herramienta borne
+	 * @param {string} tipo - "EMISOR" o "RECEPTOR"
+	 */
+	const seleccionarBorne = useCallback((tipo) => {
+		setHerramienta("borne");
+		// El tipo se pasa como parámetro a agregarBorne
+	}, []);
+
+	/**
+	 * Agregar un nuevo borne en una celda
+	 * @param {number} x - Coordenada X de la celda
+	 * @param {number} y - Coordenada Y de la celda
+	 * @param {string} tipo - "EMISOR" o "RECEPTOR"
+	 * @returns {boolean} - true si se agregó correctamente
+	 */
+	const agregarBorne = useCallback((x, y, tipo) => {
+		const claveCelda = `${x},${y}`;
+
+		// Verificar que la celda tenga una línea pintada
+		if (!celdas[claveCelda]) {
+			console.warn("Solo se pueden colocar bornes sobre líneas pintadas");
+			return false;
+		}
+
+		// Verificar que no haya otro borne en la misma posición
+		if (bornes.some(b => b.x === x && b.y === y)) {
+			console.warn("Ya existe un borne en esta posición");
+			return false;
+		}
+
+		const contadorTipo = bornes.filter(b => b.tipo === tipo).length + 1;
+		const nuevoBorne = {
+			id: `borne-${Date.now()}`,
+			tipo,
+			x,
+			y,
+			color: tipo === TIPOS_BORNE.EMISOR ? "#22d3ee" : "#f97316",
+			activo: true,
+			frecuenciaMs: chispasConfig.frecuenciaEmision,
+			nombre: `${tipo === TIPOS_BORNE.EMISOR ? "E" : "R"}${contadorTipo}`,
+		};
+
+		const nuevosBornes = [...bornes, nuevoBorne];
+		setBornes(nuevosBornes);
+
+		// Guardar inmediatamente
+		setCeldas(currentCeldas => {
+			setTextos(currentTextos => {
+				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+				return currentTextos;
+			});
+			return currentCeldas;
+		});
+
+		return true;
+	}, [celdas, bornes, chispasConfig.frecuenciaEmision, grosorLinea, guardarDatos]);
+
+	/**
+	 * Eliminar un borne por su ID
+	 * @param {string} borneId - ID del borne a eliminar
+	 */
+	const eliminarBorne = useCallback((borneId) => {
+		const nuevosBornes = bornes.filter(b => b.id !== borneId);
+		setBornes(nuevosBornes);
+
+		// Guardar inmediatamente
+		setCeldas(currentCeldas => {
+			setTextos(currentTextos => {
+				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+				return currentTextos;
+			});
+			return currentCeldas;
+		});
+	}, [bornes, grosorLinea, guardarDatos]);
+
+	/**
+	 * Eliminar borne en una posición específica
+	 * @param {number} x - Coordenada X
+	 * @param {number} y - Coordenada Y
+	 * @returns {boolean} - true si se eliminó un borne
+	 */
+	const eliminarBorneEnPosicion = useCallback((x, y) => {
+		const borneEnPosicion = bornes.find(b => b.x === x && b.y === y);
+		if (borneEnPosicion) {
+			eliminarBorne(borneEnPosicion.id);
+			return true;
+		}
+		return false;
+	}, [bornes, eliminarBorne]);
+
+	/**
+	 * Actualizar propiedades de un borne
+	 * @param {string} borneId - ID del borne
+	 * @param {Object} cambios - Propiedades a actualizar
+	 */
+	const actualizarBorne = useCallback((borneId, cambios) => {
+		const nuevosBornes = bornes.map(b =>
+			b.id === borneId ? { ...b, ...cambios } : b
+		);
+		setBornes(nuevosBornes);
+
+		// Guardar inmediatamente
+		setCeldas(currentCeldas => {
+			setTextos(currentTextos => {
+				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+				return currentTextos;
+			});
+			return currentCeldas;
+		});
+	}, [bornes, grosorLinea, guardarDatos]);
+
+	/**
+	 * Actualizar configuración de chispas
+	 * @param {Object} nuevaConfig - Nueva configuración (parcial o completa)
+	 */
+	const actualizarChispasConfig = useCallback((nuevaConfig) => {
+		const configActualizada = { ...chispasConfig, ...nuevaConfig };
+		setChispasConfig(configActualizada);
+
+		// Guardar inmediatamente
+		setCeldas(currentCeldas => {
+			setTextos(currentTextos => {
+				guardarDatos(currentCeldas, currentTextos, grosorLinea, bornes, configActualizada);
+				return currentTextos;
+			});
+			return currentCeldas;
+		});
+	}, [chispasConfig, grosorLinea, bornes, guardarDatos]);
+
+	/**
+	 * Obtener borne en una posición específica
+	 * @param {number} x - Coordenada X
+	 * @param {number} y - Coordenada Y
+	 * @returns {Object|null} - Borne encontrado o null
+	 */
+	const obtenerBorneEnPosicion = useCallback((x, y) => {
+		return bornes.find(b => b.x === x && b.y === y) || null;
+	}, [bornes]);
+
 	/**
 	 * Exportar el dibujo a un archivo JSON
 	 */
@@ -709,6 +891,22 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 		// Importar/Exportar archivo
 		exportarAArchivo,
 		importarDesdeArchivo,
+
+		// === SISTEMA DE BORNES Y CHISPAS ===
+		bornes,
+		chispasConfig,
+		tiposBorne: TIPOS_BORNE,
+
+		// Acciones de bornes
+		seleccionarBorne,
+		agregarBorne,
+		eliminarBorne,
+		eliminarBorneEnPosicion,
+		actualizarBorne,
+		obtenerBorneEnPosicion,
+
+		// Configuración de chispas
+		actualizarChispasConfig,
 	};
 };
 

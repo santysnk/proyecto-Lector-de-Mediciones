@@ -6,6 +6,7 @@ import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
 import GrillaUnifilar from "./GrillaUnifilar.jsx";
 import usarGrillaUnifilar from "../../hooks/usarGrillaUnifilar.js";
+import usarChispas from "../../hooks/usarChispas.js";
 import "./GrillaTarjetas.css";
 
 // Breakpoint para desactivar los controles de gap en móviles/tablets
@@ -140,6 +141,14 @@ const GrillaTarjetas = ({
 
 	// Hook para la grilla unifiliar (dibujo de diagramas)
 	const grillaUnifilar = usarGrillaUnifilar(puestoId, workspaceId);
+
+	// Hook para animación de chispas
+	const chispasHook = usarChispas({
+		bornes: grillaUnifilar.bornes,
+		celdas: grillaUnifilar.celdas,
+		chispasConfig: grillaUnifilar.chispasConfig,
+		grosorLinea: grillaUnifilar.grosorLinea,
+	});
 
 	// Detectar las posiciones entre filas y manejar gaps de tarjetas que cambian de fila
 	const detectarFilasYFinales = useCallback(() => {
@@ -361,6 +370,20 @@ const GrillaTarjetas = ({
 				onEliminarTexto={grillaUnifilar.eliminarTexto}
 				onLimpiarTodo={grillaUnifilar.limpiarTodo}
 				onCerrarEdicion={grillaUnifilar.desactivarEdicion}
+				// === SISTEMA DE BORNES Y CHISPAS ===
+				bornes={grillaUnifilar.bornes}
+				chispasConfig={grillaUnifilar.chispasConfig}
+				tiposBorne={grillaUnifilar.tiposBorne}
+				onSeleccionarBorne={grillaUnifilar.seleccionarBorne}
+				onAgregarBorne={grillaUnifilar.agregarBorne}
+				onEliminarBorneEnPosicion={grillaUnifilar.eliminarBorneEnPosicion}
+				onActualizarChispasConfig={grillaUnifilar.actualizarChispasConfig}
+				// Estado y control de animación de chispas
+				animandoChispas={chispasHook.animando}
+				onToggleAnimacionChispas={chispasHook.toggleAnimacion}
+				chispas={chispasHook.chispas}
+				onObtenerPosicionPixelChispa={chispasHook.obtenerPosicionPixel}
+				onObtenerEstelaPixeles={chispasHook.obtenerEstelaPixeles}
 			/>
 
 			{/* Botón flotante para activar/desactivar modo edición de diagrama */}

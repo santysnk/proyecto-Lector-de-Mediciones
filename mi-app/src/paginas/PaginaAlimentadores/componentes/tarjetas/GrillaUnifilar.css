@@ -608,3 +608,151 @@
 .grilla-unifilar__menu-item--eliminar:hover:not(:disabled) svg {
    color: #f87171;
 }
+
+/* =========================================================
+   PANEL DE CONFIGURACIÓN DE CHISPAS
+   ========================================================= */
+.grilla-unifilar__panel-chispas {
+   position: absolute;
+   bottom: 60px;
+   right: 100px;
+   background-color: #1e293b;
+   border: 1px solid #475569;
+   border-radius: 12px;
+   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+   padding: 16px;
+   min-width: 220px;
+   z-index: 102;
+}
+
+.grilla-unifilar__panel-titulo {
+   font-size: 0.9rem;
+   font-weight: 600;
+   color: #e2e8f0;
+   margin-bottom: 14px;
+   padding-bottom: 8px;
+   border-bottom: 1px solid #475569;
+}
+
+.grilla-unifilar__panel-campo {
+   margin-bottom: 12px;
+}
+
+.grilla-unifilar__panel-campo label {
+   display: block;
+   font-size: 0.8rem;
+   color: #94a3b8;
+   margin-bottom: 4px;
+}
+
+.grilla-unifilar__panel-campo input[type="range"] {
+   width: 100%;
+   height: 6px;
+   border-radius: 3px;
+   background: #334155;
+   outline: none;
+   -webkit-appearance: none;
+   appearance: none;
+}
+
+.grilla-unifilar__panel-campo input[type="range"]::-webkit-slider-thumb {
+   -webkit-appearance: none;
+   appearance: none;
+   width: 14px;
+   height: 14px;
+   border-radius: 50%;
+   background: #22d3ee;
+   cursor: pointer;
+   transition: background 0.15s ease;
+}
+
+.grilla-unifilar__panel-campo input[type="range"]::-webkit-slider-thumb:hover {
+   background: #06b6d4;
+}
+
+.grilla-unifilar__panel-campo input[type="range"]::-moz-range-thumb {
+   width: 14px;
+   height: 14px;
+   border-radius: 50%;
+   background: #22d3ee;
+   cursor: pointer;
+   border: none;
+}
+
+.grilla-unifilar__panel-campo input[type="color"] {
+   width: 40px;
+   height: 28px;
+   padding: 0;
+   border: 2px solid #475569;
+   border-radius: 6px;
+   background: transparent;
+   cursor: pointer;
+}
+
+.grilla-unifilar__panel-campo input[type="color"]::-webkit-color-swatch-wrapper {
+   padding: 2px;
+}
+
+.grilla-unifilar__panel-campo input[type="color"]::-webkit-color-swatch {
+   border-radius: 3px;
+   border: none;
+}
+
+.grilla-unifilar__panel-campo--checkbox label {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   cursor: pointer;
+}
+
+.grilla-unifilar__panel-campo--checkbox input[type="checkbox"] {
+   width: 16px;
+   height: 16px;
+   accent-color: #22d3ee;
+   cursor: pointer;
+}
+
+.grilla-unifilar__panel-info {
+   margin-top: 14px;
+   padding-top: 10px;
+   border-top: 1px solid #475569;
+   font-size: 0.75rem;
+   color: #64748b;
+   text-align: center;
+}
+
+/* Botón animando - efecto de brillo */
+.grilla-unifilar__btn--animando {
+   animation: pulso-chispa 1.5s ease-in-out infinite;
+}
+
+@keyframes pulso-chispa {
+   0%, 100% {
+      box-shadow: 0 0 4px rgba(34, 211, 238, 0.5);
+   }
+   50% {
+      box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+   }
+}
+
+/* Botón de borne emisor - tinte cyan */
+.grilla-unifilar__btn--emisor.grilla-unifilar__btn--activo {
+   background-color: rgba(34, 211, 238, 0.15);
+   border-color: #22d3ee;
+   color: #22d3ee;
+}
+
+.grilla-unifilar__btn--emisor:hover {
+   color: #22d3ee;
+}
+
+/* Botón de borne receptor - tinte naranja */
+.grilla-unifilar__btn--receptor.grilla-unifilar__btn--activo {
+   background-color: rgba(249, 115, 22, 0.15);
+   border-color: #f97316;
+   color: #f97316;
+}
+
+.grilla-unifilar__btn--receptor:hover {
+   color: #f97316;
+}

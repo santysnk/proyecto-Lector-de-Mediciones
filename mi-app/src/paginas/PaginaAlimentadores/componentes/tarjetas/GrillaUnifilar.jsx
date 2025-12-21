@@ -20,7 +20,7 @@ const GrillaUnifilar = ({
 	modoEdicion,
 	// Color seleccionado para pintar
 	colorSeleccionado,
-	// Herramienta activa: "pincel", "borrador", "texto" o "balde"
+	// Herramienta activa: "pincel", "borrador", "texto", "balde", "mover" o "borne"
 	herramienta,
 	// ¿Está pintando? (mouse presionado)
 	estaPintando,
@@ -49,6 +49,7 @@ const GrillaUnifilar = ({
 	onSeleccionarTexto,
 	onSeleccionarBalde,
 	onSeleccionarMover,
+	onSeleccionarBorne,
 	onRellenarConectadas,
 	onBorrarArea,
 	onObtenerCeldasConectadas,
@@ -58,6 +59,20 @@ const GrillaUnifilar = ({
 	onEliminarTexto,
 	onLimpiarTodo,
 	onCerrarEdicion,
+	// === SISTEMA DE BORNES Y CHISPAS ===
+	bornes = [],
+	chispasConfig = {},
+	tiposBorne = {},
+	onAgregarBorne,
+	onEliminarBorneEnPosicion,
+	onActualizarChispasConfig,
+	// Estado de animación de chispas (controlado externamente)
+	animandoChispas = false,
+	onToggleAnimacionChispas,
+	// Chispas activas para renderizar
+	chispas = [],
+	onObtenerPosicionPixelChispa,
+	onObtenerEstelaPixeles,
 }) => {
 	const canvasRef = useRef(null);
 	const contenedorRef = useRef(null);
@@ -97,6 +112,11 @@ const GrillaUnifilar = ({
 	});
 	// Estado para texto copiado (portapapeles interno)
 	const [textoCopiado, setTextoCopiado] = useState(null);
+	// === ESTADOS PARA BORNES Y CHISPAS ===
+	// Tipo de borne a colocar cuando herramienta es "borne"
+	const [tipoBorneActivo, setTipoBorneActivo] = useState("EMISOR");
+	// Panel de configuración de chispas visible
+	const [panelChispasVisible, setPanelChispasVisible] = useState(false);
 	// Estado para menú contextual
 	const [menuContextual, setMenuContextual] = useState({
 		visible: false,
@@ -299,6 +319,83 @@ const GrillaUnifilar = ({
 			}
 		});
 
+		// Dibujar bornes
+		bornes.forEach((borne) => {
+			const centroX = borne.x * grosorLinea + grosorLinea / 2;
+			const centroY = borne.y * grosorLinea + grosorLinea / 2;
+			const radio = grosorLinea * 0.8;
+
+			// Círculo exterior con borde
+			ctx.beginPath();
+			ctx.arc(centroX, centroY, radio, 0, Math.PI * 2);
+			ctx.fillStyle = borne.color;
+			ctx.fill();
+			ctx.strokeStyle = borne.tipo === "EMISOR" ? "#0ea5e9" : "#ea580c";
+			ctx.lineWidth = 2;
+			ctx.stroke();
+
+			// Letra E o R en el centro
+			ctx.font = `bold ${grosorLinea * 0.7}px sans-serif`;
+			ctx.fillStyle = "#ffffff";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+			ctx.fillText(borne.tipo === "EMISOR" ? "E" : "R", centroX, centroY);
+		});
+
+		// Dibujar chispas (si hay animación activa)
+		if (chispas.length > 0 && onObtenerPosicionPixelChispa) {
+			const colorChispa = chispasConfig.color || "#fef08a";
+			const tamanoChispa = chispasConfig.tamano || 4;
+			const mostrarEstela = chispasConfig.estela !== false;
+
+			// Convertir color hex a RGB para usar en rgba()
+			const hexToRgb = (hex) => {
+				const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+				return result ? {
+					r: parseInt(result[1], 16),
+					g: parseInt(result[2], 16),
+					b: parseInt(result[3], 16)
+				} : { r: 254, g: 240, b: 138 };
+			};
+			const rgb = hexToRgb(colorChispa);
+
+			chispas.forEach((chispa) => {
+				// Dibujar estela primero (detrás de la chispa)
+				if (mostrarEstela && onObtenerEstelaPixeles) {
+					const estelaPixeles = onObtenerEstelaPixeles(chispa);
+					estelaPixeles.forEach((punto) => {
+						ctx.beginPath();
+						ctx.arc(punto.x, punto.y, tamanoChispa * 0.6, 0, Math.PI * 2);
+						ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${punto.opacidad * 0.6})`;
+						ctx.fill();
+					});
+				}
+
+				// Dibujar chispa principal
+				const pos = onObtenerPosicionPixelChispa(chispa);
+
+				// Efecto de brillo (glow)
+				const gradient = ctx.createRadialGradient(
+					pos.x, pos.y, 0,
+					pos.x, pos.y, tamanoChispa * 2
+				);
+				gradient.addColorStop(0, colorChispa);
+				gradient.addColorStop(0.5, `${colorChispa}80`);
+				gradient.addColorStop(1, "transparent");
+
+				ctx.beginPath();
+				ctx.arc(pos.x, pos.y, tamanoChispa * 2, 0, Math.PI * 2);
+				ctx.fillStyle = gradient;
+				ctx.fill();
+
+				// Centro de la chispa (color principal)
+				ctx.beginPath();
+				ctx.arc(pos.x, pos.y, tamanoChispa, 0, Math.PI * 2);
+				ctx.fillStyle = colorChispa;
+				ctx.fill();
+			});
+		}
+
 		// Dibujar rectángulo de selección del borrador (si está activo)
 		if (areaBorrador.activo) {
 			const minX = Math.min(areaBorrador.inicioX, areaBorrador.actualX);
@@ -322,7 +419,7 @@ const GrillaUnifilar = ({
 			ctx.strokeRect(rectX, rectY, rectW, rectH);
 			ctx.setLineDash([]);
 		}
-	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea, areaBorrador]);
+	}, [celdas, textos, modoEdicion, dimensiones, textoSeleccionadoId, grosorLinea, areaBorrador, bornes, chispas, chispasConfig, onObtenerPosicionPixelChispa, onObtenerEstelaPixeles]);
 
 	/**
 	 * Obtener coordenadas de celda desde evento de mouse
@@ -496,6 +593,20 @@ const GrillaUnifilar = ({
 					alto: 55,
 					valorOriginal: ""
 				});
+			}
+		} else if (herramienta === "borne") {
+			// Herramienta borne: colocar o eliminar borne
+			const coords = obtenerCoordenadas(e);
+			if (coords) {
+				// Verificar si ya hay un borne en esta posición
+				const borneExistente = bornes.find(b => b.x === coords.x && b.y === coords.y);
+				if (borneExistente) {
+					// Si hay un borne, eliminarlo
+					onEliminarBorneEnPosicion?.(coords.x, coords.y);
+				} else {
+					// Si no hay borne, agregar uno del tipo activo
+					onAgregarBorne?.(coords.x, coords.y, tipoBorneActivo);
+				}
 			}
 		} else if (herramienta === "balde") {
 			// Herramienta balde: rellenar celdas conectadas
@@ -1052,6 +1163,7 @@ const GrillaUnifilar = ({
 		if (arrastrandoLineas.activo) return "grabbing";
 		if (herramienta === "borrador") return "crosshair";
 		if (herramienta === "balde") return "crosshair";
+		if (herramienta === "borne") return "crosshair";
 		if (herramienta === "mover") {
 			// Mostrar manito si está sobre una línea
 			if (sobreLinea) return "grab";
@@ -1340,6 +1452,71 @@ const GrillaUnifilar = ({
 								<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
 							</svg>
 						</button>
+
+						{/* Separador */}
+						<div className="grilla-unifilar__separador" />
+
+						{/* === HERRAMIENTAS DE BORNES Y CHISPAS === */}
+						{/* Borne Emisor */}
+						<button
+							type="button"
+							className={`grilla-unifilar__btn grilla-unifilar__btn--emisor ${herramienta === "borne" && tipoBorneActivo === "EMISOR" ? "grilla-unifilar__btn--activo" : ""}`}
+							onClick={() => {
+								setTipoBorneActivo("EMISOR");
+								onSeleccionarBorne?.();
+							}}
+							title="Colocar borne emisor (origen de chispas)"
+						>
+							<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+								<path d="M11 21h-1l1-7H7.5c-.58 0-.57-.32-.38-.66l.07-.12C8.48 10.94 10.42 7.54 13 3h1l-1 7h3.5c.49 0 .56.33.47.51l-.07.15C12.96 17.55 11 21 11 21z"/>
+							</svg>
+						</button>
+						{/* Borne Receptor */}
+						<button
+							type="button"
+							className={`grilla-unifilar__btn grilla-unifilar__btn--receptor ${herramienta === "borne" && tipoBorneActivo === "RECEPTOR" ? "grilla-unifilar__btn--activo" : ""}`}
+							onClick={() => {
+								setTipoBorneActivo("RECEPTOR");
+								onSeleccionarBorne?.();
+							}}
+							title="Colocar borne receptor (destino de chispas)"
+						>
+							<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+								<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="2"/>
+								<circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" strokeWidth="2"/>
+								<circle cx="12" cy="12" r="2"/>
+							</svg>
+						</button>
+						{/* Play/Stop chispas */}
+						<button
+							type="button"
+							className={`grilla-unifilar__btn ${animandoChispas ? "grilla-unifilar__btn--activo grilla-unifilar__btn--animando" : ""}`}
+							onClick={onToggleAnimacionChispas}
+							title={animandoChispas ? "Detener animación de chispas" : "Iniciar animación de chispas"}
+							disabled={bornes.filter(b => b.tipo === "EMISOR").length === 0 || bornes.filter(b => b.tipo === "RECEPTOR").length === 0}
+						>
+							{animandoChispas ? (
+								<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+									<rect x="6" y="4" width="4" height="16"/>
+									<rect x="14" y="4" width="4" height="16"/>
+								</svg>
+							) : (
+								<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+									<path d="M8 5v14l11-7z"/>
+								</svg>
+							)}
+						</button>
+						{/* Configuración de chispas */}
+						<button
+							type="button"
+							className={`grilla-unifilar__btn ${panelChispasVisible ? "grilla-unifilar__btn--activo" : ""}`}
+							onClick={() => setPanelChispasVisible(!panelChispasVisible)}
+							title="Configuración de chispas"
+						>
+							<svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+								<path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+							</svg>
+						</button>
 					</div>
 
 					{/* Opciones de texto - solo si herramienta es texto */}
@@ -1454,6 +1631,92 @@ const GrillaUnifilar = ({
 									</svg>
 								</button>
 							)}
+						</div>
+					)}
+
+					{/* Panel de configuración de chispas */}
+					{panelChispasVisible && (
+						<div className="grilla-unifilar__panel-chispas">
+							<div className="grilla-unifilar__panel-titulo">Configuración de Chispas</div>
+
+							{/* Velocidad */}
+							<div className="grilla-unifilar__panel-campo">
+								<label>Velocidad: {chispasConfig.velocidad} celdas/s</label>
+								<input
+									type="range"
+									min="1"
+									max="20"
+									value={chispasConfig.velocidad || 8}
+									onChange={(e) => onActualizarChispasConfig?.({ velocidad: Number(e.target.value) })}
+								/>
+							</div>
+
+							{/* Tamaño */}
+							<div className="grilla-unifilar__panel-campo">
+								<label>Tamaño: {chispasConfig.tamano}px</label>
+								<input
+									type="range"
+									min="2"
+									max="10"
+									value={chispasConfig.tamano || 4}
+									onChange={(e) => onActualizarChispasConfig?.({ tamano: Number(e.target.value) })}
+								/>
+							</div>
+
+							{/* Color */}
+							<div className="grilla-unifilar__panel-campo">
+								<label>Color:</label>
+								<input
+									type="color"
+									value={chispasConfig.color || "#fef08a"}
+									onChange={(e) => onActualizarChispasConfig?.({ color: e.target.value })}
+								/>
+							</div>
+
+							{/* Estela */}
+							<div className="grilla-unifilar__panel-campo grilla-unifilar__panel-campo--checkbox">
+								<label>
+									<input
+										type="checkbox"
+										checked={chispasConfig.estela !== false}
+										onChange={(e) => onActualizarChispasConfig?.({ estela: e.target.checked })}
+									/>
+									Mostrar estela
+								</label>
+							</div>
+
+							{/* Longitud estela */}
+							{chispasConfig.estela !== false && (
+								<div className="grilla-unifilar__panel-campo">
+									<label>Longitud estela: {chispasConfig.longitudEstela}</label>
+									<input
+										type="range"
+										min="1"
+										max="10"
+										value={chispasConfig.longitudEstela || 5}
+										onChange={(e) => onActualizarChispasConfig?.({ longitudEstela: Number(e.target.value) })}
+									/>
+								</div>
+							)}
+
+							{/* Emisiones por segundo */}
+							<div className="grilla-unifilar__panel-campo">
+								<label>Emisiones/seg: {(1000 / (chispasConfig.frecuenciaEmision || 2000)).toFixed(1)}</label>
+								<input
+									type="range"
+									min="0.1"
+									max="20"
+									step="0.1"
+									value={1000 / (chispasConfig.frecuenciaEmision || 2000)}
+									onChange={(e) => onActualizarChispasConfig?.({ frecuenciaEmision: Math.round(1000 / Number(e.target.value)) })}
+								/>
+							</div>
+
+							{/* Info de bornes */}
+							<div className="grilla-unifilar__panel-info">
+								Emisores: {bornes.filter(b => b.tipo === "EMISOR").length} |
+								Receptores: {bornes.filter(b => b.tipo === "RECEPTOR").length}
+							</div>
 						</div>
 					)}
 
