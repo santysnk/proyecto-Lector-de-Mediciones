@@ -16,12 +16,12 @@ const ROW_GAP_MAX = 200;
 /**
  * Hook para manejar preferencias de UI:
  * - Espaciado horizontal individual por tarjeta
- * - Espaciado vertical por fila (índice de fila)
+ * - Espaciado vertical por fila (índice de fila + puestoId)
  *
  * Persiste automáticamente en localStorage.
  *
  * Gaps horizontales: { "alimId1": 10, "alimId2": 50, ... }
- * Gaps verticales: { "0": 20, "1": 30, ... } (índice de fila como key)
+ * Gaps verticales: { "puestoId:rowIndex": 20, ... } (combinación puesto+fila como key)
  */
 export const usarPreferenciasUI = () => {
 	// ===== GAPS HORIZONTALES (entre tarjetas) =====
@@ -83,26 +83,35 @@ export const usarPreferenciasUI = () => {
 		localStorage.setItem(CLAVES_STORAGE.GAP_FILAS, JSON.stringify(gapsPorFila));
 	}, [gapsPorFila]);
 
-	// Obtener el gap de una fila específica (índice 0 = separación del menú)
-	const obtenerRowGap = useCallback((rowIndex) => {
-		const gap = gapsPorFila[rowIndex];
+	// Generar clave única para un gap de fila (combinando puestoId y rowIndex)
+	const generarClaveRowGap = (puestoId, rowIndex) => `${puestoId}:${rowIndex}`;
+
+	// Obtener el gap de una fila específica en un puesto específico
+	const obtenerRowGap = useCallback((puestoId, rowIndex) => {
+		if (!puestoId) return ROW_GAP_DEFAULT;
+		const clave = generarClaveRowGap(puestoId, rowIndex);
+		const gap = gapsPorFila[clave];
 		return gap !== undefined ? gap : ROW_GAP_DEFAULT;
 	}, [gapsPorFila]);
 
-	// Establecer el gap de una fila específica
-	const establecerRowGap = useCallback((rowIndex, nuevoGap) => {
+	// Establecer el gap de una fila específica en un puesto específico
+	const establecerRowGap = useCallback((puestoId, rowIndex, nuevoGap) => {
+		if (!puestoId) return;
+		const clave = generarClaveRowGap(puestoId, rowIndex);
 		const gapValidado = Math.max(ROW_GAP_MIN, Math.min(ROW_GAP_MAX, nuevoGap));
 		setGapsPorFilaState(prev => ({
 			...prev,
-			[rowIndex]: gapValidado
+			[clave]: gapValidado
 		}));
 	}, []);
 
 	// Resetear gap de una fila al valor por defecto
-	const resetearRowGap = useCallback((rowIndex) => {
+	const resetearRowGap = useCallback((puestoId, rowIndex) => {
+		if (!puestoId) return;
+		const clave = generarClaveRowGap(puestoId, rowIndex);
 		setGapsPorFilaState(prev => {
 			const nuevo = { ...prev };
-			delete nuevo[rowIndex];
+			delete nuevo[clave];
 			return nuevo;
 		});
 	}, []);

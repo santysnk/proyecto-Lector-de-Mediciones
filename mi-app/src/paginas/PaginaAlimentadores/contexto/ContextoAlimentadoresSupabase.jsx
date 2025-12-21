@@ -72,11 +72,20 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   useEffect(() => {
     if (puestos.length > 0) {
       // Para gaps verticales por puesto, construimos un objeto
-      // Por ahora usamos gapsPorFila global para todos los puestos
+      // Extraemos de gapsPorFila solo los gaps de cada puesto (formato clave: "puestoId:rowIndex")
       const gapsPorFilaPorPuesto = {};
       puestos.forEach((p) => {
-        // Combinar gaps de BD con los de localStorage
-        gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsPorFila };
+        const gapsDelPuesto = {};
+        // Buscar en gapsPorFila todas las claves que empiezan con este puestoId
+        Object.entries(gapsPorFila).forEach(([clave, valor]) => {
+          if (clave.startsWith(`${p.id}:`)) {
+            // Extraer el rowIndex de la clave "puestoId:rowIndex"
+            const rowIndex = clave.split(':')[1];
+            gapsDelPuesto[rowIndex] = valor;
+          }
+        });
+        // Combinar: BD primero, luego localStorage (localStorage tiene prioridad)
+        gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
       });
 
       const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
@@ -88,9 +97,17 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   const sincronizarCambios = useCallback(async () => {
     if (!hayCambiosPendientes) return;
 
+    // Construir gapsPorFilaPorPuesto extrayendo solo los gaps de cada puesto
     const gapsPorFilaPorPuesto = {};
     puestos.forEach((p) => {
-      gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsPorFila };
+      const gapsDelPuesto = {};
+      Object.entries(gapsPorFila).forEach(([clave, valor]) => {
+        if (clave.startsWith(`${p.id}:`)) {
+          const rowIndex = clave.split(':')[1];
+          gapsDelPuesto[rowIndex] = valor;
+        }
+      });
+      gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
     });
 
     const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto);
@@ -185,19 +202,23 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   }, [gapsPorTarjeta, puestoSeleccionado, preferenciasHook.GAP_DEFAULT]);
 
   /**
-   * Obtiene el gap vertical de una fila.
+   * Obtiene el gap vertical de una fila en un puesto específico.
    * Prioriza localStorage (cambios no guardados) sobre BD.
+   * @param {string} puestoId - ID del puesto
+   * @param {number} rowIndex - Índice de la fila
    */
-  const obtenerRowGapCombinado = useCallback((rowIndex) => {
-    // 1. Primero mirar localStorage
-    const gapLocal = gapsPorFila[rowIndex];
+  const obtenerRowGapCombinado = useCallback((puestoId, rowIndex) => {
+    // 1. Primero mirar localStorage (usa clave compuesta puestoId:rowIndex)
+    const claveLocal = `${puestoId}:${rowIndex}`;
+    const gapLocal = gapsPorFila[claveLocal];
     if (gapLocal !== undefined) {
       return gapLocal;
     }
 
-    // 2. Buscar en los gaps verticales del puesto seleccionado (BD)
-    if (puestoSeleccionado && puestoSeleccionado.gapsVerticales) {
-      const gapBD = puestoSeleccionado.gapsVerticales[rowIndex];
+    // 2. Buscar en los gaps verticales del puesto específico (BD)
+    const puesto = puestos.find(p => p.id === puestoId);
+    if (puesto && puesto.gapsVerticales) {
+      const gapBD = puesto.gapsVerticales[rowIndex];
       if (gapBD !== undefined) {
         return gapBD;
       }
@@ -205,7 +226,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
     // 3. Default
     return preferenciasHook.ROW_GAP_DEFAULT;
-  }, [gapsPorFila, puestoSeleccionado, preferenciasHook.ROW_GAP_DEFAULT]);
+  }, [gapsPorFila, puestos, preferenciasHook.ROW_GAP_DEFAULT]);
 
   // Objeto de contexto
   const valorContexto = useMemo(

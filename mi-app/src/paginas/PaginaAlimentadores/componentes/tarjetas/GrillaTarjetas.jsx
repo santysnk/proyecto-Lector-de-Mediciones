@@ -285,13 +285,13 @@ const GrillaTarjetas = ({
 		};
 	}, [detectarFilasYFinales]);
 
-	// Re-detectar cuando cambian los row gaps
+	// Re-detectar cuando cambian los row gaps o el puesto seleccionado
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			requestAnimationFrame(detectarFilasYFinales);
 		}, 50);
 		return () => clearTimeout(timer);
-	}, [obtenerRowGap, detectarFilasYFinales]);
+	}, [obtenerRowGap, puestoId, detectarFilasYFinales]);
 
 	// Detectar modo móvil al cambiar el tamaño de ventana
 	useEffect(() => {
@@ -304,8 +304,8 @@ const GrillaTarjetas = ({
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
-	// En modo móvil, usar gaps fijos; en desktop, usar los configurados
-	const rowGapPrimero = esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(0);
+	// En modo móvil, usar gaps fijos; en desktop, usar los configurados (con puestoId)
+	const rowGapPrimero = esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(puestoId, 0);
 
 	// Función para obtener el margin-top de una tarjeta según su fila
 	const obtenerMarginTop = (alimId) => {
@@ -313,9 +313,9 @@ const GrillaTarjetas = ({
 		if (fila === undefined || fila === 0) return 0; // Primera fila no tiene margin
 		// Buscar si esta tarjeta es la primera de su fila
 		if (primerasTarjetasPorFila[fila] === alimId) {
-			return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(fila);
+			return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(puestoId, fila);
 		}
-		return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(fila);
+		return esModoMobile ? ROW_GAP_FIJO_MOBILE : obtenerRowGap(puestoId, fila);
 	};
 
 	return (
@@ -416,8 +416,8 @@ const GrillaTarjetas = ({
 			{/* RowGapResizer para la primera fila (separación del menú) - solo en desktop */}
 			{!elementoArrastrandoId && !esModoMobile && (
 				<RowGapResizer
-					gap={obtenerRowGap(0)}
-					onGapChange={(nuevoGap) => onRowGapChange(0, nuevoGap)}
+					gap={obtenerRowGap(puestoId, 0)}
+					onGapChange={(nuevoGap) => onRowGapChange(puestoId, 0, nuevoGap)}
 					rowIndex={0}
 				/>
 			)}
@@ -560,8 +560,8 @@ const GrillaTarjetas = ({
 						style={{ top: `${pos.top}px` }}
 					>
 						<RowGapResizer
-							gap={obtenerRowGap(pos.filaIndex)}
-							onGapChange={(nuevoGap) => onRowGapChange(pos.filaIndex, nuevoGap)}
+							gap={obtenerRowGap(puestoId, pos.filaIndex)}
+							onGapChange={(nuevoGap) => onRowGapChange(puestoId, pos.filaIndex, nuevoGap)}
 							rowIndex={pos.filaIndex}
 						/>
 					</div>
