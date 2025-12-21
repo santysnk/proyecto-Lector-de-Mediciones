@@ -573,20 +573,6 @@ const {
 		};
 	}, []);
 
-	// Detener polling cuando cambia el puesto seleccionado
-	useEffect(() => {
-		// Limpiar todos los intervalos de polling
-		Object.values(pollingIntervalsRef.current).forEach(limpiarIntervalos);
-		pollingIntervalsRef.current = {};
-		// Resetear estados
-		setAlimentadoresPolling({});
-		setLecturasPolling({});
-		setContadoresPolling({});
-		setContadoresErrorLectura({});
-		setContadoresErrorRed({});
-		setHayProblemaConexion(false);
-	}, [puestoSeleccionado?.id]);
-
 	// ===== DRAG & DROP =====
 	const handleDragStartAlim = (alimId) => {
 		alIniciarArrastre(alimId);                                    // guarda qué tarjeta se está arrastrando
