@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contextos/AuthContext";
 import "./PaginaLogin.css";
+import logoApp from "../../assets/imagenes/logo 2 rw.png";
 
 // Icono ojo abierto
 const EyeIcon = () => (
@@ -70,7 +71,7 @@ const PaginaLogin = () => {
       <div className="container">
         <div className="izquierda">
           <img
-            src="/src/assets/imagenes/logo 2 rw.png"
+            src={logoApp}
             alt="logoApp"
             className="logo"
           />

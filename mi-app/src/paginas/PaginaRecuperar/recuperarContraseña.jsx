@@ -3,6 +3,7 @@
 import { useState } from "react";                  // hook para manejar estado local (email y alertas)
 import { useNavigate } from "react-router-dom";    // navegación: volver a /login u otras rutas
 import "./recuperarContraseña.css";                // estilos específicos de la pantalla de recuperación
+import logoApp from "../../assets/imagenes/logo 2 rw.png";
 
 const RecuperarContrasena = () => {
    const [email, setEmail] = useState("");         // email que escribe el usuario
@@ -51,7 +52,7 @@ const RecuperarContrasena = () => {
             </button>
 
             <img
-               src="/src/assets/imagenes/logo 2 rw.png"
+               src={logoApp}
                alt="Logo"
                className="logo-recuperar"
             />
@@ -261,7 +262,7 @@ CÓDIGO + EXPLICACIÓN DE CADA PARTE (recuperarContraseña.jsx)
 
    6.2) Logo y títulos
 
-   <img src="/src/assets/imagenes/logo 2 rw.png" ... />
+   <img src={logoApp} ... />
    <h2 className="h2-Recuperar">Recuperar contraseña</h2>
    <p className="texto-ayuda">...</p>
 

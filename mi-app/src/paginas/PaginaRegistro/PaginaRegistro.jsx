@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contextos/AuthContext";
 import "../PaginaLogin/PaginaLogin.css";
 import "./PaginaRegistro.css";
+import logoApp from "../../assets/imagenes/logo 2 rw.png";
 
 const PaginaRegistro = () => {
   const [nombre, setNombre] = useState("");
@@ -150,7 +151,7 @@ const PaginaRegistro = () => {
       <div className="container">
         <div className="izquierda">
           <img
-            src="/src/assets/imagenes/logo 2 rw.png"
+            src={logoApp}
             alt="logoApp"
             className="logo"
           />
