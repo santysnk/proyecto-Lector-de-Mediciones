@@ -712,6 +712,32 @@
    cursor: pointer;
 }
 
+.grilla-unifilar__panel-select {
+   width: 100%;
+   padding: 6px 10px;
+   border: 1px solid #475569;
+   border-radius: 6px;
+   background-color: #334155;
+   color: #e2e8f0;
+   font-size: 0.85rem;
+   cursor: pointer;
+   outline: none;
+   transition: border-color 0.15s ease;
+}
+
+.grilla-unifilar__panel-select:hover {
+   border-color: #64748b;
+}
+
+.grilla-unifilar__panel-select:focus {
+   border-color: #22d3ee;
+}
+
+.grilla-unifilar__panel-select option {
+   background-color: #1e293b;
+   color: #e2e8f0;
+}
+
 .grilla-unifilar__panel-info {
    margin-top: 14px;
    padding-top: 10px;

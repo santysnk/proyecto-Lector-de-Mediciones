@@ -9,7 +9,7 @@ import {
 /**
  * Límite máximo de chispas simultáneas para evitar problemas de rendimiento
  */
-const MAX_CHISPAS = 600;
+const MAX_CHISPAS = 100;
 
 /**
  * Hook para manejar la animación de chispas en el diagrama unifilar.
