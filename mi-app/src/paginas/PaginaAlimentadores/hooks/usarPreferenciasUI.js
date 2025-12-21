@@ -11,7 +11,7 @@ const GAP_MAX = 500;
 // Valores por defecto - Gaps verticales (entre filas)
 const ROW_GAP_DEFAULT = 40;
 const ROW_GAP_MIN = 0;
-const ROW_GAP_MAX = 200;
+const ROW_GAP_MAX = 400;
 
 // Valores por defecto - Escala de tarjetas
 const ESCALA_DEFAULT = 1.0;

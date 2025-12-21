@@ -14,7 +14,7 @@
 
 /* Tarjeta base (card de alimentador) */
 .alim-card {
-	background-color: #2b2c2b; /* mismo color que el body para que no se vea diferencia */
+	background-color: #262726; /* fondo gris oscuro */
 	border-radius: 6px;
 	overflow: hidden;
 	box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
@@ -130,11 +130,73 @@
 	letter-spacing: 0.04em;
 }
 
+/* ===== BARRA DE PROGRESO DE POLLING ===== */
+.alim-card-progress-track {
+	height: 8px;
+	background: transparent;
+	position: relative;
+	overflow: hidden;
+}
+
+.alim-card-progress-fill {
+	height: 100%;
+	width: 100%;
+	background: linear-gradient(to right, #0a3d1a 0%, #22c55e 100%);
+	transform: scaleX(0);
+	transform-origin: left center;
+	animation: alim-progress-fill var(--progress-duration, 60s) linear forwards;
+	position: relative;
+	overflow: hidden;
+	will-change: transform;
+}
+
+/* Chispa que recorre solo el área de progreso */
+.alim-card-progress-spark {
+	position: absolute;
+	top: 0;
+	left: -30px;
+	width: 30px;
+	height: 100%;
+	background: linear-gradient(
+		to right,
+		transparent 0%,
+		rgba(255, 255, 255, 0.7) 50%,
+		transparent 100%
+	);
+	animation: alim-spark 2s ease-in-out infinite;
+}
+
+@keyframes alim-progress-fill {
+	0% {
+		transform: scaleX(0);
+	}
+	100% {
+		transform: scaleX(1);
+	}
+}
+
+@keyframes alim-spark {
+	0% {
+		left: -30px;
+		opacity: 0;
+	}
+	10% {
+		opacity: 1;
+	}
+	90% {
+		opacity: 1;
+	}
+	100% {
+		left: 100%;
+		opacity: 0;
+	}
+}
+
 /* Cuerpo de la tarjeta */
 .alim-card-body {
 	position: relative;
-	padding: 0.8rem 1rem 1.2rem; /* padding inferior para el triángulo de escala */
-	background-color: #2b2c2b;
+	padding: 0 1rem 1.2rem; /* sin padding superior, inferior para el triángulo de escala */
+	background-color: #262726; /* mismo que la tarjeta base */
 	border-radius: 0 0 6px 6px;
 }
 
@@ -182,7 +244,7 @@
 	letter-spacing: 0.06em;
 	padding: 0.25rem 0.3rem;
 	border-radius: 6px;
-	background-color: #020617;
+	background-color: #020617;     /* fondo negro */
 	border-width: 1px;
 	border-color: #0ea5e9;
 	color: #ffff00;
@@ -471,6 +533,7 @@
 }
 .alim-card-scale-input[type="number"] {
 	-moz-appearance: textfield;
+	appearance: textfield;
 }
 
 .alim-card-scale-actions {

@@ -92,6 +92,7 @@ const TarjetaAlimentador = ({
   const [mostrarProgresoAnalizador, setMostrarProgresoAnalizador] =
     useState(false);
   const [mostrarProgresoPolling, setMostrarProgresoPolling] = useState(false);
+  const [cicloPolling, setCicloPolling] = useState(0); // contador local para reiniciar animación de barra
   const ultimoContadorReleRef = useRef(contadorRele);
   const ultimoContadorAnalizadorRef = useRef(contadorAnalizador);
   const ultimoContadorPollingRef = useRef(contadorPolling);
@@ -132,6 +133,7 @@ const TarjetaAlimentador = ({
   }, [contadorAnalizador, mideAnalizador]);
 
   // Control de animación para polling de lecturas desde BD
+  // El contador se incrementa 1 vez por ciclo desde VistaAlimentadores
   useEffect(() => {
     if (!estaPolling) {
       setMostrarProgresoPolling(false);
@@ -142,6 +144,8 @@ const TarjetaAlimentador = ({
     if (contadorPolling !== ultimoContadorPollingRef.current) {
       ultimoContadorPollingRef.current = contadorPolling;
       setMostrarProgresoPolling(contadorPolling > 0);
+      // Incrementar cicloPolling para reiniciar la animación de la barra
+      setCicloPolling(prev => prev + 1);
     }
   }, [contadorPolling, estaPolling]);
 
@@ -326,6 +330,18 @@ const TarjetaAlimentador = ({
 
           <span className="alim-card-title">{nombre}</span>
         </div>
+
+        {/* Barra de progreso de polling */}
+        {estaPolling && mostrarProgresoPolling && (
+          <div className="alim-card-progress-track" key={cicloPolling}>
+            <div
+              className="alim-card-progress-fill"
+              style={{ "--progress-duration": `${periodoPolling}s` }}
+            >
+              <div className="alim-card-progress-spark" />
+            </div>
+          </div>
+        )}
 
         {/* Cuerpo con los 2 bloques (superior / inferior) */}
         <div className="alim-card-body">

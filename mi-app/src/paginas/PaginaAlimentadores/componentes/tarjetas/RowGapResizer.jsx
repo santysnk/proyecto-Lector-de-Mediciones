@@ -18,7 +18,7 @@ import "./RowGapResizer.css";
  * @param {function} onGapChange - Callback (nuevoGap)
  * @param {number} rowIndex - Índice de la fila (0 = primera fila, separación del menú)
  */
-const RowGapResizer = ({ gap, onGapChange, rowIndex, minGap = 0, maxGap = 200 }) => {
+const RowGapResizer = ({ gap, onGapChange, rowIndex, minGap = 0, maxGap = 400 }) => {
 	const [isHovered, setIsHovered] = useState(false);
 	const [isDragging, setIsDragging] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);

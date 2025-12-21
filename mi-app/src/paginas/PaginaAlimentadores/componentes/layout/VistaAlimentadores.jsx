@@ -94,6 +94,7 @@ const {
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
 	const pollingIntervalsRef = useRef({}); // { [alimId]: intervalId } - para limpiar intervalos
+	const contadorIntervalsRef = useRef({}); // { [alimId]: intervalId } - intervalos separados para incrementar contador (1 por ciclo)
 	const [registradores, setRegistradores] = useState([]); // Lista de registradores del workspace
 	// Errores de lectura: el agente no pudo leer del equipo Modbus (exito === false)
 	const [contadoresErrorLectura, setContadoresErrorLectura] = useState({}); // { [alimId_zona]: number }
@@ -356,11 +357,8 @@ const {
 					...prev,
 					[claveError]: (prev[claveError] || 0) + 1,
 				}));
-				// Incrementar contador general para que la UI sepa que hubo un intento
-				setContadoresPolling((prev) => ({
-					...prev,
-					[alimId]: (prev[alimId] || 0) + 1,
-				}));
+				// NOTA: No incrementamos contadorPolling aquí para evitar múltiples incrementos
+				// cuando hay varias zonas. El contador se incrementa en iniciarPolling.
 				return; // No actualizar valores si hay error de lectura
 			}
 
@@ -398,12 +396,8 @@ const {
 						rele: [...registrosFiltrados, ...registrosTransformados]
 					};
 				});
-
-				// Incrementar contador de lecturas para reiniciar la animación de borde
-				setContadoresPolling((prev) => ({
-					...prev,
-					[alimId]: (prev[alimId] || 0) + 1,
-				}));
+				// NOTA: No incrementamos contadorPolling aquí para evitar múltiples incrementos
+				// cuando hay varias zonas. El contador se incrementa en iniciarPolling.
 			}
 		} catch (error) {
 			// Error de RED: el frontend no pudo comunicarse con el backend
@@ -476,6 +470,10 @@ const {
 				clearInterval(intervalos);
 			}
 		}
+		// Limpiar intervalo del contador si existe
+		if (contadorIntervalsRef.current[alim.id]) {
+			clearInterval(contadorIntervalsRef.current[alim.id]);
+		}
 
 		// Crear intervalos para cada registrador único
 		const intervalos = [];
@@ -500,6 +498,23 @@ const {
 		});
 
 		pollingIntervalsRef.current[alim.id] = intervalos.length === 1 ? intervalos[0] : intervalos;
+
+		// Incrementar contador inmediatamente para la primera lectura
+		setContadoresPolling((prev) => ({
+			...prev,
+			[alim.id]: (prev[alim.id] || 0) + 1,
+		}));
+
+		// Crear un intervalo separado SOLO para incrementar el contador (1 vez por ciclo)
+		// Esto evita múltiples incrementos cuando hay varios registradores/zonas
+		const contadorIntervalId = setInterval(() => {
+			setContadoresPolling((prev) => ({
+				...prev,
+				[alim.id]: (prev[alim.id] || 0) + 1,
+			}));
+		}, alim.intervalo_consulta_ms);
+
+		contadorIntervalsRef.current[alim.id] = contadorIntervalId;
 	}, [fetchLecturasRegistrador, obtenerRegistradoresDeAlim]);
 
 	// Detiene el polling para un alimentador
@@ -513,6 +528,11 @@ const {
 				clearInterval(intervalos);
 			}
 			delete pollingIntervalsRef.current[alimId];
+		}
+		// Limpiar el intervalo del contador de animación
+		if (contadorIntervalsRef.current[alimId]) {
+			clearInterval(contadorIntervalsRef.current[alimId]);
+			delete contadorIntervalsRef.current[alimId];
 		}
 		// Limpiar las lecturas de polling para ese alimentador (incluyendo las de zonas)
 		setLecturasPolling((prev) => {

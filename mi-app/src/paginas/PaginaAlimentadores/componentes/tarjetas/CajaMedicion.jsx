@@ -75,14 +75,15 @@ const CajaMedicion = ({
 
 	let clasesValor = "alim-card-meter-value";                    // clase base del valor
 
-	// si hay animación activa, agregar la clase correspondiente
-	if (usarAnimacion && !tieneError) {
-		if (pollingActivo || esDelRele) {
-			clasesValor += " alim-meter-progress-rele";
-		} else if (esDelAnalizador) {
-			clasesValor += " alim-meter-progress-analizador";
-		}
-	}
+	// TEMPORALMENTE DESACTIVADO: animación de borde en el box
+	// Se usa la barra de progreso horizontal en su lugar
+	// if (usarAnimacion && !tieneError) {
+	// 	if (pollingActivo || esDelRele) {
+	// 		clasesValor += " alim-meter-progress-rele";
+	// 	} else if (esDelAnalizador) {
+	// 		clasesValor += " alim-meter-progress-analizador";
+	// 	}
+	// }
 
 	// si hay error, agregar clase de error
 	if (tieneError && box.enabled) {
