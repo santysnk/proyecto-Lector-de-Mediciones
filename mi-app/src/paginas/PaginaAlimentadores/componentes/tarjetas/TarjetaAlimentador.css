@@ -173,14 +173,14 @@
 	position: relative;            /* necesario para dibujar el borde animado con ::before */
 	display: block;
 	font-family: "DS-Digital", "Courier New", monospace;
-	font-size: 1.3rem;
+	font-size: 1.5rem;
 	letter-spacing: 0.06em;
 	padding: 0.25rem 0.3rem;
 	border-radius: 6px;
 	background-color: #020617;
 	border-width: 1px;
 	border-color: #0ea5e9;
-	color: #facc15;
+	color: #ffff00;
 	box-shadow: inset 0 0 6px rgba(250, 204, 21, 0.4);
 }
 
