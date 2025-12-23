@@ -17,6 +17,7 @@ import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimenta
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
+import ModalHistorial from "../modales/ModalHistorial.jsx";                               // modal de historial de lecturas con gráficos
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -24,6 +25,7 @@ import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresS
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
 import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService"; // API para polling de lecturas
+import { usarHistorialLocal } from "../../hooks/usarHistorialLocal"; // Hook para guardar historial en IndexedDB
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -83,6 +85,7 @@ const {
 
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
+	const { guardarLecturaLocal } = usarHistorialLocal(); // Hook para guardar lecturas en IndexedDB
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
@@ -90,6 +93,8 @@ const {
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
 	const [modalAccesosAbierto, setModalAccesosAbierto] = useState(false); // estado del modal de gestión de accesos
+	const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false); // estado del modal de historial de lecturas
+	const [alimentadorHistorial, setAlimentadorHistorial] = useState(null); // alimentador seleccionado para ver historial
 	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
@@ -396,6 +401,16 @@ const {
 						rele: [...registrosFiltrados, ...registrosTransformados]
 					};
 				});
+
+				// Guardar lectura en IndexedDB para historial (solo lecturas exitosas)
+				// Se guarda por zona para poder consultar el historial por zona después
+				guardarLecturaLocal(alimId, registradorId, zona, {
+					timestamp: lectura.timestamp ? new Date(lectura.timestamp).getTime() : Date.now(),
+					valores: lectura.valores,
+					indiceInicial: indiceInicial,
+					exito: true,
+				});
+
 				// NOTA: No incrementamos contadorPolling aquí para evitar múltiples incrementos
 				// cuando hay varias zonas. El contador se incrementa en iniciarPolling.
 			}
@@ -410,7 +425,7 @@ const {
 			// Marcar que hay problema de conexión global
 			setHayProblemaConexion(true);
 		}
-	}, [actualizarRegistros]);
+	}, [actualizarRegistros, guardarLecturaLocal]);
 
 	// Extrae los registrador_id únicos del card_design de un alimentador
 	const obtenerRegistradoresDeAlim = useCallback((alim) => {
@@ -779,6 +794,10 @@ const {
 							workspaceId={configuracionSeleccionada?.id}
 							elementoArrastrandoId={elementoArrastrandoId}
 							onAbrirConfiguracion={abrirModalEditarAlim}
+							onAbrirHistorial={(puestoId, alim) => {
+								setAlimentadorHistorial(alim);
+								setModalHistorialAbierto(true);
+							}}
 							onDragStart={handleDragStartAlim}
 							onDragOver={alPasarPorEncima}
 							onDrop={handleDropAlim}
@@ -860,6 +879,16 @@ const {
 				workspaceNombre={configuracionSeleccionada?.nombre}
 				usuarioActualId={perfil?.id}
 				onCerrar={() => setModalAccesosAbierto(false)}
+			/>
+
+			<ModalHistorial
+				abierto={modalHistorialAbierto}
+				onCerrar={() => {
+					setModalHistorialAbierto(false);
+					setAlimentadorHistorial(null);
+				}}
+				alimentador={alimentadorHistorial}
+				cardDesign={alimentadorHistorial?.card_design}
 			/>
 		</div>
 	);

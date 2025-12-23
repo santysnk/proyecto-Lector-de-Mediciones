@@ -54,6 +54,7 @@ const TarjetaAlimentador = ({
   nombre,
   color,
   onConfigClick,           // abre modal de configuración del alimentador
+  onHistorialClick,        // abre modal de historial de lecturas
   topSide,                 // diseño + valores para la parte superior
   bottomSide,              // diseño + valores para la parte inferior
   draggable = false,       // si la tarjeta se puede arrastrar
@@ -326,6 +327,19 @@ const TarjetaAlimentador = ({
             >
               <img src={configIcon} alt="Configurar" className="alim-card-icon" />
             </button>
+            {onHistorialClick && (
+              <button
+                type="button"
+                className="alim-card-icon-btn alim-card-historial-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onHistorialClick();
+                }}
+                title="Ver historial de lecturas"
+              >
+                <span className="alim-card-historial-icon">📈</span>
+              </button>
+            )}
           </div>
 
           <span className="alim-card-title">{nombre}</span>

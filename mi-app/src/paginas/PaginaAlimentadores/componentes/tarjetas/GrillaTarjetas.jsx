@@ -91,6 +91,7 @@ const GrillaTarjetas = ({
 	workspaceId,             // ID del workspace para la grilla unifiliar
 	elementoArrastrandoId,
 	onAbrirConfiguracion,
+	onAbrirHistorial,        // callback para abrir modal de historial
 	onDragStart,
 	onDragOver,
 	onDrop,
@@ -484,6 +485,7 @@ const GrillaTarjetas = ({
 									nombre={alim.nombre}
 									color={alim.color}
 									onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
+									onHistorialClick={onAbrirHistorial ? () => onAbrirHistorial(puestoId, alim) : undefined}
 									topSide={lecturasAlim.parteSuperior}
 									bottomSide={lecturasAlim.parteInferior}
 									draggable={true}

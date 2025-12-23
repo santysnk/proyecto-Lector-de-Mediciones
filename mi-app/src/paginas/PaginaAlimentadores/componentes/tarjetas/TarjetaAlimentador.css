@@ -76,6 +76,17 @@
 	display: block;
 }
 
+/* Botón de historial (emoji) */
+.alim-card-historial-btn {
+	font-size: 16px;
+	line-height: 1;
+}
+
+.alim-card-historial-icon {
+	display: block;
+	font-size: 16px;
+}
+
 /* Título centrado dentro del header (respecto al contenedor completo) */
 .alim-card-title {
 	position: absolute;
