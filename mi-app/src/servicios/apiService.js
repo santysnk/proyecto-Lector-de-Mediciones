@@ -254,6 +254,17 @@ export async function obtenerUltimasLecturasPorRegistrador(registradorId, limite
   return fetchConAuth(`/api/registradores/${registradorId}/lecturas?limite=${limite}`);
 }
 
+/**
+ * Obtiene lecturas históricas de un registrador en un rango de tiempo
+ * @param {string} registradorId - ID del registrador
+ * @param {string} desde - Fecha ISO de inicio del rango
+ * @param {string} hasta - Fecha ISO de fin del rango
+ * @returns {Promise<Array>} Array de lecturas con indice_inicial incluido
+ */
+export async function obtenerLecturasHistoricasPorRegistrador(registradorId, desde, hasta) {
+  return fetchConAuth(`/api/registradores/${registradorId}/lecturas/historico?desde=${desde}&hasta=${hasta}`);
+}
+
 // ============================================
 // PREFERENCIAS
 // ============================================
@@ -635,6 +646,7 @@ export default {
   obtenerUltimasLecturas,
   obtenerLecturasHistoricas,
   obtenerUltimasLecturasPorRegistrador,
+  obtenerLecturasHistoricasPorRegistrador,
   // Preferencias
   obtenerPreferencias,
   guardarPreferencias,

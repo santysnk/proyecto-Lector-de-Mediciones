@@ -135,6 +135,7 @@
 }
 .editar-escala-input[type="number"] {
    -moz-appearance: textfield;
+   appearance: textfield;
 }
 
 .editar-escala-input:focus {

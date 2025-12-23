@@ -229,6 +229,99 @@
   cursor: not-allowed;
 }
 
+/* Barra de precarga de 48h */
+.historial-precarga {
+  padding: 0.75rem 1rem;
+  background: #0f172a;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.historial-precarga-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.historial-precarga-acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.historial-btn-limpiar {
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.historial-btn-limpiar:hover:not(:disabled) {
+  background: #334155;
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+
+.historial-btn-limpiar:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.historial-precarga-label {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.historial-precarga-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #22c55e;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.historial-precarga-check {
+  width: 16px;
+  height: 16px;
+}
+
+.historial-precarga-porcentaje {
+  color: #0ea5e9;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: "DS-Digital", "Courier New", monospace;
+}
+
+.historial-precarga-pendiente {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.historial-precarga-barra {
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.historial-precarga-progreso {
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.historial-precarga-progreso--completo {
+  background: linear-gradient(90deg, #22c55e, #4ade80);
+}
+
 /* Indicador de fuente de datos */
 .historial-fuente {
   padding: 0.5rem 1rem;

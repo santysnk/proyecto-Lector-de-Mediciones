@@ -84,10 +84,21 @@ const calcularPromedioZona = (lectura, zonaConfig) => {
 };
 
 const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
-  // Early return si no está abierto
-  if (!abierto) return null;
-
-  const { obtenerDatosGrafico, cargando, error } = usarHistorialLocal();
+  // Hook DEBE estar antes de cualquier return condicional (React Rules of Hooks)
+  const {
+    obtenerDatosGrafico,
+    cargando,
+    error,
+    // Precarga 48h
+    precargar48h,
+    resetearPrecarga,
+    precargaProgreso,
+    precargaCompleta,
+    precargando,
+    // Limpiar cache
+    limpiarCacheCompleto,
+    estadisticas,
+  } = usarHistorialLocal();
 
   // Estado del selector
   const [rangoSeleccionado, setRangoSeleccionado] = useState("1h");
@@ -118,16 +129,22 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
     return config?.boxes?.some((b) => b.enabled);
   }, [cardDesign]);
 
-  // Obtener registrador_id de la zona
+  // Obtener registrador_id de la zona (con fallback al registrador del alimentador)
   const obtenerRegistradorZona = useCallback((zona) => {
-    return cardDesign?.[zona]?.registrador_id || null;
-  }, [cardDesign]);
+    // Primero buscar en la zona específica del cardDesign
+    const regIdZona = cardDesign?.[zona]?.registrador_id;
+    if (regIdZona) return regIdZona;
+
+    // Fallback: usar registrador_id del alimentador (formato legacy o único registrador)
+    return alimentador?.registrador_id || null;
+  }, [cardDesign, alimentador]);
 
   // Cargar datos cuando cambia la selección
   const cargarDatos = useCallback(async () => {
     if (!alimentador?.id) return;
 
     const registradorId = obtenerRegistradorZona(zonaSeleccionada);
+
     if (!registradorId) {
       setDatosGrafico([]);
       setFuenteDatos(null);
@@ -148,12 +165,16 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
       return;
     }
 
+    // Si la precarga de 48h está completa, forzar solo datos locales
+    const forzarSoloLocal = precargaCompleta;
+
     const { datos, fuente } = await obtenerDatosGrafico(
       alimentador.id,
       registradorId,
       zonaSeleccionada,
       desde,
-      hasta
+      hasta,
+      forzarSoloLocal
     );
 
     // Transformar datos calculando el promedio de la zona
@@ -183,14 +204,37 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
     zonaSeleccionada,
     obtenerDatosGrafico,
     obtenerRegistradorZona,
+    precargaCompleta,
   ]);
+
+  // Resetear a 1h y resetear precarga cuando se abre/cierra el modal
+  useEffect(() => {
+    if (abierto) {
+      setRangoSeleccionado("1h");
+    } else {
+      // Al cerrar, resetear estado de precarga
+      resetearPrecarga();
+    }
+  }, [abierto, resetearPrecarga]);
+
+  // Iniciar precarga de 48h automáticamente al abrir el modal
+  useEffect(() => {
+    if (!abierto || !alimentador?.id) return;
+
+    // Obtener registradores de ambas zonas
+    const registradorSuperior = obtenerRegistradorZona("superior");
+    const registradorInferior = obtenerRegistradorZona("inferior");
+
+    // Iniciar precarga
+    precargar48h(alimentador.id, registradorSuperior, registradorInferior);
+  }, [abierto, alimentador?.id, obtenerRegistradorZona, precargar48h]);
 
   // Cargar datos al abrir o cambiar selección
   useEffect(() => {
     if (abierto) {
       cargarDatos();
     }
-  }, [abierto, rangoSeleccionado, zonaSeleccionada]);
+  }, [abierto, cargarDatos]);
 
   // Configuración de ApexCharts
   const opcionesGrafico = useMemo(
@@ -289,8 +333,8 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
     [datosGrafico, tituloZonaActual]
   );
 
-  // Calcular estadísticas
-  const estadisticas = useMemo(() => {
+  // Calcular estadísticas del gráfico
+  const estadisticasGrafico = useMemo(() => {
     if (datosGrafico.length === 0) return null;
 
     const valores = datosGrafico.map((d) => d.y);
@@ -323,6 +367,9 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
       },
     });
   };
+
+  // Early return DESPUÉS de todos los hooks (React Rules of Hooks)
+  if (!abierto) return null;
 
   return (
     <div className="historial-modal-overlay">
@@ -424,10 +471,69 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
             )}
           </div>
 
+          {/* Barra de progreso de precarga de 48h */}
+          <div className="historial-precarga">
+            <div className="historial-precarga-header">
+              <span className="historial-precarga-label">
+                Cache local (48h){estadisticas?.totalLecturas ? ` - ${estadisticas.totalLecturas} registros` : ""}:
+              </span>
+              <div className="historial-precarga-acciones">
+                {precargaCompleta ? (
+                  <span className="historial-precarga-ok">
+                    <svg
+                      className="historial-precarga-check"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Completo
+                  </span>
+                ) : precargando ? (
+                  <span className="historial-precarga-porcentaje">
+                    {precargaProgreso}%
+                  </span>
+                ) : (
+                  <span className="historial-precarga-pendiente">Pendiente</span>
+                )}
+                <button
+                  type="button"
+                  className="historial-btn-limpiar"
+                  onClick={async () => {
+                    if (window.confirm("¿Limpiar todo el cache local? Se volverán a descargar los datos.")) {
+                      await limpiarCacheCompleto();
+                      // Reiniciar precarga
+                      const registradorSuperior = obtenerRegistradorZona("superior");
+                      const registradorInferior = obtenerRegistradorZona("inferior");
+                      precargar48h(alimentador.id, registradorSuperior, registradorInferior);
+                    }
+                  }}
+                  disabled={precargando}
+                  title="Limpiar cache local"
+                >
+                  Limpiar
+                </button>
+              </div>
+            </div>
+            <div className="historial-precarga-barra">
+              <div
+                className={`historial-precarga-progreso ${
+                  precargaCompleta ? "historial-precarga-progreso--completo" : ""
+                }`}
+                style={{ width: `${precargaProgreso}%` }}
+              ></div>
+            </div>
+          </div>
+
           {/* Indicador de fuente de datos */}
           {fuenteDatos && (
             <div className={`historial-fuente historial-fuente--${fuenteDatos}`}>
-              {fuenteDatos === "local" && "Datos de cache local (tiempo real)"}
+              {fuenteDatos === "local" && precargaCompleta && "Datos de cache local (precarga completa)"}
+              {fuenteDatos === "local" && !precargaCompleta && "Datos de cache local (tiempo real)"}
               {fuenteDatos === "remoto" && "Datos de base de datos"}
               {fuenteDatos === "mixto" && "Datos combinados (local + BD)"}
               {fuenteDatos === "error" && "Error cargando datos"}
@@ -461,23 +567,23 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
           </div>
 
           {/* Estadísticas */}
-          {estadisticas && (
+          {estadisticasGrafico && (
             <div className="historial-stats">
               <div className="historial-stat">
                 <span className="historial-stat-label">Puntos</span>
-                <span className="historial-stat-valor">{estadisticas.puntos}</span>
+                <span className="historial-stat-valor">{estadisticasGrafico.puntos}</span>
               </div>
               <div className="historial-stat">
                 <span className="historial-stat-label">Mín</span>
-                <span className="historial-stat-valor">{estadisticas.min}</span>
+                <span className="historial-stat-valor">{estadisticasGrafico.min}</span>
               </div>
               <div className="historial-stat">
                 <span className="historial-stat-label">Máx</span>
-                <span className="historial-stat-valor">{estadisticas.max}</span>
+                <span className="historial-stat-valor">{estadisticasGrafico.max}</span>
               </div>
               <div className="historial-stat">
                 <span className="historial-stat-label">Promedio</span>
-                <span className="historial-stat-valor">{estadisticas.promedio}</span>
+                <span className="historial-stat-valor">{estadisticasGrafico.promedio}</span>
               </div>
             </div>
           )}

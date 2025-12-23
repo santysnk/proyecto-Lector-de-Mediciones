@@ -111,6 +111,31 @@ export const obtenerLecturasRango = async (
 
     const request = index.getAll(rango);
 
+    // Debug: obtener TODOS los datos de este alimentador+zona para comparar
+    const allDataRequest = store.index("alimZonaTimestamp").getAll(
+      IDBKeyRange.bound(
+        [alimentadorId, zona, 0],
+        [alimentadorId, zona, Date.now() + 1000000]
+      )
+    );
+
+    allDataRequest.onsuccess = () => {
+      const todosLosDatos = allDataRequest.result.filter(r =>
+        !registradorId || r.registradorId === registradorId
+      );
+      if (todosLosDatos.length > 0) {
+        const timestamps = todosLosDatos.map(d => d.timestamp).sort((a,b) => a-b);
+        console.log("[IndexedDB] TODOS los datos disponibles para este alimentador+zona+registrador:", {
+          total: todosLosDatos.length,
+          primerDato: new Date(timestamps[0]).toISOString(),
+          ultimoDato: new Date(timestamps[timestamps.length - 1]).toISOString(),
+          buscandoDesde: new Date(desde).toISOString(),
+          buscandoHasta: new Date(hasta).toISOString(),
+          datosEnRangoBuscado: todosLosDatos.filter(d => d.timestamp >= desde && d.timestamp <= hasta).length
+        });
+      }
+    };
+
     request.onsuccess = () => {
       let resultados = request.result;
 
@@ -217,5 +242,116 @@ export const limpiarTodo = async (db) => {
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Obtiene los timestamps existentes en un rango para evitar duplicados
+ * @param {IDBDatabase} db - Conexión a la base de datos
+ * @param {string} alimentadorId - ID del alimentador
+ * @param {string} zona - "superior" o "inferior"
+ * @param {number} desde - Timestamp inicial (ms)
+ * @param {number} hasta - Timestamp final (ms)
+ * @returns {Promise<Set<number>>} - Set de timestamps existentes
+ */
+export const obtenerTimestampsExistentes = async (
+  db,
+  alimentadorId,
+  zona,
+  desde,
+  hasta
+) => {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const index = store.index("alimZonaTimestamp");
+
+    const rango = IDBKeyRange.bound(
+      [alimentadorId, zona, desde],
+      [alimentadorId, zona, hasta]
+    );
+
+    const request = index.getAll(rango);
+
+    request.onsuccess = () => {
+      const timestamps = new Set(request.result.map((r) => r.timestamp));
+      resolve(timestamps);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+};
+
+/**
+ * Cachea datos remotos en IndexedDB, evitando duplicados por timestamp
+ * @param {IDBDatabase} db - Conexión a la base de datos
+ * @param {string} alimentadorId - ID del alimentador
+ * @param {string} registradorId - ID del registrador
+ * @param {string} zona - "superior" o "inferior"
+ * @param {Array} lecturas - Array de lecturas remotas a cachear
+ * @returns {Promise<number>} - Cantidad de lecturas nuevas guardadas
+ */
+export const cachearLecturasRemotas = async (
+  db,
+  alimentadorId,
+  registradorId,
+  zona,
+  lecturas
+) => {
+  if (!lecturas || lecturas.length === 0) return 0;
+
+  // Obtener rango de timestamps de las lecturas a cachear
+  const timestamps = lecturas.map((l) =>
+    typeof l.timestamp === "string" ? new Date(l.timestamp).getTime() : l.timestamp
+  );
+  const desde = Math.min(...timestamps);
+  const hasta = Math.max(...timestamps);
+
+  // Obtener timestamps que ya existen en local
+  const existentes = await obtenerTimestampsExistentes(
+    db,
+    alimentadorId,
+    zona,
+    desde,
+    hasta
+  );
+
+  // Filtrar solo las lecturas nuevas
+  const lecturasNuevas = lecturas.filter((l) => {
+    const ts = typeof l.timestamp === "string" ? new Date(l.timestamp).getTime() : l.timestamp;
+    return !existentes.has(ts);
+  });
+
+  if (lecturasNuevas.length === 0) return 0;
+
+  // Guardar las nuevas en una transacción
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    let guardadas = 0;
+
+    tx.oncomplete = () => resolve(guardadas);
+    tx.onerror = () => reject(tx.error);
+
+    for (const lectura of lecturasNuevas) {
+      const ts = typeof lectura.timestamp === "string"
+        ? new Date(lectura.timestamp).getTime()
+        : lectura.timestamp;
+
+      const registro = {
+        alimentadorId,
+        registradorId,
+        zona,
+        timestamp: ts,
+        valores: lectura.valores,
+        indiceInicial: lectura.indice_inicial ?? lectura.indiceInicial ?? 0,
+        exito: lectura.exito !== false,
+        createdAt: Date.now(),
+        fromCache: true, // Marca para identificar datos cacheados
+      };
+
+      const request = store.add(registro);
+      request.onsuccess = () => guardadas++;
+    }
   });
 };
