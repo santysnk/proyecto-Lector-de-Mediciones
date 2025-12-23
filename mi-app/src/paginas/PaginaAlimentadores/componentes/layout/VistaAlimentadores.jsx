@@ -17,7 +17,8 @@ import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimenta
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
-import ModalHistorial from "../modales/ModalHistorial.jsx";                               // modal de historial de lecturas con gráficos
+import ContenedorVentanasHistorial from "../modales/ContenedorVentanasHistorial.jsx";     // contenedor de ventanas flotantes de historial
+import { usarVentanasHistorial } from "../../hooks/usarVentanasHistorial";               // hook para gestionar ventanas de historial
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -87,14 +88,24 @@ const {
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
 	const { guardarLecturaLocal } = usarHistorialLocal(); // Hook para guardar lecturas en IndexedDB
 
+	// Sistema de ventanas flotantes de historial
+	const {
+		listaVentanas,
+		ventanasMinimizadas,
+		abrirVentana,
+		cerrarVentana,
+		toggleMinimizar,
+		toggleMaximizar,
+		enfocarVentana,
+		moverVentana,
+	} = usarVentanasHistorial();
+
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
 	const [modalAccesosAbierto, setModalAccesosAbierto] = useState(false); // estado del modal de gestión de accesos
-	const [modalHistorialAbierto, setModalHistorialAbierto] = useState(false); // estado del modal de historial de lecturas
-	const [alimentadorHistorial, setAlimentadorHistorial] = useState(null); // alimentador seleccionado para ver historial
 	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
@@ -795,8 +806,7 @@ const {
 							elementoArrastrandoId={elementoArrastrandoId}
 							onAbrirConfiguracion={abrirModalEditarAlim}
 							onAbrirHistorial={(puestoId, alim) => {
-								setAlimentadorHistorial(alim);
-								setModalHistorialAbierto(true);
+								abrirVentana(alim, alim.card_design);
 							}}
 							onDragStart={handleDragStartAlim}
 							onDragOver={alPasarPorEncima}
@@ -881,14 +891,15 @@ const {
 				onCerrar={() => setModalAccesosAbierto(false)}
 			/>
 
-			<ModalHistorial
-				abierto={modalHistorialAbierto}
-				onCerrar={() => {
-					setModalHistorialAbierto(false);
-					setAlimentadorHistorial(null);
-				}}
-				alimentador={alimentadorHistorial}
-				cardDesign={alimentadorHistorial?.card_design}
+			{/* Sistema de ventanas flotantes de historial */}
+			<ContenedorVentanasHistorial
+				listaVentanas={listaVentanas}
+				ventanasMinimizadas={ventanasMinimizadas}
+				cerrarVentana={cerrarVentana}
+				toggleMinimizar={toggleMinimizar}
+				toggleMaximizar={toggleMaximizar}
+				enfocarVentana={enfocarVentana}
+				moverVentana={moverVentana}
 			/>
 		</div>
 	);

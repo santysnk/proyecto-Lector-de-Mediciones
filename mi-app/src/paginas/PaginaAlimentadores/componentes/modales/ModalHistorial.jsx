@@ -469,63 +469,63 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Barra de progreso de precarga de 48h */}
-          <div className="historial-precarga">
-            <div className="historial-precarga-header">
-              <span className="historial-precarga-label">
-                Cache local (48h){estadisticas?.totalLecturas ? ` - ${estadisticas.totalLecturas} registros` : ""}:
-              </span>
-              <div className="historial-precarga-acciones">
-                {precargaCompleta ? (
-                  <span className="historial-precarga-ok">
-                    <svg
-                      className="historial-precarga-check"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
-                    Completo
-                  </span>
-                ) : precargando ? (
-                  <span className="historial-precarga-porcentaje">
-                    {precargaProgreso}%
-                  </span>
-                ) : (
-                  <span className="historial-precarga-pendiente">Pendiente</span>
-                )}
-                <button
-                  type="button"
-                  className="historial-btn-limpiar"
-                  onClick={async () => {
-                    if (window.confirm("¿Limpiar todo el cache local? Se volverán a descargar los datos.")) {
-                      await limpiarCacheCompleto();
-                      // Reiniciar precarga
-                      const registradorSuperior = obtenerRegistradorZona("superior");
-                      const registradorInferior = obtenerRegistradorZona("inferior");
-                      precargar48h(alimentador.id, registradorSuperior, registradorInferior);
-                    }
-                  }}
-                  disabled={precargando}
-                  title="Limpiar cache local"
-                >
-                  Limpiar
-                </button>
+            {/* Barra de progreso de precarga de 48h */}
+            <div className="historial-precarga">
+              <div className="historial-precarga-header">
+                <span className="historial-precarga-label">
+                  Cache local (48h){estadisticas?.totalLecturas ? ` - ${estadisticas.totalLecturas} registros` : ""}:
+                </span>
+                <div className="historial-precarga-acciones">
+                  {precargaCompleta ? (
+                    <span className="historial-precarga-ok">
+                      <svg
+                        className="historial-precarga-check"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                      Completo
+                    </span>
+                  ) : precargando ? (
+                    <span className="historial-precarga-porcentaje">
+                      {precargaProgreso}%
+                    </span>
+                  ) : (
+                    <span className="historial-precarga-pendiente">Pendiente</span>
+                  )}
+                  <button
+                    type="button"
+                    className="historial-btn-limpiar"
+                    onClick={async () => {
+                      if (window.confirm("¿Limpiar todo el cache local? Se volverán a descargar los datos.")) {
+                        await limpiarCacheCompleto();
+                        // Reiniciar precarga
+                        const registradorSuperior = obtenerRegistradorZona("superior");
+                        const registradorInferior = obtenerRegistradorZona("inferior");
+                        precargar48h(alimentador.id, registradorSuperior, registradorInferior);
+                      }
+                    }}
+                    disabled={precargando}
+                    title="Limpiar cache local"
+                  >
+                    Limpiar
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="historial-precarga-barra">
-              <div
-                className={`historial-precarga-progreso ${
-                  precargaCompleta ? "historial-precarga-progreso--completo" : ""
-                }`}
-                style={{ width: `${precargaProgreso}%` }}
-              ></div>
+              <div className="historial-precarga-barra">
+                <div
+                  className={`historial-precarga-progreso ${
+                    precargaCompleta ? "historial-precarga-progreso--completo" : ""
+                  }`}
+                  style={{ width: `${precargaProgreso}%` }}
+                ></div>
+              </div>
             </div>
           </div>
 
