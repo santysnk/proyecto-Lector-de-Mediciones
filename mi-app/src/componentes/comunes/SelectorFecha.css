@@ -1,0 +1,399 @@
+/**
+ * Estilos para SelectorFecha - DatePicker modular
+ * Soporta modo día único y modo rango
+ */
+
+.selector-fecha {
+  position: relative;
+  display: inline-block;
+}
+
+/* Botón principal */
+.selector-fecha-btn {
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selector-fecha-btn:hover:not(:disabled) {
+  background: #475569;
+  border-color: #64748b;
+  color: #e2e8f0;
+}
+
+.selector-fecha-btn--activo {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #ffffff;
+}
+
+.selector-fecha-btn--con-valor {
+  border-color: #0ea5e9;
+}
+
+.selector-fecha-btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.selector-fecha-icono {
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+/* Dropdown del calendario */
+.selector-fecha-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  padding: 0.75rem;
+  z-index: 1000;
+  min-width: 260px;
+}
+
+/* Indicador de modo rango */
+.selector-fecha-modo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #334155;
+}
+
+.selector-fecha-modo-contenido {
+  flex: 1;
+}
+
+.selector-fecha-instruccion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  color: #64748b;
+  justify-content: center;
+}
+
+.selector-fecha-limpiar-mini {
+  padding: 0.15rem 0.4rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.selector-fecha-limpiar-mini:hover {
+  background: #475569;
+  border-color: #64748b;
+  color: #e2e8f0;
+}
+
+.selector-fecha-instruccion--activo {
+  color: #94a3b8;
+}
+
+.selector-fecha-instruccion--completo {
+  color: #22c55e;
+}
+
+.selector-fecha-desde-badge {
+  padding: 0.15rem 0.4rem;
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.selector-fecha-hasta-badge {
+  padding: 0.15rem 0.4rem;
+  background: rgba(14, 165, 233, 0.2);
+  color: #0ea5e9;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* Header del calendario */
+.selector-fecha-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.selector-fecha-nav {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selector-fecha-nav:hover {
+  background: #475569;
+  color: #e2e8f0;
+}
+
+.selector-fecha-mes {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+/* Título clickeable del header (mes/año) */
+.selector-fecha-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+
+.selector-fecha-titulo:hover {
+  background: #334155;
+  color: #0ea5e9;
+}
+
+.selector-fecha-titulo--no-click {
+  cursor: default;
+  padding: 0.25rem 0.5rem;
+}
+
+.selector-fecha-titulo--no-click:hover {
+  background: transparent;
+  color: #e2e8f0;
+}
+
+/* Días de la semana */
+.selector-fecha-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 0.5rem;
+}
+
+.selector-fecha-dia-semana {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  padding: 0.25rem 0;
+}
+
+/* Grilla de días */
+.selector-fecha-grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.selector-fecha-dia {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selector-fecha-dia:hover:not(:disabled) {
+  background: #334155;
+}
+
+.selector-fecha-dia--otro-mes {
+  color: #475569;
+}
+
+.selector-fecha-dia--otro-mes:hover:not(:disabled) {
+  color: #64748b;
+}
+
+.selector-fecha-dia--hoy {
+  border: 1px solid #0ea5e9;
+}
+
+/* Día único seleccionado (modo simple) */
+.selector-fecha-dia--seleccionado {
+  background: #0ea5e9;
+  color: #ffffff;
+}
+
+.selector-fecha-dia--seleccionado:hover {
+  background: #0284c7;
+}
+
+/* Modo rango: fecha desde */
+.selector-fecha-dia--desde {
+  background: #22c55e;
+  color: #ffffff;
+  border-radius: 4px 0 0 4px;
+}
+
+.selector-fecha-dia--desde:hover {
+  background: #16a34a;
+}
+
+/* Modo rango: fecha hasta */
+.selector-fecha-dia--hasta {
+  background: #0ea5e9;
+  color: #ffffff;
+  border-radius: 0 4px 4px 0;
+}
+
+.selector-fecha-dia--hasta:hover {
+  background: #0284c7;
+}
+
+/* Modo rango: mismo día desde y hasta */
+.selector-fecha-dia--desde.selector-fecha-dia--hasta {
+  background: linear-gradient(90deg, #22c55e 50%, #0ea5e9 50%);
+  border-radius: 4px;
+}
+
+/* Modo rango: días entre desde y hasta */
+.selector-fecha-dia--en-rango {
+  background: rgba(14, 165, 233, 0.2);
+  color: #e2e8f0;
+  border-radius: 0;
+}
+
+.selector-fecha-dia--en-rango:hover:not(:disabled) {
+  background: rgba(14, 165, 233, 0.35);
+}
+
+.selector-fecha-dia--deshabilitado {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Footer con botón limpiar */
+.selector-fecha-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #334155;
+  display: flex;
+  justify-content: center;
+}
+
+.selector-fecha-limpiar {
+  padding: 0.35rem 0.75rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selector-fecha-limpiar:hover {
+  background: #475569;
+  color: #e2e8f0;
+}
+
+/* Vista de meses */
+.selector-fecha-grilla-meses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.selector-fecha-mes-item {
+  padding: 0.6rem 0.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selector-fecha-mes-item:hover {
+  background: #334155;
+}
+
+.selector-fecha-mes-item--actual {
+  border: 1px solid #0ea5e9;
+}
+
+.selector-fecha-mes-item--seleccionado {
+  background: #0ea5e9;
+  color: #ffffff;
+}
+
+.selector-fecha-mes-item--seleccionado:hover {
+  background: #0284c7;
+}
+
+/* Vista de años */
+.selector-fecha-grilla-anios {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.selector-fecha-anio-item {
+  padding: 0.5rem 0.25rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selector-fecha-anio-item:hover {
+  background: #334155;
+}
+
+.selector-fecha-anio-item--actual {
+  border: 1px solid #0ea5e9;
+}
+
+.selector-fecha-anio-item--seleccionado {
+  background: #0ea5e9;
+  color: #ffffff;
+}
+
+.selector-fecha-anio-item--seleccionado:hover {
+  background: #0284c7;
+}

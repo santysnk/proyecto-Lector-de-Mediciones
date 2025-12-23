@@ -9,6 +9,7 @@ import { usarHistorialLocal } from "../../hooks/usarHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
 import { TITULOS_MEDICIONES } from "../../constantes/titulosMediciones";
+import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
 import "./VentanaHistorial.css";
 
 // Opciones de rango predefinidas
@@ -90,11 +91,13 @@ const VentanaHistorial = ({
 
   // Estados del selector
   const [rangoSeleccionado, setRangoSeleccionado] = useState("1h");
-  const [fechaDesde, setFechaDesde] = useState("");
-  const [fechaHasta, setFechaHasta] = useState("");
+  const [fechaRangoDesde, setFechaRangoDesde] = useState(null);
+  const [fechaRangoHasta, setFechaRangoHasta] = useState(null);
   const [zonaSeleccionada, setZonaSeleccionada] = useState("superior");
   const [datosGrafico, setDatosGrafico] = useState([]);
   const [fuenteDatos, setFuenteDatos] = useState(null);
+  const [panelDatosAbierto, setPanelDatosAbierto] = useState(true);
+  const [intervaloFiltro, setIntervaloFiltro] = useState(0); // 0 = todos, 15, 30, 60 minutos
 
   // Títulos de zonas
   const tituloSuperior = useMemo(() => obtenerTituloZona(cardDesign, "superior"), [cardDesign]);
@@ -125,9 +128,13 @@ const VentanaHistorial = ({
     const ahora = Date.now();
     const rango = RANGOS_TIEMPO.find((r) => r.id === rangoSeleccionado);
     let desde, hasta;
-    if (rangoSeleccionado === "custom" && fechaDesde && fechaHasta) {
-      desde = new Date(fechaDesde).getTime();
-      hasta = new Date(fechaHasta).getTime();
+
+    // Si hay un rango de fechas seleccionado desde el calendario
+    if (fechaRangoDesde && fechaRangoHasta) {
+      const fDesde = new Date(fechaRangoDesde);
+      const fHasta = new Date(fechaRangoHasta);
+      desde = new Date(fDesde.getFullYear(), fDesde.getMonth(), fDesde.getDate(), 0, 0, 0, 0).getTime();
+      hasta = new Date(fHasta.getFullYear(), fHasta.getMonth(), fHasta.getDate(), 23, 59, 59, 999).getTime();
     } else if (rango?.ms) {
       desde = ahora - rango.ms;
       hasta = ahora;
@@ -156,7 +163,7 @@ const VentanaHistorial = ({
 
     setDatosGrafico(datosTransformados);
     setFuenteDatos(fuente);
-  }, [alimentador, cardDesign, rangoSeleccionado, fechaDesde, fechaHasta, zonaSeleccionada, obtenerDatosGrafico, obtenerRegistradorZona, precargaCompleta]);
+  }, [alimentador, cardDesign, rangoSeleccionado, fechaRangoDesde, fechaRangoHasta, zonaSeleccionada, obtenerDatosGrafico, obtenerRegistradorZona, precargaCompleta]);
 
   // Iniciar precarga al montar
   useEffect(() => {
@@ -251,6 +258,54 @@ const VentanaHistorial = ({
 
   const seriesGrafico = useMemo(() => [{ name: `Promedio ${tituloZonaActual}`, data: datosGrafico }], [datosGrafico, tituloZonaActual]);
 
+  // Datos para la tabla del panel lateral (fecha, hora, medición redondeada a 2 decimales hacia arriba)
+  // Filtra según intervalo seleccionado (0 = todos, 15/30/60 = minutos)
+  const datosTabla = useMemo(() => {
+    let datosFiltrados = datosGrafico;
+
+    // Si hay intervalo, filtrar para mostrar 1 registro cada X minutos
+    if (intervaloFiltro > 0 && datosGrafico.length > 0) {
+      const intervaloMs = intervaloFiltro * 60 * 1000;
+      let ultimoTimestamp = 0;
+
+      datosFiltrados = datosGrafico.filter((punto) => {
+        const timestamp = new Date(punto.x).getTime();
+        if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
+          ultimoTimestamp = timestamp;
+          return true;
+        }
+        return false;
+      });
+    }
+
+    return datosFiltrados.map((punto) => {
+      const fecha = new Date(punto.x);
+      return {
+        fecha: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
+        hora: fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        medicion: Math.ceil(punto.y * 100) / 100, // Redondear hacia arriba a 2 decimales
+      };
+    });
+  }, [datosGrafico, intervaloFiltro]);
+
+  // Título del panel: período de fechas o fecha única si es el mismo día
+  const tituloPanelDatos = useMemo(() => {
+    if (datosGrafico.length === 0) return "Sin datos";
+    const primeraFecha = new Date(datosGrafico[0].x);
+    const ultimaFecha = new Date(datosGrafico[datosGrafico.length - 1].x);
+
+    const formatoFecha = { day: "2-digit", month: "2-digit", year: "2-digit" };
+    const primeraStr = primeraFecha.toLocaleDateString("es-AR", formatoFecha);
+    const ultimaStr = ultimaFecha.toLocaleDateString("es-AR", formatoFecha);
+
+    // Si es el mismo día, mostrar solo una fecha
+    if (primeraStr === ultimaStr) {
+      return primeraStr;
+    }
+    // Si son días diferentes, mostrar rango
+    return `${primeraStr} - ${ultimaStr}`;
+  }, [datosGrafico]);
+
   const estadisticasGrafico = useMemo(() => {
     if (datosGrafico.length === 0) return null;
     const valores = datosGrafico.map((d) => d.y);
@@ -333,6 +388,16 @@ const VentanaHistorial = ({
       <div className="ventana-historial-content">
         {/* Barra de controles compacta */}
         <div className="ventana-controles">
+          {/* Botón toggle para panel de datos */}
+          <button
+            type="button"
+            className={`ventana-toggle-datos ${panelDatosAbierto ? "ventana-toggle-datos--activo" : ""}`}
+            onClick={() => setPanelDatosAbierto(!panelDatosAbierto)}
+            title={panelDatosAbierto ? "Ocultar datos" : "Ver datos"}
+          >
+            <span className="ventana-toggle-icono">▲</span>
+          </button>
+
           {/* Tabs de zona */}
           <div className="ventana-tabs">
             <button
@@ -359,12 +424,39 @@ const VentanaHistorial = ({
               <button
                 key={r.id}
                 type="button"
-                className={`ventana-rango-btn ${rangoSeleccionado === r.id ? "ventana-rango-btn--activo" : ""}`}
-                onClick={() => setRangoSeleccionado(r.id)}
+                className={`ventana-rango-btn ${rangoSeleccionado === r.id && !fechaRangoDesde ? "ventana-rango-btn--activo" : ""}`}
+                onClick={() => {
+                  setRangoSeleccionado(r.id);
+                  setFechaRangoDesde(null);
+                  setFechaRangoHasta(null);
+                }}
               >
                 {r.label}
               </button>
             ))}
+          </div>
+
+          {/* Selector de rango de fechas */}
+          <div className="ventana-selector-dia">
+            <SelectorFecha
+              value={fechaRangoDesde}
+              valueHasta={fechaRangoHasta}
+              modoRango={true}
+              onChangeRango={(desde, hasta) => {
+                setFechaRangoDesde(desde);
+                setFechaRangoHasta(hasta);
+              }}
+              maxDate={new Date()}
+              placeholder="Seleccionar fechas"
+            />
+            {fechaRangoDesde && fechaRangoHasta && (
+              <span className="ventana-dia-seleccionado">
+                {new Date(fechaRangoDesde).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
+                {fechaRangoDesde.getTime() !== fechaRangoHasta.getTime() && (
+                  <> - {new Date(fechaRangoHasta).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}</>
+                )}
+              </span>
+            )}
           </div>
 
           {/* Cache + Fuente */}
@@ -402,25 +494,67 @@ const VentanaHistorial = ({
           </div>
         </div>
 
-        {/* Gráfico */}
-        <div className="ventana-grafico">
-          {cargando ? (
-            <div className="ventana-estado">
-              <div className="ventana-spinner" />
-              <span>Cargando...</span>
+        {/* Contenedor del gráfico y panel de datos */}
+        <div className="ventana-grafico-container">
+          {/* Panel lateral de datos */}
+          {panelDatosAbierto && (
+            <div className="ventana-panel-datos">
+              <div className="ventana-panel-header">
+                <span>{tituloPanelDatos}</span>
+                <select
+                  className="ventana-panel-intervalo"
+                  value={intervaloFiltro}
+                  onChange={(e) => setIntervaloFiltro(Number(e.target.value))}
+                >
+                  <option value={0}>Todos</option>
+                  <option value={15}>c/15m</option>
+                  <option value={30}>c/30m</option>
+                  <option value={60}>c/60m</option>
+                </select>
+              </div>
+              <div className="ventana-panel-tabla-container">
+                <table className="ventana-panel-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Hora</th>
+                      <th>Medición</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datosTabla.map((fila, idx) => (
+                      <tr key={idx}>
+                        <td>{fila.fecha}</td>
+                        <td>{fila.hora}</td>
+                        <td>{fila.medicion.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          ) : error ? (
-            <div className="ventana-estado ventana-estado--error">
-              <span>Error: {error}</span>
-              <button onClick={cargarDatos}>Reintentar</button>
-            </div>
-          ) : datosGrafico.length === 0 ? (
-            <div className="ventana-estado">
-              <span>No hay datos</span>
-            </div>
-          ) : (
-            <Chart options={opcionesGrafico} series={seriesGrafico} type="line" height="100%" />
           )}
+
+          {/* Gráfico */}
+          <div className="ventana-grafico">
+            {cargando ? (
+              <div className="ventana-estado">
+                <div className="ventana-spinner" />
+                <span>Cargando...</span>
+              </div>
+            ) : error ? (
+              <div className="ventana-estado ventana-estado--error">
+                <span>Error: {error}</span>
+                <button onClick={cargarDatos}>Reintentar</button>
+              </div>
+            ) : datosGrafico.length === 0 ? (
+              <div className="ventana-estado">
+                <span>No hay datos</span>
+              </div>
+            ) : (
+              <Chart options={opcionesGrafico} series={seriesGrafico} type="line" height="100%" />
+            )}
+          </div>
         </div>
 
         {/* Estadísticas */}

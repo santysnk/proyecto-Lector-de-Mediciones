@@ -137,6 +137,50 @@
   flex-shrink: 0;
 }
 
+/* Botón toggle para panel de datos */
+.ventana-toggle-datos {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ventana-toggle-datos:hover {
+  background: #475569;
+  border-color: #64748b;
+  color: #e2e8f0;
+}
+
+.ventana-toggle-datos--activo {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #ffffff;
+}
+
+.ventana-toggle-datos--activo:hover {
+  background: #0284c7;
+  border-color: #0284c7;
+}
+
+.ventana-toggle-icono {
+  font-size: 0.65rem;
+  line-height: 1;
+  transition: transform 0.25s ease;
+  display: inline-block;
+}
+
+.ventana-toggle-datos--activo .ventana-toggle-icono {
+  transform: rotate(180deg);
+}
+
 /* Tabs de zona */
 .ventana-tabs {
   display: flex;
@@ -204,6 +248,22 @@
   background: #0ea5e9;
   border-color: #0ea5e9;
   color: #ffffff;
+}
+
+/* Selector de día específico */
+.ventana-selector-dia {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid #475569;
+}
+
+.ventana-dia-seleccionado {
+  font-size: 0.75rem;
+  color: #0ea5e9;
+  font-weight: 600;
 }
 
 /* Cache + Fuente */
@@ -283,6 +343,116 @@
 .ventana-btn-limpiar:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Contenedor del gráfico y panel */
+.ventana-grafico-container {
+  flex: 1;
+  display: flex;
+  gap: 0.75rem;
+  min-height: 200px;
+  overflow: hidden;
+}
+
+/* Panel lateral de datos */
+.ventana-panel-datos {
+  width: 260px;
+  flex-shrink: 0;
+  background: #0f172a;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: panelSlideIn 0.25s ease;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.ventana-panel-header {
+  padding: 0.5rem 0.75rem;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #94a3b8;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ventana-panel-intervalo {
+  padding: 0.2rem 0.4rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.ventana-panel-intervalo:hover {
+  border-color: #64748b;
+}
+
+.ventana-panel-intervalo:focus {
+  border-color: #0ea5e9;
+}
+
+.ventana-panel-tabla-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ventana-panel-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ventana-panel-tabla thead {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  z-index: 1;
+}
+
+.ventana-panel-tabla th {
+  padding: 0.4rem 0.35rem;
+  text-align: left;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 1px solid #334155;
+  white-space: nowrap;
+}
+
+.ventana-panel-tabla td {
+  padding: 0.35rem;
+  color: #e2e8f0;
+  border-bottom: 1px solid #1e293b;
+  white-space: nowrap;
+}
+
+.ventana-panel-tabla tbody tr:hover {
+  background: #1e293b;
+}
+
+.ventana-panel-tabla td:last-child {
+  text-align: right;
+  font-family: "Consolas", "Monaco", monospace;
+  color: #22c55e;
 }
 
 /* Gráfico */
@@ -367,13 +537,13 @@
 .ventana-stat-input {
   width: auto;
   min-width: 2ch;
-  padding: 0.1rem 0 0.2rem 0;
+  padding: 0.15rem 0.4rem 0.25rem 0.4rem;
   background: #0f172a;
   border: 1px solid #334155;
   border-radius: 4px;
   color: #22c55e;
-  font-family: inherit;
-  font-size: 0.95rem;
+  font-family: "Consolas", "Monaco", monospace;
+  font-size: 1.05rem;
   font-weight: 700;
   text-align: center;
   margin-left: 0.1rem;
