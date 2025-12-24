@@ -2,7 +2,7 @@
 
 > **Fecha de creación**: 2025-12-24
 > **Rama de trabajo**: dev
-> **Estado**: En progreso
+> **Estado**: COMPLETADO
 
 ---
 
@@ -80,10 +80,10 @@ El sistema de Historial y Gráficos permite visualizar datos históricos de medi
   - Mover: título, botones minimizar/maximizar/cerrar
   - **Estado**: Completado (2024-12-24)
 
-- [ ] **2.5** Extraer componente `ControlesGrafico.jsx`
-  - Crear: `src/paginas/PaginaAlimentadores/componentes/historial/ControlesGrafico.jsx`
-  - Mover: selector tipo gráfico, selector color, botones exportar
-  - **Estado**: Pendiente (Opcional - la barra de controles es compleja)
+- [x] **2.5** Extraer componente `BarraControlesHistorial.jsx`
+  - Crear: `src/paginas/PaginaAlimentadores/componentes/historial/BarraControlesHistorial.jsx`
+  - Mover: toggle panel, tabs zona, selector rango, tipo gráfico, cache
+  - **Estado**: Completado (2024-12-24)
 
 ### Fase 3: Mejoras de Calidad de Código
 
@@ -97,30 +97,33 @@ El sistema de Historial y Gráficos permite visualizar datos históricos de medi
   - Crear variables en `:root` para colores del tema
   - **Estado**: Completado (2024-12-24) - Variables principales agregadas
 
-- [ ] **3.3** Crear hook `useErrorHandler` para manejo consistente de errores
+- [x] **3.3** Crear hook `useErrorHandler` para manejo consistente de errores
   - Crear: `src/hooks/useErrorHandler.js`
   - Implementar patrón consistente de notificación de errores
-  - **Estado**: Pendiente (Opcional)
+  - **Estado**: Completado (2024-12-24)
 
-- [ ] **3.4** Corregir dependencias de useEffect en ApexChartWrapper
-  - Archivo: `ApexChartWrapper.jsx:192`
-  - Revisar array de dependencias vacío
-  - **Estado**: Pendiente
+- [x] **3.4** Corregir dependencias de useEffect en ApexChartWrapper
+  - Archivo: `ApexChartWrapper.jsx`
+  - Usar useRef para valores iniciales, mantener array vacío intencionalmente
+  - **Estado**: Completado (2024-12-24)
 
 ### Fase 4: Mejoras Opcionales
 
-- [ ] **4.1** Agregar PropTypes a componentes principales
-  - Archivos: VentanaHistorial, ModalConfigInforme, SelectorFecha
-  - **Estado**: Pendiente
+- [x] **4.1** Agregar PropTypes a componentes principales
+  - Archivos: ModalConfigInforme, BarraControlesHistorial, PanelDatosHistorial, BarraTituloVentana
+  - **Estado**: Completado (2024-12-24)
 
-- [ ] **4.2** Optimizar filtrado de datos en ModalConfigInforme
-  - Archivo: `ModalConfigInforme.jsx:95-109`
-  - Implementar muestreo más eficiente para datasets grandes
-  - **Estado**: Pendiente
+- [x] **4.2** Optimizar filtrado de datos en ModalConfigInforme
+  - Archivo: `ModalConfigInforme.jsx`
+  - Implementar muestreo por salto de índice para datasets > 1000 puntos
+  - **Estado**: Completado (2024-12-24)
 
-- [ ] **4.3** Considerar migrar drag a librería (react-draggable)
-  - Evaluar beneficios vs complejidad añadida
-  - **Estado**: Pendiente
+- [x] **4.3** Considerar migrar drag a librería (react-draggable)
+  - Evaluación: NO recomendado
+  - La implementación actual (~30 líneas) funciona correctamente
+  - react-draggable añadiría ~30KB sin beneficio significativo
+  - El código actual ya maneja: límites de pantalla, cancelación en botones, cleanup
+  - **Estado**: Completado (evaluado, descartado)
 
 ---
 
@@ -197,6 +200,12 @@ Los valores 0 se excluyen del promedio.
 | 2024-12-24 | Renombrar hooks usar* → use* | Completado | 10 hooks renombrados para cumplir convención React |
 | 2024-12-24 | 2.3 Crear PanelDatosHistorial.jsx | Completado | Componente extraído con tabla y filtros |
 | 2024-12-24 | 2.4 Crear BarraTituloVentana.jsx | Completado | Componente extraído con botones de ventana |
+| 2024-12-24 | 2.5 Crear BarraControlesHistorial.jsx | Completado | Controles extraídos: zonas, rangos, tipo gráfico, cache |
+| 2024-12-24 | 3.4 Corregir ApexChartWrapper | Completado | useRef para valores iniciales, catch blocks limpios |
+| 2024-12-24 | 3.3 Crear useErrorHandler | Completado | Hook con captura, niveles, auto-cleanup |
+| 2024-12-24 | 4.1 Agregar PropTypes | Completado | 4 componentes con PropTypes y defaultProps |
+| 2024-12-24 | 4.2 Optimizar filtrado | Completado | Muestreo por índice para datasets grandes |
+| 2024-12-24 | 4.3 Evaluar react-draggable | Completado | Descartado - implementación actual suficiente |
 
 ---
 

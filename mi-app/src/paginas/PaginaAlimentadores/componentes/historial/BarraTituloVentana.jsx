@@ -4,6 +4,7 @@
  */
 
 import { forwardRef } from "react";
+import PropTypes from "prop-types";
 
 /**
  * @param {Object} props
@@ -64,5 +65,19 @@ const BarraTituloVentana = forwardRef(({
 });
 
 BarraTituloVentana.displayName = "BarraTituloVentana";
+
+BarraTituloVentana.propTypes = {
+  nombre: PropTypes.string,
+  maximizada: PropTypes.bool,
+  onMinimizar: PropTypes.func.isRequired,
+  onMaximizar: PropTypes.func.isRequired,
+  onCerrar: PropTypes.func.isRequired,
+  onMouseDown: PropTypes.func.isRequired,
+};
+
+BarraTituloVentana.defaultProps = {
+  nombre: "Ventana",
+  maximizada: false,
+};
 
 export default BarraTituloVentana;

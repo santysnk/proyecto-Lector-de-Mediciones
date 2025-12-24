@@ -4,6 +4,7 @@
  */
 
 import { useMemo } from "react";
+import PropTypes from "prop-types";
 
 /**
  * @param {Object} props
@@ -90,6 +91,25 @@ const PanelDatosHistorial = ({
       </div>
     </div>
   );
+};
+
+PanelDatosHistorial.propTypes = {
+  abierto: PropTypes.bool.isRequired,
+  tituloPeriodo: PropTypes.string,
+  intervaloFiltro: PropTypes.number,
+  onIntervaloChange: PropTypes.func.isRequired,
+  datosGrafico: PropTypes.arrayOf(
+    PropTypes.shape({
+      x: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string, PropTypes.number]),
+      y: PropTypes.number,
+    })
+  ),
+};
+
+PanelDatosHistorial.defaultProps = {
+  tituloPeriodo: "Sin datos",
+  intervaloFiltro: 60,
+  datosGrafico: [],
 };
 
 export default PanelDatosHistorial;

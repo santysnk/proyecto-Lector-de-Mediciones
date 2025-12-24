@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo, useEffect } from "react";
+import PropTypes from "prop-types";
 import { INTERVALOS_INFORME } from "../../constantes/historialConfig";
 import "./ModalConfigInforme.css";
 
@@ -83,20 +84,53 @@ const ModalConfigInforme = ({
   }, [intervalosHabilitados, intervaloSeleccionado]);
 
   // Filtrar datos según el intervalo seleccionado
+  // Optimizado: usa muestreo por salto de índice para datasets grandes
   const datosFiltrados = useMemo(() => {
     if (!datos || datos.length === 0 || !intervaloSeleccionado) return [];
 
     const intervaloMs = intervaloSeleccionado * 60 * 1000;
+
+    // Para datasets pequeños (< 1000 puntos), usar filtrado tradicional
+    if (datos.length < 1000) {
+      let ultimoTimestamp = 0;
+      return datos.filter((punto) => {
+        const timestamp = new Date(punto.x).getTime();
+        if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
+          ultimoTimestamp = timestamp;
+          return true;
+        }
+        return false;
+      });
+    }
+
+    // Para datasets grandes, calcular paso estimado y usar muestreo por índice
+    // Esto reduce de O(n) a O(n/paso) iteraciones
+    const primerTs = new Date(datos[0].x).getTime();
+    const ultimoTs = new Date(datos[datos.length - 1].x).getTime();
+    const duracionTotal = ultimoTs - primerTs;
+
+    if (duracionTotal <= 0) return [datos[0]];
+
+    // Estimar el intervalo promedio entre puntos
+    const intervaloPromedio = duracionTotal / (datos.length - 1);
+    // Calcular paso aproximado de índices
+    const pasoEstimado = Math.max(1, Math.floor(intervaloMs / intervaloPromedio));
+
+    const resultado = [];
     let ultimoTimestamp = 0;
 
-    return datos.filter((punto) => {
+    // Iterar con saltos, pero verificar timestamp real para precisión
+    for (let i = 0; i < datos.length; i += pasoEstimado) {
+      const punto = datos[i];
       const timestamp = new Date(punto.x).getTime();
-      if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
+
+      if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs * 0.9) {
+        resultado.push(punto);
         ultimoTimestamp = timestamp;
-        return true;
       }
-      return false;
-    });
+    }
+
+    return resultado;
   }, [datos, intervaloSeleccionado]);
 
   const handleGenerar = () => {
@@ -222,6 +256,26 @@ const ModalConfigInforme = ({
       </div>
     </div>
   );
+};
+
+ModalConfigInforme.propTypes = {
+  visible: PropTypes.bool.isRequired,
+  onCerrar: PropTypes.func.isRequired,
+  onGenerar: PropTypes.func.isRequired,
+  datos: PropTypes.arrayOf(
+    PropTypes.shape({
+      x: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string, PropTypes.number]),
+      y: PropTypes.number,
+    })
+  ),
+  nombreAlimentador: PropTypes.string,
+  tituloMedicion: PropTypes.string,
+};
+
+ModalConfigInforme.defaultProps = {
+  datos: [],
+  nombreAlimentador: "Alimentador",
+  tituloMedicion: "Medición",
 };
 
 export default ModalConfigInforme;

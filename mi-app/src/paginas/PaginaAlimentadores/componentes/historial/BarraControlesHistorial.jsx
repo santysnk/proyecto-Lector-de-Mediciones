@@ -3,6 +3,7 @@
  * Incluye: toggle panel, tabs de zona, selector de rango, tipo de grafico, cache
  */
 
+import PropTypes from "prop-types";
 import { RANGOS_TIEMPO, TIPOS_GRAFICO } from "../../constantes/historialConfig";
 import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
 
@@ -170,6 +171,39 @@ const BarraControlesHistorial = ({
       </div>
     </div>
   );
+};
+
+BarraControlesHistorial.propTypes = {
+  panelDatosAbierto: PropTypes.bool.isRequired,
+  onTogglePanel: PropTypes.func.isRequired,
+  zonaSeleccionada: PropTypes.oneOf(["superior", "inferior"]).isRequired,
+  onZonaChange: PropTypes.func.isRequired,
+  zonaDisponible: PropTypes.func.isRequired,
+  tituloSuperior: PropTypes.string,
+  tituloInferior: PropTypes.string,
+  rangoSeleccionado: PropTypes.string.isRequired,
+  onRangoChange: PropTypes.func.isRequired,
+  fechaRangoDesde: PropTypes.instanceOf(Date),
+  fechaRangoHasta: PropTypes.instanceOf(Date),
+  onFechaRangoChange: PropTypes.func.isRequired,
+  tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]).isRequired,
+  onTipoGraficoChange: PropTypes.func.isRequired,
+  precargaProgreso: PropTypes.number,
+  precargaCompleta: PropTypes.bool,
+  precargando: PropTypes.bool,
+  fuenteDatos: PropTypes.oneOf(["local", "remoto", "mixto", null]),
+  onLimpiarCache: PropTypes.func.isRequired,
+};
+
+BarraControlesHistorial.defaultProps = {
+  tituloSuperior: "Superior",
+  tituloInferior: "Inferior",
+  fechaRangoDesde: null,
+  fechaRangoHasta: null,
+  precargaProgreso: 0,
+  precargaCompleta: false,
+  precargando: false,
+  fuenteDatos: null,
 };
 
 export default BarraControlesHistorial;
