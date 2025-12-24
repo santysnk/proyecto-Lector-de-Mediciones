@@ -23,52 +23,46 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
     /**
      * Captura la imagen del gráfico con estilo optimizado para informes
      * (fondo blanco, texto negro, fuentes más grandes)
+     * Crea un gráfico temporal oculto para la captura, sin afectar el visible.
      * @param {Object} exportOptions - Opciones adicionales para dataURI
      * @returns {Promise<{imgURI: string}>} - Imagen en formato data URI
      */
     async captureForReport(exportOptions = {}) {
       const chart = chartInstanceRef.current;
-      if (!chart || typeof chart.dataURI !== "function") {
+      if (!chart) {
         return { imgURI: null };
       }
 
-      // Guardar opciones actuales para restaurar después
-      const opcionesOriginales = { ...options };
+      // Crear un contenedor temporal oculto para el gráfico de exportación
+      const tempContainer = document.createElement("div");
+      tempContainer.style.cssText = "position:absolute;left:-9999px;top:-9999px;width:1200px;height:600px;";
+      document.body.appendChild(tempContainer);
 
       // Opciones optimizadas para exportación a informe (fondo blanco, texto negro, fuentes grandes)
-      // Deshabilitamos tooltip y estados de hover para evitar que aparezcan puntos/markers
       const opcionesExport = {
+        ...options,
         chart: {
           ...options.chart,
+          id: `export-temp-${Date.now()}`,
           background: "#ffffff",
           foreColor: "#1a1a1a",
+          animations: { enabled: false },
+          toolbar: { show: false },
+          width: 1200,
+          height: 600,
         },
         states: {
-          hover: {
-            filter: {
-              type: "none", // Sin efecto de hover
-            },
-          },
-          active: {
-            filter: {
-              type: "none", // Sin efecto de click
-            },
-          },
+          hover: { filter: { type: "none" } },
+          active: { filter: { type: "none" } },
         },
         markers: {
           ...options.markers,
-          hover: {
-            size: 0, // Sin markers de hover
-          },
+          hover: { size: 0 },
         },
-        tooltip: {
-          enabled: false, // Deshabilitar tooltip completamente para la captura
-        },
+        tooltip: { enabled: false },
         xaxis: {
           ...options.xaxis,
-          crosshairs: {
-            show: false, // Sin línea vertical de crosshair
-          },
+          crosshairs: { show: false },
           labels: {
             ...options.xaxis?.labels,
             style: {
@@ -80,20 +74,10 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
           },
           axisBorder: { color: "#333333", show: true },
           axisTicks: { color: "#333333", show: true },
-          title: {
-            ...options.xaxis?.title,
-            style: {
-              color: "#1a1a1a",
-              fontSize: "17px",
-              fontWeight: 700,
-            },
-          },
         },
         yaxis: {
           ...options.yaxis,
-          crosshairs: {
-            show: false, // Sin línea horizontal de crosshair
-          },
+          crosshairs: { show: false },
           labels: {
             ...options.yaxis?.labels,
             style: {
@@ -103,14 +87,6 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
               fontWeight: 600,
             },
           },
-          title: {
-            ...options.yaxis?.title,
-            style: {
-              color: "#1a1a1a",
-              fontSize: "17px",
-              fontWeight: 700,
-            },
-          },
         },
         grid: {
           ...options.grid,
@@ -118,28 +94,37 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
         },
       };
 
+      let tempChart = null;
       try {
-        // Aplicar opciones de exportación temporalmente
-        await chart.updateOptions(opcionesExport, false, false);
+        // Crear gráfico temporal con las opciones de exportación
+        tempChart = new ApexCharts(tempContainer, {
+          ...opcionesExport,
+          series: chart.w.config.series, // Usar las series actuales
+        });
+        await tempChart.render();
 
-        // Pequeña pausa para que el chart se actualice
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Pequeña pausa para asegurar que el gráfico se renderice
+        await new Promise(resolve => setTimeout(resolve, 150));
 
-        // Capturar imagen
-        const result = await chart.dataURI({ scale: exportOptions.scale || 2 });
-
-        // Restaurar opciones originales
-        await chart.updateOptions(opcionesOriginales, false, false);
+        // Capturar imagen del gráfico temporal
+        const result = await tempChart.dataURI({ scale: exportOptions.scale || 2 });
 
         return result;
       } catch (err) {
-        // Intentar restaurar opciones originales en caso de error
-        try {
-          await chart.updateOptions(opcionesOriginales, false, false);
-        } catch {
-          // Ignorar error de restauración
+        console.warn("Error capturando gráfico para informe:", err);
+        return { imgURI: null };
+      } finally {
+        // Limpiar: destruir gráfico temporal y remover contenedor
+        if (tempChart) {
+          try {
+            tempChart.destroy();
+          } catch {
+            // Ignorar errores de destrucción
+          }
         }
-        throw err;
+        if (tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer);
+        }
       }
     }
   }), [options]);

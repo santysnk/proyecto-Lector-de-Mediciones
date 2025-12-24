@@ -1,6 +1,6 @@
 /**
  * Panel lateral que muestra la tabla de datos del historial
- * Incluye filtro por intervalo y tabla scrolleable
+ * Recibe los datos ya filtrados desde VentanaHistorial
  */
 
 import { useMemo } from "react";
@@ -10,35 +10,21 @@ import PropTypes from "prop-types";
  * @param {Object} props
  * @param {boolean} props.abierto - Si el panel está visible
  * @param {string} props.tituloPeriodo - Título mostrando el período de fechas
- * @param {number} props.intervaloFiltro - Intervalo de filtrado (0, 15, 30, 60 minutos)
+ * @param {number} props.intervaloFiltro - Intervalo de filtrado actual (0, 15, 30, 60 minutos)
  * @param {Function} props.onIntervaloChange - Callback al cambiar intervalo
- * @param {Array} props.datosGrafico - Datos crudos del gráfico [{x, y}]
+ * @param {Array} props.datosFiltrados - Datos ya filtrados [{x, y}]
+ * @param {string} props.tipoGrafico - Tipo de gráfico actual (line, area, bar)
  */
 const PanelDatosHistorial = ({
   abierto,
   tituloPeriodo,
   intervaloFiltro,
   onIntervaloChange,
-  datosGrafico,
+  datosFiltrados,
+  tipoGrafico,
 }) => {
-  // Filtrar datos según intervalo seleccionado
-  const datosFiltrados = useMemo(() => {
-    if (intervaloFiltro === 0 || datosGrafico.length === 0) {
-      return datosGrafico;
-    }
-
-    const intervaloMs = intervaloFiltro * 60 * 1000;
-    let ultimoTimestamp = 0;
-
-    return datosGrafico.filter((punto) => {
-      const timestamp = new Date(punto.x).getTime();
-      if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
-        ultimoTimestamp = timestamp;
-        return true;
-      }
-      return false;
-    });
-  }, [datosGrafico, intervaloFiltro]);
+  // El gráfico de barras no soporta "Todos (1/min)" por rendimiento
+  const todosDeshabilitado = tipoGrafico === "bar";
 
   // Formatear datos para la tabla
   const datosTabla = useMemo(() => {
@@ -63,7 +49,9 @@ const PanelDatosHistorial = ({
           value={intervaloFiltro}
           onChange={(e) => onIntervaloChange(Number(e.target.value))}
         >
-          <option value={0}>Todos</option>
+          <option value={0} disabled={todosDeshabilitado}>
+            {todosDeshabilitado ? "Todos (no disp.)" : "Todos"}
+          </option>
           <option value={15}>cada 15m</option>
           <option value={30}>cada 30m</option>
           <option value={60}>cada 60m</option>
@@ -98,18 +86,20 @@ PanelDatosHistorial.propTypes = {
   tituloPeriodo: PropTypes.string,
   intervaloFiltro: PropTypes.number,
   onIntervaloChange: PropTypes.func.isRequired,
-  datosGrafico: PropTypes.arrayOf(
+  datosFiltrados: PropTypes.arrayOf(
     PropTypes.shape({
       x: PropTypes.oneOfType([PropTypes.instanceOf(Date), PropTypes.string, PropTypes.number]),
       y: PropTypes.number,
     })
   ),
+  tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]),
 };
 
 PanelDatosHistorial.defaultProps = {
   tituloPeriodo: "Sin datos",
   intervaloFiltro: 60,
-  datosGrafico: [],
+  datosFiltrados: [],
+  tipoGrafico: "line",
 };
 
 export default PanelDatosHistorial;
