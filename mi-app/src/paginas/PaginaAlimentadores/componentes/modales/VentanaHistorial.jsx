@@ -24,6 +24,44 @@ const RANGOS_TIEMPO = [
   { id: "custom", label: "Custom", ms: null },
 ];
 
+// Tipos de gráfico disponibles
+const TIPOS_GRAFICO = [
+  { id: "line", label: "Línea", icon: "📈" },
+  { id: "area", label: "Área", icon: "📊" },
+  { id: "bar", label: "Barras", icon: "📶" },
+];
+
+/**
+ * Interpola color de verde a rojo basado en porcentaje (0-1)
+ * 0 = verde (#22c55e), 1 = rojo (#ef4444)
+ */
+const interpolarColorVerdeRojo = (porcentaje) => {
+  // Clamp entre 0 y 1
+  const p = Math.max(0, Math.min(1, porcentaje));
+
+  // Verde: rgb(34, 197, 94) - #22c55e
+  // Amarillo: rgb(234, 179, 8) - #eab308 (punto medio)
+  // Rojo: rgb(239, 68, 68) - #ef4444
+
+  let r, g, b;
+
+  if (p <= 0.5) {
+    // Verde a Amarillo (0 a 0.5)
+    const t = p * 2; // normalizar a 0-1
+    r = Math.round(34 + (234 - 34) * t);
+    g = Math.round(197 + (179 - 197) * t);
+    b = Math.round(94 + (8 - 94) * t);
+  } else {
+    // Amarillo a Rojo (0.5 a 1)
+    const t = (p - 0.5) * 2; // normalizar a 0-1
+    r = Math.round(234 + (239 - 234) * t);
+    g = Math.round(179 + (68 - 179) * t);
+    b = Math.round(8 + (68 - 8) * t);
+  }
+
+  return `rgb(${r}, ${g}, ${b})`;
+};
+
 const obtenerTituloZona = (cardDesign, zona) => {
   const config = cardDesign?.[zona];
   if (!config) return zona === "superior" ? "Superior" : "Inferior";
@@ -91,7 +129,7 @@ const VentanaHistorial = ({
   } = usarHistorialLocal();
 
   // Estados del selector
-  const [rangoSeleccionado, setRangoSeleccionado] = useState("1h");
+  const [rangoSeleccionado, setRangoSeleccionado] = useState("24h");
   const [fechaRangoDesde, setFechaRangoDesde] = useState(null);
   const [fechaRangoHasta, setFechaRangoHasta] = useState(null);
   const [zonaSeleccionada, setZonaSeleccionada] = useState("superior");
@@ -99,6 +137,7 @@ const VentanaHistorial = ({
   const [fuenteDatos, setFuenteDatos] = useState(null);
   const [panelDatosAbierto, setPanelDatosAbierto] = useState(true);
   const [intervaloFiltro, setIntervaloFiltro] = useState(60); // 0 = todos, 15, 30, 60 minutos
+  const [tipoGrafico, setTipoGrafico] = useState("line"); // line, area, bar
 
   // Títulos de zonas
   const tituloSuperior = useMemo(() => obtenerTituloZona(cardDesign, "superior"), [cardDesign]);
@@ -221,69 +260,144 @@ const VentanaHistorial = ({
     };
   }, [arrastrando, offsetArrastre, onMover]);
 
-  // Configuración ApexCharts
-  const opcionesGrafico = useMemo(() => ({
-    chart: {
-      id: `historial-${alimentador?.id}`,
-      type: "line",
-      height: "100%",
-      zoom: { enabled: true, type: "x", autoScaleYaxis: true },
-      toolbar: {
-        show: true,
-        tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true },
-        autoSelected: "zoom",
-      },
-      background: "#0f172a",
-      foreColor: "#e2e8f0",
-      animations: { enabled: true, speed: 500 },
-    },
-    stroke: { curve: "smooth", width: 2 },
-    colors: ["#0ea5e9"],
-    xaxis: {
-      type: "datetime",
-      labels: {
-        style: { colors: "#94a3b8" },
-        datetimeUTC: false,
-        datetimeFormatter: { year: "yyyy", month: "MMM 'yy", day: "dd MMM", hour: "HH:mm" },
-      },
-      axisBorder: { color: "#334155" },
-      axisTicks: { color: "#334155" },
-    },
-    yaxis: {
-      labels: {
-        style: { colors: "#94a3b8" },
-        formatter: (val) => (val != null ? val.toFixed(2) : "--"),
-      },
-    },
-    grid: { borderColor: "#334155", strokeDashArray: 3 },
-    tooltip: { theme: "dark", x: { format: "dd/MM/yyyy HH:mm:ss" }, y: { formatter: (val) => (val != null ? val.toFixed(4) : "--") } },
-    dataLabels: { enabled: false },
-    markers: { size: 0, hover: { size: 5 } },
-    noData: { text: "No hay datos", style: { color: "#94a3b8", fontSize: "14px" } },
-  }), [alimentador?.id]);
-
-  const seriesGrafico = useMemo(() => [{ name: `Promedio ${tituloZonaActual}`, data: datosGrafico }], [datosGrafico, tituloZonaActual]);
-
-  // Datos para la tabla del panel lateral (fecha, hora, medición redondeada a 2 decimales hacia arriba)
-  // Filtra según intervalo seleccionado (0 = todos, 15/30/60 = minutos)
-  const datosTabla = useMemo(() => {
-    let datosFiltrados = datosGrafico;
-
-    // Si hay intervalo, filtrar para mostrar 1 registro cada X minutos
-    if (intervaloFiltro > 0 && datosGrafico.length > 0) {
-      const intervaloMs = intervaloFiltro * 60 * 1000;
-      let ultimoTimestamp = 0;
-
-      datosFiltrados = datosGrafico.filter((punto) => {
-        const timestamp = new Date(punto.x).getTime();
-        if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
-          ultimoTimestamp = timestamp;
-          return true;
-        }
-        return false;
-      });
+  // Datos filtrados por intervalo (se usa tanto para el gráfico como para la tabla)
+  // Esto evita renderizar miles de puntos y mejora el rendimiento
+  const datosFiltrados = useMemo(() => {
+    if (intervaloFiltro === 0 || datosGrafico.length === 0) {
+      return datosGrafico;
     }
 
+    const intervaloMs = intervaloFiltro * 60 * 1000;
+    let ultimoTimestamp = 0;
+
+    return datosGrafico.filter((punto) => {
+      const timestamp = new Date(punto.x).getTime();
+      if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
+        ultimoTimestamp = timestamp;
+        return true;
+      }
+      return false;
+    });
+  }, [datosGrafico, intervaloFiltro]);
+
+  // Colores para gráfico de barras (verde a rojo con normalización min-max)
+  // Usa el rango completo de colores: el valor mínimo es verde, el máximo es rojo
+  const coloresBarras = useMemo(() => {
+    if (datosFiltrados.length === 0) return [];
+    const valores = datosFiltrados.map((d) => d.y);
+    const minVal = Math.min(...valores);
+    const maxVal = Math.max(...valores);
+    const rango = maxVal - minVal;
+    // Normalización min-max para maximizar el contraste visual
+    return valores.map((val) => {
+      const porcentaje = rango > 0 ? (val - minVal) / rango : 0;
+      return interpolarColorVerdeRojo(porcentaje);
+    });
+  }, [datosFiltrados]);
+
+  // Configuración ApexCharts (dinámica según tipo de gráfico y colores)
+  const opcionesGrafico = useMemo(() => {
+    const opcionesBase = {
+      chart: {
+        id: `historial-${alimentador?.id}-${tipoGrafico}`,
+        type: tipoGrafico,
+        height: "100%",
+        zoom: { enabled: true, type: "x", autoScaleYaxis: true },
+        toolbar: {
+          show: true,
+          tools: { download: true, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true },
+          autoSelected: "zoom",
+        },
+        background: "#0f172a",
+        foreColor: "#e2e8f0",
+        animations: { enabled: true, speed: 500 },
+      },
+      colors: ["#0ea5e9"],
+      xaxis: {
+        type: "datetime",
+        labels: {
+          style: { colors: "#94a3b8" },
+          datetimeUTC: false,
+          datetimeFormatter: { year: "yyyy", month: "MMM 'yy", day: "dd MMM", hour: "HH:mm" },
+        },
+        axisBorder: { color: "#334155" },
+        axisTicks: { color: "#334155" },
+      },
+      yaxis: {
+        labels: {
+          style: { colors: "#94a3b8" },
+          formatter: (val) => (val != null ? val.toFixed(2) : "--"),
+        },
+      },
+      grid: { borderColor: "#334155", strokeDashArray: 3 },
+      tooltip: { theme: "dark", x: { format: "dd/MM/yyyy HH:mm:ss" }, y: { formatter: (val) => (val != null ? val.toFixed(4) : "--") } },
+      dataLabels: { enabled: false },
+      noData: { text: "No hay datos", style: { color: "#94a3b8", fontSize: "14px" } },
+    };
+
+    // Opciones específicas por tipo de gráfico
+    if (tipoGrafico === "line") {
+      opcionesBase.stroke = {
+        curve: "smooth",
+        width: 2,
+        lineCap: "round",
+      };
+      // Gradiente en la línea (verde abajo, rojo arriba)
+      opcionesBase.fill = {
+        type: "gradient",
+        gradient: {
+          type: "vertical",
+          colorStops: [
+            { offset: 0, color: "#ef4444", opacity: 1 },   // Rojo arriba
+            { offset: 50, color: "#eab308", opacity: 1 },  // Amarillo medio
+            { offset: 100, color: "#22c55e", opacity: 1 }, // Verde abajo
+          ],
+        },
+      };
+      opcionesBase.markers = { size: 0, hover: { size: 5 } };
+    } else if (tipoGrafico === "area") {
+      opcionesBase.stroke = { curve: "smooth", width: 2, colors: ["#ef4444"] };
+      opcionesBase.fill = {
+        type: "gradient",
+        gradient: {
+          shade: "light",
+          type: "vertical",
+          shadeIntensity: 0.1,
+          opacityFrom: 0.9,
+          opacityTo: 0.9,
+          colorStops: [
+            { offset: 0, color: "#ef4444", opacity: 0.9 },   // Rojo arriba
+            { offset: 50, color: "#eab308", opacity: 0.9 },  // Amarillo medio
+            { offset: 100, color: "#22c55e", opacity: 0.9 }, // Verde abajo
+          ],
+        },
+      };
+      opcionesBase.markers = { size: 0, hover: { size: 5 } };
+    } else if (tipoGrafico === "bar") {
+      opcionesBase.plotOptions = {
+        bar: {
+          columnWidth: "95%",
+          borderRadius: 0,
+          distributed: true, // Permite colores individuales por barra
+        },
+      };
+      opcionesBase.legend = { show: false }; // Ocultar leyenda cuando distributed
+      opcionesBase.fill = { type: "solid" }; // Color sólido por barra
+      opcionesBase.stroke = { width: 1, colors: ["#334155"] }; // Borde gris oscuro de 1px
+      // Asignar colores según valor relativo al máximo
+      if (coloresBarras.length > 0) {
+        opcionesBase.colors = coloresBarras;
+      }
+    }
+
+    return opcionesBase;
+  }, [alimentador?.id, tipoGrafico, coloresBarras]);
+
+  // Series para el gráfico (usa datos filtrados)
+  const seriesGrafico = useMemo(() => [{ name: `Promedio ${tituloZonaActual}`, data: datosFiltrados }], [datosFiltrados, tituloZonaActual]);
+
+  // Datos para la tabla del panel lateral (formateados para mostrar)
+  const datosTabla = useMemo(() => {
     return datosFiltrados.map((punto) => {
       const fecha = new Date(punto.x);
       return {
@@ -292,7 +406,7 @@ const VentanaHistorial = ({
         medicion: Math.ceil(punto.y * 100) / 100, // Redondear hacia arriba a 2 decimales
       };
     });
-  }, [datosGrafico, intervaloFiltro]);
+  }, [datosFiltrados]);
 
   // Título del panel: período de fechas o fecha única si es el mismo día
   const tituloPanelDatos = useMemo(() => {
@@ -465,6 +579,21 @@ const VentanaHistorial = ({
             )}
           </div>
 
+          {/* Selector de tipo de gráfico */}
+          <div className="ventana-tipo-grafico">
+            {TIPOS_GRAFICO.map((tipo) => (
+              <button
+                key={tipo.id}
+                type="button"
+                className={`ventana-tipo-btn ${tipoGrafico === tipo.id ? "ventana-tipo-btn--activo" : ""}`}
+                onClick={() => setTipoGrafico(tipo.id)}
+                title={tipo.label}
+              >
+                {tipo.icon}
+              </button>
+            ))}
+          </div>
+
           {/* Cache + Fuente */}
           <div className="ventana-cache">
             <div className="ventana-cache-barra">
@@ -558,7 +687,7 @@ const VentanaHistorial = ({
                 <span>No hay datos</span>
               </div>
             ) : (
-              <Chart options={opcionesGrafico} series={seriesGrafico} type="line" height="100%" />
+              <Chart options={opcionesGrafico} series={seriesGrafico} type={tipoGrafico} height="100%" />
             )}
           </div>
         </div>
