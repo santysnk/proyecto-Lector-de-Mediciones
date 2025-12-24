@@ -136,15 +136,22 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
         // Intentar restaurar opciones originales en caso de error
         try {
           await chart.updateOptions(opcionesOriginales, false, false);
-        } catch (e) {
-          // Ignorar
+        } catch {
+          // Ignorar error de restauración
         }
         throw err;
       }
     }
   }), [options]);
 
-  // Efecto principal: crear/destruir el chart
+  // Refs para valores iniciales (evita re-crear el chart cuando cambian)
+  const initialOptionsRef = useRef(options);
+  const initialSeriesRef = useRef(series);
+  const initialTypeRef = useRef(type);
+  const initialHeightRef = useRef(height);
+  const initialWidthRef = useRef(width);
+
+  // Efecto principal: crear/destruir el chart (solo al montar/desmontar)
   useEffect(() => {
     // Si no hay contenedor, salir
     if (!containerRef.current) return;
@@ -153,22 +160,29 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
     if (chartInstanceRef.current) {
       try {
         chartInstanceRef.current.destroy();
-      } catch (e) {
+      } catch {
         // Ignorar errores de destrucción
       }
       chartInstanceRef.current = null;
     }
 
+    // Usar valores iniciales de los refs
+    const opts = initialOptionsRef.current;
+    const ser = initialSeriesRef.current;
+    const t = initialTypeRef.current;
+    const h = initialHeightRef.current;
+    const w = initialWidthRef.current;
+
     // Crear configuración completa del chart
     const chartConfig = {
-      ...options,
+      ...opts,
       chart: {
-        ...options.chart,
-        type: type || options.chart?.type || "line",
-        height: height || options.chart?.height || "100%",
-        width: width || options.chart?.width || "100%",
+        ...opts.chart,
+        type: t || opts.chart?.type || "line",
+        height: h || opts.chart?.height || "100%",
+        width: w || opts.chart?.width || "100%",
       },
-      series: series || [],
+      series: ser || [],
     };
 
     // Crear nueva instancia
@@ -183,13 +197,13 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
       if (chartInstanceRef.current) {
         try {
           chartInstanceRef.current.destroy();
-        } catch (e) {
+        } catch {
           // Ignorar errores durante cleanup
         }
         chartInstanceRef.current = null;
       }
     };
-  }, []); // Solo al montar/desmontar
+  }, []); // Solo al montar/desmontar - las actualizaciones se hacen en otros effects
 
   // Efecto para actualizar opciones cuando cambien
   useEffect(() => {

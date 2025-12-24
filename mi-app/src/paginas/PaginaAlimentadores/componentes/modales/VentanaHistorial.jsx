@@ -15,10 +15,10 @@ import {
   TIPOS_GRAFICO,
   COLORES_GRADIENTE,
 } from "../../constantes/historialConfig";
-import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
 import ModalConfigInforme from "./ModalConfigInforme";
 import PanelDatosHistorial from "../historial/PanelDatosHistorial";
 import BarraTituloVentana from "../historial/BarraTituloVentana";
+import BarraControlesHistorial from "../historial/BarraControlesHistorial";
 import "./VentanaHistorial.css";
 
 /**
@@ -448,6 +448,29 @@ const VentanaHistorial = ({
     setModalInformeVisible(true);
   };
 
+  // Handler para cambio de rango predefinido
+  const handleRangoChange = useCallback((rangoId) => {
+    setRangoSeleccionado(rangoId);
+    setFechaRangoDesde(null);
+    setFechaRangoHasta(null);
+  }, []);
+
+  // Handler para cambio de rango de fechas personalizado
+  const handleFechaRangoChange = useCallback((desde, hasta) => {
+    setFechaRangoDesde(desde);
+    setFechaRangoHasta(hasta);
+  }, []);
+
+  // Handler para limpiar cache
+  const handleLimpiarCache = useCallback(async () => {
+    if (window.confirm("¿Limpiar cache local?")) {
+      await limpiarCacheCompleto();
+      const regSup = obtenerRegistradorZona("superior");
+      const regInf = obtenerRegistradorZona("inferior");
+      precargar48h(alimentador.id, regSup, regInf);
+    }
+  }, [limpiarCacheCompleto, obtenerRegistradorZona, precargar48h, alimentador?.id]);
+
   const handleGenerarInforme = async (configInforme) => {
     const { solicitadoPor, datosFiltrados, fechaInicio, fechaFin } = configInforme;
 
@@ -504,127 +527,27 @@ const VentanaHistorial = ({
       {/* Contenido */}
       <div className="ventana-historial-content">
         {/* Barra de controles compacta */}
-        <div className="ventana-controles">
-          {/* Botón toggle para panel de datos */}
-          <button
-            type="button"
-            className={`ventana-toggle-datos ${panelDatosAbierto ? "ventana-toggle-datos--activo" : ""}`}
-            onClick={() => setPanelDatosAbierto(!panelDatosAbierto)}
-            title={panelDatosAbierto ? "Ocultar datos" : "Ver datos"}
-          >
-            <span className="ventana-toggle-icono">▲</span>
-          </button>
-
-          {/* Tabs de zona */}
-          <div className="ventana-tabs">
-            <button
-              type="button"
-              className={`ventana-tab ${zonaSeleccionada === "superior" ? "ventana-tab--activo" : ""}`}
-              onClick={() => setZonaSeleccionada("superior")}
-              disabled={!zonaDisponible("superior")}
-            >
-              {tituloSuperior}
-            </button>
-            <button
-              type="button"
-              className={`ventana-tab ${zonaSeleccionada === "inferior" ? "ventana-tab--activo" : ""}`}
-              onClick={() => setZonaSeleccionada("inferior")}
-              disabled={!zonaDisponible("inferior")}
-            >
-              {tituloInferior}
-            </button>
-          </div>
-
-          {/* Selector de rango */}
-          <div className="ventana-rango">
-            {RANGOS_TIEMPO.filter(r => r.id !== "custom").map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                className={`ventana-rango-btn ${rangoSeleccionado === r.id && !fechaRangoDesde ? "ventana-rango-btn--activo" : ""}`}
-                onClick={() => {
-                  setRangoSeleccionado(r.id);
-                  setFechaRangoDesde(null);
-                  setFechaRangoHasta(null);
-                }}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Selector de rango de fechas */}
-          <div className="ventana-selector-dia">
-            <SelectorFecha
-              value={fechaRangoDesde}
-              valueHasta={fechaRangoHasta}
-              modoRango={true}
-              onChangeRango={(desde, hasta) => {
-                setFechaRangoDesde(desde);
-                setFechaRangoHasta(hasta);
-              }}
-              maxDate={new Date()}
-              placeholder="Seleccionar fechas"
-            />
-            {fechaRangoDesde && fechaRangoHasta && (
-              <span className="ventana-dia-seleccionado">
-                {new Date(fechaRangoDesde).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
-                {fechaRangoDesde.getTime() !== fechaRangoHasta.getTime() && (
-                  <> - {new Date(fechaRangoHasta).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" })}</>
-                )}
-              </span>
-            )}
-          </div>
-
-          {/* Selector de tipo de gráfico */}
-          <div className="ventana-tipo-grafico">
-            {TIPOS_GRAFICO.map((tipo) => (
-              <button
-                key={tipo.id}
-                type="button"
-                className={`ventana-tipo-btn ${tipoGrafico === tipo.id ? "ventana-tipo-btn--activo" : ""}`}
-                onClick={() => setTipoGrafico(tipo.id)}
-                title={tipo.label}
-              >
-                {tipo.icon}
-              </button>
-            ))}
-          </div>
-
-          {/* Cache + Fuente */}
-          <div className="ventana-cache">
-            <div className="ventana-cache-barra">
-              <div
-                className={`ventana-cache-progreso ${precargaCompleta ? "ventana-cache-progreso--completo" : ""}`}
-                style={{ width: `${precargaProgreso}%` }}
-              />
-            </div>
-            <span className="ventana-cache-texto">
-              {precargaCompleta ? "✓" : `${precargaProgreso}%`}
-            </span>
-            {fuenteDatos && (
-              <span className={`ventana-fuente ventana-fuente--${fuenteDatos}`}>
-                {fuenteDatos === "local" ? "Local" : fuenteDatos === "remoto" ? "BD" : "Mixto"}
-              </span>
-            )}
-            <button
-              type="button"
-              className="ventana-btn-limpiar"
-              onClick={async () => {
-                if (window.confirm("¿Limpiar cache local?")) {
-                  await limpiarCacheCompleto();
-                  const regSup = obtenerRegistradorZona("superior");
-                  const regInf = obtenerRegistradorZona("inferior");
-                  precargar48h(alimentador.id, regSup, regInf);
-                }
-              }}
-              disabled={precargando}
-              title="Limpiar cache"
-            >
-              🗑
-            </button>
-          </div>
-        </div>
+        <BarraControlesHistorial
+          panelDatosAbierto={panelDatosAbierto}
+          onTogglePanel={() => setPanelDatosAbierto(!panelDatosAbierto)}
+          zonaSeleccionada={zonaSeleccionada}
+          onZonaChange={setZonaSeleccionada}
+          zonaDisponible={zonaDisponible}
+          tituloSuperior={tituloSuperior}
+          tituloInferior={tituloInferior}
+          rangoSeleccionado={rangoSeleccionado}
+          onRangoChange={handleRangoChange}
+          fechaRangoDesde={fechaRangoDesde}
+          fechaRangoHasta={fechaRangoHasta}
+          onFechaRangoChange={handleFechaRangoChange}
+          tipoGrafico={tipoGrafico}
+          onTipoGraficoChange={setTipoGrafico}
+          precargaProgreso={precargaProgreso}
+          precargaCompleta={precargaCompleta}
+          precargando={precargando}
+          fuenteDatos={fuenteDatos}
+          onLimpiarCache={handleLimpiarCache}
+        />
 
         {/* Contenedor del gráfico y panel de datos */}
         <div className="ventana-grafico-container">
