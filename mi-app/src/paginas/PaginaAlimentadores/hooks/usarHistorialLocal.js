@@ -24,6 +24,7 @@ export const usarHistorialLocal = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const [estadisticas, setEstadisticas] = useState(null);
+  const [dbLista, setDbLista] = useState(false); // Indica cuando IndexedDB está lista
 
   // Estado de precarga de 48h
   const [precargaProgreso, setPrecargaProgreso] = useState(0); // 0-100
@@ -32,13 +33,15 @@ export const usarHistorialLocal = () => {
   const precargaAbortRef = useRef(false);
 
   const dbRef = useRef(null);
-  const inicializadoRef = useRef(false);
 
   // Inicializar IndexedDB
   useEffect(() => {
     const init = async () => {
-      if (inicializadoRef.current) return;
-      inicializadoRef.current = true;
+      // Si ya tenemos conexión, marcar como lista
+      if (dbRef.current) {
+        setDbLista(true);
+        return;
+      }
 
       try {
         dbRef.current = await abrirDB();
@@ -55,6 +58,9 @@ export const usarHistorialLocal = () => {
         // Obtener estadísticas
         const stats = await obtenerEstadisticas(dbRef.current);
         setEstadisticas(stats);
+
+        // Marcar como lista
+        setDbLista(true);
 
       } catch (err) {
         console.error("[Historial] Error inicializando IndexedDB:", err);
@@ -484,6 +490,11 @@ export const usarHistorialLocal = () => {
    * Precarga las últimas 48h de datos para ambas zonas
    * Se ejecuta de forma independiente al seleccionar el rango
    * Verifica primero si ya hay datos en cache para evitar recargas innecesarias
+   *
+   * IMPORTANTE: Cuando ambas zonas usan el mismo registrador pero diferentes
+   * índices de registro, igual se debe guardar en cache para AMBAS zonas,
+   * porque IndexedDB indexa por [alimentadorId, zona, timestamp]
+   *
    * @param {string} alimentadorId - ID del alimentador
    * @param {string} registradorIdSuperior - ID del registrador de zona superior
    * @param {string} registradorIdInferior - ID del registrador de zona inferior
@@ -522,29 +533,35 @@ export const usarHistorialLocal = () => {
         return true;
       }
 
-      // Determinar qué zonas cargar (solo las que no tienen cache válido)
-      const zonasACargar = [];
+      // Determinar qué zonas cargar y de qué registrador
+      // IMPORTANTE: Si ambas zonas usan el mismo registrador, solo consultamos
+      // una vez pero guardamos para AMBAS zonas
+      const mismoRegistrador = registradorIdSuperior === registradorIdInferior;
+
+      // Lista de tareas de consulta a la API (evitar duplicados cuando mismo registrador)
+      const tareasConsulta = [];
+
       if (registradorIdSuperior && !cacheSuperiorOK) {
-        zonasACargar.push({ zona: "superior", registradorId: registradorIdSuperior });
+        tareasConsulta.push({ registradorId: registradorIdSuperior, zonas: ["superior"] });
       }
+
       if (registradorIdInferior && !cacheInferiorOK) {
-        if (registradorIdInferior !== registradorIdSuperior) {
-          zonasACargar.push({ zona: "inferior", registradorId: registradorIdInferior });
-        } else if (!cacheSuperiorOK) {
-          // Si es el mismo registrador y superior no tiene cache, marcar como compartido
-          // Si superior ya tiene cache pero inferior no, igual cargar para inferior
-          const yaAgregadoSuperior = zonasACargar.some(z => z.zona === "superior");
-          if (yaAgregadoSuperior) {
-            // Marcar el superior como compartido para que también guarde en inferior
-            zonasACargar[0].compartido = true;
+        if (mismoRegistrador) {
+          // Mismo registrador: agregar zona inferior a la consulta existente o crear nueva
+          const consultaExistente = tareasConsulta.find(t => t.registradorId === registradorIdInferior);
+          if (consultaExistente) {
+            consultaExistente.zonas.push("inferior");
           } else {
-            // Superior tiene cache pero inferior no - cargar solo para inferior
-            zonasACargar.push({ zona: "inferior", registradorId: registradorIdInferior });
+            // Superior ya tiene cache, pero inferior no - consultar y guardar solo para inferior
+            tareasConsulta.push({ registradorId: registradorIdInferior, zonas: ["inferior"] });
           }
+        } else {
+          // Diferente registrador: consulta independiente
+          tareasConsulta.push({ registradorId: registradorIdInferior, zonas: ["inferior"] });
         }
       }
 
-      if (zonasACargar.length === 0) {
+      if (tareasConsulta.length === 0) {
         console.log("[Historial] No hay registradores configurados para precargar");
         setPrecargando(false);
         setPrecargaCompleta(true);
@@ -552,25 +569,27 @@ export const usarHistorialLocal = () => {
         return true;
       }
 
-      const progresoPorZona = 100 / zonasACargar.length;
+      // Calcular total de operaciones para el progreso
+      const totalZonas = tareasConsulta.reduce((sum, t) => sum + t.zonas.length, 0);
+      const progresoPorZona = 100 / totalZonas;
       let progresoActual = 0;
 
       try {
-        for (const { zona, registradorId, compartido } of zonasACargar) {
+        for (const tarea of tareasConsulta) {
           if (precargaAbortRef.current) {
             console.log("[Historial] Precarga abortada");
             setPrecargando(false);
             return false;
           }
 
-          console.log(`[Historial] Precargando zona ${zona} (registrador: ${registradorId})...`);
+          console.log(`[Historial] Precargando registrador ${tarea.registradorId} para zonas: ${tarea.zonas.join(", ")}...`);
 
-          // Actualizar progreso al iniciar zona
+          // Actualizar progreso al iniciar
           setPrecargaProgreso(Math.round(progresoActual + progresoPorZona * 0.1));
 
-          // Consultar datos remotos
+          // Consultar datos remotos (una sola vez por registrador)
           const datosRemotos = await obtenerLecturasHistoricasPorRegistrador(
-            registradorId,
+            tarea.registradorId,
             new Date(desde).toISOString(),
             new Date(hasta).toISOString()
           );
@@ -580,42 +599,34 @@ export const usarHistorialLocal = () => {
             return false;
           }
 
-          // Actualizar progreso al 50% de la zona
-          setPrecargaProgreso(Math.round(progresoActual + progresoPorZona * 0.5));
+          // Actualizar progreso al 50%
+          setPrecargaProgreso(Math.round(progresoActual + (progresoPorZona * tarea.zonas.length) * 0.5));
 
           if (datosRemotos && datosRemotos.length > 0 && dbRef.current) {
-            // Cachear datos para la zona
-            const guardadas = await cachearLecturasRemotas(
-              dbRef.current,
-              alimentadorId,
-              registradorId,
-              zona,
-              datosRemotos
-            );
-
-            console.log(`[Historial] Precarga ${zona} completada:`, {
-              registradorId,
-              lecturasRecibidas: datosRemotos.length,
-              lecturasGuardadas: guardadas,
-            });
-
-            // Si es compartido, también cachear para zona superior
-            if (compartido) {
-              await cachearLecturasRemotas(
+            // Cachear datos para CADA zona que lo necesita
+            for (const zona of tarea.zonas) {
+              const guardadas = await cachearLecturasRemotas(
                 dbRef.current,
                 alimentadorId,
-                registradorId,
-                "superior",
+                tarea.registradorId,
+                zona,
                 datosRemotos
               );
-              console.log(`[Historial] Precarga superior (compartido) completada`);
+
+              console.log(`[Historial] Precarga ${zona} completada:`, {
+                registradorId: tarea.registradorId,
+                lecturasRecibidas: datosRemotos.length,
+                lecturasGuardadas: guardadas,
+              });
+
+              progresoActual += progresoPorZona;
+              setPrecargaProgreso(Math.round(progresoActual));
             }
           } else {
-            console.log(`[Historial] No hay datos remotos para zona ${zona}`);
+            console.log(`[Historial] No hay datos remotos para registrador ${tarea.registradorId}`);
+            progresoActual += progresoPorZona * tarea.zonas.length;
+            setPrecargaProgreso(Math.round(progresoActual));
           }
-
-          progresoActual += progresoPorZona;
-          setPrecargaProgreso(Math.round(progresoActual));
         }
 
         // Completado
@@ -722,6 +733,7 @@ export const usarHistorialLocal = () => {
     precargaCompleta,
     precargando,
     // Estado general
+    dbLista, // Indica cuando IndexedDB está lista para usar
     cargando,
     error,
     estadisticas,

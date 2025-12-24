@@ -87,6 +87,7 @@ const VentanaHistorial = ({
     precargando,
     limpiarCacheCompleto,
     estadisticas,
+    dbLista,
   } = usarHistorialLocal();
 
   // Estados del selector
@@ -97,7 +98,7 @@ const VentanaHistorial = ({
   const [datosGrafico, setDatosGrafico] = useState([]);
   const [fuenteDatos, setFuenteDatos] = useState(null);
   const [panelDatosAbierto, setPanelDatosAbierto] = useState(true);
-  const [intervaloFiltro, setIntervaloFiltro] = useState(0); // 0 = todos, 15, 30, 60 minutos
+  const [intervaloFiltro, setIntervaloFiltro] = useState(60); // 0 = todos, 15, 30, 60 minutos
 
   // Títulos de zonas
   const tituloSuperior = useMemo(() => obtenerTituloZona(cardDesign, "superior"), [cardDesign]);
@@ -165,21 +166,26 @@ const VentanaHistorial = ({
     setFuenteDatos(fuente);
   }, [alimentador, cardDesign, rangoSeleccionado, fechaRangoDesde, fechaRangoHasta, zonaSeleccionada, obtenerDatosGrafico, obtenerRegistradorZona, precargaCompleta]);
 
-  // Iniciar precarga al montar
+  // Iniciar precarga al montar (esperar a que IndexedDB esté lista)
   useEffect(() => {
-    if (!alimentador?.id) return;
+    if (!alimentador?.id || !dbLista) return;
     const registradorSuperior = obtenerRegistradorZona("superior");
     const registradorInferior = obtenerRegistradorZona("inferior");
     precargar48h(alimentador.id, registradorSuperior, registradorInferior);
     return () => resetearPrecarga();
-  }, [alimentador?.id, obtenerRegistradorZona, precargar48h, resetearPrecarga]);
+  }, [alimentador?.id, dbLista, obtenerRegistradorZona, precargar48h, resetearPrecarga]);
 
   // Cargar datos cuando cambia selección
+  // IMPORTANTE: Esperar a que la precarga termine (precargaCompleta=true) antes de cargar
+  // para evitar consultas innecesarias a la BD cuando ya hay datos en cache
   useEffect(() => {
-    if (!minimizada) {
+    // Solo cargar cuando:
+    // 1. No está minimizada
+    // 2. La precarga terminó (precargaCompleta es true, lo que significa que verificó cache o cargó datos)
+    if (!minimizada && precargaCompleta) {
       cargarDatos();
     }
-  }, [cargarDatos, minimizada]);
+  }, [cargarDatos, minimizada, precargaCompleta]);
 
   // --- Drag & Drop ---
   const handleMouseDown = (e) => {
@@ -507,9 +513,9 @@ const VentanaHistorial = ({
                   onChange={(e) => setIntervaloFiltro(Number(e.target.value))}
                 >
                   <option value={0}>Todos</option>
-                  <option value={15}>c/15m</option>
-                  <option value={30}>c/30m</option>
-                  <option value={60}>c/60m</option>
+                  <option value={15}>cada 15m</option>
+                  <option value={30}>cada 30m</option>
+                  <option value={60}>cada 60m</option>
                 </select>
               </div>
               <div className="ventana-panel-tabla-container">
