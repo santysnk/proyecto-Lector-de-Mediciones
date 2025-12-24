@@ -12,7 +12,7 @@ import { useState, useCallback } from "react";
  * fue eliminado. Ahora las lecturas vienen del polling en VistaAlimentadores que
  * consulta la tabla `lecturas` de Supabase.
  */
-export const usarMediciones = () => {
+export const useMediciones = () => {
 	// Registros leídos en vivo por alimentador
 	// Estructura: { [alimId]: { rele: [{index, address, value}], analizador: [...] } }
 	const [registrosEnVivo, setRegistrosEnVivo] = useState({});

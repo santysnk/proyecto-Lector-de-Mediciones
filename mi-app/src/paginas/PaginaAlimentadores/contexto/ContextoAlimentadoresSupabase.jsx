@@ -3,10 +3,10 @@
 
 import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from "react";
 
-import { usarPuestosSupabase } from "../hooks/usarPuestosSupabase";
-import { usarMediciones } from "../hooks/usarMediciones";
-import { usarPreferenciasUI } from "../hooks/usarPreferenciasUI";
-import { usarCambiosPendientes } from "../hooks/usarCambiosPendientes";
+import { usePuestosSupabase } from "../hooks/usePuestosSupabase";
+import { useMediciones } from "../hooks/useMediciones";
+import { usePreferenciasUI } from "../hooks/usePreferenciasUI";
+import { useCambiosPendientes } from "../hooks/useCambiosPendientes";
 import { usarContextoConfiguracion } from "./ContextoConfiguracion";
 
 import { obtenerDisenoTarjeta, calcularValoresLadoTarjeta } from "../utilidades/calculosMediciones";
@@ -26,16 +26,16 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   } = usarContextoConfiguracion();
 
   // Hook de puestos conectado a Supabase
-  const puestosHook = usarPuestosSupabase(configuracionSeleccionadaId);
+  const puestosHook = usePuestosSupabase(configuracionSeleccionadaId);
 
   // Hook de mediciones (sin cambios, funciona igual)
-  const medicionesHook = usarMediciones();
+  const medicionesHook = useMediciones();
 
   // Hook de preferencias UI (gaps horizontales y verticales)
-  const preferenciasHook = usarPreferenciasUI();
+  const preferenciasHook = usePreferenciasUI();
 
   // Hook de cambios pendientes (draft/publish pattern)
-  const cambiosPendientesHook = usarCambiosPendientes();
+  const cambiosPendientesHook = useCambiosPendientes();
 
   const { registrosEnVivo } = medicionesHook;
   const { puestoSeleccionado, puestos, cargando: cargandoPuestos } = puestosHook;

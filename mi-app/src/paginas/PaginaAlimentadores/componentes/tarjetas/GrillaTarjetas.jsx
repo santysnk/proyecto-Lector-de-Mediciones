@@ -5,8 +5,8 @@ import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
 import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
 import GrillaUnifilar from "./GrillaUnifilar.jsx";
-import usarGrillaUnifilar from "../../hooks/usarGrillaUnifilar.js";
-import usarChispas from "../../hooks/usarChispas.js";
+import useGrillaUnifilar from "../../hooks/useGrillaUnifilar.js";
+import useChispas from "../../hooks/useChispas.js";
 import "./GrillaTarjetas.css";
 
 // Breakpoint para desactivar los controles de gap en móviles/tablets
@@ -141,10 +141,10 @@ const GrillaTarjetas = ({
 	const [primerasTarjetasPorFila, setPrimerasTarjetasPorFila] = useState({});
 
 	// Hook para la grilla unifiliar (dibujo de diagramas)
-	const grillaUnifilar = usarGrillaUnifilar(puestoId, workspaceId);
+	const grillaUnifilar = useGrillaUnifilar(puestoId, workspaceId);
 
 	// Hook para animación de chispas
-	const chispasHook = usarChispas({
+	const chispasHook = useChispas({
 		bornes: grillaUnifilar.bornes,
 		celdas: grillaUnifilar.celdas,
 		chispasConfig: grillaUnifilar.chispasConfig,

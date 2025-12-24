@@ -4,28 +4,39 @@
  * Solo permite una ventana por alimentador
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 
-// Contador para z-index de ventanas (foco)
-let zIndexCounter = 1000;
+// Z-index base para ventanas flotantes
+const Z_INDEX_BASE = 1000;
 
-/**
- * Estado inicial de una ventana
- */
-const crearEstadoVentana = (alimentador, cardDesign, posicionInicial) => ({
-  id: alimentador.id,
-  alimentador,
-  cardDesign,
-  minimizada: false,
-  maximizada: false,
-  posicion: posicionInicial || { x: 100 + Math.random() * 100, y: 50 + Math.random() * 50 },
-  tamaño: { width: 900, height: 600 },
-  zIndex: ++zIndexCounter,
-});
-
-export const usarVentanasHistorial = () => {
+export const useVentanasHistorial = () => {
   // Map de ventanas abiertas: { [alimentadorId]: estadoVentana }
   const [ventanas, setVentanas] = useState({});
+
+  // Contador para z-index de ventanas (foco) - useRef para persistir sin re-renders
+  const zIndexCounterRef = useRef(Z_INDEX_BASE);
+
+  /**
+   * Obtiene el siguiente z-index y lo incrementa
+   */
+  const getNextZIndex = useCallback(() => {
+    zIndexCounterRef.current += 1;
+    return zIndexCounterRef.current;
+  }, []);
+
+  /**
+   * Estado inicial de una ventana
+   */
+  const crearEstadoVentana = useCallback((alimentador, cardDesign, posicionInicial) => ({
+    id: alimentador.id,
+    alimentador,
+    cardDesign,
+    minimizada: false,
+    maximizada: false,
+    posicion: posicionInicial || { x: 100 + Math.random() * 100, y: 50 + Math.random() * 50 },
+    tamaño: { width: 900, height: 600 },
+    zIndex: getNextZIndex(),
+  }), [getNextZIndex]);
 
   /**
    * Abre una ventana de historial para un alimentador
@@ -41,7 +52,7 @@ export const usarVentanasHistorial = () => {
           [alimentador.id]: {
             ...prev[alimentador.id],
             minimizada: false,
-            zIndex: ++zIndexCounter,
+            zIndex: getNextZIndex(),
           },
         };
       }
@@ -59,7 +70,7 @@ export const usarVentanasHistorial = () => {
         [alimentador.id]: crearEstadoVentana(alimentador, cardDesign, posicionInicial),
       };
     });
-  }, []);
+  }, [crearEstadoVentana, getNextZIndex]);
 
   /**
    * Cierra una ventana de historial
@@ -98,11 +109,11 @@ export const usarVentanasHistorial = () => {
         [alimentadorId]: {
           ...prev[alimentadorId],
           maximizada: !prev[alimentadorId].maximizada,
-          zIndex: ++zIndexCounter,
+          zIndex: getNextZIndex(),
         },
       };
     });
-  }, []);
+  }, [getNextZIndex]);
 
   /**
    * Trae una ventana al frente (actualiza z-index)
@@ -115,11 +126,11 @@ export const usarVentanasHistorial = () => {
         [alimentadorId]: {
           ...prev[alimentadorId],
           minimizada: false,
-          zIndex: ++zIndexCounter,
+          zIndex: getNextZIndex(),
         },
       };
     });
-  }, []);
+  }, [getNextZIndex]);
 
   /**
    * Actualiza la posición de una ventana (al arrastrar)
@@ -188,4 +199,4 @@ export const usarVentanasHistorial = () => {
   };
 };
 
-export default usarVentanasHistorial;
+export default useVentanasHistorial;

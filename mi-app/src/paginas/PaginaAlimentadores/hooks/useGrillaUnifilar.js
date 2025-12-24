@@ -78,7 +78,7 @@ export const CONFIG_CHISPAS_DEFAULT = {
  * @param {string} workspaceId - ID del workspace actual
  * @returns {Object} Estado y funciones para manejar la grilla
  */
-const usarGrillaUnifilar = (puestoId, workspaceId) => {
+const useGrillaUnifilar = (puestoId, workspaceId) => {
 	// Estado del dibujo: objeto con claves "x,y" y valores de color
 	const [celdas, setCeldas] = useState({});
 	// Textos: array de { id, x, y, texto, color, fuente, tamano, negrita, cursiva }
@@ -910,4 +910,4 @@ const usarGrillaUnifilar = (puestoId, workspaceId) => {
 	};
 };
 
-export default usarGrillaUnifilar;
+export default useGrillaUnifilar;

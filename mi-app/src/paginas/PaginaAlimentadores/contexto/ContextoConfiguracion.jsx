@@ -2,7 +2,7 @@
 // Contexto global para manejar el workspace activo del usuario
 
 import React, { createContext, useContext } from "react";
-import { usarConfiguracion } from "../hooks/usarConfiguracion";
+import { useConfiguracion } from "../hooks/useConfiguracion";
 
 const ContextoConfiguracion = createContext(null);
 
@@ -12,7 +12,7 @@ const ContextoConfiguracion = createContext(null);
  * al workspace seleccionado.
  */
 export const ProveedorConfiguracion = ({ children }) => {
-  const configuracionHook = usarConfiguracion();
+  const configuracionHook = useConfiguracion();
 
   return (
     <ContextoConfiguracion.Provider value={configuracionHook}>

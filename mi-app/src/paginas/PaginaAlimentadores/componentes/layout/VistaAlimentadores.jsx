@@ -18,15 +18,15 @@ import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx"; 
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
 import ContenedorVentanasHistorial from "../modales/ContenedorVentanasHistorial.jsx";     // contenedor de ventanas flotantes de historial
-import { usarVentanasHistorial } from "../../hooks/usarVentanasHistorial";               // hook para gestionar ventanas de historial
+import { useVentanasHistorial } from "../../hooks/useVentanasHistorial";               // hook para gestionar ventanas de historial
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
-import { usarArrastrarSoltar } from "../../hooks/usarArrastrarSoltar"; // hook de drag & drop de tarjetas
+import { useArrastrarSoltar } from "../../hooks/useArrastrarSoltar"; // hook de drag & drop de tarjetas
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
 import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService"; // API para polling de lecturas
-import { usarHistorialLocal } from "../../hooks/usarHistorialLocal"; // Hook para guardar historial en IndexedDB
+import { useHistorialLocal } from "../../hooks/useHistorialLocal"; // Hook para guardar historial en IndexedDB
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -82,11 +82,11 @@ const {
    alPasarPorEncima,                      // handler para onDragOver: habilita que se pueda soltar en ese destino
    reordenarLista,                        // calcula una nueva lista con un elemento movido a la posición de otro
    moverAlFinal,                          // calcula una nueva lista moviendo un elemento al final
-} = usarArrastrarSoltar();                // hook que encapsula el estado y la lógica de drag & drop de tarjetas
+} = useArrastrarSoltar();                // hook que encapsula el estado y la lógica de drag & drop de tarjetas
 
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
-	const { guardarLecturaLocal } = usarHistorialLocal(); // Hook para guardar lecturas en IndexedDB
+	const { guardarLecturaLocal } = useHistorialLocal(); // Hook para guardar lecturas en IndexedDB
 
 	// Sistema de ventanas flotantes de historial
 	const {
@@ -98,7 +98,7 @@ const {
 		toggleMaximizar,
 		enfocarVentana,
 		moverVentana,
-	} = usarVentanasHistorial();
+	} = useVentanasHistorial();
 
 	const [menuAbierto, setMenuAbierto] = useState(false);           // estado del drawer lateral en mobile
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)

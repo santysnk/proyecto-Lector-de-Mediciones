@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Chart from "react-apexcharts";
-import { usarHistorialLocal } from "../../hooks/usarHistorialLocal";
+import { useHistorialLocal } from "../../hooks/useHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
 import { TITULOS_MEDICIONES } from "../../constantes/titulosMediciones";
@@ -98,7 +98,7 @@ const ModalHistorial = ({ abierto, onCerrar, alimentador, cardDesign }) => {
     // Limpiar cache
     limpiarCacheCompleto,
     estadisticas,
-  } = usarHistorialLocal();
+  } = useHistorialLocal();
 
   // Estado del selector
   const [rangoSeleccionado, setRangoSeleccionado] = useState("1h");

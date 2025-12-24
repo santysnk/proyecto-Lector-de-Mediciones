@@ -111,31 +111,6 @@ export const obtenerLecturasRango = async (
 
     const request = index.getAll(rango);
 
-    // Debug: obtener TODOS los datos de este alimentador+zona para comparar
-    const allDataRequest = store.index("alimZonaTimestamp").getAll(
-      IDBKeyRange.bound(
-        [alimentadorId, zona, 0],
-        [alimentadorId, zona, Date.now() + 1000000]
-      )
-    );
-
-    allDataRequest.onsuccess = () => {
-      const todosLosDatos = allDataRequest.result.filter(r =>
-        !registradorId || r.registradorId === registradorId
-      );
-      if (todosLosDatos.length > 0) {
-        const timestamps = todosLosDatos.map(d => d.timestamp).sort((a,b) => a-b);
-        console.log("[IndexedDB] TODOS los datos disponibles para este alimentador+zona+registrador:", {
-          total: todosLosDatos.length,
-          primerDato: new Date(timestamps[0]).toISOString(),
-          ultimoDato: new Date(timestamps[timestamps.length - 1]).toISOString(),
-          buscandoDesde: new Date(desde).toISOString(),
-          buscandoHasta: new Date(hasta).toISOString(),
-          datosEnRangoBuscado: todosLosDatos.filter(d => d.timestamp >= desde && d.timestamp <= hasta).length
-        });
-      }
-    };
-
     request.onsuccess = () => {
       let resultados = request.result;
 

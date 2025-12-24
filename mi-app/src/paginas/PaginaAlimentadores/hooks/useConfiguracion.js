@@ -17,7 +17,7 @@ import { CLAVES_STORAGE } from "../constantes/clavesAlmacenamiento";
  *
  * @returns {Object} Estado y funciones para trabajar con workspaces.
  */
-export const usarConfiguracion = () => {
+export const useConfiguracion = () => {
   // Lista de workspaces del usuario
   const [configuraciones, setConfiguraciones] = useState([]);
 

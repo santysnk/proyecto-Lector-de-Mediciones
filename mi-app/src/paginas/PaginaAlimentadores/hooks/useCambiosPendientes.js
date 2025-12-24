@@ -36,7 +36,7 @@ import {
  * - Crear/eliminar alimentadores
  * - Configuración Modbus
  */
-export const usarCambiosPendientes = () => {
+export const useCambiosPendientes = () => {
   // Snapshot original de los datos cargados de BD (Pbase)
   const snapshotRef = useRef({
     puestos: {},      // { [id]: { color, bgColor, gapsVerticales, cantidadAlimentadores, escala } }

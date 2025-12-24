@@ -5,60 +5,44 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import ApexChartWrapper from "../../../../componentes/comunes/ApexChartWrapper";
-import { usarHistorialLocal } from "../../hooks/usarHistorialLocal";
+import { useHistorialLocal } from "../../hooks/useHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
 import { generarInformeZonaExcel } from "../../utilidades/exportarInformeExcel";
 import { TITULOS_MEDICIONES } from "../../constantes/titulosMediciones";
+import {
+  RANGOS_TIEMPO,
+  TIPOS_GRAFICO,
+  COLORES_GRADIENTE,
+} from "../../constantes/historialConfig";
 import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
 import ModalConfigInforme from "./ModalConfigInforme";
+import PanelDatosHistorial from "../historial/PanelDatosHistorial";
+import BarraTituloVentana from "../historial/BarraTituloVentana";
 import "./VentanaHistorial.css";
-
-// Opciones de rango predefinidas
-const RANGOS_TIEMPO = [
-  { id: "1h", label: "1h", ms: 60 * 60 * 1000 },
-  { id: "2h", label: "2h", ms: 2 * 60 * 60 * 1000 },
-  { id: "6h", label: "6h", ms: 6 * 60 * 60 * 1000 },
-  { id: "12h", label: "12h", ms: 12 * 60 * 60 * 1000 },
-  { id: "24h", label: "24h", ms: 24 * 60 * 60 * 1000 },
-  { id: "48h", label: "48h", ms: 48 * 60 * 60 * 1000 },
-  { id: "7d", label: "7d", ms: 7 * 24 * 60 * 60 * 1000 },
-  { id: "custom", label: "Custom", ms: null },
-];
-
-// Tipos de gráfico disponibles
-const TIPOS_GRAFICO = [
-  { id: "line", label: "Línea", icon: "📈" },
-  { id: "area", label: "Área", icon: "📊" },
-  { id: "bar", label: "Barras", icon: "📶" },
-];
 
 /**
  * Interpola color de verde a rojo basado en porcentaje (0-1)
- * 0 = verde (#22c55e), 1 = rojo (#ef4444)
+ * 0 = verde, 0.5 = amarillo, 1 = rojo
  */
 const interpolarColorVerdeRojo = (porcentaje) => {
-  // Clamp entre 0 y 1
   const p = Math.max(0, Math.min(1, porcentaje));
-
-  // Verde: rgb(34, 197, 94) - #22c55e
-  // Amarillo: rgb(234, 179, 8) - #eab308 (punto medio)
-  // Rojo: rgb(239, 68, 68) - #ef4444
+  const { verde, amarillo, rojo } = COLORES_GRADIENTE;
 
   let r, g, b;
 
   if (p <= 0.5) {
     // Verde a Amarillo (0 a 0.5)
-    const t = p * 2; // normalizar a 0-1
-    r = Math.round(34 + (234 - 34) * t);
-    g = Math.round(197 + (179 - 197) * t);
-    b = Math.round(94 + (8 - 94) * t);
+    const t = p * 2;
+    r = Math.round(verde.r + (amarillo.r - verde.r) * t);
+    g = Math.round(verde.g + (amarillo.g - verde.g) * t);
+    b = Math.round(verde.b + (amarillo.b - verde.b) * t);
   } else {
     // Amarillo a Rojo (0.5 a 1)
-    const t = (p - 0.5) * 2; // normalizar a 0-1
-    r = Math.round(234 + (239 - 234) * t);
-    g = Math.round(179 + (68 - 179) * t);
-    b = Math.round(8 + (68 - 8) * t);
+    const t = (p - 0.5) * 2;
+    r = Math.round(amarillo.r + (rojo.r - amarillo.r) * t);
+    g = Math.round(amarillo.g + (rojo.g - amarillo.g) * t);
+    b = Math.round(amarillo.b + (rojo.b - amarillo.b) * t);
   }
 
   return `rgb(${r}, ${g}, ${b})`;
@@ -129,7 +113,7 @@ const VentanaHistorial = ({
     limpiarCacheCompleto,
     estadisticas,
     dbLista,
-  } = usarHistorialLocal();
+  } = useHistorialLocal();
 
   // Estados del selector
   const [rangoSeleccionado, setRangoSeleccionado] = useState("24h");
@@ -400,18 +384,6 @@ const VentanaHistorial = ({
   // Series para el gráfico (usa datos filtrados)
   const seriesGrafico = useMemo(() => [{ name: `Promedio ${tituloZonaActual}`, data: datosFiltrados }], [datosFiltrados, tituloZonaActual]);
 
-  // Datos para la tabla del panel lateral (formateados para mostrar)
-  const datosTabla = useMemo(() => {
-    return datosFiltrados.map((punto) => {
-      const fecha = new Date(punto.x);
-      return {
-        fecha: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
-        hora: fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        medicion: Math.ceil(punto.y * 100) / 100, // Redondear hacia arriba a 2 decimales
-      };
-    });
-  }, [datosFiltrados]);
-
   // Título del panel: período de fechas o fecha única si es el mismo día
   const tituloPanelDatos = useMemo(() => {
     if (datosGrafico.length === 0) return "Sin datos";
@@ -519,27 +491,15 @@ const VentanaHistorial = ({
       onMouseDown={() => onEnfocar()}
     >
       {/* Header arrastrable */}
-      <header
+      <BarraTituloVentana
         ref={headerRef}
-        className="ventana-historial-header"
+        nombre={alimentador?.nombre}
+        maximizada={maximizada}
+        onMinimizar={onMinimizar}
+        onMaximizar={onMaximizar}
+        onCerrar={onCerrar}
         onMouseDown={handleMouseDown}
-      >
-        <div className="ventana-historial-titulo">
-          <span className="ventana-historial-icono">📊</span>
-          <span className="ventana-historial-nombre">{alimentador?.nombre}</span>
-        </div>
-        <div className="ventana-historial-controles">
-          <button type="button" className="ventana-btn ventana-btn--minimizar" onClick={onMinimizar} title="Minimizar">
-            <span>─</span>
-          </button>
-          <button type="button" className="ventana-btn ventana-btn--maximizar" onClick={onMaximizar} title={maximizada ? "Restaurar" : "Maximizar"}>
-            <span>{maximizada ? "❐" : "□"}</span>
-          </button>
-          <button type="button" className="ventana-btn ventana-btn--cerrar" onClick={onCerrar} title="Cerrar">
-            <span>×</span>
-          </button>
-        </div>
-      </header>
+      />
 
       {/* Contenido */}
       <div className="ventana-historial-content">
@@ -669,43 +629,13 @@ const VentanaHistorial = ({
         {/* Contenedor del gráfico y panel de datos */}
         <div className="ventana-grafico-container">
           {/* Panel lateral de datos */}
-          {panelDatosAbierto && (
-            <div className="ventana-panel-datos">
-              <div className="ventana-panel-header">
-                <span>{tituloPanelDatos}</span>
-                <select
-                  className="ventana-panel-intervalo"
-                  value={intervaloFiltro}
-                  onChange={(e) => setIntervaloFiltro(Number(e.target.value))}
-                >
-                  <option value={0}>Todos</option>
-                  <option value={15}>cada 15m</option>
-                  <option value={30}>cada 30m</option>
-                  <option value={60}>cada 60m</option>
-                </select>
-              </div>
-              <div className="ventana-panel-tabla-container">
-                <table className="ventana-panel-tabla">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Hora</th>
-                      <th>Medición</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {datosTabla.map((fila, idx) => (
-                      <tr key={idx}>
-                        <td>{fila.fecha}</td>
-                        <td>{fila.hora}</td>
-                        <td>{fila.medicion.toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          <PanelDatosHistorial
+            abierto={panelDatosAbierto}
+            tituloPeriodo={tituloPanelDatos}
+            intervaloFiltro={intervaloFiltro}
+            onIntervaloChange={setIntervaloFiltro}
+            datosGrafico={datosGrafico}
+          />
 
           {/* Gráfico */}
           <div className="ventana-grafico">

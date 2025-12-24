@@ -24,7 +24,7 @@ import { COLORES_SISTEMA } from "../constantes/colores";
  * @param {number|null} workspaceId - ID del workspace activo
  * @returns {Object} Estado y funciones para trabajar con puestos y alimentadores.
  */
-export const usarPuestosSupabase = (workspaceId) => {
+export const usePuestosSupabase = (workspaceId) => {
   const COLOR_FONDO_POR_DEFECTO = "#e5e7eb";
 
   // Estado: lista de puestos (cada uno con sus alimentadores)

@@ -3,18 +3,9 @@
  * Permite configurar: solicitante, intervalo de muestreo
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { INTERVALOS_INFORME } from "../../constantes/historialConfig";
 import "./ModalConfigInforme.css";
-
-// Opciones de intervalo disponibles (en minutos)
-const INTERVALOS_DISPONIBLES = [
-  { id: 15, label: "15 min", minutos: 15 },
-  { id: 30, label: "30 min", minutos: 30 },
-  { id: 60, label: "1 hora", minutos: 60 },
-  { id: 180, label: "3 horas", minutos: 180 },
-  { id: 360, label: "6 horas", minutos: 360 },
-  { id: 720, label: "12 horas", minutos: 720 },
-];
 
 /**
  * Determina qué intervalos están habilitados según la duración del período
@@ -82,7 +73,7 @@ const ModalConfigInforme = ({
   }, [duracionMs]);
 
   // Seleccionar automáticamente el primer intervalo habilitado si no hay selección válida
-  useMemo(() => {
+  useEffect(() => {
     if (
       intervalosHabilitados.length > 0 &&
       (!intervaloSeleccionado || !intervalosHabilitados.includes(intervaloSeleccionado))
@@ -188,7 +179,7 @@ const ModalConfigInforme = ({
           <div className="modal-config-campo">
             <label>Intervalo de muestreo:</label>
             <div className="modal-config-intervalos">
-              {INTERVALOS_DISPONIBLES.map((intervalo) => {
+              {INTERVALOS_INFORME.map((intervalo) => {
                 const habilitado = intervalosHabilitados.includes(intervalo.id);
                 const seleccionado = intervaloSeleccionado === intervalo.id;
 

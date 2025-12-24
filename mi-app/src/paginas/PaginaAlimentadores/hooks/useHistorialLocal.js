@@ -17,10 +17,14 @@ import {
   limpiarTodo,
 } from "../utilidades/indexedDBHelper";
 import { obtenerLecturasHistoricasPorRegistrador } from "@/servicios/apiService";
+import {
+  HORAS_RETENCION_LOCAL,
+  UMBRAL_COBERTURA_CACHE,
+  UMBRAL_COBERTURA_REMOTO,
+  MARGEN_LIMITE_LOCAL_MS,
+} from "../constantes/historialConfig";
 
-const HORAS_RETENCION_LOCAL = 48; // Mantener últimas 48 horas en IndexedDB
-
-export const usarHistorialLocal = () => {
+export const useHistorialLocal = () => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
   const [estadisticas, setEstadisticas] = useState(null);
@@ -175,9 +179,9 @@ export const usarHistorialLocal = () => {
 
       try {
         const ahora = Date.now();
-        // Añadir 5 minutos de margen al límite para evitar edge cases
+        // Añadir margen al límite para evitar edge cases
         // cuando el usuario selecciona exactamente 48h
-        const limiteLocal = ahora - (HORAS_RETENCION_LOCAL * 60 * 60 * 1000) - (5 * 60 * 1000);
+        const limiteLocal = ahora - (HORAS_RETENCION_LOCAL * 60 * 60 * 1000) - MARGEN_LIMITE_LOCAL_MS;
 
         // Calcular si el rango solicitado está dentro de las 48h de retención local
         const rangoSolicitadoMs = hasta - desde;
@@ -276,11 +280,11 @@ export const usarHistorialLocal = () => {
               rangoSolicitadoHoras: rangoSolicitadoMs / (1000 * 60 * 60),
               rangoCubiertoHoras: rangoCubiertoMs / (1000 * 60 * 60),
               porcentaje: (porcentajeCubierto * 100).toFixed(1) + "%",
-              decision: porcentajeCubierto < 0.9 ? "IR A REMOTO" : "USAR LOCAL"
+              decision: porcentajeCubierto < UMBRAL_COBERTURA_REMOTO ? "IR A REMOTO" : "USAR LOCAL"
             });
 
-            // Si cubrimos menos del 90% del rango, consultar remoto para completar
-            if (porcentajeCubierto < 0.9) {
+            // Si cubrimos menos del umbral, consultar remoto para completar
+            if (porcentajeCubierto < UMBRAL_COBERTURA_REMOTO) {
               const datosRemotos = await consultarYCachearRemoto(
                 alimentadorId,
                 registradorId,
@@ -467,8 +471,8 @@ export const usarHistorialLocal = () => {
         const rangoCubiertoMs = hasta - primerTimestamp;
         const porcentajeCubierto = rangoCubiertoMs / rangoSolicitadoMs;
 
-        // Si cubrimos más del 85% del rango, consideramos que el cache está OK
-        const cacheValido = porcentajeCubierto >= 0.85;
+        // Si cubrimos más del umbral del rango, consideramos que el cache está OK
+        const cacheValido = porcentajeCubierto >= UMBRAL_COBERTURA_CACHE;
 
         console.log(`[Historial] Cache existente para ${zona}:`, {
           registradorId,
@@ -741,4 +745,4 @@ export const usarHistorialLocal = () => {
   };
 };
 
-export default usarHistorialLocal;
+export default useHistorialLocal;

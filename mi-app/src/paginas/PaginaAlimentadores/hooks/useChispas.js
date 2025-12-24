@@ -24,7 +24,7 @@ const MAX_CHISPAS = 100;
  * @param {number} params.grosorLinea - Grosor de línea en píxeles
  * @returns {Object} Estado y funciones para manejar chispas
  */
-const usarChispas = ({
+const useChispas = ({
 	bornes = [],
 	celdas = {},
 	chispasConfig = {},
@@ -413,4 +413,4 @@ const usarChispas = ({
 	};
 };
 
-export default usarChispas;
+export default useChispas;

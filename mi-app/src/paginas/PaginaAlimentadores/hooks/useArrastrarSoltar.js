@@ -8,7 +8,7 @@ import { useState } from "react"; // hook de React para manejar estado local
  *
  * @returns {Object} Estado y funciones para drag & drop.
  */
-export const usarArrastrarSoltar = () => {
+export const useArrastrarSoltar = () => {
 	// ID del elemento que se está arrastrando actualmente (o null si ninguno)
 	const [elementoArrastrandoId, setElementoArrastrandoId] = useState(null);
 

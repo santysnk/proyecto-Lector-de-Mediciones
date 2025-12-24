@@ -33,7 +33,7 @@ const ESCALA_MAX = 2.0;
  * Escala por tarjeta: { "alimId": 1.2, ... }
  * Prioridad: Individual > Por puesto > Global > Default (1.0)
  */
-export const usarPreferenciasUI = () => {
+export const usePreferenciasUI = () => {
 	// ===== GAPS HORIZONTALES (entre tarjetas) =====
 	const [gapsPorTarjeta, setGapsPorTarjetaState] = useState(() => {
 		const guardado = localStorage.getItem(CLAVES_STORAGE.GAP_TARJETAS);
