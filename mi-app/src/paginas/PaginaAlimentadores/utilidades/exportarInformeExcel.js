@@ -212,23 +212,32 @@ const aplicarBordeCuadro = (hoja, filaInicio, filaFin, colInicio, colFin) => {
  * @param {Date} config.fechaDesde - Fecha inicio del rango (del primer dato)
  * @param {Date} config.fechaHasta - Fecha fin del rango (del último dato)
  * @param {string} config.solicitadoPor - Nombre del solicitante
+ * @param {string|null} config.imagenGrafico - Data URI de la imagen del gráfico (base64)
  */
 const crearHojaZona = (workbook, nombreHoja, config) => {
-  const { datos, tituloMedicion, nombreAlimentador, fechaDesde, fechaHasta, solicitadoPor } = config;
+  const { datos, tituloMedicion, nombreAlimentador, fechaDesde, fechaHasta, solicitadoPor, imagenGrafico } = config;
 
   const hoja = workbook.addWorksheet(nombreHoja, {
     properties: { tabColor: { argb: COLORES.secundario } },
+    pageSetup: { orientation: "landscape" }, // Orientación horizontal
   });
 
-  // Configurar anchos de columna (C y F de 20)
+  // Configurar anchos de columna fijos
   hoja.columns = [
-    { width: 3 }, // A - vacía
-    { width: 22 }, // B - Etiqueta info / Fecha col1
-    { width: 20 }, // C - Valor info / Valor col1
-    { width: 3 }, // D - separador
-    { width: 22 }, // E - Etiqueta estadísticas / Fecha col2
-    { width: 20 }, // F - Valor estadísticas / Valor col2
-    { width: 3 }, // G - vacía
+    { width: 1.5 },  // A
+    { width: 7 },    // B
+    { width: 25 },   // C
+    { width: 25 },   // D
+    { width: 2.3 },  // E - separador
+    { width: 25 },   // F
+    { width: 25 },   // G
+    { width: 5 },    // H
+    { width: 2.3 },  // I - separador
+    { width: 25 },   // J
+    { width: 25 },   // K
+    { width: 2.3 },  // L - separador
+    { width: 25 },   // M
+    { width: 25 },   // N
   ];
 
   // Calcular estadísticas
@@ -247,20 +256,20 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
     });
   }
 
-  // === FILA 2: TÍTULO PRINCIPAL (con estilo de encabezado de tabla) ===
-  hoja.mergeCells("B2:F2");
-  const celdaTitulo = hoja.getCell("B2");
+  // === FILA 2: TÍTULO PRINCIPAL (desde C2) ===
+  hoja.mergeCells("C2:G2");
+  const celdaTitulo = hoja.getCell("C2");
   celdaTitulo.value = "INFORME DE MEDICIONES";
   estiloEncabezado(celdaTitulo);
   celdaTitulo.font = { bold: true, size: 14, color: { argb: COLORES.blanco } };
   hoja.getRow(2).height = 30;
 
-  // === APLICAR FONDO BLANCO Y BORDE EXTERNO AL ÁREA B2:F12 ===
+  // === APLICAR FONDO BLANCO Y BORDE EXTERNO AL ÁREA C2:G12 ===
   const bordeDelgado = { style: "thin", color: { argb: COLORES.borde } };
 
-  // Fondo blanco para B3:F12
+  // Fondo blanco para C3:G12
   for (let fila = 3; fila <= 12; fila++) {
-    for (let col = "B".charCodeAt(0); col <= "F".charCodeAt(0); col++) {
+    for (let col = "C".charCodeAt(0); col <= "G".charCodeAt(0); col++) {
       const celda = hoja.getCell(`${String.fromCharCode(col)}${fila}`);
       celda.fill = {
         type: "pattern",
@@ -270,41 +279,41 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
     }
   }
 
-  // Borde externo del cuadro B2:F12
-  // Borde izquierdo (columna B)
+  // Borde externo del cuadro C2:G12
+  // Borde izquierdo (columna C)
   for (let fila = 2; fila <= 12; fila++) {
-    const celda = hoja.getCell(`B${fila}`);
+    const celda = hoja.getCell(`C${fila}`);
     celda.border = { ...celda.border, left: bordeDelgado };
   }
-  // Borde derecho (columna F)
+  // Borde derecho (columna G)
   for (let fila = 2; fila <= 12; fila++) {
-    const celda = hoja.getCell(`F${fila}`);
+    const celda = hoja.getCell(`G${fila}`);
     celda.border = { ...celda.border, right: bordeDelgado };
   }
   // Borde superior (fila 2)
-  for (let col = "B".charCodeAt(0); col <= "F".charCodeAt(0); col++) {
+  for (let col = "C".charCodeAt(0); col <= "G".charCodeAt(0); col++) {
     const celda = hoja.getCell(`${String.fromCharCode(col)}2`);
     celda.border = { ...celda.border, top: bordeDelgado };
   }
   // Borde inferior (fila 12)
-  for (let col = "B".charCodeAt(0); col <= "F".charCodeAt(0); col++) {
+  for (let col = "C".charCodeAt(0); col <= "G".charCodeAt(0); col++) {
     const celda = hoja.getCell(`${String.fromCharCode(col)}12`);
     celda.border = { ...celda.border, bottom: bordeDelgado };
   }
 
   // === FILA 4: Registros para ===
-  hoja.getCell("B4").value = "Registros para:";
-  hoja.getCell("B4").font = { bold: true, color: { argb: COLORES.texto } };
-  hoja.getCell("B4").alignment = { horizontal: "right", vertical: "middle" };
-  hoja.getCell("C4").value = nombreAlimentador;
-  hoja.getCell("C4").font = { color: { argb: COLORES.texto } };
-  hoja.getCell("C4").alignment = { horizontal: "left", vertical: "middle" };
+  hoja.getCell("C4").value = "Registros para:";
+  hoja.getCell("C4").font = { bold: true, color: { argb: COLORES.texto } };
+  hoja.getCell("C4").alignment = { horizontal: "right", vertical: "middle" };
+  hoja.getCell("D4").value = nombreAlimentador;
+  hoja.getCell("D4").font = { color: { argb: COLORES.texto } };
+  hoja.getCell("D4").alignment = { horizontal: "left", vertical: "middle" };
 
   // === FILA 5-6: Medición (ocupa 2 filas, con ajuste de texto) ===
-  hoja.mergeCells("B5:B6");
   hoja.mergeCells("C5:C6");
-  const celdaMedicionLabel = hoja.getCell("B5");
-  const celdaMedicionValor = hoja.getCell("C5");
+  hoja.mergeCells("D5:D6");
+  const celdaMedicionLabel = hoja.getCell("C5");
+  const celdaMedicionValor = hoja.getCell("D5");
 
   celdaMedicionLabel.value = "Medición:";
   celdaMedicionLabel.font = { bold: true, color: { argb: COLORES.texto } };
@@ -325,8 +334,8 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
 
   infoItemsRestantes.forEach(([etiqueta, valor], index) => {
     const fila = 7 + index; // Empieza en fila 7
-    const celdaEtiqueta = hoja.getCell(`B${fila}`);
-    const celdaValor = hoja.getCell(`C${fila}`);
+    const celdaEtiqueta = hoja.getCell(`C${fila}`);
+    const celdaValor = hoja.getCell(`D${fila}`);
 
     celdaEtiqueta.value = etiqueta;
     celdaEtiqueta.font = { bold: true, color: { argb: COLORES.texto } };
@@ -337,18 +346,18 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
     celdaValor.alignment = { horizontal: "left", vertical: "middle" };
   });
 
-  // === ESTADÍSTICAS A LA DERECHA (E:F) - ajustadas una fila abajo ===
+  // === ESTADÍSTICAS A LA DERECHA (F:G) ===
   if (datos.length > 0) {
-    // Título ESTADÍSTICAS (sin borde, fila 5)
-    hoja.mergeCells("E5:F5");
-    const celdaEstTitulo = hoja.getCell("E5");
+    // Título ESTADÍSTICAS (fila 5)
+    hoja.mergeCells("F5:G5");
+    const celdaEstTitulo = hoja.getCell("F5");
     celdaEstTitulo.value = "ESTADÍSTICAS";
     celdaEstTitulo.font = { bold: true, size: 12, color: { argb: COLORES.primario } };
     celdaEstTitulo.alignment = { horizontal: "center", vertical: "middle" };
     // Re-aplicar borde derecho a la celda combinada (se pierde al hacer merge)
     celdaEstTitulo.border = { ...celdaEstTitulo.border, right: bordeDelgado };
 
-    // Datos de estadísticas (sin borde, filas 6-8)
+    // Datos de estadísticas (filas 6-8)
     const estadisticas = [
       ["Valor mínimo:", minimo.toFixed(2)],
       ["Valor máximo:", maximo.toFixed(2)],
@@ -357,8 +366,8 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
 
     estadisticas.forEach(([etiqueta, valor], index) => {
       const fila = 6 + index; // Empieza en fila 6
-      const celdaEtiqueta = hoja.getCell(`E${fila}`);
-      const celdaValor = hoja.getCell(`F${fila}`);
+      const celdaEtiqueta = hoja.getCell(`F${fila}`);
+      const celdaValor = hoja.getCell(`G${fila}`);
 
       celdaEtiqueta.value = etiqueta;
       celdaEtiqueta.font = { bold: true, color: { argb: COLORES.texto } };
@@ -370,32 +379,55 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
       celdaValor.alignment = { horizontal: "left", vertical: "middle" };
     });
 
-    // Aplicar color verde al valor mínimo (F6) y naranja al máximo (F7)
-    hoja.getCell("F6").fill = {
+    // Aplicar color verde al valor mínimo (G6) y naranja al máximo (G7)
+    hoja.getCell("G6").fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: COLORES.minimo },
     };
-    hoja.getCell("F7").fill = {
+    hoja.getCell("G7").fill = {
       type: "pattern",
       pattern: "solid",
       fgColor: { argb: COLORES.maximo },
     };
   }
 
-  // === TABLA DE DATOS (empieza en fila 14, una más abajo) ===
+  // === IMAGEN DEL GRÁFICO (si está disponible) ===
+  if (imagenGrafico) {
+    try {
+      // Extraer base64 del data URI
+      const base64Data = imagenGrafico.split(",")[1];
+
+      // Agregar imagen al workbook
+      const imageId = workbook.addImage({
+        base64: base64Data,
+        extension: "png",
+      });
+
+      // Insertar imagen en celda B35 (col 1 en 0-indexed, row 34 en 0-indexed)
+      // Tamaño: 850x475 píxeles
+      hoja.addImage(imageId, {
+        tl: { col: 1, row: 34 }, // B35 (0-indexed)
+        ext: { width: 850, height: 475 },
+      });
+    } catch (err) {
+      console.warn("Error al insertar imagen en Excel:", err);
+    }
+  }
+
+  // === TABLA DE DATOS (desde J2) ===
   if (datos.length > 0) {
-    const FILA_INICIO_DATOS = 14;
+    const FILA_INICIO_DATOS = 2; // Siempre empieza en fila 2
     const MAX_FILAS_COLUMNA = 39;
     const usarDosColumnas = datos.length > MAX_FILAS_COLUMNA;
 
     // Título de la tabla
     if (usarDosColumnas) {
-      hoja.mergeCells(`B${FILA_INICIO_DATOS}:F${FILA_INICIO_DATOS}`);
+      hoja.mergeCells(`J${FILA_INICIO_DATOS}:N${FILA_INICIO_DATOS}`);
     } else {
-      hoja.mergeCells(`B${FILA_INICIO_DATOS}:C${FILA_INICIO_DATOS}`);
+      hoja.mergeCells(`J${FILA_INICIO_DATOS}:K${FILA_INICIO_DATOS}`);
     }
-    const celdaDatosTitulo = hoja.getCell(`B${FILA_INICIO_DATOS}`);
+    const celdaDatosTitulo = hoja.getCell(`J${FILA_INICIO_DATOS}`);
     celdaDatosTitulo.value = "DATOS DE MEDICIONES";
     celdaDatosTitulo.font = { bold: true, size: 12, color: { argb: COLORES.primario } };
     celdaDatosTitulo.alignment = { horizontal: "center", vertical: "middle" };
@@ -403,18 +435,18 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
 
     const filaEncabezados = FILA_INICIO_DATOS + 1;
 
-    // Encabezados columna 1 (B:C)
-    const encFecha1 = hoja.getCell(`B${filaEncabezados}`);
-    const encValor1 = hoja.getCell(`C${filaEncabezados}`);
+    // Encabezados columna 1 (J:K)
+    const encFecha1 = hoja.getCell(`J${filaEncabezados}`);
+    const encValor1 = hoja.getCell(`K${filaEncabezados}`);
     encFecha1.value = "Fecha/Hora";
     encValor1.value = "Valor de Medicion";
     estiloEncabezado(encFecha1);
     estiloEncabezado(encValor1);
 
-    // Encabezados columna 2 (E:F) si es necesario
+    // Encabezados columna 2 (M:N) si es necesario
     if (usarDosColumnas) {
-      const encFecha2 = hoja.getCell(`E${filaEncabezados}`);
-      const encValor2 = hoja.getCell(`F${filaEncabezados}`);
+      const encFecha2 = hoja.getCell(`M${filaEncabezados}`);
+      const encValor2 = hoja.getCell(`N${filaEncabezados}`);
       encFecha2.value = "Fecha/Hora";
       encValor2.value = "Valor de Medicion";
       estiloEncabezado(encFecha2);
@@ -443,20 +475,20 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
         // Distribuir en dos columnas
         const mitad = Math.ceil(datos.length / 2);
         if (index < mitad) {
-          // Primera columna (B:C)
-          colFecha = "B";
-          colValor = "C";
+          // Primera columna (J:K)
+          colFecha = "J";
+          colValor = "K";
           filaDestino = filaPrimerDato + index;
         } else {
-          // Segunda columna (E:F)
-          colFecha = "E";
-          colValor = "F";
+          // Segunda columna (M:N)
+          colFecha = "M";
+          colValor = "N";
           filaDestino = filaPrimerDato + (index - mitad);
         }
       } else {
-        // Una sola columna (B:C)
-        colFecha = "B";
-        colValor = "C";
+        // Una sola columna (J:K)
+        colFecha = "J";
+        colValor = "K";
         filaDestino = filaPrimerDato + index;
       }
 
@@ -561,9 +593,10 @@ export const generarInformeExcel = async (config) => {
  * @param {Date} config.fechaInicio - Fecha del primer registro
  * @param {Date} config.fechaFin - Fecha del último registro
  * @param {string} config.solicitadoPor - Nombre del solicitante
+ * @param {string|null} config.imagenGrafico - Data URI de la imagen del gráfico
  */
 export const generarInformeZonaExcel = async (config) => {
-  const { nombreAlimentador, tituloMedicion, datos, fechaInicio, fechaFin, solicitadoPor } = config;
+  const { nombreAlimentador, tituloMedicion, datos, fechaInicio, fechaFin, solicitadoPor, imagenGrafico } = config;
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "RelayWatch";
@@ -578,6 +611,7 @@ export const generarInformeZonaExcel = async (config) => {
       fechaDesde: fechaInicio,
       fechaHasta: fechaFin,
       solicitadoPor,
+      imagenGrafico,
     });
   } else {
     const hoja = workbook.addWorksheet("Sin datos");

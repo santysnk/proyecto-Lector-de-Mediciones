@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import Chart from "react-apexcharts";
+import ApexChartWrapper from "../../../../componentes/comunes/ApexChartWrapper";
 import { usarHistorialLocal } from "../../hooks/usarHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
@@ -112,6 +112,7 @@ const VentanaHistorial = ({
 
   const ventanaRef = useRef(null);
   const headerRef = useRef(null);
+  const chartRef = useRef(null);
   const [arrastrando, setArrastrando] = useState(false);
   const [offsetArrastre, setOffsetArrastre] = useState({ x: 0, y: 0 });
 
@@ -478,6 +479,20 @@ const VentanaHistorial = ({
   const handleGenerarInforme = async (configInforme) => {
     const { solicitadoPor, datosFiltrados, fechaInicio, fechaFin } = configInforme;
 
+    // Capturar imagen del gráfico con estilo optimizado para informe
+    // (fondo blanco, texto negro, fuentes más grandes, alta resolución)
+    let imagenGrafico = null;
+    try {
+      // Usar el método captureForReport que aplica estilos de exportación
+      // scale: 4 para mayor resolución y textos más nítidos en el Excel
+      if (chartRef.current?.captureForReport) {
+        const { imgURI } = await chartRef.current.captureForReport({ scale: 4 });
+        imagenGrafico = imgURI;
+      }
+    } catch (err) {
+      console.warn("No se pudo capturar el gráfico:", err);
+    }
+
     await generarInformeZonaExcel({
       nombreAlimentador: alimentador?.nombre || "Alimentador",
       tituloMedicion: tituloZonaActual,
@@ -485,6 +500,7 @@ const VentanaHistorial = ({
       fechaInicio,
       fechaFin,
       solicitadoPor,
+      imagenGrafico,
     });
   };
 
@@ -708,7 +724,7 @@ const VentanaHistorial = ({
                 <span>No hay datos</span>
               </div>
             ) : (
-              <Chart options={opcionesGrafico} series={seriesGrafico} type={tipoGrafico} height="100%" />
+              <ApexChartWrapper ref={chartRef} options={opcionesGrafico} series={seriesGrafico} type={tipoGrafico} height="100%" />
             )}
           </div>
         </div>
