@@ -213,9 +213,10 @@ const aplicarBordeCuadro = (hoja, filaInicio, filaFin, colInicio, colFin) => {
  * @param {Date} config.fechaHasta - Fecha fin del rango (del último dato)
  * @param {string} config.solicitadoPor - Nombre del solicitante
  * @param {string|null} config.imagenGrafico - Data URI de la imagen del gráfico (base64)
+ * @param {number} config.intervalo - Intervalo de filtrado (0, 15, 30, 60 minutos)
  */
 const crearHojaZona = (workbook, nombreHoja, config) => {
-  const { datos, tituloMedicion, nombreAlimentador, fechaDesde, fechaHasta, solicitadoPor, imagenGrafico } = config;
+  const { datos, tituloMedicion, nombreAlimentador, fechaDesde, fechaHasta, solicitadoPor, imagenGrafico, intervalo } = config;
 
   const hoja = workbook.addWorksheet(nombreHoja, {
     properties: { tabColor: { argb: COLORES.secundario } },
@@ -324,12 +325,19 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
   celdaMedicionValor.alignment = { horizontal: "left", vertical: "middle", wrapText: true };
 
   // === FILA 7-11: Resto de info (desplazada una fila por Medición) ===
+  // Formatear texto del intervalo
+  const textoIntervalo = config.intervalo
+    ? config.intervalo === 0
+      ? " (todos)"
+      : ` (cada ${config.intervalo} min)`
+    : "";
+
   const infoItemsRestantes = [
-    ["Solicitado por:", solicitadoPor || "No especificado"],
     ["Fecha de creación:", formatearFecha(new Date())],
+    ["Solicitado por:", solicitadoPor || "No especificado"],
     ["Período desde:", formatearFecha(fechaDesde)],
     ["Período hasta:", formatearFecha(fechaHasta)],
-    ["Total de registros:", datos.length.toString()],
+    ["Total de registros:", `${datos.length}${textoIntervalo}`],
   ];
 
   infoItemsRestantes.forEach(([etiqueta, valor], index) => {
@@ -398,18 +406,19 @@ const crearHojaZona = (workbook, nombreHoja, config) => {
       // Extraer base64 del data URI
       const base64Data = imagenGrafico.split(",")[1];
 
-      // Agregar imagen al workbook
-      const imageId = workbook.addImage({
-        base64: base64Data,
-        extension: "png",
-      });
+      if (base64Data) {
+        // Agregar imagen al workbook
+        const imageId = workbook.addImage({
+          base64: base64Data,
+          extension: "png",
+        });
 
-      // Insertar imagen en celda B35 (col 1 en 0-indexed, row 34 en 0-indexed)
-      // Tamaño: 850x475 píxeles
-      hoja.addImage(imageId, {
-        tl: { col: 1, row: 34 }, // B35 (0-indexed)
-        ext: { width: 850, height: 475 },
-      });
+        // Insertar imagen en celda B35
+        hoja.addImage(imageId, {
+          tl: { col: 1, row: 34 }, // B35 (0-indexed: col 1 = B, row 34 = fila 35)
+          ext: { width: 850, height: 475 },
+        });
+      }
     } catch (err) {
       console.warn("Error al insertar imagen en Excel:", err);
     }
@@ -594,9 +603,10 @@ export const generarInformeExcel = async (config) => {
  * @param {Date} config.fechaFin - Fecha del último registro
  * @param {string} config.solicitadoPor - Nombre del solicitante
  * @param {string|null} config.imagenGrafico - Data URI de la imagen del gráfico
+ * @param {number} config.intervalo - Intervalo de filtrado (0, 15, 30, 60 minutos)
  */
 export const generarInformeZonaExcel = async (config) => {
-  const { nombreAlimentador, tituloMedicion, datos, fechaInicio, fechaFin, solicitadoPor, imagenGrafico } = config;
+  const { nombreAlimentador, tituloMedicion, datos, fechaInicio, fechaFin, solicitadoPor, imagenGrafico, intervalo } = config;
 
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "RelayWatch";
@@ -612,6 +622,7 @@ export const generarInformeZonaExcel = async (config) => {
       fechaHasta: fechaFin,
       solicitadoPor,
       imagenGrafico,
+      intervalo,
     });
   } else {
     const hoja = workbook.addWorksheet("Sin datos");

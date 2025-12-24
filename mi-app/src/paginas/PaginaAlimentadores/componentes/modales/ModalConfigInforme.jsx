@@ -6,6 +6,7 @@
 import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
 import { INTERVALOS_INFORME } from "../../constantes/historialConfig";
+import { generarImagenGrafico } from "../../utilidades/generarGraficoInforme";
 import "./ModalConfigInforme.css";
 
 /**
@@ -47,9 +48,11 @@ const ModalConfigInforme = ({
   datos,
   nombreAlimentador,
   tituloMedicion,
+  tipoGrafico = "line",
 }) => {
   const [solicitadoPor, setSolicitadoPor] = useState("");
   const [intervaloSeleccionado, setIntervaloSeleccionado] = useState(null);
+  const [generando, setGenerando] = useState(false);
 
   // Calcular duración del período de datos
   const { duracionMs, fechaInicio, fechaFin } = useMemo(() => {
@@ -133,15 +136,30 @@ const ModalConfigInforme = ({
     return resultado;
   }, [datos, intervaloSeleccionado]);
 
-  const handleGenerar = () => {
-    onGenerar({
-      solicitadoPor: solicitadoPor.trim() || "No especificado",
-      intervalo: intervaloSeleccionado,
-      datosFiltrados,
-      fechaInicio,
-      fechaFin,
-    });
-    onCerrar();
+  const handleGenerar = async () => {
+    setGenerando(true);
+
+    try {
+      // Generar imagen del gráfico con los datos filtrados del modal
+      const imagenGrafico = await generarImagenGrafico(datosFiltrados, {
+        tipo: tipoGrafico,
+        titulo: "", // Sin título en el gráfico, ya está en el Excel
+      });
+
+      onGenerar({
+        solicitadoPor: solicitadoPor.trim() || "No especificado",
+        intervalo: intervaloSeleccionado,
+        datosFiltrados,
+        fechaInicio,
+        fechaFin,
+        imagenGrafico,
+      });
+      onCerrar();
+    } catch (err) {
+      console.error("Error generando informe:", err);
+    } finally {
+      setGenerando(false);
+    }
   };
 
   if (!visible) return null;
@@ -248,9 +266,9 @@ const ModalConfigInforme = ({
             type="button"
             className="modal-config-btn generar"
             onClick={handleGenerar}
-            disabled={datosFiltrados.length === 0}
+            disabled={datosFiltrados.length === 0 || generando}
           >
-            Generar Informe
+            {generando ? "Generando..." : "Generar Informe"}
           </button>
         </footer>
       </div>
@@ -270,12 +288,14 @@ ModalConfigInforme.propTypes = {
   ),
   nombreAlimentador: PropTypes.string,
   tituloMedicion: PropTypes.string,
+  tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]),
 };
 
 ModalConfigInforme.defaultProps = {
   datos: [],
   nombreAlimentador: "Alimentador",
   tituloMedicion: "Medición",
+  tipoGrafico: "line",
 };
 
 export default ModalConfigInforme;

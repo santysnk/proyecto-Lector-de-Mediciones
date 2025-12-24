@@ -8,7 +8,7 @@ import ApexChartWrapper from "../../../../componentes/comunes/ApexChartWrapper";
 import { useHistorialLocal } from "../../hooks/useHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
-import { generarInformeZonaExcel } from "../../utilidades/exportarInformeExcel";
+import { generarInformePDF } from "../../utilidades/exportarInformePDF";
 import { TITULOS_MEDICIONES } from "../../constantes/titulosMediciones";
 import {
   RANGOS_TIEMPO,
@@ -170,7 +170,12 @@ const VentanaHistorial = ({
       return;
     }
 
-    const forzarSoloLocal = precargaCompleta;
+    // Solo forzar local si:
+    // 1. La precarga está completa Y
+    // 2. Estamos usando un rango predefinido (no fechas personalizadas del calendario)
+    // Los rangos personalizados pueden estar fuera de las 48h precargadas
+    const usandoRangoPredefinido = !fechaRangoDesde && !fechaRangoHasta;
+    const forzarSoloLocal = precargaCompleta && usandoRangoPredefinido;
     const { datos, fuente } = await obtenerDatosGrafico(
       alimentador.id,
       registradorId,
@@ -250,22 +255,37 @@ const VentanaHistorial = ({
 
   // Datos filtrados por intervalo (se usa tanto para el gráfico como para la tabla)
   // Esto evita renderizar miles de puntos y mejora el rendimiento
+  // Siempre incluye la última lectura del rango para mejor visualización
   const datosFiltrados = useMemo(() => {
     if (intervaloFiltro === 0 || datosGrafico.length === 0) {
       return datosGrafico;
     }
 
+    if (datosGrafico.length === 1) {
+      return datosGrafico;
+    }
+
     const intervaloMs = intervaloFiltro * 60 * 1000;
+    const resultado = [];
     let ultimoTimestamp = 0;
 
-    return datosGrafico.filter((punto) => {
+    // Filtrar por intervalo
+    for (const punto of datosGrafico) {
       const timestamp = new Date(punto.x).getTime();
       if (ultimoTimestamp === 0 || timestamp - ultimoTimestamp >= intervaloMs) {
+        resultado.push(punto);
         ultimoTimestamp = timestamp;
-        return true;
       }
-      return false;
-    });
+    }
+
+    // Siempre incluir la última lectura si no está ya incluida
+    const ultimaLectura = datosGrafico[datosGrafico.length - 1];
+    const ultimaEnResultado = resultado[resultado.length - 1];
+    if (ultimaLectura !== ultimaEnResultado) {
+      resultado.push(ultimaLectura);
+    }
+
+    return resultado;
   }, [datosGrafico, intervaloFiltro]);
 
   // Colores para gráfico de barras (verde a rojo con normalización min-max)
@@ -471,24 +491,23 @@ const VentanaHistorial = ({
     }
   }, [limpiarCacheCompleto, obtenerRegistradorZona, precargar48h, alimentador?.id]);
 
-  const handleGenerarInforme = async (configInforme) => {
-    const { solicitadoPor, datosFiltrados, fechaInicio, fechaFin } = configInforme;
-
-    // Capturar imagen del gráfico con estilo optimizado para informe
-    // (fondo blanco, texto negro, fuentes más grandes, alta resolución)
-    let imagenGrafico = null;
-    try {
-      // Usar el método captureForReport que aplica estilos de exportación
-      // scale: 4 para mayor resolución y textos más nítidos en el Excel
-      if (chartRef.current?.captureForReport) {
-        const { imgURI } = await chartRef.current.captureForReport({ scale: 4 });
-        imagenGrafico = imgURI;
-      }
-    } catch (err) {
-      console.warn("No se pudo capturar el gráfico:", err);
+  // Handler para cambio de tipo de gráfico
+  // Si cambia a barras y el intervalo es "Todos", primero cambia a 15min
+  // para evitar renderizar miles de barras que tildan el navegador
+  const handleTipoGraficoChange = useCallback((nuevoTipo) => {
+    if (nuevoTipo === "bar" && intervaloFiltro === 0) {
+      // Cambiar intervalo ANTES de cambiar el tipo para evitar render con todos los datos
+      setIntervaloFiltro(15);
     }
+    setTipoGrafico(nuevoTipo);
+  }, [intervaloFiltro]);
 
-    await generarInformeZonaExcel({
+  const handleGenerarInforme = async (configInforme) => {
+    // La imagen del gráfico ahora se genera en el modal con los datos filtrados,
+    // así siempre corresponde a los datos de la tabla del informe
+    const { solicitadoPor, datosFiltrados, fechaInicio, fechaFin, intervalo, imagenGrafico } = configInforme;
+
+    await generarInformePDF({
       nombreAlimentador: alimentador?.nombre || "Alimentador",
       tituloMedicion: tituloZonaActual,
       datos: datosFiltrados,
@@ -496,6 +515,7 @@ const VentanaHistorial = ({
       fechaFin,
       solicitadoPor,
       imagenGrafico,
+      intervalo,
     });
   };
 
@@ -541,7 +561,7 @@ const VentanaHistorial = ({
           fechaRangoHasta={fechaRangoHasta}
           onFechaRangoChange={handleFechaRangoChange}
           tipoGrafico={tipoGrafico}
-          onTipoGraficoChange={setTipoGrafico}
+          onTipoGraficoChange={handleTipoGraficoChange}
           precargaProgreso={precargaProgreso}
           precargaCompleta={precargaCompleta}
           precargando={precargando}
@@ -557,7 +577,8 @@ const VentanaHistorial = ({
             tituloPeriodo={tituloPanelDatos}
             intervaloFiltro={intervaloFiltro}
             onIntervaloChange={setIntervaloFiltro}
-            datosGrafico={datosGrafico}
+            datosFiltrados={datosFiltrados}
+            tipoGrafico={tipoGrafico}
           />
 
           {/* Gráfico */}
@@ -625,6 +646,7 @@ const VentanaHistorial = ({
         datos={datosGrafico}
         nombreAlimentador={alimentador?.nombre || "Alimentador"}
         tituloMedicion={tituloZonaActual}
+        tipoGrafico={tipoGrafico}
       />
     </div>
   );
