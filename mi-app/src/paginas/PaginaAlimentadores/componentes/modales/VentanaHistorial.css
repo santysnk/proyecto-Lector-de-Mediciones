@@ -623,6 +623,15 @@
   cursor: not-allowed;
 }
 
+.ventana-btn-informe {
+  margin-left: 0.5rem;
+  background: #10b981;
+}
+
+.ventana-btn-informe:hover:not(:disabled) {
+  background: #059669;
+}
+
 /* Barra de tareas para ventanas minimizadas */
 .ventanas-barra-tareas {
   position: fixed;

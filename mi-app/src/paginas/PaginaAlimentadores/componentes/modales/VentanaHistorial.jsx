@@ -8,8 +8,10 @@ import Chart from "react-apexcharts";
 import { usarHistorialLocal } from "../../hooks/usarHistorialLocal";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
+import { generarInformeZonaExcel } from "../../utilidades/exportarInformeExcel";
 import { TITULOS_MEDICIONES } from "../../constantes/titulosMediciones";
 import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
+import ModalConfigInforme from "./ModalConfigInforme";
 import "./VentanaHistorial.css";
 
 // Opciones de rango predefinidas
@@ -138,6 +140,7 @@ const VentanaHistorial = ({
   const [panelDatosAbierto, setPanelDatosAbierto] = useState(true);
   const [intervaloFiltro, setIntervaloFiltro] = useState(60); // 0 = todos, 15, 30, 60 minutos
   const [tipoGrafico, setTipoGrafico] = useState("line"); // line, area, bar
+  const [modalInformeVisible, setModalInformeVisible] = useState(false);
 
   // Títulos de zonas
   const tituloSuperior = useMemo(() => obtenerTituloZona(cardDesign, "superior"), [cardDesign]);
@@ -467,6 +470,24 @@ const VentanaHistorial = ({
     });
   };
 
+  const handleAbrirModalInforme = () => {
+    if (datosGrafico.length === 0) return;
+    setModalInformeVisible(true);
+  };
+
+  const handleGenerarInforme = async (configInforme) => {
+    const { solicitadoPor, datosFiltrados, fechaInicio, fechaFin } = configInforme;
+
+    await generarInformeZonaExcel({
+      nombreAlimentador: alimentador?.nombre || "Alimentador",
+      tituloMedicion: tituloZonaActual,
+      datos: datosFiltrados,
+      fechaInicio,
+      fechaFin,
+      solicitadoPor,
+    });
+  };
+
   // No renderizar si está minimizada
   if (minimizada) return null;
 
@@ -720,9 +741,22 @@ const VentanaHistorial = ({
             <button type="button" className="ventana-btn-exportar" onClick={handleExportarCSV} disabled={datosGrafico.length === 0}>
               CSV
             </button>
+            <button type="button" className="ventana-btn-exportar ventana-btn-informe" onClick={handleAbrirModalInforme} disabled={datosGrafico.length === 0}>
+              Informe
+            </button>
           </div>
         )}
       </div>
+
+      {/* Modal de configuración de informe */}
+      <ModalConfigInforme
+        visible={modalInformeVisible}
+        onCerrar={() => setModalInformeVisible(false)}
+        onGenerar={handleGenerarInforme}
+        datos={datosGrafico}
+        nombreAlimentador={alimentador?.nombre || "Alimentador"}
+        tituloMedicion={tituloZonaActual}
+      />
     </div>
   );
 };
