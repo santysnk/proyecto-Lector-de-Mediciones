@@ -14,6 +14,10 @@ export const UMBRAL_COBERTURA_REMOTO = 0.90;
 // Margen adicional al límite de 48h para evitar edge cases (5 minutos en ms)
 export const MARGEN_LIMITE_LOCAL_MS = 5 * 60 * 1000;
 
+// Antigüedad máxima permitida para el último dato en cache (minutos)
+// Si el último dato es más antiguo que esto, se fuerza recarga del servidor
+export const MAX_ANTIGUEDAD_CACHE_MINUTOS = 15;
+
 // Opciones de rango de tiempo predefinidas
 export const RANGOS_TIEMPO = [
   { id: "1h", label: "1h", ms: 60 * 60 * 1000 },

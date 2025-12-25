@@ -3,9 +3,10 @@
  * Soporta: arrastrar, minimizar, maximizar, múltiples instancias
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useContext } from "react";
 import ApexChartWrapper from "../../../../componentes/comunes/ApexChartWrapper";
 import { useHistorialLocal } from "../../hooks/useHistorialLocal";
+import { ContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
 import { generarInformePDF } from "../../utilidades/exportarInformePDF";
@@ -94,6 +95,10 @@ const VentanaHistorial = ({
 }) => {
   const { alimentador, cardDesign, minimizada, maximizada, posicion, zIndex } = ventana;
 
+  // Obtener alimentadores del puesto desde el contexto
+  const { puestoSeleccionado } = useContext(ContextoAlimentadores);
+  const alimentadoresPuesto = puestoSeleccionado?.alimentadores || [];
+
   const ventanaRef = useRef(null);
   const headerRef = useRef(null);
   const chartRef = useRef(null);
@@ -105,7 +110,7 @@ const VentanaHistorial = ({
     obtenerDatosGrafico,
     cargando,
     error,
-    precargar48h,
+    precargarPuesto,
     resetearPrecarga,
     precargaProgreso,
     precargaCompleta,
@@ -198,14 +203,13 @@ const VentanaHistorial = ({
     setFuenteDatos(fuente);
   }, [alimentador, cardDesign, rangoSeleccionado, fechaRangoDesde, fechaRangoHasta, zonaSeleccionada, obtenerDatosGrafico, obtenerRegistradorZona, precargaCompleta]);
 
-  // Iniciar precarga al montar (esperar a que IndexedDB esté lista)
+  // Iniciar precarga de todo el puesto al montar (esperar a que IndexedDB esté lista)
+  // Esto beneficia a todas las cards del puesto, no solo a la actual
   useEffect(() => {
-    if (!alimentador?.id || !dbLista) return;
-    const registradorSuperior = obtenerRegistradorZona("superior");
-    const registradorInferior = obtenerRegistradorZona("inferior");
-    precargar48h(alimentador.id, registradorSuperior, registradorInferior);
+    if (!alimentador?.id || !dbLista || alimentadoresPuesto.length === 0) return;
+    precargarPuesto(alimentadoresPuesto);
     return () => resetearPrecarga();
-  }, [alimentador?.id, dbLista, obtenerRegistradorZona, precargar48h, resetearPrecarga]);
+  }, [alimentador?.id, dbLista, alimentadoresPuesto, precargarPuesto, resetearPrecarga]);
 
   // Cargar datos cuando cambia selección
   // IMPORTANTE: Esperar a que la precarga termine (precargaCompleta=true) antes de cargar
@@ -485,11 +489,9 @@ const VentanaHistorial = ({
   const handleLimpiarCache = useCallback(async () => {
     if (window.confirm("¿Limpiar cache local?")) {
       await limpiarCacheCompleto();
-      const regSup = obtenerRegistradorZona("superior");
-      const regInf = obtenerRegistradorZona("inferior");
-      precargar48h(alimentador.id, regSup, regInf);
+      precargarPuesto(alimentadoresPuesto);
     }
-  }, [limpiarCacheCompleto, obtenerRegistradorZona, precargar48h, alimentador?.id]);
+  }, [limpiarCacheCompleto, precargarPuesto, alimentadoresPuesto]);
 
   // Handler para cambio de tipo de gráfico
   // Si cambia a barras y el intervalo es "Todos", primero cambia a 15min

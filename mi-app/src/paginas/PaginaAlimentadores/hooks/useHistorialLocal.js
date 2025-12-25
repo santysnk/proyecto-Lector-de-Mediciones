@@ -22,6 +22,7 @@ import {
   UMBRAL_COBERTURA_CACHE,
   UMBRAL_COBERTURA_REMOTO,
   MARGEN_LIMITE_LOCAL_MS,
+  MAX_ANTIGUEDAD_CACHE_MINUTOS,
 } from "../constantes/historialConfig";
 
 export const useHistorialLocal = () => {
@@ -442,8 +443,8 @@ export const useHistorialLocal = () => {
   );
 
   /**
-   * Verifica si ya hay datos suficientes en cache para un registrador/zona
-   * @returns {Promise<boolean>} true si el cache ya tiene datos suficientes
+   * Verifica si ya hay datos suficientes y recientes en cache para un registrador/zona
+   * @returns {Promise<boolean>} true si el cache ya tiene datos suficientes y recientes
    */
   const verificarCacheExistente = useCallback(
     async (alimentadorId, registradorId, zona) => {
@@ -467,17 +468,27 @@ export const useHistorialLocal = () => {
 
         // Verificar cobertura temporal
         const primerTimestamp = Math.min(...datosLocales.map((d) => d.timestamp));
+        const ultimoTimestamp = Math.max(...datosLocales.map((d) => d.timestamp));
         const rangoSolicitadoMs = hasta - desde;
         const rangoCubiertoMs = hasta - primerTimestamp;
         const porcentajeCubierto = rangoCubiertoMs / rangoSolicitadoMs;
 
-        // Si cubrimos más del umbral del rango, consideramos que el cache está OK
-        const cacheValido = porcentajeCubierto >= UMBRAL_COBERTURA_CACHE;
+        // Verificar antigüedad del último dato
+        const antiguedadUltimoDatoMs = ahora - ultimoTimestamp;
+        const maxAntiguedadMs = MAX_ANTIGUEDAD_CACHE_MINUTOS * 60 * 1000;
+        const datosRecientes = antiguedadUltimoDatoMs <= maxAntiguedadMs;
+
+        // El cache es válido si cubre el porcentaje requerido Y los datos son recientes
+        const coberturaOK = porcentajeCubierto >= UMBRAL_COBERTURA_CACHE;
+        const cacheValido = coberturaOK && datosRecientes;
 
         console.log(`[Historial] Cache existente para ${zona}:`, {
           registradorId,
           datosEncontrados: datosLocales.length,
           porcentajeCubierto: (porcentajeCubierto * 100).toFixed(1) + "%",
+          antiguedadUltimoDato: Math.round(antiguedadUltimoDatoMs / 60000) + " min",
+          maxAntiguedadPermitida: MAX_ANTIGUEDAD_CACHE_MINUTOS + " min",
+          datosRecientes,
           cacheValido,
         });
 
@@ -668,6 +679,145 @@ export const useHistorialLocal = () => {
   }, []);
 
   /**
+   * Precarga datos para todos los alimentadores de un puesto
+   * Se llama una sola vez cuando se abre cualquier ventana de historial del puesto
+   * Beneficia a todas las demás cards del mismo puesto
+   *
+   * @param {Array} alimentadores - Lista de alimentadores del puesto
+   * @returns {Promise<boolean>} - true si la precarga fue exitosa
+   */
+  const precargarPuesto = useCallback(
+    async (alimentadores) => {
+      if (!alimentadores || alimentadores.length === 0) return true;
+
+      // Resetear estado
+      setPrecargaProgreso(0);
+      setPrecargaCompleta(false);
+      setPrecargando(true);
+      precargaAbortRef.current = false;
+
+      const ahora = Date.now();
+      const desde = ahora - HORAS_RETENCION_LOCAL * 60 * 60 * 1000;
+      const hasta = ahora;
+
+      // Recopilar todas las tareas de precarga necesarias
+      const tareasPendientes = [];
+
+      for (const alimentador of alimentadores) {
+        if (precargaAbortRef.current) break;
+
+        const cardDesign = alimentador.card_design || {};
+
+        // Obtener registradores de ambas zonas
+        const regSuperior = cardDesign.superior?.registrador_id || alimentador.registrador_id;
+        const regInferior = cardDesign.inferior?.registrador_id || alimentador.registrador_id;
+
+        // Verificar cache para zona superior
+        if (regSuperior) {
+          const cacheSuperiorOK = await verificarCacheExistente(alimentador.id, regSuperior, "superior");
+          if (!cacheSuperiorOK) {
+            tareasPendientes.push({
+              alimentadorId: alimentador.id,
+              registradorId: regSuperior,
+              zona: "superior",
+            });
+          }
+        }
+
+        // Verificar cache para zona inferior (si es diferente registrador)
+        if (regInferior && regInferior !== regSuperior) {
+          const cacheInferiorOK = await verificarCacheExistente(alimentador.id, regInferior, "inferior");
+          if (!cacheInferiorOK) {
+            tareasPendientes.push({
+              alimentadorId: alimentador.id,
+              registradorId: regInferior,
+              zona: "inferior",
+            });
+          }
+        } else if (regInferior && regInferior === regSuperior) {
+          // Mismo registrador pero verificar si zona inferior necesita datos
+          const cacheInferiorOK = await verificarCacheExistente(alimentador.id, regInferior, "inferior");
+          if (!cacheInferiorOK) {
+            tareasPendientes.push({
+              alimentadorId: alimentador.id,
+              registradorId: regInferior,
+              zona: "inferior",
+            });
+          }
+        }
+      }
+
+      // Si no hay tareas pendientes, ya está todo cacheado y reciente
+      if (tareasPendientes.length === 0) {
+        console.log("[Historial] Cache del puesto ya está actualizado");
+        setPrecargaProgreso(100);
+        setPrecargaCompleta(true);
+        setPrecargando(false);
+        return true;
+      }
+
+      console.log(`[Historial] Precargando puesto: ${tareasPendientes.length} tareas pendientes`);
+
+      // Agrupar tareas por registrador para evitar consultas duplicadas
+      const tareasPorRegistrador = {};
+      for (const tarea of tareasPendientes) {
+        if (!tareasPorRegistrador[tarea.registradorId]) {
+          tareasPorRegistrador[tarea.registradorId] = [];
+        }
+        tareasPorRegistrador[tarea.registradorId].push(tarea);
+      }
+
+      const totalRegistradores = Object.keys(tareasPorRegistrador).length;
+      let registradoresProcesados = 0;
+
+      try {
+        for (const [registradorId, tareas] of Object.entries(tareasPorRegistrador)) {
+          if (precargaAbortRef.current) {
+            console.log("[Historial] Precarga de puesto abortada");
+            setPrecargando(false);
+            return false;
+          }
+
+          // Consultar datos remotos una vez por registrador
+          const datosRemotos = await obtenerLecturasHistoricasPorRegistrador(
+            registradorId,
+            new Date(desde).toISOString(),
+            new Date(hasta).toISOString()
+          );
+
+          if (datosRemotos && datosRemotos.length > 0 && dbRef.current) {
+            // Cachear para todas las zonas/alimentadores que usan este registrador
+            for (const tarea of tareas) {
+              await cachearLecturasRemotas(
+                dbRef.current,
+                tarea.alimentadorId,
+                tarea.registradorId,
+                tarea.zona,
+                datosRemotos
+              );
+            }
+          }
+
+          registradoresProcesados++;
+          setPrecargaProgreso(Math.round((registradoresProcesados / totalRegistradores) * 100));
+        }
+
+        setPrecargaProgreso(100);
+        setPrecargaCompleta(true);
+        setPrecargando(false);
+        console.log("[Historial] Precarga de puesto completada");
+        return true;
+      } catch (err) {
+        console.error("[Historial] Error en precarga de puesto:", err);
+        setPrecargando(false);
+        setPrecargaProgreso(0);
+        return false;
+      }
+    },
+    [verificarCacheExistente]
+  );
+
+  /**
    * Limpia lecturas antiguas manualmente
    */
   const limpiarHistorial = useCallback(async () => {
@@ -731,6 +881,7 @@ export const useHistorialLocal = () => {
     actualizarEstadisticas,
     // Precarga 48h
     precargar48h,
+    precargarPuesto,
     cancelarPrecarga,
     resetearPrecarga,
     precargaProgreso,
