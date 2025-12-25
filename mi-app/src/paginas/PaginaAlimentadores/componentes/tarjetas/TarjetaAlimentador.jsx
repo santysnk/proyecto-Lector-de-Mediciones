@@ -105,6 +105,11 @@ const TarjetaAlimentador = ({
   const triangleRef = useRef(null);
   const popoverRef = useRef(null);
 
+  // Control del menú desplegable de opciones
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef(null);
+  const cardRef = useRef(null);
+
   // Si se cambia de puesto o se detiene la medición de relé, resetea la animación
   useEffect(() => {
     if (!mideRele) {
@@ -193,6 +198,47 @@ const TarjetaAlimentador = ({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [mostrarPopoverEscala]);
+
+  // Cerrar menú desplegable al hacer click fuera
+  useEffect(() => {
+    if (!menuAbierto) return;
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        cardRef.current &&
+        !cardRef.current.querySelector(".alim-card-menu-toggle")?.contains(event.target)
+      ) {
+        setMenuAbierto(false);
+      }
+    };
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("mousedown", handleClickOutside);
+    }, 10);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuAbierto]);
+
+  // Estado para posición del menú flotante
+  const [posicionMenu, setPosicionMenu] = useState({ top: 0, left: 0, width: 0 });
+
+  // Toggle del menú desplegable
+  const toggleMenu = (e) => {
+    e.stopPropagation();
+    if (!menuAbierto && cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const alturaMenu = 48; // altura aproximada del menú
+      const separacion = 3; // separación entre menú y card
+      setPosicionMenu({
+        top: rect.top - alturaMenu - separacion, // arriba del header con separación
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+    setMenuAbierto(!menuAbierto);
+  };
 
   // Aplicar escala inmediatamente al cambiar el input
   const handleEscalaInputChange = (e) => {
@@ -300,6 +346,7 @@ const TarjetaAlimentador = ({
 
   return (
     <div
+      ref={cardRef}
       className={clasesCard.join(" ")}
       style={{
         cursor: draggable ? "grab" : "default",
@@ -318,29 +365,15 @@ const TarjetaAlimentador = ({
             background: `linear-gradient(to right, ${color || "#0ea5e9"}, ${color || "#0ea5e9"}80)`
           }}
         >
-          <div className="alim-card-icons">
-            <button
-              type="button"
-              className="alim-card-icon-btn"
-              onClick={onConfigClick}
-              title="Configurar registrador"
-            >
-              <img src={configIcon} alt="Configurar" className="alim-card-icon" />
-            </button>
-            {onHistorialClick && (
-              <button
-                type="button"
-                className="alim-card-icon-btn alim-card-historial-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onHistorialClick();
-                }}
-                title="Ver historial de lecturas"
-              >
-                <span className="alim-card-historial-icon">📈</span>
-              </button>
-            )}
-          </div>
+          {/* Flecha animada para desplegar menú */}
+          <button
+            type="button"
+            className={`alim-card-menu-toggle ${menuAbierto ? "alim-card-menu-toggle--abierto" : ""}`}
+            onClick={toggleMenu}
+            title="Opciones"
+          >
+            <span className="alim-card-menu-arrow">▼</span>
+          </button>
 
           <span className="alim-card-title">{nombre}</span>
         </div>
@@ -462,6 +495,55 @@ const TarjetaAlimentador = ({
               >
                 Reset (1.0)
               </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Menú flotante desplegable (portal) */}
+      {menuAbierto &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="alim-card-menu-flotante"
+            style={{
+              top: `${posicionMenu.top}px`,
+              left: `${posicionMenu.left}px`,
+              width: `${posicionMenu.width}px`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="alim-card-menu-flotante-content">
+              {/* Botón de configuración */}
+              <button
+                type="button"
+                className="alim-card-menu-flotante-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuAbierto(false);
+                  onConfigClick?.();
+                }}
+                title="Configurar registrador"
+              >
+                <img src={configIcon} alt="Configurar" className="alim-card-menu-flotante-icon" />
+              </button>
+
+              {/* Botón de historial */}
+              {onHistorialClick && (
+                <button
+                  type="button"
+                  className="alim-card-menu-flotante-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuAbierto(false);
+                    onHistorialClick();
+                  }}
+                  title="Ver historial de lecturas"
+                >
+                  <span className="alim-card-menu-flotante-emoji">📈</span>
+                </button>
+              )}
             </div>
           </div>,
           document.body
