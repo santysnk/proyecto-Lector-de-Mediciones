@@ -102,6 +102,53 @@
   white-space: nowrap;
 }
 
+/* Selector de alimentador en la barra de controles */
+/* Contenedor del selector de alimentador con separador */
+.ventana-selector-alimentador-container {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.ventana-selector-alimentador {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #e2e8f0;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  padding: 0.35rem 1.75rem 0.35rem 0.5rem;
+  min-width: 120px;
+  max-width: 180px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background-color 0.15s;
+  /* Flecha personalizada */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+}
+
+.ventana-selector-alimentador:hover {
+  background: #3d4f66;
+  border-color: #5b6b7f;
+}
+
+.ventana-selector-alimentador:focus {
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+}
+
+.ventana-selector-alimentador option {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 0.5rem;
+}
+
 /* Controles de ventana */
 .ventana-historial-controles {
   display: flex;
@@ -228,7 +275,7 @@
 }
 
 .ventana-tab {
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 1rem;
   background: transparent;
   border: none;
   border-right: 1px solid #475569;
@@ -237,7 +284,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  max-width: 150px;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -288,14 +335,22 @@
   color: #ffffff;
 }
 
+/* Grupo contenedor para datepicker + botones de gráfico */
+.ventana-grupo-graficos {
+  display: flex;
+  align-items: center;
+  margin-left: 0.5rem;
+  padding: 0 1rem;
+  border-left: 1px solid #475569;
+  border-right: 1px solid #475569;
+}
+
 /* Selector de día específico */
 .ventana-selector-dia {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-left: 0.75rem;
-  padding-left: 0.75rem;
-  border-left: 1px solid #475569;
+  padding-right: 1rem;
 }
 
 .ventana-dia-seleccionado {
@@ -307,9 +362,8 @@
 /* Selector de tipo de gráfico */
 .ventana-tipo-grafico {
   display: flex;
-  gap: 0.25rem;
-  margin-left: 0.5rem;
-  padding-left: 0.5rem;
+  gap: 0.4rem;
+  padding-left: 1rem;
   border-left: 1px solid #475569;
 }
 
@@ -433,6 +487,157 @@
   overflow: hidden;
 }
 
+/* Slider vertical para escala Y (pegado al gráfico) */
+.ventana-escala-y {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.15rem;
+  background: #0f172a;
+  border-radius: 6px;
+  width: 38px;
+  flex-shrink: 0;
+}
+
+.ventana-escala-y-label {
+  font-size: 0.65rem;
+  color: #94a3b8;
+  font-family: "Consolas", "Monaco", monospace;
+  text-align: center;
+  min-width: 32px;
+}
+
+.ventana-escala-y-label--editable {
+  cursor: pointer;
+  border-radius: 2px;
+  padding: 1px 2px;
+  transition: background-color 0.15s ease;
+}
+
+.ventana-escala-y-label--editable:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.ventana-escala-y-input {
+  width: 32px;
+  padding: 1px 2px;
+  font-size: 0.65rem;
+  font-family: "Consolas", "Monaco", monospace;
+  text-align: center;
+  background: #1e293b;
+  border: 1px solid #0ea5e9;
+  border-radius: 2px;
+  color: #e2e8f0;
+  outline: none;
+}
+
+.ventana-escala-y-input::-webkit-inner-spin-button,
+.ventana-escala-y-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ventana-escala-y-input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.ventana-escala-y-slider {
+  flex: 1;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6px;
+  background: transparent;
+  cursor: pointer;
+  min-height: 100px;
+}
+
+/* Track del slider vertical */
+.ventana-escala-y-slider::-webkit-slider-runnable-track {
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to top, #22c55e 0%, #eab308 50%, #ef4444 100%);
+  border-radius: 3px;
+}
+
+.ventana-escala-y-slider::-moz-range-track {
+  width: 6px;
+  height: 100%;
+  background: linear-gradient(to top, #22c55e 0%, #eab308 50%, #ef4444 100%);
+  border-radius: 3px;
+}
+
+/* Thumb del slider vertical */
+.ventana-escala-y-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #e2e8f0;
+  border: 2px solid #0ea5e9;
+  border-radius: 50%;
+  cursor: grab;
+  margin-left: -4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ventana-escala-y-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #e2e8f0;
+  border: 2px solid #0ea5e9;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ventana-escala-y-slider::-webkit-slider-thumb:hover {
+  background: #ffffff;
+  border-color: #38bdf8;
+  transform: scale(1.1);
+}
+
+.ventana-escala-y-slider::-moz-range-thumb:hover {
+  background: #ffffff;
+  border-color: #38bdf8;
+  transform: scale(1.1);
+}
+
+.ventana-escala-y-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.ventana-escala-y-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+}
+
+/* Botón reset escala */
+.ventana-escala-y-reset {
+  padding: 0.2rem 0.35rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 3px;
+  color: #94a3b8;
+  font-size: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.ventana-escala-y-reset:hover:not(:disabled) {
+  background: #475569;
+  color: #e2e8f0;
+  border-color: #64748b;
+}
+
+.ventana-escala-y-reset:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Panel lateral de datos */
 .ventana-panel-datos {
   width: 260px;
@@ -542,6 +747,7 @@
   min-height: 200px;
   overflow: hidden;
 }
+
 
 /* Estados */
 .ventana-estado {
@@ -663,11 +869,11 @@
 
 .ventana-btn-informe {
   margin-left: 0.5rem;
-  background: #10b981;
+  background: #059669;
 }
 
 .ventana-btn-informe:hover:not(:disabled) {
-  background: #059669;
+  background: #047857;
 }
 
 /* Barra de tareas para ventanas minimizadas */

@@ -35,6 +35,7 @@ export const useHistorialLocal = () => {
   const [precargaProgreso, setPrecargaProgreso] = useState(0); // 0-100
   const [precargaCompleta, setPrecargaCompleta] = useState(false);
   const [precargando, setPrecargando] = useState(false);
+  const [datosDeBD, setDatosDeBD] = useState(false); // Indica si los datos fueron descargados de la BD
   const precargaAbortRef = useRef(false);
 
   const dbRef = useRef(null);
@@ -521,6 +522,7 @@ export const useHistorialLocal = () => {
       setPrecargaProgreso(0);
       setPrecargaCompleta(false);
       setPrecargando(true);
+      setDatosDeBD(false);
       precargaAbortRef.current = false;
 
       const ahora = Date.now();
@@ -618,6 +620,8 @@ export const useHistorialLocal = () => {
           setPrecargaProgreso(Math.round(progresoActual + (progresoPorZona * tarea.zonas.length) * 0.5));
 
           if (datosRemotos && datosRemotos.length > 0 && dbRef.current) {
+            // Marcar que los datos vinieron de la BD
+            setDatosDeBD(true);
             // Cachear datos para CADA zona que lo necesita
             for (const zona of tarea.zonas) {
               const guardadas = await cachearLecturasRemotas(
@@ -655,6 +659,9 @@ export const useHistorialLocal = () => {
         console.error("[Historial] Error en precarga:", err);
         setPrecargando(false);
         setPrecargaProgreso(0);
+        // Aún así marcar como completa para que el componente pueda mostrar "sin datos"
+        // en lugar de quedarse cargando infinitamente
+        setPrecargaCompleta(true);
         return false;
       }
     },
@@ -676,6 +683,7 @@ export const useHistorialLocal = () => {
     setPrecargaProgreso(0);
     setPrecargaCompleta(false);
     setPrecargando(false);
+    setDatosDeBD(false);
   }, []);
 
   /**
@@ -694,6 +702,7 @@ export const useHistorialLocal = () => {
       setPrecargaProgreso(0);
       setPrecargaCompleta(false);
       setPrecargando(true);
+      setDatosDeBD(false);
       precargaAbortRef.current = false;
 
       const ahora = Date.now();
@@ -786,6 +795,8 @@ export const useHistorialLocal = () => {
           );
 
           if (datosRemotos && datosRemotos.length > 0 && dbRef.current) {
+            // Marcar que los datos vinieron de la BD
+            setDatosDeBD(true);
             // Cachear para todas las zonas/alimentadores que usan este registrador
             for (const tarea of tareas) {
               await cachearLecturasRemotas(
@@ -811,6 +822,9 @@ export const useHistorialLocal = () => {
         console.error("[Historial] Error en precarga de puesto:", err);
         setPrecargando(false);
         setPrecargaProgreso(0);
+        // Aún así marcar como completa para que el componente pueda mostrar "sin datos"
+        // en lugar de quedarse cargando infinitamente
+        setPrecargaCompleta(true);
         return false;
       }
     },
@@ -851,6 +865,7 @@ export const useHistorialLocal = () => {
       // Resetear estado de precarga
       setPrecargaProgreso(0);
       setPrecargaCompleta(false);
+      setDatosDeBD(false);
       console.log("[Historial] Cache local limpiado completamente");
       return true;
     } catch (err) {
@@ -887,6 +902,7 @@ export const useHistorialLocal = () => {
     precargaProgreso,
     precargaCompleta,
     precargando,
+    datosDeBD, // Indica si los datos fueron descargados de la BD remota
     // Estado general
     dbLista, // Indica cuando IndexedDB está lista para usar
     cargando,

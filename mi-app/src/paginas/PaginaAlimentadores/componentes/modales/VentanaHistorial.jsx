@@ -3,10 +3,10 @@
  * Soporta: arrastrar, minimizar, maximizar, múltiples instancias
  */
 
-import { useState, useEffect, useMemo, useCallback, useRef, useContext } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import ApexChartWrapper from "../../../../componentes/comunes/ApexChartWrapper";
 import { useHistorialLocal } from "../../hooks/useHistorialLocal";
-import { ContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
 import { aplicarFormula } from "../../utilidades/calculosFormulas";
 import { exportarCSV } from "../../utilidades/exportarCSV";
 import { generarInformePDF } from "../../utilidades/exportarInformePDF";
@@ -93,11 +93,19 @@ const VentanaHistorial = ({
   onEnfocar,
   onMover,
 }) => {
-  const { alimentador, cardDesign, minimizada, maximizada, posicion, zIndex } = ventana;
+  const { alimentador: alimentadorInicial, cardDesign: cardDesignInicial, minimizada, maximizada, posicion, zIndex } = ventana;
 
   // Obtener alimentadores del puesto desde el contexto
-  const { puestoSeleccionado } = useContext(ContextoAlimentadores);
+  const { puestoSeleccionado } = usarContextoAlimentadores();
   const alimentadoresPuesto = puestoSeleccionado?.alimentadores || [];
+
+  // Estado local para permitir cambiar de alimentador sin cerrar el modal
+  const [alimentadorActual, setAlimentadorActual] = useState(alimentadorInicial);
+  const [cardDesignActual, setCardDesignActual] = useState(cardDesignInicial);
+
+  // Alias para mantener compatibilidad con el resto del código
+  const alimentador = alimentadorActual;
+  const cardDesign = cardDesignActual;
 
   const ventanaRef = useRef(null);
   const headerRef = useRef(null);
@@ -115,6 +123,7 @@ const VentanaHistorial = ({
     precargaProgreso,
     precargaCompleta,
     precargando,
+    datosDeBD,
     limpiarCacheCompleto,
     estadisticas,
     dbLista,
@@ -131,6 +140,8 @@ const VentanaHistorial = ({
   const [intervaloFiltro, setIntervaloFiltro] = useState(60); // 0 = todos, 15, 30, 60 minutos
   const [tipoGrafico, setTipoGrafico] = useState("line"); // line, area, bar
   const [modalInformeVisible, setModalInformeVisible] = useState(false);
+  const [escalaYMax, setEscalaYMax] = useState(null); // null = auto, valor = máximo personalizado
+  const [editandoEscalaY, setEditandoEscalaY] = useState(false); // Para edición manual del valor
 
   // Títulos de zonas
   const tituloSuperior = useMemo(() => obtenerTituloZona(cardDesign, "superior"), [cardDesign]);
@@ -292,6 +303,36 @@ const VentanaHistorial = ({
     return resultado;
   }, [datosGrafico, intervaloFiltro]);
 
+  // Calcular límites para el slider de escala Y
+  // min = valor máximo de los datos (para que no se corte la línea)
+  // max = doble del valor máximo de los datos
+  const limitesEscalaY = useMemo(() => {
+    if (datosFiltrados.length === 0) return { min: 10, max: 100, valorMaxDatos: 0 };
+    const valores = datosFiltrados.map((d) => d.y);
+    const valorMaxDatos = Math.max(...valores);
+    // Redondear hacia arriba para valores más limpios
+    const minRedondeado = Math.ceil(valorMaxDatos);
+    const maxRedondeado = Math.ceil(valorMaxDatos * 2);
+    return {
+      min: Math.max(minRedondeado, 1), // Mínimo de 1 para evitar 0
+      max: Math.max(maxRedondeado, minRedondeado + 10), // Asegurar que max > min
+      valorMaxDatos,
+    };
+  }, [datosFiltrados]);
+
+  // Manejador para edición manual del valor de escala Y
+  const handleEscalaYManual = (valorInput) => {
+    const valor = parseFloat(valorInput);
+    if (isNaN(valor)) {
+      setEditandoEscalaY(false);
+      return;
+    }
+    // Validar límites: si excede max, usar max; si es menor a min, usar min
+    const valorValidado = Math.min(Math.max(valor, limitesEscalaY.min), limitesEscalaY.max);
+    setEscalaYMax(valorValidado);
+    setEditandoEscalaY(false);
+  };
+
   // Colores para gráfico de barras (verde a rojo con normalización min-max)
   // Usa el rango completo de colores: el valor mínimo es verde, el máximo es rojo
   const coloresBarras = useMemo(() => {
@@ -336,6 +377,8 @@ const VentanaHistorial = ({
         axisTicks: { color: "#334155" },
       },
       yaxis: {
+        min: 0,
+        max: escalaYMax || undefined, // undefined = auto, valor = máximo personalizado
         labels: {
           style: { colors: "#94a3b8" },
           formatter: (val) => (val != null ? val.toFixed(2) : "--"),
@@ -395,7 +438,7 @@ const VentanaHistorial = ({
       };
       opcionesBase.legend = { show: false }; // Ocultar leyenda cuando distributed
       opcionesBase.fill = { type: "solid" }; // Color sólido por barra
-      opcionesBase.stroke = { width: 1, colors: ["#334155"] }; // Borde gris oscuro de 1px
+      opcionesBase.stroke = { show: false }; // Sin borde en las barras
       // Asignar colores según valor relativo al máximo
       if (coloresBarras.length > 0) {
         opcionesBase.colors = coloresBarras;
@@ -403,10 +446,19 @@ const VentanaHistorial = ({
     }
 
     return opcionesBase;
-  }, [alimentador?.id, tipoGrafico, coloresBarras]);
+  }, [alimentador?.id, tipoGrafico, coloresBarras, escalaYMax]);
 
   // Series para el gráfico (usa datos filtrados)
   const seriesGrafico = useMemo(() => [{ name: `Promedio ${tituloZonaActual}`, data: datosFiltrados }], [datosFiltrados, tituloZonaActual]);
+
+  // Fuente de datos efectiva: considera si los datos vinieron de la BD aunque estén en cache local
+  // Si fuenteDatos es "local" pero datosDeBD es true, mostrar "remoto" (BD)
+  const fuenteDatosEfectiva = useMemo(() => {
+    if (fuenteDatos === "local" && datosDeBD) {
+      return "remoto"; // Los datos fueron descargados de la BD
+    }
+    return fuenteDatos;
+  }, [fuenteDatos, datosDeBD]);
 
   // Título del panel: período de fechas o fecha única si es el mismo día
   const tituloPanelDatos = useMemo(() => {
@@ -504,6 +556,19 @@ const VentanaHistorial = ({
     setTipoGrafico(nuevoTipo);
   }, [intervaloFiltro]);
 
+  // Handler para cambio de alimentador desde el selector
+  const handleAlimentadorChange = useCallback((nuevoAlimentadorId) => {
+    const nuevoAlimentador = alimentadoresPuesto.find(a => a.id === nuevoAlimentadorId);
+    if (nuevoAlimentador) {
+      setAlimentadorActual(nuevoAlimentador);
+      setCardDesignActual(nuevoAlimentador.card_design || {});
+      // Resetear zona a superior al cambiar de alimentador
+      setZonaSeleccionada("superior");
+      // Limpiar datos del gráfico para que se recarguen
+      setDatosGrafico([]);
+    }
+  }, [alimentadoresPuesto]);
+
   const handleGenerarInforme = async (configInforme) => {
     // La imagen del gráfico ahora se genera en el modal con los datos filtrados,
     // así siempre corresponde a los datos de la tabla del informe
@@ -564,10 +629,13 @@ const VentanaHistorial = ({
           onFechaRangoChange={handleFechaRangoChange}
           tipoGrafico={tipoGrafico}
           onTipoGraficoChange={handleTipoGraficoChange}
+          alimentadorId={alimentador?.id}
+          alimentadores={alimentadoresPuesto}
+          onAlimentadorChange={handleAlimentadorChange}
           precargaProgreso={precargaProgreso}
           precargaCompleta={precargaCompleta}
           precargando={precargando}
-          fuenteDatos={fuenteDatos}
+          fuenteDatos={fuenteDatosEfectiva}
           onLimpiarCache={handleLimpiarCache}
         />
 
@@ -583,25 +651,77 @@ const VentanaHistorial = ({
             tipoGrafico={tipoGrafico}
           />
 
+          {/* Slider vertical para escala Y (elemento separado) */}
+          {datosGrafico.length > 0 && !cargando && !error && (
+            <div className="ventana-escala-y">
+              {editandoEscalaY ? (
+                <input
+                  type="number"
+                  className="ventana-escala-y-input"
+                  defaultValue={escalaYMax ?? limitesEscalaY.min}
+                  autoFocus
+                  onBlur={(e) => handleEscalaYManual(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleEscalaYManual(e.target.value);
+                    if (e.key === "Escape") setEditandoEscalaY(false);
+                  }}
+                />
+              ) : (
+                <span
+                  className="ventana-escala-y-label ventana-escala-y-label--editable"
+                  onDoubleClick={() => setEditandoEscalaY(true)}
+                  title="Doble click para editar"
+                >
+                  {escalaYMax ?? limitesEscalaY.min}
+                </span>
+              )}
+              <input
+                type="range"
+                className="ventana-escala-y-slider"
+                min={limitesEscalaY.min}
+                max={limitesEscalaY.max}
+                step={0.5}
+                value={escalaYMax ?? limitesEscalaY.min}
+                onChange={(e) => setEscalaYMax(Number(e.target.value))}
+                title={`Escala Y: 0 - ${escalaYMax ?? limitesEscalaY.min}`}
+              />
+              <span className="ventana-escala-y-label">0</span>
+              <button
+                type="button"
+                className="ventana-escala-y-reset"
+                onClick={() => setEscalaYMax(null)}
+                title="Restaurar escala automática"
+                disabled={!escalaYMax}
+              >
+                Auto
+              </button>
+            </div>
+          )}
+
           {/* Gráfico */}
           <div className="ventana-grafico">
-            {cargando ? (
-              <div className="ventana-estado">
-                <div className="ventana-spinner" />
-                <span>Cargando...</span>
-              </div>
-            ) : error ? (
-              <div className="ventana-estado ventana-estado--error">
-                <span>Error: {error}</span>
-                <button onClick={cargarDatos}>Reintentar</button>
-              </div>
-            ) : datosGrafico.length === 0 ? (
-              <div className="ventana-estado">
-                <span>No hay datos</span>
-              </div>
-            ) : (
-              <ApexChartWrapper ref={chartRef} options={opcionesGrafico} series={seriesGrafico} type={tipoGrafico} height="100%" />
-            )}
+              {cargando ? (
+                <div className="ventana-estado">
+                  <div className="ventana-spinner" />
+                  <span>Cargando...</span>
+                </div>
+              ) : error ? (
+                <div className="ventana-estado ventana-estado--error">
+                  <span>Error: {error}</span>
+                  <button onClick={cargarDatos}>Reintentar</button>
+                </div>
+              ) : precargando && datosGrafico.length === 0 ? (
+                <div className="ventana-estado">
+                  <div className="ventana-spinner" />
+                  <span>Descargando datos de la base de datos...</span>
+                </div>
+              ) : datosGrafico.length === 0 ? (
+                <div className="ventana-estado">
+                  <span>No hay datos en el período seleccionado</span>
+                </div>
+              ) : (
+                <ApexChartWrapper key={`chart-${tipoGrafico}-${escalaYMax}`} ref={chartRef} options={opcionesGrafico} series={seriesGrafico} type={tipoGrafico} height="100%" />
+              )}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 /**
  * Barra de controles para la ventana de historial
- * Incluye: toggle panel, tabs de zona, selector de rango, tipo de grafico, cache
+ * Incluye: toggle panel, tabs de zona, selector de rango, tipo de grafico, selector alimentador, cache
  */
 
 import PropTypes from "prop-types";
@@ -23,6 +23,9 @@ import SelectorFecha from "../../../../componentes/comunes/SelectorFecha";
  * @param {Function} props.onFechaRangoChange - Callback al cambiar fechas
  * @param {string} props.tipoGrafico - Tipo de gráfico seleccionado
  * @param {Function} props.onTipoGraficoChange - Callback al cambiar tipo
+ * @param {string} props.alimentadorId - ID del alimentador actual
+ * @param {Array} props.alimentadores - Lista de alimentadores disponibles
+ * @param {Function} props.onAlimentadorChange - Callback al cambiar alimentador
  * @param {number} props.precargaProgreso - Progreso de precarga (0-100)
  * @param {boolean} props.precargaCompleta - Si la precarga terminó
  * @param {boolean} props.precargando - Si está precargando
@@ -44,6 +47,9 @@ const BarraControlesHistorial = ({
   onFechaRangoChange,
   tipoGrafico,
   onTipoGraficoChange,
+  alimentadorId,
+  alimentadores,
+  onAlimentadorChange,
   precargaProgreso,
   precargaCompleta,
   precargando,
@@ -96,52 +102,73 @@ const BarraControlesHistorial = ({
         ))}
       </div>
 
-      {/* Selector de rango de fechas */}
-      <div className="ventana-selector-dia">
-        <SelectorFecha
-          value={fechaRangoDesde}
-          valueHasta={fechaRangoHasta}
-          modoRango={true}
-          onChangeRango={onFechaRangoChange}
-          maxDate={new Date()}
-          placeholder="Seleccionar fechas"
-        />
-        {fechaRangoDesde && fechaRangoHasta && (
-          <span className="ventana-dia-seleccionado">
-            {new Date(fechaRangoDesde).toLocaleDateString("es-AR", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "2-digit",
-            })}
-            {fechaRangoDesde.getTime() !== fechaRangoHasta.getTime() && (
-              <>
-                {" "}
-                -{" "}
-                {new Date(fechaRangoHasta).toLocaleDateString("es-AR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "2-digit",
-                })}
-              </>
-            )}
-          </span>
-        )}
+      {/* Grupo: Selector de fechas + Tipo de gráfico */}
+      <div className="ventana-grupo-graficos">
+        {/* Selector de rango de fechas */}
+        <div className="ventana-selector-dia">
+          <SelectorFecha
+            value={fechaRangoDesde}
+            valueHasta={fechaRangoHasta}
+            modoRango={true}
+            onChangeRango={onFechaRangoChange}
+            maxDate={new Date()}
+            placeholder="Seleccionar fechas"
+          />
+          {fechaRangoDesde && fechaRangoHasta && (
+            <span className="ventana-dia-seleccionado">
+              {new Date(fechaRangoDesde).toLocaleDateString("es-AR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+              })}
+              {fechaRangoDesde.getTime() !== fechaRangoHasta.getTime() && (
+                <>
+                  {" "}
+                  -{" "}
+                  {new Date(fechaRangoHasta).toLocaleDateString("es-AR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "2-digit",
+                  })}
+                </>
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Selector de tipo de grafico */}
+        <div className="ventana-tipo-grafico">
+          {TIPOS_GRAFICO.map((tipo) => (
+            <button
+              key={tipo.id}
+              type="button"
+              className={`ventana-tipo-btn ${tipoGrafico === tipo.id ? "ventana-tipo-btn--activo" : ""}`}
+              onClick={() => onTipoGraficoChange(tipo.id)}
+              title={tipo.label}
+            >
+              {tipo.icon}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Selector de tipo de grafico */}
-      <div className="ventana-tipo-grafico">
-        {TIPOS_GRAFICO.map((tipo) => (
-          <button
-            key={tipo.id}
-            type="button"
-            className={`ventana-tipo-btn ${tipoGrafico === tipo.id ? "ventana-tipo-btn--activo" : ""}`}
-            onClick={() => onTipoGraficoChange(tipo.id)}
-            title={tipo.label}
+      {/* Selector de alimentador */}
+      {alimentadores && alimentadores.length > 1 && (
+        <div className="ventana-selector-alimentador-container">
+          <select
+            className="ventana-selector-alimentador"
+            value={alimentadorId}
+            onChange={(e) => onAlimentadorChange(e.target.value)}
+            title="Cambiar alimentador"
           >
-            {tipo.icon}
-          </button>
-        ))}
-      </div>
+            {alimentadores.map((alim) => (
+              <option key={alim.id} value={alim.id}>
+                {alim.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Cache + Fuente */}
       <div className="ventana-cache">
@@ -188,6 +215,9 @@ BarraControlesHistorial.propTypes = {
   onFechaRangoChange: PropTypes.func.isRequired,
   tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]).isRequired,
   onTipoGraficoChange: PropTypes.func.isRequired,
+  alimentadorId: PropTypes.string,
+  alimentadores: PropTypes.array,
+  onAlimentadorChange: PropTypes.func,
   precargaProgreso: PropTypes.number,
   precargaCompleta: PropTypes.bool,
   precargando: PropTypes.bool,
@@ -200,6 +230,9 @@ BarraControlesHistorial.defaultProps = {
   tituloInferior: "Inferior",
   fechaRangoDesde: null,
   fechaRangoHasta: null,
+  alimentadorId: "",
+  alimentadores: [],
+  onAlimentadorChange: () => {},
   precargaProgreso: 0,
   precargaCompleta: false,
   precargando: false,
