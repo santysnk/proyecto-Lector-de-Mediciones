@@ -122,6 +122,35 @@
   text-transform: capitalize;
 }
 
+.selector-config__usuario-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.selector-config__rol-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.selector-config__rol-icono {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.selector-config__rol-workspace {
+  font-size: 0.78rem;
+  color: #a78bfa;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 /* Lista de configuraciones */
 .selector-config__lista {
   list-style: none;

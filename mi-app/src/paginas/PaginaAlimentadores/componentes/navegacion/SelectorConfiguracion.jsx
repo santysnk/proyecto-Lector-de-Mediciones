@@ -299,33 +299,46 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
           />
 
           <div className="selector-config__menu" role="listbox">
-            {/* Header con usuario y rol en el workspace actual */}
+            {/* Header con usuario y roles (global + workspace) */}
             {perfil && (
               <div className="selector-config__usuario-header">
-                <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
-                <span className="selector-config__usuario-rol">
-                  {(() => {
-                    // Mostrar rol en el workspace actual
-                    const rolEnWs = configuracionSeleccionada?.rol;
-                    const esCreador = configuracionSeleccionada?.esCreador;
+                {/* Nombre + Rol global en la misma línea */}
+                <div className="selector-config__usuario-linea">
+                  <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
+                  <span className="selector-config__rol-global">
+                    [ <svg className="selector-config__rol-icono" viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                    </svg>
+                    {(() => {
+                      const nombresRol = {
+                        'superadmin': 'SuperAdmin',
+                        'admin': 'Admin',
+                        'operador': 'Operador',
+                        'observador': 'Observador',
+                      };
+                      return nombresRol[rolGlobal] || 'Observador';
+                    })()} ]
+                  </span>
+                </div>
+                {/* Rol en workspace (solo si es invitado) */}
+                {(() => {
+                  const rolEnWs = configuracionSeleccionada?.rol;
+                  const esCreador = configuracionSeleccionada?.esCreador;
 
-                    // Mapeo de códigos a nombres legibles
+                  if (esCreador === false && rolEnWs) {
                     const nombresRol = {
-                      'superadmin': 'SuperAdmin',
                       'admin': 'Admin',
                       'operador': 'Operador',
                       'observador': 'Observador',
                     };
-
-                    const nombreRol = nombresRol[rolEnWs] || nombresRol[rolGlobal] || 'Observador';
-
-                    // Si no es creador, indicar que es invitado
-                    if (esCreador === false) {
-                      return `${nombreRol} (invitado)`;
-                    }
-                    return nombreRol;
-                  })()}
-                </span>
+                    return (
+                      <span className="selector-config__rol-workspace">
+                        Rol en Workspace: {nombresRol[rolEnWs] || 'Observador'}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
 
