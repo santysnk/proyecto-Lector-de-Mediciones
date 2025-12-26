@@ -335,60 +335,62 @@ const GrillaTarjetas = ({
 
 	return (
 		<div className="grilla-con-row-gaps">
-			{/* Grilla unifiliar para dibujar diagramas */}
-			<GrillaUnifilar
-				celdas={grillaUnifilar.celdas}
-				textos={grillaUnifilar.textos}
-				modoEdicion={grillaUnifilar.modoEdicion}
-				colorSeleccionado={grillaUnifilar.colorSeleccionado}
-				herramienta={grillaUnifilar.herramienta}
-				estaPintando={grillaUnifilar.estaPintando}
-				coloresDisponibles={grillaUnifilar.coloresDisponibles}
-				fuentesDisponibles={grillaUnifilar.fuentesDisponibles}
-				tamanosDisponibles={grillaUnifilar.tamanosDisponibles}
-				grosoresDisponibles={grillaUnifilar.grosoresDisponibles}
-				grosorLinea={grillaUnifilar.grosorLinea}
-				onCambiarGrosor={grillaUnifilar.cambiarGrosor}
-				configTexto={grillaUnifilar.configTexto}
-				onConfigTextoChange={grillaUnifilar.setConfigTexto}
-				textoSeleccionadoId={grillaUnifilar.textoSeleccionadoId}
-				onTextoSeleccionadoChange={grillaUnifilar.setTextoSeleccionadoId}
-				onPintarCelda={grillaUnifilar.pintarCelda}
-				onIniciarPintado={grillaUnifilar.iniciarPintado}
-				onDetenerPintado={grillaUnifilar.detenerPintado}
-				onCambiarColor={grillaUnifilar.setColorSeleccionado}
-				onSeleccionarPincel={grillaUnifilar.seleccionarPincel}
-				onSeleccionarBorrador={grillaUnifilar.seleccionarBorrador}
-				onSeleccionarTexto={grillaUnifilar.seleccionarTexto}
-				onSeleccionarBalde={grillaUnifilar.seleccionarBalde}
-				onSeleccionarMover={grillaUnifilar.seleccionarMover}
-				onRellenarConectadas={grillaUnifilar.rellenarConectadas}
-				onBorrarArea={grillaUnifilar.borrarArea}
-				onObtenerCeldasConectadas={grillaUnifilar.obtenerCeldasConectadas}
-				onMoverCeldasConectadas={grillaUnifilar.moverCeldasConectadas}
-				onAgregarTexto={grillaUnifilar.agregarTexto}
-				onActualizarTexto={grillaUnifilar.actualizarTexto}
-				onEliminarTexto={grillaUnifilar.eliminarTexto}
-				onLimpiarTodo={grillaUnifilar.limpiarTodo}
-				onCerrarEdicion={grillaUnifilar.desactivarEdicion}
-				// === SISTEMA DE BORNES Y CHISPAS ===
-				bornes={grillaUnifilar.bornes}
-				chispasConfig={grillaUnifilar.chispasConfig}
-				tiposBorne={grillaUnifilar.tiposBorne}
-				onSeleccionarBorne={grillaUnifilar.seleccionarBorne}
-				onAgregarBorne={grillaUnifilar.agregarBorne}
-				onEliminarBorneEnPosicion={grillaUnifilar.eliminarBorneEnPosicion}
-				onActualizarChispasConfig={grillaUnifilar.actualizarChispasConfig}
-				// Estado y control de animación de chispas
-				animandoChispas={chispasHook.animando}
-				onToggleAnimacionChispas={chispasHook.toggleAnimacion}
-				chispasRef={chispasHook.chispasRef}
-				onObtenerPosicionPixelChispa={chispasHook.obtenerPosicionPixel}
-				onObtenerEstelaPixeles={chispasHook.obtenerEstelaPixeles}
-			/>
+			{/* Grilla unifiliar para dibujar diagramas - solo en desktop (no móviles/tablets) */}
+			{!esModoMobile && (
+				<GrillaUnifilar
+					celdas={grillaUnifilar.celdas}
+					textos={grillaUnifilar.textos}
+					modoEdicion={grillaUnifilar.modoEdicion}
+					colorSeleccionado={grillaUnifilar.colorSeleccionado}
+					herramienta={grillaUnifilar.herramienta}
+					estaPintando={grillaUnifilar.estaPintando}
+					coloresDisponibles={grillaUnifilar.coloresDisponibles}
+					fuentesDisponibles={grillaUnifilar.fuentesDisponibles}
+					tamanosDisponibles={grillaUnifilar.tamanosDisponibles}
+					grosoresDisponibles={grillaUnifilar.grosoresDisponibles}
+					grosorLinea={grillaUnifilar.grosorLinea}
+					onCambiarGrosor={grillaUnifilar.cambiarGrosor}
+					configTexto={grillaUnifilar.configTexto}
+					onConfigTextoChange={grillaUnifilar.setConfigTexto}
+					textoSeleccionadoId={grillaUnifilar.textoSeleccionadoId}
+					onTextoSeleccionadoChange={grillaUnifilar.setTextoSeleccionadoId}
+					onPintarCelda={grillaUnifilar.pintarCelda}
+					onIniciarPintado={grillaUnifilar.iniciarPintado}
+					onDetenerPintado={grillaUnifilar.detenerPintado}
+					onCambiarColor={grillaUnifilar.setColorSeleccionado}
+					onSeleccionarPincel={grillaUnifilar.seleccionarPincel}
+					onSeleccionarBorrador={grillaUnifilar.seleccionarBorrador}
+					onSeleccionarTexto={grillaUnifilar.seleccionarTexto}
+					onSeleccionarBalde={grillaUnifilar.seleccionarBalde}
+					onSeleccionarMover={grillaUnifilar.seleccionarMover}
+					onRellenarConectadas={grillaUnifilar.rellenarConectadas}
+					onBorrarArea={grillaUnifilar.borrarArea}
+					onObtenerCeldasConectadas={grillaUnifilar.obtenerCeldasConectadas}
+					onMoverCeldasConectadas={grillaUnifilar.moverCeldasConectadas}
+					onAgregarTexto={grillaUnifilar.agregarTexto}
+					onActualizarTexto={grillaUnifilar.actualizarTexto}
+					onEliminarTexto={grillaUnifilar.eliminarTexto}
+					onLimpiarTodo={grillaUnifilar.limpiarTodo}
+					onCerrarEdicion={grillaUnifilar.desactivarEdicion}
+					// === SISTEMA DE BORNES Y CHISPAS ===
+					bornes={grillaUnifilar.bornes}
+					chispasConfig={grillaUnifilar.chispasConfig}
+					tiposBorne={grillaUnifilar.tiposBorne}
+					onSeleccionarBorne={grillaUnifilar.seleccionarBorne}
+					onAgregarBorne={grillaUnifilar.agregarBorne}
+					onEliminarBorneEnPosicion={grillaUnifilar.eliminarBorneEnPosicion}
+					onActualizarChispasConfig={grillaUnifilar.actualizarChispasConfig}
+					// Estado y control de animación de chispas
+					animandoChispas={chispasHook.animando}
+					onToggleAnimacionChispas={chispasHook.toggleAnimacion}
+					chispasRef={chispasHook.chispasRef}
+					onObtenerPosicionPixelChispa={chispasHook.obtenerPosicionPixel}
+					onObtenerEstelaPixeles={chispasHook.obtenerEstelaPixeles}
+				/>
+			)}
 
-			{/* Botón flotante para activar/desactivar modo edición de diagrama */}
-			{!grillaUnifilar.modoEdicion && (
+			{/* Botón flotante para activar/desactivar modo edición de diagrama - solo en desktop */}
+			{!esModoMobile && !grillaUnifilar.modoEdicion && (
 				<button
 					type="button"
 					className="grilla-btn-editar-diagrama"
@@ -401,8 +403,8 @@ const GrillaTarjetas = ({
 				</button>
 			)}
 
-			{/* Botones flotantes para guardar/cargar diagrama - solo en modo edición */}
-			{grillaUnifilar.modoEdicion && (
+			{/* Botones flotantes para guardar/cargar diagrama - solo en modo edición y desktop */}
+			{!esModoMobile && grillaUnifilar.modoEdicion && (
 				<div className="grilla-btns-archivo">
 					{/* Botón guardar (arriba) */}
 					<button
