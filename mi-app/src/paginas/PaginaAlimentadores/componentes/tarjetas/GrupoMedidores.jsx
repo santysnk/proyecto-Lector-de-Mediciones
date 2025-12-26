@@ -5,11 +5,20 @@ import React from "react";
 /**
  * Renderiza un grupo de cajas de medición (parte superior o inferior).
  */
-const GrupoMedidores = ({ titulo, boxes, zona, renderizarCaja }) => {     // zona: "sup" o "inf"
+const GrupoMedidores = ({ titulo, boxes, zona, renderizarCaja, estiloTitulo, gap }) => {     // zona: "sup" o "inf"
+	// Estilo del contenedor de boxes (gap dinámico)
+	const estiloMeters = gap ? { gap } : {};
+
 	return (
 		<div className="alim-card-section">
-			<h3 className="alim-card-section-title">{titulo}</h3>            {/* título del bloque (ej: CONSUMO, TENSIÓN) */}
-			<div className="alim-card-meters">
+			<h3
+				className="alim-card-section-title"
+				style={estiloTitulo || {}}
+			>{titulo}</h3>            {/* título del bloque (ej: CONSUMO, TENSIÓN) */}
+			<div
+				className="alim-card-meters"
+				style={Object.keys(estiloMeters).length > 0 ? estiloMeters : undefined}
+			>
 				{boxes.map((box, idx) => renderizarCaja(box, idx, zona))}     {/* delega el render de cada CajaMedicion */}
 			</div>
 		</div>

@@ -1,6 +1,31 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/CajaMedicion.jsx
 
-import React from "react"; 
+import React from "react";
+
+/**
+ * Formatea un valor según la cantidad de decimales configurada.
+ * Solo afecta a valores numéricos, no modifica el valor interno.
+ * @param {string} valor - Valor original (puede ser "--,--" o número con coma)
+ * @param {number} decimales - Cantidad de decimales a mostrar (0, 1 o 2)
+ */
+const formatearValorConDecimales = (valor, decimales) => {
+	// Si no se especifica decimales, usar 2 por defecto
+	if (decimales === undefined || decimales === null) return valor;
+
+	// Si es placeholder, ajustar según decimales
+	if (valor === "--,--" || valor === "--" || valor === "--,-") {
+		if (decimales === 0) return "--";
+		if (decimales === 1) return "--,-";
+		return "--,--";
+	}
+
+	// Convertir coma a punto para parsear
+	const numStr = String(valor).replace(",", ".");
+	const num = parseFloat(numStr);
+	if (isNaN(num)) return valor;
+
+	return num.toFixed(decimales).replace(".", ",");
+};
 
 /**
  * Caja individual de medición con su animación de borde y valor.
@@ -24,6 +49,8 @@ const CajaMedicion = ({
 	contadorPolling = 0,              // cuántas lecturas se hicieron durante polling
 	// Error de polling
 	tieneError = false,               // indica si hay error de lectura
+	// Estilos globales del box
+	estilosBox = null,                // { tituloBox, valorBox, box }
 }) => {
 	const esDelRele = box.origen === "rele" || !box.origen;       // si no se especifica origen, asumimos relé
 	const esDelAnalizador = box.origen === "analizador";
@@ -93,25 +120,69 @@ const CajaMedicion = ({
 	// Key que incluye el contador de lecturas para reiniciar animación
 	const claveValor = `${zona}-${indice}-${equipo}-c${contadorLecturas}`;
 
-	// Determinar qué valor mostrar
+	// Determinar qué valor mostrar (aplicando formato de decimales)
+	const decimalesConfig = estilosBox?.valorBox?.decimales;
 	let valorMostrar = box.valor ?? "--,--";
 	if (tieneError && box.enabled) {
 		valorMostrar = "ERROR";
+	} else {
+		valorMostrar = formatearValorConDecimales(valorMostrar, decimalesConfig);
 	}
 
+	// Construir estilos del título del box (etiqueta como R, S, T)
+	const estiloTituloBox = estilosBox?.tituloBox ? {
+		fontFamily: estilosBox.tituloBox.fontFamily,
+		fontSize: estilosBox.tituloBox.fontSize,
+	} : {};
+
+	// Construir estilos del valor del box (número) - ahora con tamaño fijo y overflow
+	const boxHeight = estilosBox?.box?.height;
+	const estiloValorBase = {
+		...(estilosBox?.valorBox ? {
+			fontFamily: estilosBox.valorBox.fontFamily,
+			fontSize: estilosBox.valorBox.fontSize,
+			color: estilosBox.valorBox.color,
+		} : {}),
+		// El box ahora tiene tamaño fijo, el texto se recorta si no cabe
+		width: "100%",
+		...(boxHeight && boxHeight !== "auto" ? { height: boxHeight } : {}),
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+	};
+
+	// Combinar con estilos de animación si corresponde
+	const estiloValor = usarAnimacion && !tieneError
+		? {
+			...estiloValorBase,
+			[propiedadDuracion]: `${duracionAnimacion}s`,
+		}
+		: estiloValorBase;
+
+	// Estilos del contenedor del box (ancho fijo)
+	const estiloMeter = estilosBox?.box?.width ? {
+		width: estilosBox.box.width,
+		flex: `0 0 ${estilosBox.box.width}`,
+	} : {};
+
 	return (
-		<div key={`${zona}-${indice}`} className="alim-card-meter">
-			<span className="alim-card-meter-phase">{box.etiqueta}</span>
+		<div
+			key={`${zona}-${indice}`}
+			className="alim-card-meter"
+			style={Object.keys(estiloMeter).length > 0 ? estiloMeter : undefined}
+		>
+			<span
+				className="alim-card-meter-phase"
+				style={estiloTituloBox}
+			>
+				{box.etiqueta}
+			</span>
 			<span
 				key={claveValor}
 				className={clasesValor}
-				style={
-					usarAnimacion && !tieneError
-						? {
-								[propiedadDuracion]: `${duracionAnimacion}s`, // pasa el periodo como variable CSS
-						  }
-						: undefined
-				}
+				style={Object.keys(estiloValor).length > 0 ? estiloValor : undefined}
 			>
 				{valorMostrar}
 			</span>

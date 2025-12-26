@@ -37,6 +37,13 @@
    box-sizing: border-box;
    background: #28374e;
    color: #e2e8f0;
+   transition: max-width 0.2s ease;
+}
+
+/* Modal más ancho cuando está en la pestaña de Apariencia */
+/* Necesita espacio para: controles (~380px) + gap (24px) + tarjeta (304px) + padding */
+.editar-contenedor--apariencia {
+   max-width: 900px;
 }
 
 .editar-contenedor h2 {
@@ -44,6 +51,44 @@
    font-size: 1.2rem;
    font-weight: 600;
    color: #e2e8f0;
+}
+
+/* =========================================================
+   SISTEMA DE TABS
+   ========================================================= */
+.editar-tabs {
+   display: flex;
+   border: 1px solid #475569;
+   border-radius: 8px;
+   overflow: hidden;
+   margin-bottom: 1rem;
+}
+
+.editar-tab {
+   flex: 1;
+   padding: 0.6rem 1rem;
+   background: transparent;
+   border: none;
+   border-right: 1px solid #475569;
+   color: #94a3b8;
+   font-size: 0.85rem;
+   font-weight: 500;
+   cursor: pointer;
+   transition: all 0.15s ease;
+}
+
+.editar-tab:last-child {
+   border-right: none;
+}
+
+.editar-tab:hover:not(.editar-tab--activo) {
+   background: rgba(148, 163, 184, 0.1);
+   color: #e2e8f0;
+}
+
+.editar-tab--activo {
+   background: #0ea5e9;
+   color: #ffffff;
 }
 
 /* Lista de puestos a editar */

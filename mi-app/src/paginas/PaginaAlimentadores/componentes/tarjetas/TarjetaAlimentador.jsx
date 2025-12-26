@@ -6,6 +6,7 @@ import "./TarjetaAlimentador.css";                            // estilos visuale
 import configIcon from "../../../../assets/imagenes/Config_Icon.png"; // icono de configuración (tuerca)
 import CajaMedicion from "./CajaMedicion.jsx";                // box individual de medición
 import GrupoMedidores from "./GrupoMedidores.jsx";            // grupo de cajas (parte superior/inferior)
+import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // para estilos globales
 
 // Helper que prepara la estructura de un lado de la tarjeta (sup/inf)
 const construirLado = (side, tituloDefault) => {                         // side: config del lado, tituloDefault: texto por defecto
@@ -88,6 +89,9 @@ const TarjetaAlimentador = ({
   ESCALA_MIN = 0.5,                    // límites de escala
   ESCALA_MAX = 2.0,
 }) => {
+  // Obtener estilos globales del contexto
+  const { estilosGlobales } = usarContextoConfiguracion();
+
   // Control local de animaciones de borde: solo se activan tras recibir una lectura
   const [mostrarProgresoRele, setMostrarProgresoRele] = useState(false);
   const [mostrarProgresoAnalizador, setMostrarProgresoAnalizador] =
@@ -331,6 +335,23 @@ const TarjetaAlimentador = ({
         contadorPolling={contadorPolling}                                // contador de lecturas de polling
         // Error de polling por zona
         tieneError={zonaConError}                                        // indica si esta zona tiene error de lectura
+        // Estilos globales para box
+        estilosBox={{
+          tituloBox: {
+            fontFamily: estilosGlobales?.tituloBox?.fontFamily || "inherit",
+            fontSize: estilosGlobales?.tituloBox?.fontSize || "1rem",
+          },
+          valorBox: {
+            fontFamily: estilosGlobales?.valorBox?.fontFamily || "'DS-Digital', 'Courier New', monospace",
+            fontSize: estilosGlobales?.valorBox?.fontSize || "1.5rem",
+            color: estilosGlobales?.valorBox?.color || "#ffff00",
+            decimales: estilosGlobales?.valorBox?.decimales ?? 2,
+          },
+          box: {
+            width: estilosGlobales?.box?.width || "80px",
+            height: estilosGlobales?.box?.height || "auto",
+          },
+        }}
       />
     );
   };
@@ -375,7 +396,14 @@ const TarjetaAlimentador = ({
             <span className="alim-card-menu-arrow">▼</span>
           </button>
 
-          <span className="alim-card-title">{nombre}</span>
+          <span
+            className="alim-card-title"
+            style={{
+              fontFamily: estilosGlobales?.header?.fontFamily || "inherit",
+              fontSize: estilosGlobales?.header?.fontSize || "1rem",
+              fontWeight: estilosGlobales?.header?.fontWeight || 700,
+            }}
+          >{nombre}</span>
         </div>
 
         {/* Barra de progreso de polling */}
@@ -399,6 +427,11 @@ const TarjetaAlimentador = ({
               boxes={sup.boxes}
               zona="sup"
               renderizarCaja={renderizarCaja}
+              estiloTitulo={{
+                fontFamily: estilosGlobales?.tituloZona?.fontFamily || "inherit",
+                fontSize: estilosGlobales?.tituloZona?.fontSize || "0.8rem",
+              }}
+              gap={estilosGlobales?.box?.gap}
             />
           )}
 
@@ -409,6 +442,11 @@ const TarjetaAlimentador = ({
               boxes={inf.boxes}
               zona="inf"
               renderizarCaja={renderizarCaja}
+              estiloTitulo={{
+                fontFamily: estilosGlobales?.tituloZona?.fontFamily || "inherit",
+                fontSize: estilosGlobales?.tituloZona?.fontSize || "0.8rem",
+              }}
+              gap={estilosGlobales?.box?.gap}
             />
           )}
 

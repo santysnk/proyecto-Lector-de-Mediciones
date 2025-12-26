@@ -135,11 +135,84 @@
    }
 }
 
-/* Fuente digital para los displays de los alimentadores */
+/* Fuentes digitales para los displays de los alimentadores */
 @font-face {
    font-family: "DS-Digital";
    src: url("/fonts/ds-digi.ttf") format("truetype");
    font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "DS-Digital-Bold";
+   src: url("/fonts/DS-DIGIB.TTF") format("truetype");
+   font-weight: bold;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Digital-7";
+   src: url("/fonts/digital-7.ttf") format("truetype");
+   font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Digital-7-Mono";
+   src: url("/fonts/digital-7 (mono).ttf") format("truetype");
+   font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+/* Fuentes industriales/técnicas adicionales */
+@font-face {
+   font-family: "Orbitron";
+   src: url("/fonts/Orbitron-Regular.ttf") format("truetype");
+   font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Orbitron";
+   src: url("/fonts/Orbitron-Bold.ttf") format("truetype");
+   font-weight: bold;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Roboto Mono";
+   src: url("/fonts/RobotoMono-Regular.ttf") format("truetype");
+   font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Roboto Mono";
+   src: url("/fonts/RobotoMono-Bold.ttf") format("truetype");
+   font-weight: bold;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Rajdhani";
+   src: url("/fonts/Rajdhani-Regular.ttf") format("truetype");
+   font-weight: normal;
+   font-style: normal;
+   font-display: swap;
+}
+
+@font-face {
+   font-family: "Rajdhani";
+   src: url("/fonts/Rajdhani-Bold.ttf") format("truetype");
+   font-weight: bold;
    font-style: normal;
    font-display: swap;
 }

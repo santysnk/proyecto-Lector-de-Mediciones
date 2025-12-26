@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";      // React + hooks para estado y efectos
 import "./ModalEditarPuestos.css";                       // estilos específicos de este modal
 import ColorPickerSimple from "./ColorPickerSimple";     // selector de color minimalista
+import TabApariencia from "./TabApariencia";             // pestaña de apariencia global
 
 // Componente interno para el input de escala con estado local
 const InputEscala = ({ valor, onChange, min, max }) => {
@@ -58,8 +59,12 @@ const ModalEditarPuestos = ({
 	onEscalaPuestoChange,                                 // (puestoId, escala) => void
 	ESCALA_MIN = 0.5,
 	ESCALA_MAX = 2.0,
+	// Props de estilos globales (para pestaña Apariencia)
+	estilosGlobales,                                      // objeto con estilos actuales
+	onGuardarEstilos,                                     // callback para guardar todos los estilos
 }) => {
 	const [puestosEditados, setPuestosEditados] = useState([]); // copia editable local
+	const [tabActiva, setTabActiva] = useState("puestos");      // "puestos" o "apariencia"
 
 	// Solo superadmin y admin pueden editar nombres y eliminar puestos
 	const puedeEditarNombre = rolGlobal === 'superadmin' || rolGlobal === 'admin';
@@ -101,79 +106,118 @@ const ModalEditarPuestos = ({
 
 	if (!abierto) return null;                            // si no está abierto, no dibujo nada
 
+	// Clase condicional para hacer el modal más ancho en la pestaña de Apariencia
+	const clasesContenedor = `editar-contenedor${tabActiva === "apariencia" ? " editar-contenedor--apariencia" : ""}`;
+
 	return (
 		<div className="editar-fondo-oscuro">
-			<div className="editar-contenedor">
-				<h2>Editar puestos</h2>
+			<div className={clasesContenedor}>
+				<h2>Configuración</h2>
 
-				<div className="editar-lista">
-					{puestosEditados.map((p) => (
-						<div key={p.id} className="editar-fila">
-							<input
-								type="text"
-								className="editar-nombre"
-								value={p.nombre}
-								onChange={(e) => cambiarNombre(p.id, e.target.value)} // actualiza nombre en la copia local
-								disabled={!puedeEditarNombre}                         // solo admin/superadmin pueden editar nombre
-							/>
+				{/* Sistema de tabs */}
+				<div className="editar-tabs">
+					<button
+						type="button"
+						className={`editar-tab ${tabActiva === "puestos" ? "editar-tab--activo" : ""}`}
+						onClick={() => setTabActiva("puestos")}
+					>
+						Puestos
+					</button>
+					<button
+						type="button"
+						className={`editar-tab ${tabActiva === "apariencia" ? "editar-tab--activo" : ""}`}
+						onClick={() => setTabActiva("apariencia")}
+					>
+						Apariencia
+					</button>
+				</div>
 
-							<div className="editar-controles">
-								<ColorPickerSimple
-									color={p.color || "#22c55e"}
-									onChange={(newColor) => cambiarColorBoton(p.id, newColor)}
-									label="Botón"
+				{/* Contenido de la tab activa */}
+				{tabActiva === "puestos" ? (
+					<div className="editar-lista">
+						{puestosEditados.map((p) => (
+							<div key={p.id} className="editar-fila">
+								<input
+									type="text"
+									className="editar-nombre"
+									value={p.nombre}
+									onChange={(e) => cambiarNombre(p.id, e.target.value)} // actualiza nombre en la copia local
+									disabled={!puedeEditarNombre}                         // solo admin/superadmin pueden editar nombre
 								/>
 
-								<ColorPickerSimple
-									color={p.bgColor || "#e5e7eb"}
-									onChange={(newColor) => cambiarColorFondo(p.id, newColor)}
-									label="Fondo"
-								/>
+								<div className="editar-controles">
+									<ColorPickerSimple
+										color={p.color || "#22c55e"}
+										onChange={(newColor) => cambiarColorBoton(p.id, newColor)}
+										label="Botón"
+									/>
 
-								{/* Control de escala por puesto */}
-								{obtenerEscalaPuesto && onEscalaPuestoChange && (
-									<div className="editar-escala">
-										<label className="editar-escala-label">(0.5 - 2)</label>
-										<InputEscala
-											valor={obtenerEscalaPuesto(p.id) ?? 1.0}
-											onChange={(nuevoValor) => onEscalaPuestoChange(p.id, nuevoValor)}
-											min={ESCALA_MIN}
-											max={ESCALA_MAX}
-										/>
-									</div>
-								)}
+									<ColorPickerSimple
+										color={p.bgColor || "#e5e7eb"}
+										onChange={(newColor) => cambiarColorFondo(p.id, newColor)}
+										label="Fondo"
+									/>
 
-								{/* Solo admin/superadmin pueden eliminar puestos */}
-								{puedeEditarNombre && (
-									<button
-										type="button"
-										className="editar-eliminar"
-										onClick={() => eliminar(p.id)}             // elimina el puesto de la lista local
-									>
-										Eliminar
-									</button>
-								)}
+									{/* Control de escala por puesto */}
+									{obtenerEscalaPuesto && onEscalaPuestoChange && (
+										<div className="editar-escala">
+											<label className="editar-escala-label">(0.5 - 2)</label>
+											<InputEscala
+												valor={obtenerEscalaPuesto(p.id) ?? 1.0}
+												onChange={(nuevoValor) => onEscalaPuestoChange(p.id, nuevoValor)}
+												min={ESCALA_MIN}
+												max={ESCALA_MAX}
+											/>
+										</div>
+									)}
+
+									{/* Solo admin/superadmin pueden eliminar puestos */}
+									{puedeEditarNombre && (
+										<button
+											type="button"
+											className="editar-eliminar"
+											onClick={() => eliminar(p.id)}             // elimina el puesto de la lista local
+										>
+											Eliminar
+										</button>
+									)}
+								</div>
 							</div>
-						</div>
-					))}
-				</div>
+						))}
+					</div>
+				) : (
+					/* Pestaña de Apariencia - tiene su propio footer con botones */
+					estilosGlobales && (
+						<TabApariencia
+							estilosIniciales={estilosGlobales}
+							onGuardar={(nuevosEstilos) => {
+								onGuardarEstilos(nuevosEstilos);
+								onCerrar();
+							}}
+							onCancelar={onCerrar}
+						/>
+					)
+				)}
 
-				<div className="editar-acciones">
-					<button
-						type="button"
-						className="editar-boton editar-cancelar"
-						onClick={onCerrar}                                  // cierro sin persistir cambios
-					>
-						Cancelar
-					</button>
-					<button
-						type="button"
-						className="editar-boton editar-guardar"
-						onClick={handleSubmit}                              // guardo todos los cambios hechos
-					>
-						Guardar
-					</button>
-				</div>
+				{/* Solo mostrar botones para la pestaña de Puestos */}
+				{tabActiva === "puestos" && (
+					<div className="editar-acciones">
+						<button
+							type="button"
+							className="editar-boton editar-cancelar"
+							onClick={onCerrar}
+						>
+							Cancelar
+						</button>
+						<button
+							type="button"
+							className="editar-boton editar-guardar"
+							onClick={handleSubmit}
+						>
+							Guardar
+						</button>
+					</div>
+				)}
 			</div>
 		</div>
 	);

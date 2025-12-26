@@ -31,7 +31,14 @@ import { useHistorialLocal } from "../../hooks/useHistorialLocal"; // Hook para 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
 	const { logout } = useAuth();                                    // función de logout del contexto de auth
-	const { configuracionSeleccionada, perfil, rolGlobal } = usarContextoConfiguracion(); // workspace activo + perfil usuario + rol
+	const {
+		configuracionSeleccionada,
+		perfil,
+		rolGlobal,
+		// Estilos globales de tarjetas
+		estilosGlobales,
+		guardarEstilosGlobales,
+	} = usarContextoConfiguracion(); // workspace activo + perfil usuario + rol + estilos globales
 
 	const {
    puestos,                               // lista completa de puestos configurados en el sistema
@@ -855,6 +862,9 @@ const {
 				onEscalaPuestoChange={handleEscalaPuestoChange}
 				ESCALA_MIN={ESCALA_MIN}
 				ESCALA_MAX={ESCALA_MAX}
+				// Estilos globales de tarjetas (pestaña Apariencia)
+				estilosGlobales={estilosGlobales}
+				onGuardarEstilos={guardarEstilosGlobales}
 			/>
 
 			<ModalConfiguracionAlimentador
