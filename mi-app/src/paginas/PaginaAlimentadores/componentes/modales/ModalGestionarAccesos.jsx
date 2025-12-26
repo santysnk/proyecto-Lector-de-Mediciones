@@ -153,7 +153,7 @@ const ModalGestionarAccesos = ({
               <input
                 type="email"
                 className="alim-modal-input"
-                placeholder="Email del usuario"
+                placeholder="Ingrese el email del usuario a invitar"
                 value={emailInvitar}
                 onChange={(e) => setEmailInvitar(e.target.value)}
                 disabled={invitando}
