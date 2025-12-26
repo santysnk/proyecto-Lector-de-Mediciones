@@ -203,7 +203,7 @@ const TarjetaAlimentador = ({
     };
   }, [mostrarPopoverEscala]);
 
-  // Cerrar menú desplegable al hacer click fuera
+  // Cerrar menú desplegable al hacer click fuera o al hacer scroll
   useEffect(() => {
     if (!menuAbierto) return;
     const handleClickOutside = (event) => {
@@ -216,12 +216,18 @@ const TarjetaAlimentador = ({
         setMenuAbierto(false);
       }
     };
+    // Cerrar al hacer scroll con la rueda del ratón
+    const handleWheel = () => {
+      setMenuAbierto(false);
+    };
     const timeoutId = setTimeout(() => {
       document.addEventListener("mousedown", handleClickOutside);
+      window.addEventListener("wheel", handleWheel, { passive: true });
     }, 10);
     return () => {
       clearTimeout(timeoutId);
       document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("wheel", handleWheel);
     };
   }, [menuAbierto]);
 
