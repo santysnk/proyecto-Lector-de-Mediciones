@@ -80,6 +80,8 @@ const VistaAlimentadores = () => {
    limpiarPreferenciasUI,                 // limpia localStorage de gaps al salir
    // Estado de sincronización
    sincronizando,                         // true mientras se guardan cambios en BD
+   // Getters de colores (para soporte de preferencias de invitados)
+   obtenerBgColorPuesto,                  // obtiene bgColor del puesto (con preferencias de invitado)
 } = usarContextoAlimentadores();          // hook que conecta esta vista con el contexto global de alimentadores
 
 
@@ -776,7 +778,7 @@ const {
 			{/* ===== MAIN ===== */}
 			<main
 				className="alim-main"
-				style={{ backgroundColor: puestoSeleccionado?.bgColor || "#e5e7eb" }} // usa bgColor del puesto o gris por defecto
+				style={{ backgroundColor: puestoSeleccionado ? (obtenerBgColorPuesto(puestoSeleccionado.id) || "#e5e7eb") : "#e5e7eb" }} // usa bgColor del puesto (con preferencias de invitado)
 			>
 				{/* Overlay de problema de conexión (errores de red) */}
 				{hayProblemaConexion && (

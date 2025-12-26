@@ -32,6 +32,7 @@ const BarraNavegacion = ({
 		sincronizando,
 		sincronizarCambios,
 		descartarCambios,
+		obtenerColorPuesto,
 	} = usarContextoAlimentadores();
 
 	// Estado para el diálogo de confirmación
@@ -201,8 +202,8 @@ const BarraNavegacion = ({
 									onClick={() => onSeleccionarPuesto(p.id)}
 									style={{
 										backgroundColor:
-											p.color || coloresSistema[0],
-									}}                           // usa el color configurado para el botón
+											obtenerColorPuesto(p.id) || coloresSistema[0],
+									}}                           // usa el color configurado (con soporte para preferencias de invitado)
 								>
 									{p.nombre}
 								</button>

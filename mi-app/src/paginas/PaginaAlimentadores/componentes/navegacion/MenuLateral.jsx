@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import "./MenuLateral.css";             // estilos del drawer lateral
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
 
 /**
  * Menú lateral (drawer) para modo compacto.
@@ -36,6 +37,8 @@ const MenuLateral = ({
 		rolGlobal,
 		perfil,
 	} = usarContextoConfiguracion();
+
+	const { obtenerColorPuesto } = usarContextoAlimentadores();
 
 	const [submenuWorkspaceAbierto, setSubmenuWorkspaceAbierto] = useState(false);
 	const [mostrarFormNuevoWorkspace, setMostrarFormNuevoWorkspace] = useState(false);
@@ -150,8 +153,8 @@ const MenuLateral = ({
 								}
 								style={{
 									backgroundColor:
-										p.color || coloresSistema[0],
-								}}           // usa el color propio del puesto o uno por defecto
+										obtenerColorPuesto(p.id) || coloresSistema[0],
+								}}           // usa el color (con soporte para preferencias de invitado)
 								onClick={() => handleSeleccionarPuesto(p.id)}
 							>
 								{p.nombre}
