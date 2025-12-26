@@ -339,13 +339,16 @@ const ModalPanelPermisos = ({ abierto, onCerrar }) => {
                 <div key={ws.id} className="permisos-detalles-workspace permisos-detalles-workspace--invitado">
                   <div className="permisos-detalles-ws-header">
                     <span className="permisos-detalles-ws-nombre">{ws.nombre}</span>
-                    <span className={`permisos-detalles-rol permisos-detalles-rol--${ws.rol}`}>{ws.rol}</span>
                   </div>
                   <div className="permisos-detalles-ws-info">
                     <span className="permisos-detalles-label">Propietario:</span>
                     <span className="permisos-detalles-propietario">
                       {ws.propietario?.nombre || ws.propietario?.email || "Desconocido"}
                     </span>
+                  </div>
+                  <div className="permisos-detalles-ws-info">
+                    <span className="permisos-detalles-label">Rol otorgado:</span>
+                    <span className={`permisos-detalles-rol permisos-detalles-rol--${ws.rol}`}>{ws.rol}</span>
                   </div>
                 </div>
               ))}
