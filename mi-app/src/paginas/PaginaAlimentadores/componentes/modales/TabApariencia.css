@@ -244,7 +244,7 @@
   align-items: center;
   justify-content: flex-start;
   gap: 1.5rem;
-  padding-left: 70px;
+  padding-left: 35px;
   flex-wrap: wrap;
 }
 
@@ -265,6 +265,16 @@
   display: flex;
   gap: 4px;
   align-items: center;
+}
+
+/* Separador antes del color picker personalizado */
+.apariencia-colorpicker-wrapper::before {
+  content: "";
+  display: block;
+  width: 1px;
+  height: 16px;
+  background: #475569;
+  margin: 0 8px 0 6px;
 }
 
 .apariencia-decimales-inline {
@@ -325,23 +335,107 @@
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
 }
 
-.apariencia-color-picker {
-  width: 24px;
+/* Color picker personalizado con react-colorful */
+.apariencia-colorpicker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.apariencia-color-picker-btn {
+  width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid #475569;
+  border: 2px solid transparent;
   border-radius: 4px;
   cursor: pointer;
-  background: transparent;
+  transition: transform 0.1s ease, border-color 0.15s ease;
 }
 
-.apariencia-color-picker::-webkit-color-swatch-wrapper {
-  padding: 1px;
+.apariencia-color-picker-btn:hover {
+  transform: scale(1.15);
 }
 
-.apariencia-color-picker::-webkit-color-swatch {
+.apariencia-colorpicker-popover {
+  position: fixed;
+  z-index: 9999;
+  padding: 8px;
+  background: #1e293b;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1px solid #334155;
+  width: 240px;
+}
+
+.apariencia-colorpicker-popover .react-colorful {
+  width: 100%;
+  height: 180px;
+}
+
+.apariencia-colorpicker-popover .react-colorful__saturation {
+  border-radius: 4px 4px 0 0;
+  height: 140px;
+}
+
+.apariencia-colorpicker-popover .react-colorful__hue {
+  height: 16px;
+  border-radius: 0 0 4px 4px;
+  margin-top: 6px;
+}
+
+.apariencia-colorpicker-popover .react-colorful__pointer {
+  width: 18px;
+  height: 18px;
+}
+
+.apariencia-colorpicker-input-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.apariencia-colorpicker-hex-input {
+  flex: 1;
+  padding: 5px 6px;
+  border: 1.5px solid #64748b;
+  border-radius: 4px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-family: monospace;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.apariencia-colorpicker-hex-input:hover {
+  border-color: #94a3b8;
+  background: #1e293b;
+}
+
+.apariencia-colorpicker-hex-input:focus {
+  outline: none;
+  border-color: #06b6d4;
+  background: #1e293b;
+}
+
+.apariencia-colorpicker-copy-btn {
+  background: #334155;
   border: none;
-  border-radius: 2px;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apariencia-colorpicker-copy-btn:hover {
+  background: #475569;
+  transform: scale(1.05);
+}
+
+.apariencia-colorpicker-copy-btn:active {
+  transform: scale(0.95);
 }
 
 /* Dimensiones - layout en grid de 2 columnas */
