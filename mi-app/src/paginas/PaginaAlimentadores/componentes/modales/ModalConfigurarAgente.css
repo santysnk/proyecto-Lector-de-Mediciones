@@ -512,6 +512,17 @@
   background: #7f1d1d;
 }
 
+/* Botón desvincular deshabilitado para admin invitados */
+.config-agente-btn-icon--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-agente-btn-icon--disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
 /* ============================================ */
 /* Registradores dentro de Card                */
 /* ============================================ */

@@ -299,11 +299,33 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
           />
 
           <div className="selector-config__menu" role="listbox">
-            {/* Header con usuario y rol */}
+            {/* Header con usuario y rol en el workspace actual */}
             {perfil && (
               <div className="selector-config__usuario-header">
                 <span className="selector-config__usuario-nombre">{perfil.nombre || perfil.email}</span>
-                <span className="selector-config__usuario-rol">{perfil.roles?.nombre || rolGlobal}</span>
+                <span className="selector-config__usuario-rol">
+                  {(() => {
+                    // Mostrar rol en el workspace actual
+                    const rolEnWs = configuracionSeleccionada?.rol;
+                    const esCreador = configuracionSeleccionada?.esCreador;
+
+                    // Mapeo de códigos a nombres legibles
+                    const nombresRol = {
+                      'superadmin': 'SuperAdmin',
+                      'admin': 'Admin',
+                      'operador': 'Operador',
+                      'observador': 'Observador',
+                    };
+
+                    const nombreRol = nombresRol[rolEnWs] || nombresRol[rolGlobal] || 'Observador';
+
+                    // Si no es creador, indicar que es invitado
+                    if (esCreador === false) {
+                      return `${nombreRol} (invitado)`;
+                    }
+                    return nombreRol;
+                  })()}
+                </span>
               </div>
             )}
 
@@ -408,68 +430,86 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
               </form>
             ) : (
               <>
-                {/* Opción gestionar accesos (solo admin/superadmin o creador) */}
-                {(rolGlobal === 'superadmin' || rolGlobal === 'admin' || configuracionSeleccionada?.esCreador) && (
-                  <button
-                    type="button"
-                    className="selector-config__opcion-secundaria"
-                    onClick={() => {
-                      setMenuAbierto(false);
-                      onAbrirModalGestionarAccesos?.();
-                    }}
-                  >
-                    <svg className="selector-config__opcion-icono-svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                      <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
-                    </svg>
-                    Gestionar Accesos
-                  </button>
-                )}
+                {/*
+                  Permisos en el menú:
+                  - rolGlobal: rol global del usuario en el sistema (superadmin, admin, operador, observador)
+                  - configuracionSeleccionada?.rol: rol del usuario EN ESTE WORKSPACE específico
+                  - esAdminEnWorkspace: true si es superadmin global O tiene rol admin en este workspace
+                */}
+                {(() => {
+                  const rolEnWorkspace = configuracionSeleccionada?.rol;
+                  const esAdminEnWorkspace = rolGlobal === 'superadmin' || rolEnWorkspace === 'admin';
+                  const esOperadorEnWorkspace = esAdminEnWorkspace || rolEnWorkspace === 'operador';
 
-                {/* Opción nuevo puesto (solo admin/superadmin) */}
-                {(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
-                  <button
-                    type="button"
-                    className="selector-config__opcion-secundaria"
-                    onClick={() => {
-                      setMenuAbierto(false);
-                      onAbrirModalNuevoPuesto?.();
-                    }}
-                  >
-                    <span className="selector-config__opcion-icono">+</span>
-                    Nuevo puesto
-                  </button>
-                )}
+                  return (
+                    <>
+                      {/* Opción gestionar accesos (solo admin en workspace o creador) */}
+                      {(esAdminEnWorkspace || configuracionSeleccionada?.esCreador) && (
+                        <button
+                          type="button"
+                          className="selector-config__opcion-secundaria"
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            onAbrirModalGestionarAccesos?.();
+                          }}
+                        >
+                          <svg className="selector-config__opcion-icono-svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                          </svg>
+                          Gestionar Accesos
+                        </button>
+                      )}
 
-                {/* Opción editar puestos */}
-                <button
-                  type="button"
-                  className="selector-config__opcion-secundaria"
-                  onClick={() => {
-                    setMenuAbierto(false);
-                    onAbrirModalEditarPuestos?.();
-                  }}
-                  disabled={puestosLength === 0}
-                >
-                  <span className="selector-config__opcion-icono">✎</span>
-                  Editar puestos
-                </button>
+                      {/* Opción nuevo puesto (solo admin en workspace) */}
+                      {esAdminEnWorkspace && (
+                        <button
+                          type="button"
+                          className="selector-config__opcion-secundaria"
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            onAbrirModalNuevoPuesto?.();
+                          }}
+                        >
+                          <span className="selector-config__opcion-icono">+</span>
+                          Nuevo puesto
+                        </button>
+                      )}
 
-                {/* Opción configurar agente (solo admin/superadmin) */}
-                {(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
-                  <button
-                    type="button"
-                    className="selector-config__opcion-secundaria"
-                    onClick={() => {
-                      setMenuAbierto(false);
-                      onAbrirModalConfigurarAgente?.();
-                    }}
-                  >
-                    <span className="selector-config__opcion-icono">⚙</span>
-                    Configurar Agente
-                  </button>
-                )}
+                      {/* Opción editar puestos (admin u operador en workspace) */}
+                      {esOperadorEnWorkspace && (
+                        <button
+                          type="button"
+                          className="selector-config__opcion-secundaria"
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            onAbrirModalEditarPuestos?.();
+                          }}
+                          disabled={puestosLength === 0}
+                        >
+                          <span className="selector-config__opcion-icono">✎</span>
+                          Editar puestos
+                        </button>
+                      )}
 
-                {/* Opción panel de permisos (solo superadmin) */}
+                      {/* Opción configurar agente (solo admin en workspace) */}
+                      {esAdminEnWorkspace && (
+                        <button
+                          type="button"
+                          className="selector-config__opcion-secundaria"
+                          onClick={() => {
+                            setMenuAbierto(false);
+                            onAbrirModalConfigurarAgente?.();
+                          }}
+                        >
+                          <span className="selector-config__opcion-icono">⚙</span>
+                          Configurar Agente
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+
+                {/* Opción panel de permisos (solo superadmin GLOBAL) */}
                 {rolGlobal === 'superadmin' && (
                   <button
                     type="button"

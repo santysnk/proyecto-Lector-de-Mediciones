@@ -28,16 +28,29 @@ import "./ModalConfigurarAgente.css";
  *
  * Pestañas:
  * - "Agentes Vinculados": Todos los roles con acceso al workspace
- * - "Vincular Agente": Admin y Superadmin
+ * - "Vincular Agente": Solo creador del workspace o superadmin
  * - "Panel SuperAdmin": Solo Superadmin (CRUD de agentes y registradores)
+ *
+ * NOTA: Un admin invitado puede ver los agentes vinculados pero NO puede
+ * vincular ni desvincular agentes. Solo el creador del workspace o superadmin
+ * tienen esa capacidad.
  */
 const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
-  const { rolGlobal, perfil } = usarContextoConfiguracion();
+  const { rolGlobal, configuracionSeleccionada } = usarContextoConfiguracion();
 
   // Determinar permisos según rol
+  // - rolGlobal: rol del usuario en el sistema
+  // - configuracionSeleccionada?.rol: rol del usuario EN ESTE WORKSPACE
   const esSuperadmin = rolGlobal === 'superadmin';
-  const esAdmin = rolGlobal === 'admin' || esSuperadmin;
-  const puedeVincular = esAdmin;
+  const rolEnWorkspace = configuracionSeleccionada?.rol;
+  const esAdmin = esSuperadmin || rolEnWorkspace === 'admin';
+
+  // Solo el creador del workspace o superadmin pueden vincular/desvincular agentes
+  const esCreadorWorkspace = configuracionSeleccionada?.esCreador === true;
+  const puedeVincularDesvincular = esSuperadmin || esCreadorWorkspace;
+
+  // La pestaña "Vincular Agente" solo se muestra si puede vincular
+  const puedeVincular = puedeVincularDesvincular;
 
   // Pestañas disponibles según rol
   const pestanasDisponibles = [
@@ -811,11 +824,18 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
                           >
                             {agenteExpandido === agente.id ? '▲' : '▼'}
                           </button>
-                          {puedeVincular && (
+                          {/* El botón desvincular es visible para admins, pero solo funciona para creador/superadmin */}
+                          {esAdmin && (
                             <button
-                              className="config-agente-btn-icon config-agente-btn-icon--danger"
-                              onClick={() => handleDesvincular(agente.id)}
-                              title="Desvincular"
+                              className={`config-agente-btn-icon config-agente-btn-icon--danger ${!puedeVincularDesvincular ? 'config-agente-btn-icon--disabled' : ''}`}
+                              onClick={() => {
+                                if (puedeVincularDesvincular) {
+                                  handleDesvincular(agente.id);
+                                } else {
+                                  alert('Solo el administrador que creó el workspace puede desvincular agentes.');
+                                }
+                              }}
+                              title={puedeVincularDesvincular ? 'Desvincular' : 'Solo el creador del workspace puede desvincular'}
                             >
                               ✕
                             </button>
