@@ -20,6 +20,7 @@ const BarraNavegacion = ({
 	onAbrirModalConfigPuesto,               // callback para abrir modal de configuración del puesto
 	onAbrirModalConfigurarAgente,           // callback para abrir modal de configuración del agente
 	onAbrirModalGestionarAccesos,           // callback para abrir modal de gestión de accesos
+	onAbrirModalPanelPermisos,              // callback para abrir modal de panel de permisos (solo superadmin)
 	onSalir,                                // callback para cerrar sesión / volver al inicio
 	onAbrirMenu,                            // callback para abrir el menú lateral en modo compacto
 	coloresSistema,                         // paleta de colores para botones de puesto
@@ -222,6 +223,7 @@ const BarraNavegacion = ({
 								onAbrirModalEditarPuestos={onAbrirModalEditarPuestos}
 								onAbrirModalConfigurarAgente={onAbrirModalConfigurarAgente}
 								onAbrirModalGestionarAccesos={onAbrirModalGestionarAccesos}
+								onAbrirModalPanelPermisos={onAbrirModalPanelPermisos}
 								puestosLength={puestos.length}
 							/>
 

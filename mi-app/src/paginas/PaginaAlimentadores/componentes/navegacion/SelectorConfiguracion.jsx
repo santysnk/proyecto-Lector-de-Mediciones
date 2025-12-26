@@ -10,7 +10,7 @@ import "./SelectorConfiguracion.css";
  * Selector dropdown de workspaces.
  * Permite cambiar entre workspaces y crear nuevos.
  */
-const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPuesto, onAbrirModalConfigurarAgente, onAbrirModalGestionarAccesos, puestosLength = 0 }) => {
+const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPuesto, onAbrirModalConfigurarAgente, onAbrirModalGestionarAccesos, onAbrirModalPanelPermisos, puestosLength = 0 }) => {
   const {
     configuraciones,
     configuracionSeleccionada,
@@ -466,6 +466,21 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   >
                     <span className="selector-config__opcion-icono">⚙</span>
                     Configurar Agente
+                  </button>
+                )}
+
+                {/* Opción panel de permisos (solo superadmin) */}
+                {rolGlobal === 'superadmin' && (
+                  <button
+                    type="button"
+                    className="selector-config__opcion-secundaria"
+                    onClick={() => {
+                      setMenuAbierto(false);
+                      onAbrirModalPanelPermisos?.();
+                    }}
+                  >
+                    <span className="selector-config__opcion-icono">🔐</span>
+                    Panel de Permisos
                   </button>
                 )}
 

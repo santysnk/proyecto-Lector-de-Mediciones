@@ -17,6 +17,7 @@ import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimenta
 import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
 import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
 import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
+import ModalPanelPermisos from "../modales/ModalPanelPermisos.jsx";                       // modal de panel de permisos (solo superadmin)
 import ContenedorVentanasHistorial from "../modales/ContenedorVentanasHistorial.jsx";     // contenedor de ventanas flotantes de historial
 import { useVentanasHistorial } from "../../hooks/useVentanasHistorial";               // hook para gestionar ventanas de historial
 
@@ -113,6 +114,7 @@ const {
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
 	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
 	const [modalAccesosAbierto, setModalAccesosAbierto] = useState(false); // estado del modal de gestión de accesos
+	const [modalPanelPermisosAbierto, setModalPanelPermisosAbierto] = useState(false); // estado del modal de panel de permisos
 	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
 	const [lecturasPolling, setLecturasPolling] = useState({}); // { [alimId]: { valores, timestamp, ... } } - últimas lecturas obtenidas
 	const [contadoresPolling, setContadoresPolling] = useState({}); // { [alimId]: number } - contador de lecturas para animación
@@ -196,6 +198,7 @@ const {
 	const abrirModalConfigPuesto = () => abrirModal("configPuesto");  // abre modal de configuración global del puesto
 	const abrirModalConfigurarAgente = () => setModalAgenteAbierto(true); // abre modal de configuración del agente
 	const abrirModalGestionarAccesos = () => setModalAccesosAbierto(true); // abre modal de gestión de accesos
+	const abrirModalPanelPermisos = () => setModalPanelPermisosAbierto(true); // abre modal de panel de permisos
 
 	const handleCrearPuesto = (nombre, color) => {
 		agregarPuesto(nombre, color);                                 // crea el puesto vía contexto
@@ -740,6 +743,7 @@ const {
 				onAbrirModalConfigPuesto={abrirModalConfigPuesto}
 				onAbrirModalConfigurarAgente={abrirModalConfigurarAgente}
 				onAbrirModalGestionarAccesos={abrirModalGestionarAccesos}
+				onAbrirModalPanelPermisos={abrirModalPanelPermisos}
 				onSalir={handleSalir}
 				onAbrirMenu={() => setMenuAbierto(true)}
 				coloresSistema={COLORES_SISTEMA}
@@ -759,6 +763,7 @@ const {
 					onAbrirModalEditarPuestos={abrirModalEditarPuestos}
 					onAbrirModalConfigurarAgente={abrirModalConfigurarAgente}
 					onAbrirModalGestionarAccesos={abrirModalGestionarAccesos}
+					onAbrirModalPanelPermisos={abrirModalPanelPermisos}
 					onSalir={handleSalir}
 					coloresSistema={COLORES_SISTEMA}
 					escalaGlobal={escalaGlobal}
@@ -899,6 +904,11 @@ const {
 				workspaceNombre={configuracionSeleccionada?.nombre}
 				usuarioActualId={perfil?.id}
 				onCerrar={() => setModalAccesosAbierto(false)}
+			/>
+
+			<ModalPanelPermisos
+				abierto={modalPanelPermisosAbierto}
+				onCerrar={() => setModalPanelPermisosAbierto(false)}
 			/>
 
 			{/* Sistema de ventanas flotantes de historial */}

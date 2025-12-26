@@ -18,6 +18,7 @@ const MenuLateral = ({
 	onAbrirModalEditarPuestos,          // callback para abrir modal "Editar puestos"
 	onAbrirModalConfigurarAgente,       // callback para abrir modal "Configurar Agente"
 	onAbrirModalGestionarAccesos,       // callback para abrir modal "Gestionar Accesos"
+	onAbrirModalPanelPermisos,          // callback para abrir modal "Panel de Permisos" (solo superadmin)
 	onSalir,                            // callback para salir al login
 	coloresSistema,                     // paleta de colores para botones de puesto
 	// Props de escala global
@@ -252,6 +253,18 @@ const MenuLateral = ({
 							>
 								<span className="alim-drawer-btn-icon">⚙</span>
 								Configurar Agente
+							</button>
+						)}
+
+						{/* Panel de Permisos (solo superadmin) */}
+						{rolGlobal === 'superadmin' && (
+							<button
+								type="button"
+								className="alim-drawer-btn-action alim-drawer-btn-permisos"
+								onClick={() => handleAccion(onAbrirModalPanelPermisos)}
+							>
+								<span className="alim-drawer-btn-icon">🔐</span>
+								Panel de Permisos
 							</button>
 						)}
 
