@@ -14,6 +14,9 @@ import {
 import { HexColorPicker } from "react-colorful";
 import "./TabApariencia.css";
 
+// Versión del formato de archivo para compatibilidad futura
+const FORMATO_VERSION = 1;
+
 /**
  * Genera un valor aleatorio con formato de medición
  * @param {number} decimales - Cantidad de decimales a mostrar (0, 1 o 2)
@@ -55,15 +58,43 @@ const redondear = (valor, decimales = 2) => {
 
 /**
  * Selector de fuentes personalizado que muestra cada opción con su propia tipografía
+ * - Auto-scroll a la fuente seleccionada al abrir
+ * - Navegación con flechas arriba/abajo con preview en vivo
+ * - Enter para confirmar, Escape para cancelar
  */
 const SelectorFuente = ({ value, onChange, fuentes }) => {
   const [abierto, setAbierto] = useState(false);
+  const [indiceResaltado, setIndiceResaltado] = useState(-1);
+  const [valorOriginal, setValorOriginal] = useState(value);
   const contenedorRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const opcionesRefs = useRef([]);
+
+  // Índice de la fuente actualmente seleccionada
+  const indiceSeleccionado = fuentes.findIndex((f) => f.id === value);
+
+  // Al abrir el dropdown: guardar valor original, scroll a la opción seleccionada
+  useEffect(() => {
+    if (abierto) {
+      setValorOriginal(value);
+      setIndiceResaltado(indiceSeleccionado);
+
+      // Scroll a la opción seleccionada después de que el DOM se actualice
+      requestAnimationFrame(() => {
+        const opcionActiva = opcionesRefs.current[indiceSeleccionado];
+        if (opcionActiva && dropdownRef.current) {
+          opcionActiva.scrollIntoView({ block: "center", behavior: "instant" });
+        }
+      });
+    }
+  }, [abierto, indiceSeleccionado, value]);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickFuera = (e) => {
       if (contenedorRef.current && !contenedorRef.current.contains(e.target)) {
+        // Restaurar valor original si se cierra sin confirmar
+        onChange(valorOriginal);
         setAbierto(false);
       }
     };
@@ -71,9 +102,61 @@ const SelectorFuente = ({ value, onChange, fuentes }) => {
       document.addEventListener("mousedown", handleClickFuera);
     }
     return () => document.removeEventListener("mousedown", handleClickFuera);
-  }, [abierto]);
+  }, [abierto, valorOriginal, onChange]);
 
-  // Encontrar la fuente seleccionada
+  // Manejo de teclado
+  useEffect(() => {
+    if (!abierto) return;
+
+    const handleKeyDown = (e) => {
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          setIndiceResaltado((prev) => {
+            const nuevoIndice = prev < fuentes.length - 1 ? prev + 1 : 0;
+            // Aplicar preview de la fuente
+            onChange(fuentes[nuevoIndice].id);
+            // Scroll a la opción
+            requestAnimationFrame(() => {
+              opcionesRefs.current[nuevoIndice]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
+            return nuevoIndice;
+          });
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          setIndiceResaltado((prev) => {
+            const nuevoIndice = prev > 0 ? prev - 1 : fuentes.length - 1;
+            // Aplicar preview de la fuente
+            onChange(fuentes[nuevoIndice].id);
+            // Scroll a la opción
+            requestAnimationFrame(() => {
+              opcionesRefs.current[nuevoIndice]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
+            return nuevoIndice;
+          });
+          break;
+        case "Enter":
+          e.preventDefault();
+          // Confirmar selección actual
+          setAbierto(false);
+          break;
+        case "Escape":
+          e.preventDefault();
+          // Restaurar valor original y cerrar
+          onChange(valorOriginal);
+          setAbierto(false);
+          break;
+        default:
+          break;
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [abierto, fuentes, onChange, valorOriginal]);
+
+  // Encontrar la fuente seleccionada para mostrar en el botón
   const fuenteSeleccionada = fuentes.find((f) => f.id === value) || fuentes[0];
 
   return (
@@ -88,15 +171,20 @@ const SelectorFuente = ({ value, onChange, fuentes }) => {
         <span className="selector-fuente-flecha">{abierto ? "▲" : "▼"}</span>
       </button>
       {abierto && (
-        <div className="selector-fuente-dropdown">
-          {fuentes.map((f) => (
+        <div className="selector-fuente-dropdown" ref={dropdownRef}>
+          {fuentes.map((f, idx) => (
             <div
               key={f.id}
-              className={`selector-fuente-opcion ${f.id === value ? "selector-fuente-opcion--activa" : ""}`}
+              ref={(el) => (opcionesRefs.current[idx] = el)}
+              className={`selector-fuente-opcion ${f.id === value ? "selector-fuente-opcion--activa" : ""} ${idx === indiceResaltado ? "selector-fuente-opcion--resaltada" : ""}`}
               style={{ fontFamily: f.id !== "inherit" ? f.id : undefined }}
               onClick={() => {
                 onChange(f.id);
                 setAbierto(false);
+              }}
+              onMouseEnter={() => {
+                // Solo resaltar visualmente, sin aplicar preview ni scroll
+                setIndiceResaltado(idx);
               }}
             >
               {f.label}
@@ -440,6 +528,9 @@ const TabApariencia = ({
   onGuardar,
   onCancelar,
 }) => {
+  // Ref para guardar los estilos iniciales y solo sincronizar una vez
+  const estilosInicialesRef = useRef(null);
+
   // Estado local para los estilos (copia editable)
   const [estilos, setEstilos] = useState(() => ({
     header: { ...ESTILOS_GLOBALES_DEFAULT.header, ...estilosIniciales?.header },
@@ -452,9 +543,12 @@ const TabApariencia = ({
   // Estado para los valores del preview
   const [valoresPreview, setValoresPreview] = useState(VALORES_DEFAULT);
 
-  // Reiniciar estado local cuando cambian los estilos iniciales (al abrir el modal)
+  // Reiniciar estado local solo cuando cambian los estilos iniciales realmente (al abrir el modal)
   useEffect(() => {
-    if (estilosIniciales) {
+    // Solo actualizar si es la primera vez o si los estilos iniciales cambiaron de verdad
+    const estilosStr = JSON.stringify(estilosIniciales);
+    if (estilosIniciales && estilosInicialesRef.current !== estilosStr) {
+      estilosInicialesRef.current = estilosStr;
       setEstilos({
         header: { ...ESTILOS_GLOBALES_DEFAULT.header, ...estilosIniciales.header },
         tituloZona: { ...ESTILOS_GLOBALES_DEFAULT.tituloZona, ...estilosIniciales.tituloZona },
@@ -533,6 +627,90 @@ const TabApariencia = ({
   // Guardar cambios
   const handleGuardar = () => {
     onGuardar(estilos);
+  };
+
+  // Referencia para el input de archivo oculto
+  const inputArchivoRef = useRef(null);
+
+  // Exportar configuración a archivo JSON
+  const exportarConfiguracion = useCallback(async () => {
+    const configuracion = {
+      version: FORMATO_VERSION,
+      fechaExportacion: new Date().toISOString(),
+      estilos: estilos,
+    };
+
+    const contenidoJSON = JSON.stringify(configuracion, null, 2);
+    const nombreArchivo = `apariencia-tarjetas-${new Date().toISOString().slice(0, 10)}.json`;
+
+    // Intentar usar File System Access API (Chrome, Edge)
+    if ("showSaveFilePicker" in window) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: nombreArchivo,
+          types: [
+            {
+              description: "Archivo JSON",
+              accept: { "application/json": [".json"] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(contenidoJSON);
+        await writable.close();
+        return; // Éxito con File System Access API
+      } catch (err) {
+        // Si el usuario cancela, no hacer nada
+        if (err.name === "AbortError") return;
+        // Si hay otro error, usar el fallback
+        console.warn("File System Access API falló, usando fallback:", err);
+      }
+    }
+
+    // Fallback para navegadores sin soporte (Firefox, Safari, etc.)
+    const blob = new Blob([contenidoJSON], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nombreArchivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [estilos]);
+
+  // Importar configuración desde archivo JSON
+  const importarConfiguracion = (evento) => {
+    const archivo = evento.target.files?.[0];
+    if (!archivo) return;
+
+    const lector = new FileReader();
+    lector.onload = (e) => {
+      try {
+        const contenido = JSON.parse(e.target.result);
+
+        // Validar que tenga la estructura esperada
+        if (!contenido.estilos) {
+          alert("El archivo no tiene el formato correcto de configuración.");
+          return;
+        }
+
+        // Aplicar los estilos importados
+        setEstilos({
+          header: { ...ESTILOS_GLOBALES_DEFAULT.header, ...contenido.estilos.header },
+          tituloZona: { ...ESTILOS_GLOBALES_DEFAULT.tituloZona, ...contenido.estilos.tituloZona },
+          tituloBox: { ...ESTILOS_GLOBALES_DEFAULT.tituloBox, ...contenido.estilos.tituloBox },
+          valorBox: { ...ESTILOS_GLOBALES_DEFAULT.valorBox, ...contenido.estilos.valorBox },
+          box: { ...ESTILOS_GLOBALES_DEFAULT.box, ...contenido.estilos.box },
+        });
+      } catch {
+        alert("Error al leer el archivo. Asegúrate de que sea un archivo JSON válido.");
+      }
+    };
+    lector.readAsText(archivo);
+
+    // Limpiar el input para permitir reimportar el mismo archivo
+    evento.target.value = "";
   };
 
   return (
@@ -718,13 +896,39 @@ const TabApariencia = ({
 
       {/* Footer con botones */}
       <div className="apariencia-footer">
-        <button
-          type="button"
-          className="apariencia-btn apariencia-btn--reset"
-          onClick={restaurarDefecto}
-        >
-          Restaurar por defecto
-        </button>
+        <div className="apariencia-footer-izquierda">
+          <button
+            type="button"
+            className="apariencia-btn apariencia-btn--reset"
+            onClick={restaurarDefecto}
+          >
+            Restaurar por defecto
+          </button>
+          <button
+            type="button"
+            className="apariencia-btn apariencia-btn--importar"
+            onClick={() => inputArchivoRef.current?.click()}
+            title="Importar configuración desde archivo"
+          >
+            Importar
+          </button>
+          <button
+            type="button"
+            className="apariencia-btn apariencia-btn--exportar"
+            onClick={exportarConfiguracion}
+            title="Exportar configuración a archivo"
+          >
+            Exportar
+          </button>
+          {/* Input oculto para importar archivo */}
+          <input
+            ref={inputArchivoRef}
+            type="file"
+            accept=".json"
+            onChange={importarConfiguracion}
+            style={{ display: "none" }}
+          />
+        </div>
         <div className="apariencia-footer-derecha">
           <button
             type="button"

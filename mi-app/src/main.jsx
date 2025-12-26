@@ -5,6 +5,7 @@ import { BrowserRouter } from "react-router-dom";  // enrutador basado en histor
 import { AuthProvider } from "./contextos/AuthContext"; // contexto de autenticación con Supabase
 import App from "./App.jsx";                       // componente raíz de la aplicación (define las rutas)
 import "./index.css";                              // estilos globales (tailwind + tema general)
+import "./fuentes.css";                            // fuentes locales desde public/fonts/
 
 ReactDOM.createRoot(document.getElementById("root")).render(   // crea la raíz de React sobre el div#root
    <React.StrictMode>                   {/* modo estricto: ayuda a detectar problemas en desarrollo */}
