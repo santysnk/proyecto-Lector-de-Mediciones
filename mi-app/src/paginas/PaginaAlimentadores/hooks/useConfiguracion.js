@@ -179,47 +179,25 @@ export const useConfiguracion = () => {
   };
 
   /**
-   * Establece un workspace como el default (se abre al iniciar sesión)
-   * @param {string} id - UUID del workspace
-   */
-  const establecerWorkspaceDefault = async (id) => {
-    try {
-      setError(null);
-      await actualizarWorkspaceDefault(id);
-      // Actualizar el perfil local con el nuevo default
-      setPerfil((prev) => ({ ...prev, workspace_default_id: id }));
-    } catch (err) {
-      console.error("Error estableciendo workspace default:", err);
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  /**
-   * Quita el workspace por defecto
-   */
-  const quitarWorkspaceDefault = async () => {
-    try {
-      setError(null);
-      await actualizarWorkspaceDefault(null);
-      // Actualizar el perfil local
-      setPerfil((prev) => ({ ...prev, workspace_default_id: null }));
-    } catch (err) {
-      console.error("Error quitando workspace default:", err);
-      setError(err.message);
-      throw err;
-    }
-  };
-
-  /**
-   * Alterna el workspace por defecto (si ya es default lo quita, si no lo establece)
+   * Alterna el workspace por defecto con optimistic update.
+   * El cambio se aplica inmediatamente en la UI y se revierte si hay error.
    * @param {string} id - UUID del workspace
    */
   const toggleWorkspaceDefault = async (id) => {
-    if (workspaceDefaultId === id) {
-      await quitarWorkspaceDefault();
-    } else {
-      await establecerWorkspaceDefault(id);
+    const nuevoDefault = workspaceDefaultId === id ? null : id;
+    const valorAnterior = perfil?.workspace_default_id;
+
+    // Optimistic update: aplicar cambio inmediatamente
+    setPerfil((prev) => ({ ...prev, workspace_default_id: nuevoDefault }));
+
+    try {
+      setError(null);
+      await actualizarWorkspaceDefault(nuevoDefault);
+    } catch (err) {
+      // Revertir en caso de error
+      console.error("Error cambiando workspace default:", err);
+      setPerfil((prev) => ({ ...prev, workspace_default_id: valorAnterior }));
+      setError(err.message);
     }
   };
 
@@ -243,8 +221,6 @@ export const useConfiguracion = () => {
     actualizarConfiguracion,
     eliminarConfiguracion,
     seleccionarConfiguracion,
-    establecerWorkspaceDefault,
-    quitarWorkspaceDefault,
     toggleWorkspaceDefault,
   };
 };
