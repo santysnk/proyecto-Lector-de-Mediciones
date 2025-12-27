@@ -99,6 +99,7 @@ const GrillaTarjetas = ({
 	onDropAlFinal,
 	onAgregarNuevo,
 	puedeAgregarNuevo = true, // si false, la card "Nuevo Registrador" está deshabilitada
+	esObservador = false,    // si true, oculta el botón de estadísticas
 	estaMidiendo,
 	obtenerTimestampInicio,
 	obtenerContadorLecturas,
@@ -489,6 +490,7 @@ const GrillaTarjetas = ({
 									color={alim.color}
 									onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
 									onHistorialClick={onAbrirHistorial ? () => onAbrirHistorial(puestoId, alim) : undefined}
+									esObservador={esObservador}
 									topSide={lecturasAlim.parteSuperior}
 									bottomSide={lecturasAlim.parteInferior}
 									draggable={true}

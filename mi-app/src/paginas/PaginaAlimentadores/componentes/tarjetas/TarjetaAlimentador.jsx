@@ -56,6 +56,7 @@ const TarjetaAlimentador = ({
   color,
   onConfigClick,           // abre modal de configuración del alimentador
   onHistorialClick,        // abre modal de historial de lecturas
+  esObservador = false,    // si true, oculta el botón de estadísticas (rol observador)
   topSide,                 // diseño + valores para la parte superior
   bottomSide,              // diseño + valores para la parte inferior
   draggable = false,       // si la tarjeta se puede arrastrar
@@ -573,8 +574,8 @@ const TarjetaAlimentador = ({
                 <img src={configIcon} alt="Configurar" className="alim-card-menu-flotante-icon" />
               </button>
 
-              {/* Botón de historial */}
-              {onHistorialClick && (
+              {/* Botón de historial/estadísticas (oculto para observadores) */}
+              {onHistorialClick && !esObservador && (
                 <button
                   type="button"
                   className="alim-card-menu-flotante-btn"

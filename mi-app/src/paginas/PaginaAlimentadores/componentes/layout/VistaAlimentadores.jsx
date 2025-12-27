@@ -164,7 +164,8 @@ const {
 	}, [esCreador, puestos, preferenciasVisuales]);
 
 	// ===== ALIMENTADORES DEL PUESTO SELECCIONADO CON PREFERENCIAS =====
-	// Los alimentadores del puesto seleccionado con las preferencias de color aplicadas
+	// Los alimentadores del puesto seleccionado con las preferencias aplicadas
+	// (color, intervalo_consulta_ms, oculto de zonas para operadores)
 	const alimentadoresConPreferencias = useMemo(() => {
 		if (!puestoSeleccionado?.alimentadores) return [];
 		if (esCreador || !preferenciasVisuales) {
@@ -174,10 +175,34 @@ const {
 		// Aplicar preferencias personales sobre los alimentadores base
 		return puestoSeleccionado.alimentadores.map(alim => {
 			const configAlim = preferenciasVisuales.obtenerConfigAlimentador?.(alim.id, puestoSeleccionado.id);
-			return {
+
+			// Construir el alimentador con preferencias aplicadas
+			const alimConPrefs = {
 				...alim,
 				color: configAlim?.color || alim.color,
 			};
+
+			// Aplicar intervalo personalizado si existe
+			if (configAlim?.intervalo_consulta_ms !== undefined) {
+				alimConPrefs.intervalo_consulta_ms = configAlim.intervalo_consulta_ms;
+			}
+
+			// Aplicar estados "oculto" personalizados a las zonas del card_design
+			if (configAlim?.oculto_superior !== undefined || configAlim?.oculto_inferior !== undefined) {
+				alimConPrefs.card_design = {
+					...alim.card_design,
+					superior: {
+						...alim.card_design?.superior,
+						...(configAlim?.oculto_superior !== undefined && { oculto: configAlim.oculto_superior }),
+					},
+					inferior: {
+						...alim.card_design?.inferior,
+						...(configAlim?.oculto_inferior !== undefined && { oculto: configAlim.oculto_inferior }),
+					},
+				};
+			}
+
+			return alimConPrefs;
 		});
 	}, [esCreador, puestoSeleccionado, preferenciasVisuales]);
 
@@ -333,8 +358,7 @@ const {
 						}
 					);
 				} else {
-					// INVITADO: Solo guardar el color en preferencias personales
-					// Los invitados no pueden cambiar nombre, card_design, etc.
+					// INVITADO (operador/observador): Solo guardar el color en preferencias personales
 					if (datos.color && preferenciasVisuales?.guardarPreferenciasAlimentador) {
 						await preferenciasVisuales.guardarPreferenciasAlimentador(
 							alimentadorEnEdicion.id,
@@ -896,6 +920,8 @@ const {
 									? (rolGlobal === 'superadmin' || rolGlobal === 'admin')
 									: (configuracionSeleccionada?.rol === 'admin')
 							}
+							// Observador no puede ver estadísticas (ni global ni en workspace)
+							esObservador={rolGlobal === 'observador' || configuracionSeleccionada?.rol === 'observador'}
 							estaMidiendo={estaMidiendo}
 							obtenerTimestampInicio={obtenerTimestampInicio}
 							obtenerContadorLecturas={obtenerContadorLecturas}
@@ -951,6 +977,8 @@ const {
 				onCancelar={() => cerrarModal("alimentador")}
 				onConfirmar={handleGuardarAlimentador}
 				onEliminar={handleEliminarAlimentador}
+				esCreador={configuracionSeleccionada?.esCreador}
+				rolEnWorkspace={configuracionSeleccionada?.rol}
 			/>
 
 			<ModalConfiguracionPuesto

@@ -59,7 +59,18 @@ const ModalConfiguracionAlimentador = ({
 	onCancelar,
 	onConfirmar,
 	onEliminar,
+	// Props de permisos
+	esCreador = false,           // si el usuario es creador del workspace
+	rolEnWorkspace = null,       // rol del usuario en el workspace (admin, operador, observador)
 }) => {
+	// Determinar permisos según rol
+	const esAdmin = esCreador || rolEnWorkspace === 'admin';
+	// Admin puede todo, operador y observador solo pueden cambiar el color
+	const puedeEditarNombre = esAdmin;
+	const puedeEditarDiseno = esAdmin;
+	const puedeEliminar = esAdmin;
+	const puedeEditarIntervalo = esAdmin;
+	const puedeOcultarZonas = esAdmin;
 	// === Estado básico ===
 	const [nombre, setNombre] = useState("");
 	const [color, setColor] = useState(COLORES_SISTEMA[0]);
@@ -377,7 +388,8 @@ const ModalConfiguracionAlimentador = ({
 									autoComplete="off"
 									autoCorrect="off"
 									spellCheck={false}
-									autoFocus
+									autoFocus={puedeEditarNombre}
+									disabled={!puedeEditarNombre}
 								/>
 							</div>
 
@@ -457,120 +469,127 @@ const ModalConfiguracionAlimentador = ({
 							)}
 						</div>
 
-						{/* === SECCIÓN: Diseño de Card === */}
-						<div className="alim-modal-seccion">
-							<h3 className="alim-modal-seccion-titulo">Diseño de la tarjeta</h3>
+						{/* === SECCIÓN: Diseño de Card (solo visible para admin/creador) === */}
+						{puedeEditarDiseno && (
+							<div className="alim-modal-seccion">
+								<h3 className="alim-modal-seccion-titulo">Diseño de la tarjeta</h3>
 
-							{cargandoAgentes ? (
-								<p className="alim-modal-cargando">Cargando registradores...</p>
-							) : agentesVinculados.length === 0 ? (
-								<p className="alim-modal-aviso">
-									No hay agentes vinculados a este workspace. Vinculá un agente desde el
-									panel de configuración para poder asignar registradores.
-								</p>
-							) : (
-								<>
-									<p className="alim-modal-seccion-ayuda">
-										Seleccioná un registrador para cada zona y arrastrá los índices a los campos.
+								{cargandoAgentes ? (
+									<p className="alim-modal-cargando">Cargando registradores...</p>
+								) : agentesVinculados.length === 0 ? (
+									<p className="alim-modal-aviso">
+										No hay agentes vinculados a este workspace. Vinculá un agente desde el
+										panel de configuración para poder asignar registradores.
 									</p>
+								) : (
+									<>
+										<p className="alim-modal-seccion-ayuda">
+											Seleccioná un registrador para cada zona y arrastrá los índices a los campos.
+										</p>
 
-									{/* Parte Superior */}
-									<SeccionCardDesign
-										titulo="Parte superior"
-										zona="superior"
-										design={cardDesign.superior}
-										registradores={todosRegistradores}
-										registradorActual={buscarRegistrador(cardDesign.superior?.registrador_id)}
-										indicesDisponibles={obtenerIndicesZona("superior")}
-										onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("superior", regId)}
-										onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
-										onChangeTituloCustom={(val) =>
-											actualizarSide("superior", "tituloCustom", val)
-										}
-										onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
-										onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
-										onDragOver={handleDragOver}
-										onDrop={(e, idx) => handleDrop(e, "superior", idx)}
-										onDragStart={handleDragStart}
-										estaIndiceDuplicado={estaIndiceDuplicado}
-										obtenerMensajeDuplicado={obtenerMensajeDuplicado}
-									/>
-
-									{/* Parte Inferior */}
-									<SeccionCardDesign
-										titulo="Parte inferior"
-										zona="inferior"
-										design={cardDesign.inferior}
-										registradores={todosRegistradores}
-										registradorActual={buscarRegistrador(cardDesign.inferior?.registrador_id)}
-										indicesDisponibles={obtenerIndicesZona("inferior")}
-										onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("inferior", regId)}
-										onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
-										onChangeTituloCustom={(val) =>
-											actualizarSide("inferior", "tituloCustom", val)
-										}
-										onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
-										onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
-										onDragOver={handleDragOver}
-										onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
-										onDragStart={handleDragStart}
-										estaIndiceDuplicado={estaIndiceDuplicado}
-										obtenerMensajeDuplicado={obtenerMensajeDuplicado}
-									/>
-								</>
-							)}
-						</div>
-
-						{/* === SECCIÓN: Intervalo de consulta + Ocultar zonas === */}
-						<div className="alim-modal-seccion">
-							<h3 className="alim-modal-seccion-titulo">Intervalo de consulta</h3>
-							<div className="alim-modal-intervalo-wrapper">
-								<div className="alim-modal-campo">
-									<label>Segundos entre consultas a la Base de Datos</label>
-									<input
-										type="number"
-										className="alim-modal-input-numero"
-										value={intervaloConsultaSeg}
-										onChange={(e) => {
-											const valor = Number(e.target.value);
-											setIntervaloConsultaSeg(Math.max(5, valor)); // mínimo 5 segundos
-										}}
-										min={5}
-										step={1}
-									/>
-									<span className="alim-modal-campo-ayuda">
-										Cada cuánto el frontend consulta la última lectura (mín. 5s)
-									</span>
-								</div>
-
-								{/* Checkboxes para ocultar zonas */}
-								<div className="alim-modal-ocultar-zonas">
-									<span className="alim-modal-ocultar-zonas-titulo">Ocultar en tarjeta</span>
-									<label className="alim-modal-ocultar-zona-item">
-										<input
-											type="checkbox"
-											checked={cardDesign.superior?.oculto || false}
-											onChange={(e) => actualizarSide("superior", "oculto", e.target.checked)}
+										{/* Parte Superior */}
+										<SeccionCardDesign
+											titulo="Parte superior"
+											zona="superior"
+											design={cardDesign.superior}
+											registradores={todosRegistradores}
+											registradorActual={buscarRegistrador(cardDesign.superior?.registrador_id)}
+											indicesDisponibles={obtenerIndicesZona("superior")}
+											onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("superior", regId)}
+											onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
+											onChangeTituloCustom={(val) =>
+												actualizarSide("superior", "tituloCustom", val)
+											}
+											onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
+											onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
+											onDragOver={handleDragOver}
+											onDrop={(e, idx) => handleDrop(e, "superior", idx)}
+											onDragStart={handleDragStart}
+											estaIndiceDuplicado={estaIndiceDuplicado}
+											obtenerMensajeDuplicado={obtenerMensajeDuplicado}
 										/>
-										<span>Parte superior</span>
-									</label>
-									<label className="alim-modal-ocultar-zona-item">
-										<input
-											type="checkbox"
-											checked={cardDesign.inferior?.oculto || false}
-											onChange={(e) => actualizarSide("inferior", "oculto", e.target.checked)}
+
+										{/* Parte Inferior */}
+										<SeccionCardDesign
+											titulo="Parte inferior"
+											zona="inferior"
+											design={cardDesign.inferior}
+											registradores={todosRegistradores}
+											registradorActual={buscarRegistrador(cardDesign.inferior?.registrador_id)}
+											indicesDisponibles={obtenerIndicesZona("inferior")}
+											onChangeRegistrador={(regId) => handleSeleccionarRegistradorZona("inferior", regId)}
+											onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
+											onChangeTituloCustom={(val) =>
+												actualizarSide("inferior", "tituloCustom", val)
+											}
+											onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
+											onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
+											onDragOver={handleDragOver}
+											onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
+											onDragStart={handleDragStart}
+											estaIndiceDuplicado={estaIndiceDuplicado}
+											obtenerMensajeDuplicado={obtenerMensajeDuplicado}
 										/>
-										<span>Parte inferior</span>
-									</label>
+									</>
+								)}
+							</div>
+						)}
+
+						{/* === SECCIÓN: Intervalo de consulta + Ocultar zonas (solo para admin u operador) === */}
+						{(puedeEditarIntervalo || puedeOcultarZonas) && (
+							<div className="alim-modal-seccion">
+								<h3 className="alim-modal-seccion-titulo">Intervalo de consulta</h3>
+								<div className="alim-modal-intervalo-wrapper">
+									<div className="alim-modal-campo">
+										<label>Segundos entre consultas a la Base de Datos</label>
+										<input
+											type="number"
+											className="alim-modal-input-numero"
+											value={intervaloConsultaSeg}
+											onChange={(e) => {
+												const valor = Number(e.target.value);
+												setIntervaloConsultaSeg(Math.max(5, valor)); // mínimo 5 segundos
+											}}
+											min={5}
+											step={1}
+											disabled={!puedeEditarIntervalo}
+										/>
+										<span className="alim-modal-campo-ayuda">
+											Cada cuánto el frontend consulta la última lectura (mín. 5s)
+										</span>
+									</div>
+
+									{/* Checkboxes para ocultar zonas */}
+									<div className="alim-modal-ocultar-zonas">
+										<span className="alim-modal-ocultar-zonas-titulo">Ocultar en tarjeta</span>
+										<label className={`alim-modal-ocultar-zona-item ${!puedeOcultarZonas ? 'alim-modal-ocultar-zona-item--disabled' : ''}`}>
+											<input
+												type="checkbox"
+												checked={cardDesign.superior?.oculto || false}
+												onChange={(e) => actualizarSide("superior", "oculto", e.target.checked)}
+												disabled={!puedeOcultarZonas}
+											/>
+											<span>Parte superior</span>
+										</label>
+										<label className={`alim-modal-ocultar-zona-item ${!puedeOcultarZonas ? 'alim-modal-ocultar-zona-item--disabled' : ''}`}>
+											<input
+												type="checkbox"
+												checked={cardDesign.inferior?.oculto || false}
+												onChange={(e) => actualizarSide("inferior", "oculto", e.target.checked)}
+												disabled={!puedeOcultarZonas}
+											/>
+											<span>Parte inferior</span>
+										</label>
+									</div>
 								</div>
 							</div>
-						</div>
+						)}
 					</div>
 
 					{/* Botones inferiores */}
 					<div className="alim-modal-actions">
-						{/* Botón eliminar a la izquierda (solo en modo edición) */}
-						{modo === "editar" && (
+						{/* Botón eliminar a la izquierda (solo en modo edición y si tiene permisos) */}
+						{modo === "editar" && puedeEliminar && (
 							<button
 								type="button"
 								className="alim-modal-btn-eliminar"
