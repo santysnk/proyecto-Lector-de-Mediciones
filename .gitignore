@@ -1,2 +1,5 @@
 # Claude settings
 .claude/
+
+# JetBrains IDE (Android Studio, IntelliJ, etc.)
+.idea/
