@@ -49,6 +49,7 @@ export const useConfiguracion = () => {
    * Carga el perfil del usuario y los workspaces desde el backend
    */
   const cargarConfiguraciones = useCallback(async () => {
+    console.log("[DEBUG-CONFIG] cargarConfiguraciones llamado");
     try {
       setCargando(true);
       setError(null);
@@ -59,6 +60,12 @@ export const useConfiguracion = () => {
         obtenerWorkspaces(),
       ]);
 
+      console.log("[DEBUG-CONFIG] Workspaces cargados:", workspacesData.map(w => ({
+        id: w.id,
+        nombre: w.nombre,
+        esCreador: w.esCreador
+      })));
+
       setPerfil(perfilData);
       setConfiguraciones(workspacesData);
 
@@ -66,19 +73,27 @@ export const useConfiguracion = () => {
       if (workspacesData.length > 0) {
         // Si hay workspaces pero el seleccionado no está en la lista, seleccionar el primero
         const seleccionValida = workspacesData.some((c) => c.id === configuracionSeleccionadaId);
+        console.log("[DEBUG-CONFIG] Validación de selección:", {
+          configuracionSeleccionadaId,
+          seleccionValida,
+          workspaceSeleccionado: workspacesData.find(w => w.id === configuracionSeleccionadaId)
+        });
         if (!seleccionValida) {
+          console.log("[DEBUG-CONFIG] Selección inválida, seleccionando primer workspace:", workspacesData[0].id);
           setConfiguracionSeleccionadaId(workspacesData[0].id);
         }
       } else {
         // Si el usuario no tiene workspaces, limpiar cualquier selección guardada
         // Esto evita que se intente cargar datos de un workspace al que ya no tiene acceso
+        console.log("[DEBUG-CONFIG] No hay workspaces, limpiando selección");
         setConfiguracionSeleccionadaId(null);
       }
     } catch (err) {
-      console.error("Error cargando datos:", err);
+      console.error("[DEBUG-CONFIG] Error cargando datos:", err);
       setError(err.message);
     } finally {
       setCargando(false);
+      console.log("[DEBUG-CONFIG] Carga finalizada");
     }
   }, [configuracionSeleccionadaId]);
 

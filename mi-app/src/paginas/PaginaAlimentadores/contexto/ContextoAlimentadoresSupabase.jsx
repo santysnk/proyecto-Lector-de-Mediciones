@@ -27,7 +27,9 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   } = usarContextoConfiguracion();
 
   // Determinar si el usuario es creador del workspace
-  const esCreador = configuracionSeleccionada?.esCreador ?? true;
+  // IMPORTANTE: No asumir true por defecto, usar null hasta que se cargue
+  // Esto evita que se apliquen valores incorrectos durante la carga inicial
+  const esCreador = configuracionSeleccionada?.esCreador ?? null;
 
   // Hook de puestos conectado a Supabase
   const puestosHook = usePuestosSupabase(configuracionSeleccionadaId);
@@ -60,8 +62,11 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   const [snapshotGuardado, setSnapshotGuardado] = useState(false);
 
   // Estado de carga combinado
-  // Para invitados, también esperamos a que carguen las preferencias personales
-  const cargando = cargandoConfig || cargandoPuestos || (!esCreador && preferenciasVisualesHook.cargando);
+  // - Siempre esperar a que cargue la configuración (para determinar esCreador)
+  // - Siempre esperar a que carguen los puestos
+  // - Para invitados (esCreador === false), también esperamos a que carguen las preferencias personales
+  // - Cuando esCreador es null, también esperamos las preferencias para evitar mostrar datos incorrectos
+  const cargando = cargandoConfig || cargandoPuestos || (esCreador !== true && preferenciasVisualesHook.cargando);
 
   /**
    * Para invitados: aplica las preferencias personales sobre los puestos base.
@@ -109,8 +114,11 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     // Solo guardar snapshot cuando:
     // 1. Hay puestos cargados
     // 2. Ya no estamos cargando (terminó la carga de BD)
-    // 3. Para invitados: también terminó de cargar preferencias
-    // 4. No hemos guardado el snapshot aún para esta sesión de carga
+    // 3. esCreador ya tiene un valor definitivo (true o false, no null)
+    // 4. Para invitados: también terminó de cargar preferencias
+    // 5. No hemos guardado el snapshot aún para esta sesión de carga
+    if (esCreador === null) return; // Esperar a que se determine el rol
+
     const prefsListas = esCreador || !preferenciasVisualesHook.cargando;
 
     if (puestos.length > 0 && !cargandoPuestos && prefsListas && !snapshotGuardado) {
@@ -131,11 +139,18 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   // - Creador: cambios van a BASE
   // - Invitado: cambios visuales van a preferencias_usuario
   useEffect(() => {
+    // Esperar a que esCreador tenga un valor definitivo
+    if (esCreador === null) return;
+
     if (puestos.length > 0) {
+      // Para invitados, usamos datos merged (preferencias + base) para comparar con el snapshot
+      // Esto evita falsos positivos cuando el snapshot tiene colores de preferencias personales
+      const puestosParaDeteccion = esCreador ? puestos : obtenerPuestosConPreferencias();
+
       // Para gaps verticales por puesto, construimos un objeto
       // Extraemos de gapsPorFila solo los gaps de cada puesto (formato clave: "puestoId:rowIndex")
       const gapsPorFilaPorPuesto = {};
-      puestos.forEach((p) => {
+      puestosParaDeteccion.forEach((p) => {
         const gapsDelPuesto = {};
         // Buscar en gapsPorFila todas las claves que empiezan con este puestoId
         Object.entries(gapsPorFila).forEach(([clave, valor]) => {
@@ -149,10 +164,10 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
       });
 
-      const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
+      const { hayCambios } = detectarCambios(puestosParaDeteccion, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
       setHayCambiosPendientes(hayCambios);
     }
-  }, [puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios]);
+  }, [puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, esCreador, obtenerPuestosConPreferencias]);
 
   /**
    * Sincroniza cambios visuales de un invitado a preferencias_usuario.
@@ -202,9 +217,12 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   const sincronizarCambios = useCallback(async () => {
     if (!hayCambiosPendientes) return;
 
+    // Para invitados, usamos datos merged para detectar cambios correctamente
+    const puestosParaSync = esCreador ? puestos : obtenerPuestosConPreferencias();
+
     // Construir gapsPorFilaPorPuesto extrayendo solo los gaps de cada puesto
     const gapsPorFilaPorPuesto = {};
-    puestos.forEach((p) => {
+    puestosParaSync.forEach((p) => {
       const gapsDelPuesto = {};
       Object.entries(gapsPorFila).forEach(([clave, valor]) => {
         if (clave.startsWith(`${p.id}:`)) {
@@ -215,7 +233,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       gapsPorFilaPorPuesto[p.id] = { ...p.gapsVerticales, ...gapsDelPuesto };
     });
 
-    const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
+    const { cambios } = detectarCambios(puestosParaSync, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
 
     if (esCreador) {
       // CREADOR: Guardar todo en BASE
@@ -258,7 +276,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         console.error("Error al sincronizar preferencias:", error);
       }
     }
-  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook, esCreador, sincronizarCambiosInvitado, preferenciasVisualesHook]);
+  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook, esCreador, sincronizarCambiosInvitado, preferenciasVisualesHook, obtenerPuestosConPreferencias]);
 
   // Función para descartar cambios
   // Limpia localStorage y recarga datos de BD para restaurar orden original
@@ -403,16 +421,22 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   }, [puestoSeleccionado, registrosEnVivo]);
 
   // ===== FUNCIONES DE GAP COMBINADAS (localStorage + BD + preferencias usuario) =====
-  // Prioridad para CREADOR: localStorage > BD > default
-  // Prioridad para INVITADO: preferencias_usuario > BD > default
+  // Prioridad para AMBOS ROLES: localStorage > preferencias_usuario > BD > default
+  // localStorage tiene prioridad porque representa cambios "en progreso" antes de guardar
 
   /**
    * Obtiene el gap horizontal de un alimentador.
-   * - Creador: prioriza localStorage (cambios no guardados) sobre BD
-   * - Invitado: usa preferencias persistentes en BD
+   * Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > default
+   * localStorage tiene prioridad porque representa cambios "en progreso" antes de guardar
    */
   const obtenerGapCombinado = useCallback((alimId) => {
-    // Para invitados, usar preferencias visuales persistentes
+    // 1. Primero mirar localStorage (cambios no guardados, aplica a ambos roles)
+    const gapLocal = gapsPorTarjeta[alimId];
+    if (gapLocal !== undefined) {
+      return gapLocal;
+    }
+
+    // 2. Para invitados, mirar preferencias visuales persistentes (ya guardadas en BD)
     if (!esCreador) {
       const configAlim = preferenciasVisualesHook.obtenerConfigAlimentador(alimId, puestoSeleccionado?.id);
       if (configAlim?.gapHorizontal !== undefined) {
@@ -420,13 +444,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 1. Primero mirar localStorage (para creadores o si invitado no tiene override)
-    const gapLocal = gapsPorTarjeta[alimId];
-    if (gapLocal !== undefined) {
-      return gapLocal;
-    }
-
-    // 2. Buscar en los datos de BD
+    // 3. Buscar en los datos de BD base
     if (puestoSeleccionado) {
       const alimentador = puestoSeleccionado.alimentadores.find(a => a.id === alimId);
       if (alimentador && alimentador.gapHorizontal !== undefined) {
@@ -434,19 +452,26 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 3. Default
+    // 4. Default
     return preferenciasHook.GAP_DEFAULT;
   }, [esCreador, gapsPorTarjeta, puestoSeleccionado, preferenciasHook.GAP_DEFAULT, preferenciasVisualesHook]);
 
   /**
    * Obtiene el gap vertical de una fila en un puesto específico.
-   * - Creador: prioriza localStorage sobre BD
-   * - Invitado: usa preferencias persistentes en BD
+   * Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > default
+   * localStorage tiene prioridad porque representa cambios "en progreso" antes de guardar
    * @param {string} puestoId - ID del puesto
    * @param {number} rowIndex - Índice de la fila
    */
   const obtenerRowGapCombinado = useCallback((puestoId, rowIndex) => {
-    // Para invitados, usar preferencias visuales persistentes
+    // 1. Primero mirar localStorage (cambios no guardados, aplica a ambos roles)
+    const claveLocal = `${puestoId}:${rowIndex}`;
+    const gapLocal = gapsPorFila[claveLocal];
+    if (gapLocal !== undefined) {
+      return gapLocal;
+    }
+
+    // 2. Para invitados, mirar preferencias visuales persistentes (ya guardadas en BD)
     if (!esCreador) {
       const configPuesto = preferenciasVisualesHook.obtenerConfigPuesto(puestoId);
       if (configPuesto?.gapsVerticales?.[rowIndex] !== undefined) {
@@ -454,14 +479,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 1. Primero mirar localStorage (usa clave compuesta puestoId:rowIndex)
-    const claveLocal = `${puestoId}:${rowIndex}`;
-    const gapLocal = gapsPorFila[claveLocal];
-    if (gapLocal !== undefined) {
-      return gapLocal;
-    }
-
-    // 2. Buscar en los gaps verticales del puesto específico (BD)
+    // 3. Buscar en los gaps verticales del puesto específico (BD base)
     const puesto = puestos.find(p => p.id === puestoId);
     if (puesto && puesto.gapsVerticales) {
       const gapBD = puesto.gapsVerticales[rowIndex];
@@ -470,25 +488,30 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 3. Default
+    // 4. Default
     return preferenciasHook.ROW_GAP_DEFAULT;
   }, [esCreador, gapsPorFila, puestos, preferenciasHook.ROW_GAP_DEFAULT, preferenciasVisualesHook]);
 
   // ===== FUNCIONES DE ESCALA COMBINADAS (localStorage + BD + preferencias usuario) =====
-  // Prioridad para CREADOR: localStorage > BD > null
-  // Prioridad para INVITADO: preferencias_usuario > BD > null
+  // Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > null
 
   /**
    * Obtiene la escala de un puesto.
-   * - Creador: prioriza localStorage sobre BD
-   * - Invitado: usa preferencias persistentes en BD
+   * Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > null
+   * localStorage tiene prioridad porque representa cambios "en progreso" antes de guardar
    * @param {string} puestoId - ID del puesto
    * @returns {number|null} Escala del puesto o null si no está definida
    */
   const obtenerEscalaPuestoCombinada = useCallback((puestoId) => {
     if (!puestoId) return null;
 
-    // Para invitados, usar preferencias visuales persistentes
+    // 1. Primero mirar localStorage (cambios no guardados, aplica a ambos roles)
+    const escalaLocal = escalasPorPuesto[puestoId];
+    if (escalaLocal !== undefined) {
+      return escalaLocal;
+    }
+
+    // 2. Para invitados, mirar preferencias visuales persistentes (ya guardadas en BD)
     if (!esCreador) {
       const configPuesto = preferenciasVisualesHook.obtenerConfigPuesto(puestoId);
       if (configPuesto?.escala !== undefined && configPuesto?.escala !== null) {
@@ -496,41 +519,27 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 1. Primero mirar localStorage
-    const escalaLocal = escalasPorPuesto[puestoId];
-    if (escalaLocal !== undefined) {
-      return escalaLocal;
-    }
-
-    // 2. Buscar en los datos de BD
+    // 3. Buscar en los datos de BD base
     const puesto = puestos.find(p => String(p.id) === String(puestoId));
     if (puesto && puesto.escala !== undefined && puesto.escala !== null) {
       return puesto.escala;
     }
 
-    // 3. No hay escala definida (usar jerarquía global)
+    // 4. No hay escala definida (usar jerarquía global)
     return null;
   }, [esCreador, escalasPorPuesto, puestos, preferenciasVisualesHook]);
 
   /**
    * Obtiene la escala de un alimentador (tarjeta individual).
-   * - Creador: prioriza localStorage sobre BD
-   * - Invitado: usa preferencias persistentes en BD
+   * Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > null
+   * localStorage tiene prioridad porque representa cambios "en progreso" antes de guardar
    * @param {string} alimId - ID del alimentador
    * @returns {number|null} Escala del alimentador o null si no está definida
    */
   const obtenerEscalaTarjetaCombinada = useCallback((alimId) => {
     if (!alimId) return null;
 
-    // Para invitados, usar preferencias visuales persistentes
-    if (!esCreador) {
-      const configAlim = preferenciasVisualesHook.obtenerConfigAlimentador(alimId, puestoSeleccionado?.id);
-      if (configAlim?.escala !== undefined && configAlim?.escala !== null) {
-        return configAlim.escala;
-      }
-    }
-
-    // 1. Primero mirar localStorage
+    // 1. Primero mirar localStorage (cambios no guardados, aplica a ambos roles)
     const escalaLocal = escalasPorTarjeta[alimId];
     // Si es null explícito, significa "ignorar escala individual" (usar puesto/global)
     if (escalaLocal === null) {
@@ -541,7 +550,15 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       return escalaLocal;
     }
 
-    // 2. Buscar en los datos de BD (en el puesto seleccionado)
+    // 2. Para invitados, mirar preferencias visuales persistentes (ya guardadas en BD)
+    if (!esCreador) {
+      const configAlim = preferenciasVisualesHook.obtenerConfigAlimentador(alimId, puestoSeleccionado?.id);
+      if (configAlim?.escala !== undefined && configAlim?.escala !== null) {
+        return configAlim.escala;
+      }
+    }
+
+    // 3. Buscar en los datos de BD base (en el puesto seleccionado)
     if (puestoSeleccionado) {
       const alimentador = puestoSeleccionado.alimentadores.find(a => String(a.id) === String(alimId));
       if (alimentador && alimentador.escala !== undefined && alimentador.escala !== null) {
@@ -549,26 +566,20 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       }
     }
 
-    // 3. No hay escala definida (usar jerarquía puesto/global)
+    // 4. No hay escala definida (usar jerarquía puesto/global)
     return null;
   }, [esCreador, escalasPorTarjeta, puestoSeleccionado, preferenciasVisualesHook]);
 
   /**
    * Obtiene la escala efectiva de una tarjeta considerando toda la jerarquía:
    * Individual > Por puesto > Global > Default
-   * - Creador: usa localStorage + BD
-   * - Invitado: usa preferencias persistentes + BD
+   * Prioridad: localStorage (cambios no guardados) > preferencias_usuario > BD > default
    * @param {string} alimId - ID del alimentador
    * @param {string} puestoId - ID del puesto
    * @returns {number} Escala efectiva a aplicar
    */
   const obtenerEscalaEfectivaCombinada = useCallback((alimId, puestoId) => {
-    // Para invitados, usar la función del hook de preferencias visuales
-    if (!esCreador) {
-      return preferenciasVisualesHook.obtenerEscalaEfectiva(alimId, puestoId);
-    }
-
-    // Para creadores, usar el sistema existente
+    // Usar las funciones combinadas que ya consideran localStorage > preferencias > BD
     // 1. Escala individual (máxima prioridad)
     const escalaIndividual = obtenerEscalaTarjetaCombinada(alimId);
     if (escalaIndividual !== null) return escalaIndividual;
@@ -584,7 +595,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
     // 4. Default
     return preferenciasHook.ESCALA_DEFAULT;
-  }, [esCreador, obtenerEscalaTarjetaCombinada, obtenerEscalaPuestoCombinada, preferenciasHook.escalaGlobal, preferenciasHook.ESCALA_DEFAULT, preferenciasVisualesHook]);
+  }, [obtenerEscalaTarjetaCombinada, obtenerEscalaPuestoCombinada, preferenciasHook.escalaGlobal, preferenciasHook.ESCALA_DEFAULT]);
 
   // Objeto de contexto
   const valorContexto = useMemo(

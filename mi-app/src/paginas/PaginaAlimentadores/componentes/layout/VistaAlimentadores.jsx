@@ -862,6 +862,11 @@ const {
 							skeletonCard={guardandoAlimentador ? <SkeletonCard /> : null}
 							onDropAlFinal={handleDropAlimAlFinal}
 							onAgregarNuevo={abrirModalNuevoAlim}
+							puedeAgregarNuevo={
+								configuracionSeleccionada?.esCreador
+									? (rolGlobal === 'superadmin' || rolGlobal === 'admin')
+									: (configuracionSeleccionada?.rol === 'admin')
+							}
 							estaMidiendo={estaMidiendo}
 							obtenerTimestampInicio={obtenerTimestampInicio}
 							obtenerContadorLecturas={obtenerContadorLecturas}

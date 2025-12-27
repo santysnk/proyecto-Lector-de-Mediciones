@@ -98,6 +98,7 @@ const GrillaTarjetas = ({
 	onDragEnd,
 	onDropAlFinal,
 	onAgregarNuevo,
+	puedeAgregarNuevo = true, // si false, la card "Nuevo Registrador" está deshabilitada
 	estaMidiendo,
 	obtenerTimestampInicio,
 	obtenerContadorLecturas,
@@ -556,7 +557,8 @@ const GrillaTarjetas = ({
 				})()}
 
 				{/* Tarjeta "Nuevo Registrador" o zona de drop */}
-				{(() => {
+				{/* Solo se muestra si: está arrastrando (zona de drop) O tiene permisos para agregar */}
+				{(elementoArrastrandoId || puedeAgregarNuevo) && (() => {
 					const marginTopNuevo = obtenerMarginTop('nuevo-registrador');
 					const styleNuevo = {
 						width: 304, minWidth: 304, maxWidth: 304, height: 279, minHeight: 279,

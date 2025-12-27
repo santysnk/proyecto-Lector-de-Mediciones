@@ -90,6 +90,17 @@
    font-size: 0.85rem;
 }
 
+/* Estado deshabilitado para usuarios sin permisos */
+.alim-card-add--disabled {
+   cursor: not-allowed;
+   opacity: 0.4;
+   border-color: #1f2937;
+}
+
+.alim-card-add--disabled:hover {
+   background-color: #111827; /* No cambiar color al hover */
+}
+
 /* Título de cada bloque de medidores dentro de la tarjeta */
 .alim-card-section-title {
    text-transform: uppercase;

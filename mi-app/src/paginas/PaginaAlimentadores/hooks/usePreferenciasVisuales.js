@@ -43,6 +43,8 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  // Flag para evitar que limpiarHuerfanos se ejecute durante/después de un guardado
+  const [saltarLimpiezaHuerfanos, setSaltarLimpiezaHuerfanos] = useState(false);
 
   // Estructura de preferenciasUsuario:
   // {
@@ -69,7 +71,8 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
       setCargando(true);
       setError(null);
       const response = await obtenerPreferencias(workspaceId);
-      setPreferenciasUsuario(response?.preferencias || {});
+      const prefs = response?.preferencias || {};
+      setPreferenciasUsuario(prefs);
     } catch (err) {
       console.error("Error cargando preferencias:", err);
       setError(err.message);
@@ -77,20 +80,53 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
     } finally {
       setCargando(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, esCreador]);
 
   // Cargar preferencias cuando cambie el workspace
+  // Nota: cargarPreferencias depende de workspaceId, así que se recrea cuando cambia
   useEffect(() => {
     cargarPreferencias();
-  }, [workspaceId]);
+  }, [cargarPreferencias]);
 
   /**
    * Limpia preferencias huérfanas (referencias a puestos/alimentadores que ya no existen)
+   * IMPORTANTE: Solo ejecutar cuando puestos ya está cargado para evitar borrar todo
+   * IMPORTANTE: Solo ejecutar si los puestos pertenecen al workspace actual
    */
   const limpiarHuerfanos = useCallback(async () => {
-    if (!preferenciasUsuario || !puestos || puestos.length === 0) return;
+    // Verificar que hay datos para comparar
+    if (!preferenciasUsuario || !puestos || puestos.length === 0) {
+      return;
+    }
 
+    // Verificar que hay preferencias que limpiar
+    const prefsPuestos = preferenciasUsuario.puestos || {};
+    const prefsAlimentadores = preferenciasUsuario.alimentadores || {};
+    if (Object.keys(prefsPuestos).length === 0 && Object.keys(prefsAlimentadores).length === 0) {
+      return;
+    }
+
+    // CRÍTICO: Verificar que los puestos pertenecen al workspace actual
+    // Si los puestos tienen un workspace_id diferente, NO ejecutar la limpieza
+    // porque significaría que estamos comparando preferencias de un workspace
+    // con puestos de otro workspace (durante el cambio de workspace)
+    const primerPuesto = puestos[0];
+    if (primerPuesto && primerPuesto.workspace_id && primerPuesto.workspace_id !== workspaceId) {
+      return;
+    }
+
+    // Verificar que al menos uno de los puestos con preferencias existe en la lista actual
+    // Si NINGUNO existe, probablemente los puestos son de otro workspace (cambio en progreso)
     const idsPuestos = new Set(puestos.map(p => p.id));
+    const prefsPuestosIds = Object.keys(prefsPuestos);
+    const algunoPuestoExiste = prefsPuestosIds.some(id => idsPuestos.has(id));
+
+    // Si hay preferencias de puestos pero NINGUNO está en la lista actual,
+    // es probable que estemos en medio de un cambio de workspace
+    if (prefsPuestosIds.length > 0 && !algunoPuestoExiste) {
+      return;
+    }
+
     const idsAlimentadores = new Set(
       puestos.flatMap(p => (p.alimentadores || []).map(a => a.id))
     );
@@ -129,7 +165,6 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
       try {
         await guardarPreferencias(workspaceId, { preferencias: nuevasPrefs });
         setPreferenciasUsuario(nuevasPrefs);
-        console.log("[Preferencias] Limpieza de huérfanos completada");
       } catch (err) {
         console.error("Error limpiando preferencias huérfanas:", err);
       }
@@ -137,11 +172,16 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
   }, [preferenciasUsuario, puestos, workspaceId]);
 
   // Ejecutar limpieza de huérfanos cuando cambian los puestos
+  // IMPORTANTE: Solo ejecutar si puestos tiene elementos para evitar borrar preferencias válidas
+  // IMPORTANTE: Saltar si estamos en medio de un guardado para evitar race conditions
   useEffect(() => {
-    if (!cargando && preferenciasUsuario && puestos) {
+    if (saltarLimpiezaHuerfanos) {
+      return;
+    }
+    if (!cargando && preferenciasUsuario && puestos && puestos.length > 0) {
       limpiarHuerfanos();
     }
-  }, [puestos, cargando]);
+  }, [puestos, cargando, limpiarHuerfanos, saltarLimpiezaHuerfanos]);
 
   /**
    * Obtiene la configuración visual de un puesto (merge base + override)
@@ -171,7 +211,7 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
         ...(override.gapsVerticales || {}),
       },
     };
-  }, [puestos, preferenciasUsuario]);
+  }, [puestos, preferenciasUsuario, esCreador]);
 
   /**
    * Obtiene la configuración visual de un alimentador (merge base + override)
@@ -241,6 +281,9 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
         }
       } else {
         // === INVITADO: Guardar en preferencias_usuario ===
+        // Activar flag para evitar que limpiarHuerfanos se ejecute durante el guardado
+        setSaltarLimpiezaHuerfanos(true);
+
         // Optimistic update: actualizar estado local primero para evitar lag
         const nuevasPrefs = { ...preferenciasUsuario };
 
@@ -257,11 +300,17 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
         }
 
         setPreferenciasUsuario(nuevasPrefs);
-        // Luego guardar en BD (sin await para no bloquear la UI)
-        guardarPreferencias(workspaceId, { preferencias: nuevasPrefs }).catch(err => {
+        // Luego guardar en BD (con await para asegurar que se complete)
+        try {
+          await guardarPreferencias(workspaceId, { preferencias: nuevasPrefs });
+        } catch (err) {
           console.error("Error guardando preferencia:", err);
           setError(err.message);
-        });
+        } finally {
+          setTimeout(() => {
+            setSaltarLimpiezaHuerfanos(false);
+          }, 500);
+        }
       }
     } catch (err) {
       console.error("Error guardando preferencia:", err);
@@ -297,6 +346,9 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
         await actualizarPuesto(puestoId, cambiosBackend);
         if (recargarPuestos) await recargarPuestos();
       } else {
+        // Activar flag para evitar que limpiarHuerfanos se ejecute durante el guardado
+        setSaltarLimpiezaHuerfanos(true);
+
         // Optimistic update: actualizar estado local primero para evitar lag
         const nuevasPrefs = { ...preferenciasUsuario };
         nuevasPrefs.puestos = nuevasPrefs.puestos || {};
@@ -305,11 +357,18 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
           ...cambios,
         };
         setPreferenciasUsuario(nuevasPrefs);
-        // Luego guardar en BD (sin await para no bloquear la UI)
-        guardarPreferencias(workspaceId, { preferencias: nuevasPrefs }).catch(err => {
+        // Luego guardar en BD (con await para asegurar que se complete antes de permitir limpiezaHuerfanos)
+        try {
+          await guardarPreferencias(workspaceId, { preferencias: nuevasPrefs });
+        } catch (err) {
           console.error("Error guardando preferencias puesto:", err);
           setError(err.message);
-        });
+        } finally {
+          // Reactivar limpiezaHuerfanos después de un delay para evitar race condition
+          setTimeout(() => {
+            setSaltarLimpiezaHuerfanos(false);
+          }, 500);
+        }
       }
     } catch (err) {
       console.error("Error guardando preferencias puesto:", err);
@@ -343,6 +402,9 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
         await actualizarAlimentadorAPI(alimentadorId, cambiosBackend);
         if (recargarPuestos) await recargarPuestos();
       } else {
+        // Activar flag para evitar que limpiarHuerfanos se ejecute durante el guardado
+        setSaltarLimpiezaHuerfanos(true);
+
         // Optimistic update: actualizar estado local primero para evitar lag
         const nuevasPrefs = { ...preferenciasUsuario };
         nuevasPrefs.alimentadores = nuevasPrefs.alimentadores || {};
@@ -351,11 +413,17 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
           ...cambios,
         };
         setPreferenciasUsuario(nuevasPrefs);
-        // Luego guardar en BD (sin await para no bloquear la UI)
-        guardarPreferencias(workspaceId, { preferencias: nuevasPrefs }).catch(err => {
+        // Luego guardar en BD (con await para asegurar que se complete)
+        try {
+          await guardarPreferencias(workspaceId, { preferencias: nuevasPrefs });
+        } catch (err) {
           console.error("Error guardando preferencias alimentador:", err);
           setError(err.message);
-        });
+        } finally {
+          setTimeout(() => {
+            setSaltarLimpiezaHuerfanos(false);
+          }, 500);
+        }
       }
     } catch (err) {
       console.error("Error guardando preferencias alimentador:", err);
