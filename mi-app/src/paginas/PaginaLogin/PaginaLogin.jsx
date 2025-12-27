@@ -1,10 +1,14 @@
 // src/paginas/PaginaLogin/PaginaLogin.jsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contextos/AuthContext";
+import { Capacitor } from "@capacitor/core";
+import { BiometricAuth } from "@aparajita/capacitor-biometric-auth";
 import "./PaginaLogin.css";
 import logoApp from "../../assets/imagenes/logo 2 rw.png";
+
+const STORAGE_KEY = "relaywatch_recordarme";
 
 // Icono ojo abierto
 const EyeIcon = () => (
@@ -25,11 +29,34 @@ const PaginaLogin = () => {
   const [email, setEmail] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [mostrarContrasena, setMostrarContrasena] = useState(false);
+  const [recordarme, setRecordarme] = useState(false);
   const [alerta, setAlerta] = useState({ mensaje: "", tipo: "" });
   const [cargando, setCargando] = useState(false);
 
+  // Ref para saber si las credenciales vienen del localStorage (precargadas)
+  const credencialesPrecargadas = useRef(false);
+  const biometriaYaIntentada = useRef(false);
+
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  // Cargar credenciales guardadas al montar
+  useEffect(() => {
+    const guardado = localStorage.getItem(STORAGE_KEY);
+    if (guardado) {
+      try {
+        const { email: emailGuardado, contrasena: contrasenaGuardada } = JSON.parse(guardado);
+        if (emailGuardado && contrasenaGuardada) {
+          setEmail(emailGuardado);
+          setContrasena(contrasenaGuardada);
+          setRecordarme(true);
+          credencialesPrecargadas.current = true;
+        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+  }, []);
 
   // Mostrar alerta temporal
   const mostrarAlerta = (mensaje, tipo = "error") => {
@@ -38,6 +65,54 @@ const PaginaLogin = () => {
       setAlerta({ mensaje: "", tipo: "" });
     }, 4000);
   };
+
+  // Mostrar prompt de biometría automáticamente SOLO si hay credenciales precargadas
+  useEffect(() => {
+    const intentarBiometria = async () => {
+      // Solo ejecutar si:
+      // 1. Las credenciales vienen precargadas del localStorage
+      // 2. No se ha intentado ya la biometría
+      // 3. Estamos en plataforma nativa
+      if (!credencialesPrecargadas.current || biometriaYaIntentada.current) return;
+      if (!Capacitor.isNativePlatform()) return;
+
+      biometriaYaIntentada.current = true;
+
+      try {
+        const info = await BiometricAuth.checkBiometry();
+        if (!info.isAvailable) return;
+
+        await BiometricAuth.authenticate({
+          reason: "Inicia sesión con tu huella digital",
+          cancelTitle: "Cancelar",
+          allowDeviceCredential: true,
+        });
+
+        // Biometría exitosa, hacer login automático
+        setCargando(true);
+        const { exito, error } = await login(email.trim(), contrasena);
+        setCargando(false);
+
+        if (!exito) {
+          mostrarAlerta(error || "Error al iniciar sesión", "error");
+          return;
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ email: email.trim(), contrasena }));
+        mostrarAlerta("¡Bienvenido!", "exito");
+
+        setTimeout(() => {
+          navigate("/alimentadores");
+        }, 1200);
+      } catch {
+        // Usuario canceló o error de biometría - no mostrar error
+      }
+    };
+
+    // Pequeño delay para que la UI se renderice primero
+    const timer = setTimeout(intentarBiometria, 500);
+    return () => clearTimeout(timer);
+  }, [email, contrasena, login, navigate]);
 
   // Manejo del submit del formulario
   const handleSubmit = async (event) => {
@@ -57,6 +132,13 @@ const PaginaLogin = () => {
     if (!exito) {
       mostrarAlerta(error || "Error al iniciar sesión", "error");
       return;
+    }
+
+    // Guardar o limpiar credenciales según checkbox
+    if (recordarme) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ email: email.trim(), contrasena }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
     }
 
     mostrarAlerta("¡Bienvenido!", "exito");
@@ -109,6 +191,16 @@ const PaginaLogin = () => {
                 {mostrarContrasena ? <EyeIcon /> : <EyeOffIcon />}
               </span>
             </div>
+
+            <label className="checkbox-recordarme">
+              <input
+                type="checkbox"
+                checked={recordarme}
+                onChange={(e) => setRecordarme(e.target.checked)}
+                disabled={cargando}
+              />
+              <span>Recordarme</span>
+            </label>
 
             <div className="acciones">
               <button
