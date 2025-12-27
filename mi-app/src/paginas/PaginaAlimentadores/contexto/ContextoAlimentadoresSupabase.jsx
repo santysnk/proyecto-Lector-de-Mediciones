@@ -60,20 +60,66 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   const [snapshotGuardado, setSnapshotGuardado] = useState(false);
 
   // Estado de carga combinado
-  const cargando = cargandoConfig || cargandoPuestos;
+  // Para invitados, también esperamos a que carguen las preferencias personales
+  const cargando = cargandoConfig || cargandoPuestos || (!esCreador && preferenciasVisualesHook.cargando);
+
+  /**
+   * Para invitados: aplica las preferencias personales sobre los puestos base.
+   * Esto crea una vista "merged" que el invitado ve como su configuración inicial.
+   */
+  const obtenerPuestosConPreferencias = useCallback(() => {
+    if (esCreador || !preferenciasVisualesHook.preferenciasUsuario) {
+      return puestos;
+    }
+
+    // Aplicar preferencias personales sobre los puestos base
+    return puestos.map(puesto => {
+      const prefsPuesto = preferenciasVisualesHook.obtenerConfigPuesto(puesto.id);
+
+      // Aplicar preferencias del puesto si existen
+      const puestoMerged = {
+        ...puesto,
+        color: prefsPuesto?.color || puesto.color,
+        bgColor: prefsPuesto?.bg_color || puesto.bgColor || puesto.bg_color,
+        escala: prefsPuesto?.escala ?? puesto.escala,
+        gapsVerticales: {
+          ...(puesto.gapsVerticales || { "0": 40 }),
+          ...(prefsPuesto?.gapsVerticales || {}),
+        },
+        // Aplicar preferencias a los alimentadores
+        alimentadores: (puesto.alimentadores || []).map(alim => {
+          const prefsAlim = preferenciasVisualesHook.obtenerConfigAlimentador(alim.id, puesto.id);
+          return {
+            ...alim,
+            color: prefsAlim?.color || alim.color,
+            escala: prefsAlim?.escala ?? alim.escala,
+            gapHorizontal: prefsAlim?.gapHorizontal ?? alim.gapHorizontal ?? 10,
+          };
+        }),
+      };
+
+      return puestoMerged;
+    });
+  }, [esCreador, puestos, preferenciasVisualesHook]);
 
   // Guardar snapshot SOLO cuando terminamos de cargar de BD (una sola vez)
-  // No cuando puestos cambia localmente (ej: drag & drop)
+  // Para invitados: esperamos también a que carguen las preferencias personales
+  // y usamos los datos merged (BASE + preferencias)
   useEffect(() => {
     // Solo guardar snapshot cuando:
     // 1. Hay puestos cargados
     // 2. Ya no estamos cargando (terminó la carga de BD)
-    // 3. No hemos guardado el snapshot aún para esta sesión de carga
-    if (puestos.length > 0 && !cargandoPuestos && !snapshotGuardado) {
-      guardarSnapshot(puestos);
+    // 3. Para invitados: también terminó de cargar preferencias
+    // 4. No hemos guardado el snapshot aún para esta sesión de carga
+    const prefsListas = esCreador || !preferenciasVisualesHook.cargando;
+
+    if (puestos.length > 0 && !cargandoPuestos && prefsListas && !snapshotGuardado) {
+      // Para invitados, guardar snapshot con datos merged
+      const puestosParaSnapshot = esCreador ? puestos : obtenerPuestosConPreferencias();
+      guardarSnapshot(puestosParaSnapshot);
       setSnapshotGuardado(true);
     }
-  }, [puestos, cargandoPuestos, snapshotGuardado, guardarSnapshot]);
+  }, [puestos, cargandoPuestos, snapshotGuardado, guardarSnapshot, esCreador, preferenciasVisualesHook.cargando, obtenerPuestosConPreferencias]);
 
   // Resetear flag cuando cambia el workspace (para recargar snapshot)
   useEffect(() => {
@@ -81,14 +127,10 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
   }, [configuracionSeleccionadaId]);
 
   // Detectar cambios cada vez que cambian los datos locales
-  // NOTA: Para invitados, siempre es false porque sus cambios se guardan automáticamente en preferencias_usuario
+  // Funciona igual para creadores e invitados:
+  // - Creador: cambios van a BASE
+  // - Invitado: cambios visuales van a preferencias_usuario
   useEffect(() => {
-    // Si es invitado, nunca hay cambios pendientes (se guardan automáticamente)
-    if (!esCreador) {
-      setHayCambiosPendientes(false);
-      return;
-    }
-
     if (puestos.length > 0) {
       // Para gaps verticales por puesto, construimos un objeto
       // Extraemos de gapsPorFila solo los gaps de cada puesto (formato clave: "puestoId:rowIndex")
@@ -110,9 +152,53 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       const { hayCambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
       setHayCambiosPendientes(hayCambios);
     }
-  }, [puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, esCreador]);
+  }, [puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios]);
+
+  /**
+   * Sincroniza cambios visuales de un invitado a preferencias_usuario.
+   * Solo guarda: colores, gaps, escalas (NO estructura de puestos/alimentadores).
+   */
+  const sincronizarCambiosInvitado = useCallback(async (cambios) => {
+    try {
+      // Guardar cambios de puestos en preferencias
+      for (const { id, campos } of cambios.puestos) {
+        const prefsToSave = {};
+        if (campos.color !== undefined) prefsToSave.color = campos.color;
+        if (campos.bgColor !== undefined) prefsToSave.bg_color = campos.bgColor;
+        if (campos.gapsVerticales !== undefined) prefsToSave.gapsVerticales = campos.gapsVerticales;
+        if (campos.escala !== undefined) prefsToSave.escala = campos.escala;
+
+        if (Object.keys(prefsToSave).length > 0) {
+          await preferenciasVisualesHook.guardarPreferenciasPuesto(id, prefsToSave);
+        }
+      }
+
+      // Guardar cambios de alimentadores en preferencias
+      for (const { id, campos } of cambios.alimentadores) {
+        const prefsToSave = {};
+        if (campos.color !== undefined) prefsToSave.color = campos.color;
+        if (campos.gapHorizontal !== undefined) prefsToSave.gapHorizontal = campos.gapHorizontal;
+        if (campos.escala !== undefined) prefsToSave.escala = campos.escala;
+
+        if (Object.keys(prefsToSave).length > 0) {
+          await preferenciasVisualesHook.guardarPreferenciasAlimentador(id, prefsToSave);
+        }
+      }
+
+      // Nota: El orden de alimentadores (reordenarAlimentadores) NO se guarda en preferencias
+      // porque afecta la estructura visual para todos. Si se quiere permitir orden personalizado,
+      // habría que agregar soporte para eso en el futuro.
+
+      return true;
+    } catch (error) {
+      console.error("Error sincronizando preferencias de invitado:", error);
+      throw error;
+    }
+  }, [preferenciasVisualesHook]);
 
   // Función para sincronizar cambios con BD
+  // Para creadores: guarda en BASE
+  // Para invitados: guarda cambios visuales en preferencias_usuario
   const sincronizarCambios = useCallback(async () => {
     if (!hayCambiosPendientes) return;
 
@@ -131,29 +217,48 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
     const { cambios } = detectarCambios(puestos, gapsPorTarjeta, gapsPorFilaPorPuesto, escalasPorPuesto, escalasPorTarjeta);
 
-    await sincronizarConBD(
-      cambios,
-      // onSuccess
-      async () => {
-        // Limpiar gaps del localStorage ya que ahora están en la BD
-        // Esto evita que queden gaps huérfanos de alimentadores eliminados
+    if (esCreador) {
+      // CREADOR: Guardar todo en BASE
+      await sincronizarConBD(
+        cambios,
+        // onSuccess
+        async () => {
+          // Limpiar gaps del localStorage ya que ahora están en la BD
+          preferenciasHook.resetearTodosLosGaps();
+          preferenciasHook.resetearTodosLosRowGaps();
+          preferenciasHook.resetearTodasLasEscalasPuestos();
+          preferenciasHook.resetearTodasLasEscalasTarjetas();
+          // Resetear flag para que se guarde nuevo snapshot al recargar
+          setSnapshotGuardado(false);
+          // Recargar datos para actualizar snapshot
+          await puestosHook.cargarPuestos();
+        },
+        (error) => {
+          console.error("Error al sincronizar:", error);
+        }
+      );
+    } else {
+      // INVITADO: Guardar cambios visuales en preferencias_usuario
+      try {
+        await sincronizarCambiosInvitado(cambios);
+
+        // Limpiar localStorage
         preferenciasHook.resetearTodosLosGaps();
         preferenciasHook.resetearTodosLosRowGaps();
-        // Limpiar escalas del localStorage (por puesto y por tarjeta)
-        // La escala global NO se limpia porque es preferencia del usuario, no se guarda en BD
         preferenciasHook.resetearTodasLasEscalasPuestos();
         preferenciasHook.resetearTodasLasEscalasTarjetas();
-        // Resetear flag para que se guarde nuevo snapshot al recargar
+
+        // Recargar preferencias del usuario para actualizar snapshot
+        await preferenciasVisualesHook.cargarPreferencias();
+        // Resetear flag para que se guarde nuevo snapshot
         setSnapshotGuardado(false);
-        // Recargar datos para actualizar snapshot (Pbase = Pnavegador)
+        // Recargar puestos también (para que el snapshot use datos frescos)
         await puestosHook.cargarPuestos();
-      },
-      // onError
-      (error) => {
-        console.error("Error al sincronizar:", error);
+      } catch (error) {
+        console.error("Error al sincronizar preferencias:", error);
       }
-    );
-  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook]);
+    }
+  }, [hayCambiosPendientes, puestos, gapsPorTarjeta, gapsPorFila, escalasPorPuesto, escalasPorTarjeta, detectarCambios, sincronizarConBD, puestosHook, preferenciasHook, esCreador, sincronizarCambiosInvitado, preferenciasVisualesHook]);
 
   // Función para descartar cambios
   // Limpia localStorage y recarga datos de BD para restaurar orden original
@@ -166,8 +271,14 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     preferenciasHook.resetearTodasLasEscalasTarjetas();
     // Resetear flag y recargar datos de BD para restaurar orden original
     setSnapshotGuardado(false);
+
+    // Para invitados, también recargar preferencias personales
+    if (!esCreador) {
+      await preferenciasVisualesHook.cargarPreferencias();
+    }
+
     await puestosHook.cargarPuestos();
-  }, [preferenciasHook, puestosHook]);
+  }, [preferenciasHook, puestosHook, esCreador, preferenciasVisualesHook]);
 
   // Función para limpiar todo el localStorage de preferencias UI (al salir)
   const limpiarPreferenciasUI = useCallback(() => {
@@ -175,81 +286,14 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     preferenciasHook.resetearTodosLosRowGaps();
   }, [preferenciasHook]);
 
-  // ===== WRAPPERS DE GUARDADO SEGÚN ROL =====
-  // Para creadores: usa localStorage (y luego sincroniza con BD)
-  // Para invitados: guarda directamente en preferencias_usuario
-
-  /**
-   * Establece el gap horizontal de un alimentador.
-   * - Creador: guarda en localStorage (sync manual con BD)
-   * - Invitado: guarda en preferencias_usuario (sync automático)
-   */
-  const establecerGapInteligente = useCallback((alimId, nuevoGap) => {
-    if (esCreador) {
-      // Creador: usa localStorage (se sincroniza con "Guardar cambios")
-      preferenciasHook.establecerGap(alimId, nuevoGap);
-    } else {
-      // Invitado: guarda en BD directamente
-      preferenciasVisualesHook.guardarPreferenciasAlimentador(alimId, { gapHorizontal: nuevoGap });
-    }
-  }, [esCreador, preferenciasHook, preferenciasVisualesHook]);
-
-  /**
-   * Establece el gap vertical de una fila en un puesto.
-   * - Creador: guarda en localStorage
-   * - Invitado: guarda en preferencias_usuario
-   */
-  const establecerRowGapInteligente = useCallback((puestoId, rowIndex, nuevoGap) => {
-    if (esCreador) {
-      preferenciasHook.establecerRowGap(puestoId, rowIndex, nuevoGap);
-    } else {
-      // Para invitados, obtener los gaps actuales y agregar/actualizar el nuevo
-      const configActual = preferenciasVisualesHook.obtenerConfigPuesto(puestoId);
-      const gapsActuales = configActual?.gapsVerticales || {};
-      preferenciasVisualesHook.guardarPreferenciasPuesto(puestoId, {
-        gapsVerticales: { ...gapsActuales, [rowIndex]: nuevoGap }
-      });
-    }
-  }, [esCreador, preferenciasHook, preferenciasVisualesHook]);
-
-  /**
-   * Establece la escala de un puesto.
-   * - Creador: guarda en localStorage
-   * - Invitado: guarda en preferencias_usuario
-   */
-  const establecerEscalaPuestoInteligente = useCallback((puestoId, nuevaEscala) => {
-    if (esCreador) {
-      preferenciasHook.establecerEscalaPuesto(puestoId, nuevaEscala);
-    } else {
-      preferenciasVisualesHook.guardarPreferenciasPuesto(puestoId, { escala: nuevaEscala });
-    }
-  }, [esCreador, preferenciasHook, preferenciasVisualesHook]);
-
-  /**
-   * Establece la escala de una tarjeta individual.
-   * - Creador: guarda en localStorage
-   * - Invitado: guarda en preferencias_usuario
-   */
-  const establecerEscalaTarjetaInteligente = useCallback((alimId, nuevaEscala) => {
-    if (esCreador) {
-      preferenciasHook.establecerEscalaTarjeta(alimId, nuevaEscala);
-    } else {
-      preferenciasVisualesHook.guardarPreferenciasAlimentador(alimId, { escala: nuevaEscala });
-    }
-  }, [esCreador, preferenciasHook, preferenciasVisualesHook]);
-
-  /**
-   * Establece la escala global.
-   * - Creador: guarda en localStorage
-   * - Invitado: guarda en preferencias_usuario
-   */
-  const establecerEscalaGlobalInteligente = useCallback((nuevaEscala) => {
-    if (esCreador) {
-      preferenciasHook.establecerEscalaGlobal(nuevaEscala);
-    } else {
-      preferenciasVisualesHook.guardarPreferencia('global', null, 'escalaGlobal', nuevaEscala);
-    }
-  }, [esCreador, preferenciasHook, preferenciasVisualesHook]);
+  // ===== NOTA SOBRE GUARDADO =====
+  // Tanto creadores como invitados usan localStorage para cambios locales.
+  // Al hacer clic en "Guardar":
+  // - Creador: sincroniza cambios a BASE (tabla puestos/alimentadores)
+  // - Invitado: sincroniza cambios visuales a preferencias_usuario
+  //
+  // Las funciones de establecerGap, establecerRowGap, etc. del preferenciasHook
+  // se usan directamente sin wrappers ya que ambos roles usan localStorage.
 
   /**
    * Obtiene el color del botón de un puesto.
@@ -583,13 +627,13 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
       // Preferencias UI (gaps)
       // Las funciones obtener* combinan localStorage/preferencias + BD
-      // Las funciones establecer* guardan según rol (creador->localStorage, invitado->BD)
+      // Las funciones establecer* guardan en localStorage (se sincronizan con "Guardar")
       gapsPorTarjeta: preferenciasHook.gapsPorTarjeta,
       gapsPorFila: preferenciasHook.gapsPorFila,
       obtenerGap: obtenerGapCombinado,
-      establecerGap: establecerGapInteligente,
+      establecerGap: preferenciasHook.establecerGap,
       obtenerRowGap: obtenerRowGapCombinado,
-      establecerRowGap: establecerRowGapInteligente,
+      establecerRowGap: preferenciasHook.establecerRowGap,
       GAP_MIN: preferenciasHook.GAP_MIN,
       GAP_MAX: preferenciasHook.GAP_MAX,
       GAP_DEFAULT: preferenciasHook.GAP_DEFAULT,
@@ -598,18 +642,18 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
       ROW_GAP_DEFAULT: preferenciasHook.ROW_GAP_DEFAULT,
 
       // Escala de tarjetas
-      // Las funciones obtener* combinan preferencias + BD
-      // Las funciones establecer* guardan según rol
-      escalaGlobal: !esCreador ? preferenciasVisualesHook.escalaGlobal : preferenciasHook.escalaGlobal,
-      establecerEscalaGlobal: establecerEscalaGlobalInteligente,
+      // Las funciones obtener* combinan localStorage/preferencias + BD
+      // Las funciones establecer* guardan en localStorage (se sincronizan con "Guardar")
+      escalaGlobal: preferenciasHook.escalaGlobal,
+      establecerEscalaGlobal: preferenciasHook.establecerEscalaGlobal,
       resetearEscalaGlobal: preferenciasHook.resetearEscalaGlobal,
       escalasPorPuesto: preferenciasHook.escalasPorPuesto,
       obtenerEscalaPuesto: obtenerEscalaPuestoCombinada,
-      establecerEscalaPuesto: establecerEscalaPuestoInteligente,
+      establecerEscalaPuesto: preferenciasHook.establecerEscalaPuesto,
       resetearEscalaPuesto: preferenciasHook.resetearEscalaPuesto,
       escalasPorTarjeta: preferenciasHook.escalasPorTarjeta,
       obtenerEscalaTarjeta: obtenerEscalaTarjetaCombinada,
-      establecerEscalaTarjeta: establecerEscalaTarjetaInteligente,
+      establecerEscalaTarjeta: preferenciasHook.establecerEscalaTarjeta,
       resetearEscalaTarjeta: preferenciasHook.resetearEscalaTarjeta,
       obtenerEscalaEfectiva: obtenerEscalaEfectivaCombinada,
       resetearTodasLasEscalas: preferenciasHook.resetearTodasLasEscalas,
@@ -644,7 +688,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         obtenerConfigAlimentador: preferenciasVisualesHook.obtenerConfigAlimentador,
       },
     }),
-    [puestosHook, medicionesHook, preferenciasHook, preferenciasVisualesHook, lecturasTarjetas, configuracionSeleccionada, cargando, hayCambiosPendientes, sincronizando, errorSincronizacion, sincronizarCambios, descartarCambios, obtenerGapCombinado, obtenerRowGapCombinado, obtenerEscalaPuestoCombinada, obtenerEscalaTarjetaCombinada, obtenerEscalaEfectivaCombinada, limpiarPreferenciasUI, esCreador, establecerGapInteligente, establecerRowGapInteligente, establecerEscalaPuestoInteligente, establecerEscalaTarjetaInteligente, establecerEscalaGlobalInteligente, actualizarPuestosInteligente, obtenerColorPuesto, obtenerBgColorPuesto]
+    [puestosHook, medicionesHook, preferenciasHook, preferenciasVisualesHook, lecturasTarjetas, configuracionSeleccionada, cargando, hayCambiosPendientes, sincronizando, errorSincronizacion, sincronizarCambios, descartarCambios, obtenerGapCombinado, obtenerRowGapCombinado, obtenerEscalaPuestoCombinada, obtenerEscalaTarjetaCombinada, obtenerEscalaEfectivaCombinada, limpiarPreferenciasUI, esCreador, actualizarPuestosInteligente, obtenerColorPuesto, obtenerBgColorPuesto]
   );
 
   return (
