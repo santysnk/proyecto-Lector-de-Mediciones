@@ -3,3 +3,17 @@
 
 # JetBrains IDE (Android Studio, IntelliJ, etc.)
 .idea/
+
+# Firebase/Google Services - NUNCA subir a repositorios públicos
+google-services.json
+mi-app/android/app/google-services.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+*.apk
+*.aab
+*.keystore
