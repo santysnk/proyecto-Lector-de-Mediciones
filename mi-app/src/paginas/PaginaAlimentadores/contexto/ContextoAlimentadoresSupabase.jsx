@@ -349,16 +349,22 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
     } else {
       // Invitado: solo guardar colores en preferencias_usuario
       // Los nombres NO se guardan (invitados no pueden cambiar nombres)
+      // IMPORTANTE: Comparamos contra el color "merged" (preferencia actual > BD)
+      // para detectar solo los cambios reales del usuario
       for (const puesto of puestosEditados) {
-        const puestoOriginal = puestosHook.puestos.find(p => p.id === puesto.id);
-        if (!puestoOriginal) continue;
+        const puestoBase = puestosHook.puestos.find(p => p.id === puesto.id);
+        if (!puestoBase) continue;
 
-        // Detectar si cambiaron los colores
+        // Obtener el color actual considerando preferencias existentes
+        const colorActual = obtenerColorPuesto(puesto.id) || puestoBase.color;
+        const bgColorActual = obtenerBgColorPuesto(puesto.id) || puestoBase.bgColor || puestoBase.bg_color;
+
+        // Detectar si cambiaron los colores respecto al estado merged
         const cambios = {};
-        if (puesto.color !== puestoOriginal.color) {
+        if (puesto.color !== colorActual) {
           cambios.color = puesto.color;
         }
-        if ((puesto.bgColor || puesto.bg_color) !== (puestoOriginal.bgColor || puestoOriginal.bg_color)) {
+        if ((puesto.bgColor || puesto.bg_color) !== bgColorActual) {
           cambios.bg_color = puesto.bgColor || puesto.bg_color;
         }
 
@@ -368,7 +374,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
         }
       }
     }
-  }, [esCreador, puestosHook, preferenciasVisualesHook]);
+  }, [esCreador, puestosHook, preferenciasVisualesHook, obtenerColorPuesto, obtenerBgColorPuesto]);
 
   // Recalcular lecturas de tarjetas cuando cambian los datos
   useEffect(() => {

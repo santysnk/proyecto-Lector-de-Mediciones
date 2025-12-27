@@ -1,6 +1,6 @@
 // src/paginas/PaginaAlimentadores/componentes/layout/VistaAlimentadores.jsx
 
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import ReactDOM from "react-dom";                                    // para portal del overlay
 import { useNavigate } from "react-router-dom";                     // navegación entre rutas
 import { useAuth } from "../../../../contextos/AuthContext";        // contexto de autenticación
@@ -82,6 +82,11 @@ const VistaAlimentadores = () => {
    sincronizando,                         // true mientras se guardan cambios en BD
    // Getters de colores (para soporte de preferencias de invitados)
    obtenerBgColorPuesto,                  // obtiene bgColor del puesto (con preferencias de invitado)
+   obtenerColorPuesto,                    // obtiene color del puesto (con preferencias de invitado)
+   // Info del rol del usuario en el workspace
+   esCreador,                             // true si el usuario es creador del workspace
+   // Preferencias visuales (para invitados)
+   preferenciasVisuales,                  // objeto con funciones para obtener preferencias personales
 } = usarContextoAlimentadores();          // hook que conecta esta vista con el contexto global de alimentadores
 
 
@@ -129,6 +134,34 @@ const {
 	const [contadoresErrorRed, setContadoresErrorRed] = useState({}); // { [alimId_zona]: number }
 	// Estado global de conexión con el backend
 	const [hayProblemaConexion, setHayProblemaConexion] = useState(false);
+
+	// ===== PUESTOS CON PREFERENCIAS (PARA MODAL DE EDICIÓN) =====
+	// Para invitados: aplicamos las preferencias personales sobre los puestos base
+	// Esto asegura que el modal de edición muestre los colores correctos
+	const puestosConPreferencias = useMemo(() => {
+		if (esCreador || !preferenciasVisuales) {
+			return puestos;
+		}
+
+		// Aplicar preferencias personales sobre los puestos base
+		return puestos.map(puesto => {
+			const configPuesto = preferenciasVisuales.obtenerConfigPuesto?.(puesto.id);
+
+			return {
+				...puesto,
+				color: configPuesto?.color || puesto.color,
+				bgColor: configPuesto?.bg_color || puesto.bgColor || puesto.bg_color,
+				// Los alimentadores también pueden tener preferencias
+				alimentadores: (puesto.alimentadores || []).map(alim => {
+					const configAlim = preferenciasVisuales.obtenerConfigAlimentador?.(alim.id, puesto.id);
+					return {
+						...alim,
+						color: configAlim?.color || alim.color,
+					};
+				}),
+			};
+		});
+	}, [esCreador, puestos, preferenciasVisuales]);
 
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
@@ -861,7 +894,7 @@ const {
 
 			<ModalEditarPuestos
 				abierto={estadoModalEditarPuestos.abierto}
-				puestos={puestos}
+				puestos={puestosConPreferencias}
 				onCerrar={() => cerrarModal("editarPuestos")}
 				onGuardar={handleGuardarPuestos}
 				rolGlobal={rolGlobal}
