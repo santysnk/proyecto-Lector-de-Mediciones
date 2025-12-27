@@ -22,6 +22,8 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     puedeCrearWorkspaces,
     rolGlobal,
     perfil,
+    workspaceDefaultId,
+    toggleWorkspaceDefault,
   } = usarContextoConfiguracion();
 
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -76,6 +78,15 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
     seleccionarConfiguracion(id);
     setSubmenuAbierto(false);
     setMenuAbierto(false);
+  };
+
+  const handleToggleDefault = async (e, id) => {
+    e.stopPropagation(); // Evitar que se seleccione el workspace
+    try {
+      await toggleWorkspaceDefault(id);
+    } catch (err) {
+      console.error("Error cambiando workspace default:", err);
+    }
   };
 
   const handleCrearNueva = async (e) => {
@@ -376,6 +387,14 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                               : ""
                           }`}
                         >
+                          <button
+                            type="button"
+                            className="selector-config__default-btn"
+                            onClick={(e) => handleToggleDefault(e, config.id)}
+                            title={config.id === workspaceDefaultId ? "Quitar como default" : "Establecer como default"}
+                          >
+                            {config.id === workspaceDefaultId ? "★" : "☆"}
+                          </button>
                           <button
                             type="button"
                             className="selector-config__item-btn"

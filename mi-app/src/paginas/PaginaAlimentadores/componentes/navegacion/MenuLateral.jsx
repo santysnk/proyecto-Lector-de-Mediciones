@@ -36,6 +36,8 @@ const MenuLateral = ({
 		puedeCrearWorkspaces,
 		rolGlobal,
 		perfil,
+		workspaceDefaultId,
+		toggleWorkspaceDefault,
 	} = usarContextoConfiguracion();
 
 	const { obtenerColorPuesto } = usarContextoAlimentadores();
@@ -74,6 +76,15 @@ const MenuLateral = ({
 			console.error("Error creando workspace:", err);
 		} finally {
 			setCreandoWorkspace(false);
+		}
+	};
+
+	const handleToggleDefault = async (e, id) => {
+		e.stopPropagation();
+		try {
+			await toggleWorkspaceDefault(id);
+		} catch (err) {
+			console.error("Error cambiando workspace default:", err);
 		}
 	};
 
@@ -124,15 +135,24 @@ const MenuLateral = ({
 					{submenuWorkspaceAbierto && (
 						<div className="alim-drawer-workspace-lista">
 							{configuraciones.map((config) => (
-								<button
-									key={config.id}
-									type="button"
-									className={`alim-drawer-workspace-item ${config.id === configuracionSeleccionada?.id ? 'alim-drawer-workspace-item--activo' : ''}`}
-									onClick={() => handleSeleccionarWorkspace(config.id)}
-								>
-									{config.nombre}
-									{!config.esCreador && <em className="alim-drawer-workspace-invitado">(invitado)</em>}
-								</button>
+								<div key={config.id} className="alim-drawer-workspace-row">
+									<button
+										type="button"
+										className="alim-drawer-workspace-default-btn"
+										onClick={(e) => handleToggleDefault(e, config.id)}
+										title={config.id === workspaceDefaultId ? "Quitar como default" : "Establecer como default"}
+									>
+										{config.id === workspaceDefaultId ? "★" : "☆"}
+									</button>
+									<button
+										type="button"
+										className={`alim-drawer-workspace-item ${config.id === configuracionSeleccionada?.id ? 'alim-drawer-workspace-item--activo' : ''}`}
+										onClick={() => handleSeleccionarWorkspace(config.id)}
+									>
+										{config.nombre}
+										{!config.esCreador && <em className="alim-drawer-workspace-invitado">(invitado)</em>}
+									</button>
+								</div>
 							))}
 						</div>
 					)}

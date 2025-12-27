@@ -166,6 +166,48 @@
   padding: 0 4px;
 }
 
+/* Botón de estrella para workspace default */
+.selector-config__default-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin-left: 4px;
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.selector-config__default-btn:hover {
+  background: #334155;
+  color: #fbbf24;
+}
+
+/* Estrella activa (workspace default) */
+.selector-config__item .selector-config__default-btn:first-child {
+  color: #64748b;
+}
+
+.selector-config__item .selector-config__default-btn:first-child:hover {
+  color: #fbbf24;
+}
+
+/* Cuando es el workspace default, la estrella es amarilla */
+.selector-config__item .selector-config__default-btn[title="Quitar como default"] {
+  color: #fbbf24;
+}
+
+.selector-config__item .selector-config__default-btn[title="Quitar como default"]:hover {
+  color: #f59e0b;
+}
+
 .selector-config__item-btn {
   flex: 1;
   display: flex;

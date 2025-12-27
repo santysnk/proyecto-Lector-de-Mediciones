@@ -8,6 +8,7 @@ import {
   actualizarWorkspace as actualizarWorkspaceAPI,
   eliminarWorkspace as eliminarWorkspaceAPI,
   obtenerPerfil,
+  actualizarWorkspaceDefault,
 } from "../../../servicios/apiService";
 import { CLAVES_STORAGE } from "../constantes/clavesAlmacenamiento";
 
@@ -36,6 +37,9 @@ export const useConfiguracion = () => {
   // Perfil del usuario (incluye rol global)
   const [perfil, setPerfil] = useState(null);
 
+  // ID del workspace por defecto (derivado del perfil)
+  const workspaceDefaultId = perfil?.workspace_default_id || null;
+
   // Workspace seleccionado (derivado)
   const configuracionSeleccionada = configuraciones.find(
     (c) => c.id === configuracionSeleccionadaId
@@ -49,7 +53,6 @@ export const useConfiguracion = () => {
    * Carga el perfil del usuario y los workspaces desde el backend
    */
   const cargarConfiguraciones = useCallback(async () => {
-    console.log("[DEBUG-CONFIG] cargarConfiguraciones llamado");
     try {
       setCargando(true);
       setError(null);
@@ -60,40 +63,32 @@ export const useConfiguracion = () => {
         obtenerWorkspaces(),
       ]);
 
-      console.log("[DEBUG-CONFIG] Workspaces cargados:", workspacesData.map(w => ({
-        id: w.id,
-        nombre: w.nombre,
-        esCreador: w.esCreador
-      })));
-
       setPerfil(perfilData);
       setConfiguraciones(workspacesData);
 
       // Validar la selección guardada contra los workspaces del usuario
       if (workspacesData.length > 0) {
-        // Si hay workspaces pero el seleccionado no está en la lista, seleccionar el primero
-        const seleccionValida = workspacesData.some((c) => c.id === configuracionSeleccionadaId);
-        console.log("[DEBUG-CONFIG] Validación de selección:", {
-          configuracionSeleccionadaId,
-          seleccionValida,
-          workspaceSeleccionado: workspacesData.find(w => w.id === configuracionSeleccionadaId)
-        });
-        if (!seleccionValida) {
-          console.log("[DEBUG-CONFIG] Selección inválida, seleccionando primer workspace:", workspacesData[0].id);
-          setConfiguracionSeleccionadaId(workspacesData[0].id);
+        const seleccionActualValida = workspacesData.some((c) => c.id === configuracionSeleccionadaId);
+        const defaultId = perfilData?.workspace_default_id;
+        const defaultValido = defaultId && workspacesData.some((c) => c.id === defaultId);
+
+        // Prioridad: 1) selección actual válida, 2) workspace default, 3) primer workspace
+        if (!seleccionActualValida) {
+          if (defaultValido) {
+            setConfiguracionSeleccionadaId(defaultId);
+          } else {
+            setConfiguracionSeleccionadaId(workspacesData[0].id);
+          }
         }
       } else {
         // Si el usuario no tiene workspaces, limpiar cualquier selección guardada
-        // Esto evita que se intente cargar datos de un workspace al que ya no tiene acceso
-        console.log("[DEBUG-CONFIG] No hay workspaces, limpiando selección");
         setConfiguracionSeleccionadaId(null);
       }
     } catch (err) {
-      console.error("[DEBUG-CONFIG] Error cargando datos:", err);
+      console.error("Error cargando configuraciones:", err);
       setError(err.message);
     } finally {
       setCargando(false);
-      console.log("[DEBUG-CONFIG] Carga finalizada");
     }
   }, [configuracionSeleccionadaId]);
 
@@ -183,11 +178,57 @@ export const useConfiguracion = () => {
     setConfiguracionSeleccionadaId(id);
   };
 
+  /**
+   * Establece un workspace como el default (se abre al iniciar sesión)
+   * @param {string} id - UUID del workspace
+   */
+  const establecerWorkspaceDefault = async (id) => {
+    try {
+      setError(null);
+      await actualizarWorkspaceDefault(id);
+      // Actualizar el perfil local con el nuevo default
+      setPerfil((prev) => ({ ...prev, workspace_default_id: id }));
+    } catch (err) {
+      console.error("Error estableciendo workspace default:", err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /**
+   * Quita el workspace por defecto
+   */
+  const quitarWorkspaceDefault = async () => {
+    try {
+      setError(null);
+      await actualizarWorkspaceDefault(null);
+      // Actualizar el perfil local
+      setPerfil((prev) => ({ ...prev, workspace_default_id: null }));
+    } catch (err) {
+      console.error("Error quitando workspace default:", err);
+      setError(err.message);
+      throw err;
+    }
+  };
+
+  /**
+   * Alterna el workspace por defecto (si ya es default lo quita, si no lo establece)
+   * @param {string} id - UUID del workspace
+   */
+  const toggleWorkspaceDefault = async (id) => {
+    if (workspaceDefaultId === id) {
+      await quitarWorkspaceDefault();
+    } else {
+      await establecerWorkspaceDefault(id);
+    }
+  };
+
   return {
     // Estados
     configuraciones,
     configuracionSeleccionada,
     configuracionSeleccionadaId,
+    workspaceDefaultId,
     cargando,
     error,
 
@@ -202,5 +243,8 @@ export const useConfiguracion = () => {
     actualizarConfiguracion,
     eliminarConfiguracion,
     seleccionarConfiguracion,
+    establecerWorkspaceDefault,
+    quitarWorkspaceDefault,
+    toggleWorkspaceDefault,
   };
 };

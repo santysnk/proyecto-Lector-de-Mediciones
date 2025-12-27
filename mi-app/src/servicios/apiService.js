@@ -64,6 +64,17 @@ export async function crearPerfilUsuario(nombre) {
   });
 }
 
+/**
+ * Actualiza el workspace por defecto del usuario
+ * @param {string|null} workspaceId - ID del workspace o null para quitar el default
+ */
+export async function actualizarWorkspaceDefault(workspaceId) {
+  return fetchConAuth('/api/usuarios/workspace-default', {
+    method: 'PUT',
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
 // ============================================
 // WORKSPACES
 // ============================================
@@ -680,6 +691,7 @@ export default {
   // Usuarios
   obtenerPerfil,
   crearPerfilUsuario,
+  actualizarWorkspaceDefault,
   // Workspaces
   obtenerWorkspaces,
   crearWorkspace,
