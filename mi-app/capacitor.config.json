@@ -1,0 +1,21 @@
+{
+  "appId": "com.relaywatch.app",
+  "appName": "RelayWatch",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "adjustMarginsForEdgeToEdge": "force"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "EdgeToEdge": {
+      "backgroundColor": "#f5f7fb",
+      "statusBarColor": "#1e293b",
+      "navigationBarColor": "#1a1a1a"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RelayWatch</string>
+    <string name="title_activity_main">RelayWatch</string>
+    <string name="package_name">com.relaywatch.app</string>
+    <string name="custom_url_scheme">com.relaywatch.app</string>
+</resources>

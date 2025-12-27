@@ -28,6 +28,7 @@ import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"
 import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
 import { obtenerUltimasLecturasPorRegistrador, listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService"; // API para polling de lecturas
 import { useHistorialLocal } from "../../hooks/useHistorialLocal"; // Hook para guardar historial en IndexedDB
+import { usePushNotifications } from "../../../../hooks/usePushNotifications"; // Hook para push notifications (Android)
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login
@@ -102,6 +103,19 @@ const {
 
 	const { abrirModal, cerrarModal, obtenerEstado } = useGestorModales(); // gestor centralizado de modales
 	const { guardarLecturaLocal } = useHistorialLocal(); // Hook para guardar lecturas en IndexedDB
+
+	// Inicializar push notifications para app Android (solo se activa en plataforma nativa)
+	usePushNotifications({
+		habilitado: true,
+		onNotificacion: (notif) => {
+			console.log('[VistaAlimentadores] Notificación en primer plano:', notif);
+			// TODO: Mostrar toast o notificación in-app
+		},
+		onNotificacionTocada: (datos) => {
+			console.log('[VistaAlimentadores] Usuario tocó notificación:', datos);
+			// TODO: Navegar a alimentador específico si viene en datos
+		},
+	});
 
 	// Sistema de ventanas flotantes de historial
 	const {

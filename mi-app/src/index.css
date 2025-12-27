@@ -132,6 +132,8 @@
    }
    body {
       @apply bg-background text-foreground;
+      min-height: 100vh;
+      min-height: 100dvh; /* Dynamic viewport height para móviles */
    }
 }
 

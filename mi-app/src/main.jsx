@@ -6,6 +6,14 @@ import { AuthProvider } from "./contextos/AuthContext"; // contexto de autentica
 import App from "./App.jsx";                       // componente raíz de la aplicación (define las rutas)
 import "./index.css";                              // estilos globales (tailwind + tema general)
 import "./fuentes.css";                            // fuentes locales desde public/fonts/
+import { Capacitor } from "@capacitor/core";       // para detectar plataforma nativa
+
+// Configurar plataforma nativa (Android/iOS)
+if (Capacitor.isNativePlatform()) {
+   // Agregar clase al body para aplicar estilos específicos de app nativa (padding-top, etc.)
+   document.body.classList.add('capacitor-native');
+   // Nota: La configuración de StatusBar (transparente, color de iconos) se hace en MainActivity.java
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(   // crea la raíz de React sobre el div#root
    <React.StrictMode>                   {/* modo estricto: ayuda a detectar problemas en desarrollo */}

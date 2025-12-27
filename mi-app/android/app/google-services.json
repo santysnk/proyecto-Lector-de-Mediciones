@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "791537414810",
+    "project_id": "relaywatch-aec51",
+    "storage_bucket": "relaywatch-aec51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791537414810:android:9e4fd28e9e94cf7403e523",
+        "android_client_info": {
+          "package_name": "com.relaywatch.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZIepUlZDfV85oP0MpxZwdQdfAOE2AM-w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

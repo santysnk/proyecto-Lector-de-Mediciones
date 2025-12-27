@@ -17,6 +17,7 @@
    ========================================================= */
 .alim-page {
    min-height: 100vh;
+   min-height: 100dvh; /* Dynamic viewport height para móviles */
    background-color: #f5f7fb;
    display: flex;
    flex-direction: column;
@@ -24,6 +25,9 @@
       sans-serif;
    color: #1e293b;
 }
+
+/* Nota: El espacio para la status bar se maneja automáticamente en Android
+   mediante WindowCompat.setDecorFitsSystemWindows(window, true) en MainActivity.java */
 
 /* Estados de carga y error */
 .alim-page--cargando,
