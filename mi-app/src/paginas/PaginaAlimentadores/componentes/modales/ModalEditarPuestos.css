@@ -253,9 +253,28 @@
 @media (max-width: 520px) {
    /* El modal ocupa casi todo el ancho de la pantalla */
    .editar-contenedor {
-      max-width: 100vw;
-      margin: 0 0.5rem;
+      max-width: calc(100vw - 1rem);
+      max-height: calc(100vh - 2rem);
+      max-height: calc(100dvh - 2rem);
+      margin: 0.5rem;
       padding: 1rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+   }
+
+   /* En modo móvil, la pestaña Apariencia NO debe hacer el modal más ancho */
+   .editar-contenedor--apariencia {
+      max-width: calc(100vw - 1rem);
+   }
+
+   /* Lista de puestos con scroll */
+   .editar-lista {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100vh - 14rem);
+      max-height: calc(100dvh - 14rem);
    }
 
    /* Cada fila pasa a columna, con mas aire */
@@ -295,11 +314,14 @@
       margin-top: 0.1rem;
    }
 
-   /* Botones inferiores un poco mas anchos y separados */
+   /* Botones inferiores siempre visibles (no scroll) */
    .editar-acciones {
       flex-wrap: wrap;
       justify-content: center;
       gap: 0.8rem;
+      flex-shrink: 0;
+      padding-top: 0.5rem;
+      margin-top: 1rem;
    }
 
    .editar-boton {

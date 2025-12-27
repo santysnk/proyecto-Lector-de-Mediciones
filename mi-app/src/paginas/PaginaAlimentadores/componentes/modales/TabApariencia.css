@@ -47,11 +47,17 @@
   letter-spacing: 0.03em;
 }
 
-/* Separador vertical */
+/* Separador horizontal */
 .apariencia-separador {
   height: 1px;
   background: linear-gradient(to right, #334155, transparent);
   margin: 0.2rem 0;
+}
+
+/* Separador y botones solo visibles en móvil - ocultos por defecto */
+.apariencia-separador--mobile-only,
+.apariencia-botones-config-mobile {
+  display: none;
 }
 
 /* =========================================================
@@ -802,5 +808,211 @@
   .apariencia-footer-derecha {
     width: 100%;
     justify-content: flex-end;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE MÓVIL (< 520px)
+   ========================================================= */
+
+@media (max-width: 520px) {
+  /* Tab apariencia: NO scrolleable, flex column */
+  .tab-apariencia {
+    max-height: calc(100vh - 10rem);
+    max-height: calc(100dvh - 10rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow: hidden; /* El tab no hace scroll */
+  }
+
+  /* Layout en columna: preview arriba fijo, controles abajo con scroll */
+  .apariencia-layout {
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Preview: fijo arriba, sin scroll */
+  .apariencia-preview-columna {
+    width: 100%;
+    align-items: center;
+    order: -1;
+    flex-shrink: 0; /* No se encoge, mantiene su tamaño */
+  }
+
+  /* Ocultar label "Vista previa" en móvil */
+  .apariencia-preview-label {
+    display: none;
+  }
+
+  /* Tarjeta con tamaño real, igual que en el panel */
+  .preview-tarjeta {
+    width: 304px;
+    min-width: 304px;
+    transform: none;
+    margin-bottom: 0.6rem; /* Más espacio entre preview y opciones */
+  }
+
+  /* Controles: esta columna SÍ hace scroll */
+  .apariencia-controles-columna {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .apariencia-controles-unificado {
+    padding: 0.6rem;
+    gap: 0.5rem;
+  }
+
+  /* Cada grupo en una fila con flex wrap */
+  .apariencia-grupo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .apariencia-grupo-label {
+    min-width: 55px;
+    font-size: 0.7rem;
+  }
+
+  /* Sliders compactos */
+  .apariencia-controles-unificado input[type="range"] {
+    width: 70px;
+  }
+
+  .tab-apariencia .apariencia-valor {
+    min-width: 40px;
+    font-size: 0.7rem;
+  }
+
+  /* Colores y decimales - más espacio entre filas */
+  .apariencia-colores-decimales {
+    padding-left: 0;
+    gap: 1rem; /* Aumentado gap entre Color y Decimales */
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    margin-top: 0.3rem;
+  }
+
+  /* Dimensiones en grid de 2 columnas */
+  .apariencia-dimensiones-fila {
+    grid-template-columns: 1fr 1fr;
+    padding-left: 0;
+    gap: 0.6rem 0.8rem; /* Más espacio entre filas */
+  }
+
+  .apariencia-dimensiones-fila input[type="range"] {
+    width: 50px; /* Más corto para que no se salga */
+  }
+
+  /* Mostrar separador y botones dentro del contenedor en móvil */
+  .apariencia-separador--mobile-only {
+    display: block;
+    margin-top: 0.4rem;
+  }
+
+  .apariencia-botones-config-mobile {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.4rem;
+    padding-top: 0.3rem;
+  }
+
+  /* Restaurar a la izquierda, Importar/Exportar a la derecha */
+  .apariencia-botones-config-mobile .apariencia-btn--reset {
+    margin-right: auto;
+  }
+
+  /* Footer fijo abajo, sin scroll - solo Cancelar/Guardar */
+  .apariencia-footer {
+    flex-direction: row; /* Fila única con Cancelar y Guardar */
+    gap: 0.5rem;
+    padding-top: 0.6rem;
+    justify-content: flex-end;
+    align-items: center;
+    flex-shrink: 0;
+    border-top: 1px solid #334155;
+  }
+
+  /* Ocultar los botones del footer-izquierda en móvil (ya están en el contenedor) */
+  .apariencia-footer-izquierda {
+    display: none;
+  }
+
+  /* Cancelar y Guardar a la derecha */
+  .apariencia-footer-derecha {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  /* Botones más compactos */
+  .apariencia-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+
+  .apariencia-btn--reset,
+  .apariencia-btn--importar,
+  .apariencia-btn--exportar {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  /* Selector de fuente */
+  .selector-fuente {
+    min-width: 100px;
+  }
+
+  .selector-fuente-btn {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.8rem;
+  }
+
+  /* Color picker */
+  .apariencia-colorpicker-popover {
+    width: 200px;
+  }
+
+  .apariencia-colorpicker-popover .react-colorful {
+    height: 150px;
+  }
+
+  .apariencia-colorpicker-popover .react-colorful__saturation {
+    height: 110px;
+  }
+
+  /* Input row del color picker - input flexible, botón a la derecha */
+  .apariencia-colorpicker-input-row {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .apariencia-colorpicker-hex-input {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 6px;
+    font-size: 12px;
+  }
+
+  .apariencia-colorpicker-copy-btn {
+    flex-shrink: 0;
+  }
+
+  /* Slider con flechas más compacto */
+  .slider-flecha {
+    width: 16px;
+    height: 16px;
   }
 }

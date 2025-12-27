@@ -518,8 +518,9 @@ const GrillaTarjetas = ({
 									periodoPolling={(alim.intervalo_consulta_ms || 60000) / 1000}
 									errorPolling={obtenerErrorPolling ? obtenerErrorPolling(alim.id) : null}
 									// Escala de tarjetas
+									// En modo móvil, la escala es fija en 1 y no se puede cambiar (no se pasa onEscalaChange)
 									escala={obtenerEscalaEfectiva ? obtenerEscalaEfectiva(alim.id, puestoId) : 1.0}
-									onEscalaChange={onEscalaChange ? (nuevaEscala) => onEscalaChange(alim.id, nuevaEscala) : undefined}
+									onEscalaChange={!esModoMobile && onEscalaChange ? (nuevaEscala) => onEscalaChange(alim.id, nuevaEscala) : undefined}
 									ESCALA_MIN={ESCALA_MIN}
 									ESCALA_MAX={ESCALA_MAX}
 								/>

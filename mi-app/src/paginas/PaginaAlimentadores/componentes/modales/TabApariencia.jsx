@@ -879,6 +879,34 @@ const TabApariencia = ({
                 </div>
               </div>
             </div>
+
+            {/* Botones de configuración - solo visibles en móvil dentro del contenedor */}
+            <div className="apariencia-separador apariencia-separador--mobile-only" />
+            <div className="apariencia-botones-config-mobile">
+              <button
+                type="button"
+                className="apariencia-btn apariencia-btn--reset"
+                onClick={restaurarDefecto}
+              >
+                Restaurar
+              </button>
+              <button
+                type="button"
+                className="apariencia-btn apariencia-btn--importar"
+                onClick={() => inputArchivoRef.current?.click()}
+                title="Importar configuración desde archivo"
+              >
+                Importar
+              </button>
+              <button
+                type="button"
+                className="apariencia-btn apariencia-btn--exportar"
+                onClick={exportarConfiguracion}
+                title="Exportar configuración a archivo"
+              >
+                Exportar
+              </button>
+            </div>
           </div>
         </div>
 

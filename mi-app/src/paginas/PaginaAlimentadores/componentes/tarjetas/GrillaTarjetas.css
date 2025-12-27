@@ -35,7 +35,7 @@
       justify-content: center;
       padding-left: 0;
       padding-right: 0;
-      gap: 1rem; /* gap fijo entre tarjetas en modo móvil */
+      gap: 1.5rem; /* gap fijo entre tarjetas en modo móvil (aumentado) */
    }
 
    /* Centrar las tarjetas sin margin extra */
@@ -43,9 +43,9 @@
       margin-left: 0;
    }
 
-   /* Centrar también la tarjeta de agregar */
+   /* Ocultar la tarjeta "Nuevo Registrador" en móvil - es incómodo agregar desde el celular */
    .alim-card-add {
-      margin-left: 0;
+      display: none !important;
    }
 
    /* Ocultar los gap-spacers en modo móvil para que el centrado funcione */

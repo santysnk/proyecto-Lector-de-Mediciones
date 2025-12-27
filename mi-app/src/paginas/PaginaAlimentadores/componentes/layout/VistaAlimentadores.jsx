@@ -228,6 +228,21 @@ const {
 		return () => window.removeEventListener("resize", actualizarModo);
 	}, []);
 
+	// En modo compacto (móvil), forzar escala global a 1 para visualización
+	// Esto es solo visual, NO se persiste en BD ni en preferencias de usuario
+	const escalaGlobalEfectiva = esCompacto ? 1 : escalaGlobal;
+
+	// Wrapper para obtenerEscalaEfectiva que considera el modo compacto
+	// En móvil, si no hay escala individual ni de puesto, usa 1 en vez de escalaGlobal
+	const obtenerEscalaEfectivaConModoCompacto = useCallback((alimentadorId, puestoId) => {
+		if (esCompacto) {
+			// En modo compacto, forzar escala 1
+			// No importa qué tenga configurado el usuario, en móvil siempre es 1
+			return 1;
+		}
+		return obtenerEscalaEfectiva(alimentadorId, puestoId);
+	}, [esCompacto, obtenerEscalaEfectiva]);
+
 	// Cargar registradores del workspace (a través de los agentes vinculados)
 	useEffect(() => {
 		if (!configuracionSeleccionada?.id) return;
@@ -854,6 +869,8 @@ const {
 			/>
 
 			{/* ===== MENU LATERAL (modo compacto) ===== */}
+			{/* En modo compacto (móvil), NO se muestra la sección de Escala Global */}
+			{/* La escala se fuerza a 1 automáticamente (ver escalaGlobalEfectiva) */}
 			{esCompacto && (
 				<MenuLateral
 					abierto={menuAbierto}
@@ -868,10 +885,6 @@ const {
 					onAbrirModalPanelPermisos={abrirModalPanelPermisos}
 					onSalir={handleSalir}
 					coloresSistema={COLORES_SISTEMA}
-					escalaGlobal={escalaGlobal}
-					onEscalaGlobalChange={establecerEscalaGlobal}
-					ESCALA_MIN={ESCALA_MIN}
-					ESCALA_MAX={ESCALA_MAX}
 				/>
 			)}
 
@@ -948,8 +961,8 @@ const {
 							onPlayStopClick={handlePlayStopClick}
 							obtenerContadorPolling={obtenerContadorPolling}
 							obtenerErrorPolling={obtenerErrorPolling}
-							// Escala de tarjetas
-							obtenerEscalaEfectiva={obtenerEscalaEfectiva}
+							// Escala de tarjetas (usa wrapper que fuerza 1 en modo compacto/móvil)
+							obtenerEscalaEfectiva={obtenerEscalaEfectivaConModoCompacto}
 							onEscalaChange={establecerEscalaTarjeta}
 							ESCALA_MIN={ESCALA_MIN}
 							ESCALA_MAX={ESCALA_MAX}
@@ -973,8 +986,9 @@ const {
 				onGuardar={handleGuardarPuestos}
 				esCreador={configuracionSeleccionada?.esCreador}
 				rolEnWorkspace={configuracionSeleccionada?.rol}
-				obtenerEscalaPuesto={obtenerEscalaPuesto}
-				onEscalaPuestoChange={handleEscalaPuestoChange}
+				// En modo compacto (móvil), no mostrar controles de escala de puesto
+				obtenerEscalaPuesto={!esCompacto ? obtenerEscalaPuesto : undefined}
+				onEscalaPuestoChange={!esCompacto ? handleEscalaPuestoChange : undefined}
 				ESCALA_MIN={ESCALA_MIN}
 				ESCALA_MAX={ESCALA_MAX}
 				// Estilos globales de tarjetas (pestaña Apariencia)
