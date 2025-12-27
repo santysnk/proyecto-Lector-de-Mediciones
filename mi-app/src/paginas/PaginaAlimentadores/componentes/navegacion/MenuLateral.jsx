@@ -229,8 +229,8 @@ const MenuLateral = ({
 				<section className="alim-drawer-section">
 					<h3 className="alim-drawer-section-title">Acciones</h3>
 					<div className="alim-drawer-actions">
-						{/* Gestionar Accesos (solo admin/superadmin o creador) */}
-						{(rolGlobal === 'superadmin' || rolGlobal === 'admin' || configuracionSeleccionada?.esCreador) && (
+						{/* Gestionar Accesos (SOLO el creador del workspace) */}
+						{configuracionSeleccionada?.esCreador && (
 							<button
 								type="button"
 								className="alim-drawer-btn-action alim-drawer-btn-accesos"
@@ -243,8 +243,8 @@ const MenuLateral = ({
 							</button>
 						)}
 
-						{/* Nuevo puesto (solo admin/superadmin) */}
-						{(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+						{/* Nuevo puesto (creador del workspace O invitado con rol admin en el workspace) */}
+						{(configuracionSeleccionada?.esCreador || configuracionSeleccionada?.rol === 'admin') && (
 							<button
 								type="button"
 								className="alim-drawer-btn-action alim-drawer-btn-add"
@@ -267,8 +267,8 @@ const MenuLateral = ({
 							<span>Editar puestos</span>
 						</button>
 
-						{/* Configurar Agente (solo admin/superadmin) */}
-						{(rolGlobal === 'superadmin' || rolGlobal === 'admin') && (
+						{/* Configurar Agente (creador del workspace O invitado con rol admin en el workspace) */}
+						{(configuracionSeleccionada?.esCreador || configuracionSeleccionada?.rol === 'admin') && (
 							<button
 								type="button"
 								className="alim-drawer-btn-action alim-drawer-btn-config"

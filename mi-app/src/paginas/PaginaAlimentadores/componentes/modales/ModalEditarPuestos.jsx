@@ -53,7 +53,8 @@ const ModalEditarPuestos = ({
 	puestos,                                              // lista original de puestos proveniente del contexto
 	onCerrar,                                             // callback para cerrar sin guardar
 	onGuardar,                                            // callback que recibe los puestos modificados
-	rolGlobal,                                            // rol del usuario para controlar permisos de edición
+	esCreador,                                            // si el usuario es creador del workspace
+	rolEnWorkspace,                                       // rol del usuario en el workspace (admin, operador, observador)
 	// Props de escala por puesto
 	obtenerEscalaPuesto,                                  // (puestoId) => number | undefined
 	onEscalaPuestoChange,                                 // (puestoId, escala) => void
@@ -66,8 +67,9 @@ const ModalEditarPuestos = ({
 	const [puestosEditados, setPuestosEditados] = useState([]); // copia editable local
 	const [tabActiva, setTabActiva] = useState("puestos");      // "puestos" o "apariencia"
 
-	// Solo superadmin y admin pueden editar nombres y eliminar puestos
-	const puedeEditarNombre = rolGlobal === 'superadmin' || rolGlobal === 'admin';
+	// Solo el creador o admin en el workspace pueden editar nombres y eliminar puestos
+	// Operador y observador solo pueden cambiar colores y escala (son preferencias de usuario)
+	const puedeEditarNombre = esCreador || rolEnWorkspace === 'admin';
 
 	useEffect(() => {
 		if (abierto) {

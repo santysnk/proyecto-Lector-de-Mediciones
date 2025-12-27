@@ -931,7 +931,8 @@ const {
 				puestos={puestosConPreferencias}
 				onCerrar={() => cerrarModal("editarPuestos")}
 				onGuardar={handleGuardarPuestos}
-				rolGlobal={rolGlobal}
+				esCreador={configuracionSeleccionada?.esCreador}
+				rolEnWorkspace={configuracionSeleccionada?.rol}
 				obtenerEscalaPuesto={obtenerEscalaPuesto}
 				onEscalaPuestoChange={handleEscalaPuestoChange}
 				ESCALA_MIN={ESCALA_MIN}

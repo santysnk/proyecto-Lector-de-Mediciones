@@ -466,17 +466,24 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                   Permisos en el menú:
                   - rolGlobal: rol global del usuario en el sistema (superadmin, admin, operador, observador)
                   - configuracionSeleccionada?.rol: rol del usuario EN ESTE WORKSPACE específico
-                  - esAdminEnWorkspace: true si es superadmin global O tiene rol admin en este workspace
+                  - configuracionSeleccionada?.esCreador: true si el usuario es el creador del workspace
+                  - Gestionar Accesos: SOLO el creador del workspace
+                  - Nuevo puesto / Configurar Agente: creador O invitado con rol admin en el workspace
+                  - Editar puestos: creador, admin o operador en el workspace
+                  - Panel de Permisos: SOLO superadmin global
                 */}
                 {(() => {
                   const rolEnWorkspace = configuracionSeleccionada?.rol;
-                  const esAdminEnWorkspace = rolGlobal === 'superadmin' || rolEnWorkspace === 'admin';
-                  const esOperadorEnWorkspace = esAdminEnWorkspace || rolEnWorkspace === 'operador';
+                  const esCreador = configuracionSeleccionada?.esCreador;
+                  // Para Nuevo puesto: creador O invitado con rol admin en el workspace (NO incluye superadmin global)
+                  const puedeCrearPuesto = esCreador || rolEnWorkspace === 'admin';
+                  // Para Editar puestos: creador, admin en workspace, o operador en workspace
+                  const esOperadorEnWorkspace = puedeCrearPuesto || rolEnWorkspace === 'operador';
 
                   return (
                     <>
-                      {/* Opción gestionar accesos (solo admin en workspace o creador) */}
-                      {(esAdminEnWorkspace || configuracionSeleccionada?.esCreador) && (
+                      {/* Opción gestionar accesos (SOLO el creador del workspace) */}
+                      {esCreador && (
                         <button
                           type="button"
                           className="selector-config__opcion-secundaria"
@@ -492,8 +499,8 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                         </button>
                       )}
 
-                      {/* Opción nuevo puesto (solo admin en workspace) */}
-                      {esAdminEnWorkspace && (
+                      {/* Opción nuevo puesto (creador O invitado con rol admin en el workspace) */}
+                      {puedeCrearPuesto && (
                         <button
                           type="button"
                           className="selector-config__opcion-secundaria"
@@ -523,8 +530,8 @@ const SelectorConfiguracion = ({ onAbrirModalEditarPuestos, onAbrirModalNuevoPue
                         </button>
                       )}
 
-                      {/* Opción configurar agente (solo admin en workspace) */}
-                      {esAdminEnWorkspace && (
+                      {/* Opción configurar agente (creador O invitado con rol admin en el workspace) */}
+                      {puedeCrearPuesto && (
                         <button
                           type="button"
                           className="selector-config__opcion-secundaria"
