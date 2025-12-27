@@ -200,47 +200,51 @@ label.recordarme {
 @media (max-width: 768px) {
 	.container {
 		position: relative;
-		height: 100vh;
+		min-height: 100vh;
+		min-height: 100dvh;
 		width: 100vw;
 		display: flex;
+		flex-direction: column;
 		overflow-y: auto;
 	}
 
-	/* Contenedor del logo arriba */
+	/* Degradado negro desde arriba hasta debajo del logo */
+	.container::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 45vh;
+		background: linear-gradient(to bottom,
+				rgba(0, 0, 0, 1) 0%,
+				rgba(0, 0, 0, 1) 65%,
+				rgba(0, 0, 0, 0.6) 80%,
+				rgba(0, 0, 0, 0) 100%
+			);
+		z-index: 1;
+		pointer-events: none;
+	}
+
+	/* Contenedor del logo - posicionado sobre el panel celeste */
 	.izquierda {
 		position: absolute;
-		top: 20px;
+		top: 4vh;
 		left: 50%;
 		transform: translateX(-50%);
-		width: 100%;
-		height: auto;
+		width: auto;
+		padding: 0;
 		background: transparent;
 		justify-content: center;
 		align-items: center;
 		display: flex;
-		pointer-events: none;
 		z-index: 10;
 	}
 
-	/* Disco con degradado detrás del logo */
-	.izquierda::before {
-		content: "";
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 140px;
-		height: 140px;
-		border-radius: 50%;
-		background-image: radial-gradient(circle at center,
-				#142230 0%,
-				#325a80 100%
-			);
-		z-index: 0;
-	}
-
 	.logo {
-		max-width: 100px;
+		max-width: 42vw;
+		min-width: 180px;
+		max-height: 270px;
 		height: auto;
 		position: relative;
 		z-index: 1;
@@ -252,7 +256,7 @@ label.recordarme {
 		width: 100%;
 		margin: 0;
 		border-radius: 0;
-		padding: 180px 24px 32px;
+		padding: 45vh 5vw 5vh;
 		display: flex;
 		align-items: flex-start;
 		justify-content: center;
@@ -266,10 +270,10 @@ label.recordarme {
 
 	/* Labels más pequeños y con menos margin en móvil */
 	.usuario {
-		text-align: center;
-		font-size: 22px;
-		margin-top: 20px;
-		margin-bottom: 8px;
+		text-align: left;
+		font-size: clamp(18px, 5vw, 24px);
+		margin-top: 3vh;
+		margin-bottom: 0.5vh;
 	}
 
 	/* Primer label sin margin-top extra */
@@ -278,29 +282,29 @@ label.recordarme {
 	}
 
 	.input {
-		padding: 14px 16px;
-		font-size: 16px;
+		padding: 3.5vw 4vw;
+		font-size: clamp(14px, 4vw, 18px);
 	}
 
 	.acciones {
 		align-items: center;
-		margin-top: 24px;
+		margin-top: 4vh;
 	}
 
 	.boton {
-		margin-top: 24px;
-		padding: 12px 20px;
-		font-size: 20px;
+		margin-top: 4vh;
+		padding: 3vw 5vw;
+		font-size: clamp(18px, 5vw, 22px);
 	}
 
 	.recordarme,
 	.registrarse {
-		font-size: 16px;
+		font-size: clamp(14px, 4vw, 18px);
 	}
 
 	.ojito {
-		top: 14px;
-		font-size: 20px;
+		top: 3.5vw;
+		font-size: clamp(18px, 5vw, 22px);
 	}
 }
 
