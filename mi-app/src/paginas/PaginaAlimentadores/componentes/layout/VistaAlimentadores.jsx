@@ -163,6 +163,24 @@ const {
 		});
 	}, [esCreador, puestos, preferenciasVisuales]);
 
+	// ===== ALIMENTADORES DEL PUESTO SELECCIONADO CON PREFERENCIAS =====
+	// Los alimentadores del puesto seleccionado con las preferencias de color aplicadas
+	const alimentadoresConPreferencias = useMemo(() => {
+		if (!puestoSeleccionado?.alimentadores) return [];
+		if (esCreador || !preferenciasVisuales) {
+			return puestoSeleccionado.alimentadores;
+		}
+
+		// Aplicar preferencias personales sobre los alimentadores base
+		return puestoSeleccionado.alimentadores.map(alim => {
+			const configAlim = preferenciasVisuales.obtenerConfigAlimentador?.(alim.id, puestoSeleccionado.id);
+			return {
+				...alim,
+				color: configAlim?.color || alim.color,
+			};
+		});
+	}, [esCreador, puestoSeleccionado, preferenciasVisuales]);
+
 	// Responsive: detectar modo compacto según el ancho de la ventana
 	useEffect(() => {
 		const actualizarModo = () => setEsCompacto(window.innerWidth < 900);
@@ -205,7 +223,7 @@ const {
 	const estadoModalConfigPuesto = obtenerEstado("configPuesto");   // idem para modal de configuración global del puesto
 
 	const buscarAlimentador = (alimId) =>
-		puestoSeleccionado?.alimentadores.find((a) => a.id === alimId) || null; // helper para obtener el alimentador por id
+		alimentadoresConPreferencias.find((a) => a.id === alimId) || null; // helper para obtener el alimentador por id (con preferencias aplicadas)
 
 	const buscarRegistrador = useCallback((regId) =>
 		registradores.find((r) => r.id === regId) || null, [registradores]); // helper para obtener el registrador por id
@@ -303,16 +321,27 @@ const {
 					establecerGap(nuevoAlimentador.id, 10);
 				}
 			} else if (alimentadorEnEdicion) {
-				// Preservar el gapHorizontal existente durante la edición
-				const gapActual = obtenerGap(alimentadorEnEdicion.id);
-				await actualizarAlimentador(
-					puestoSeleccionado.id,
-					alimentadorEnEdicion.id,
-					{
-						...datos,
-						gapHorizontal: gapActual, // mantener el gap actual
+				if (esCreador) {
+					// CREADOR: Guardar todo en BASE (BD)
+					const gapActual = obtenerGap(alimentadorEnEdicion.id);
+					await actualizarAlimentador(
+						puestoSeleccionado.id,
+						alimentadorEnEdicion.id,
+						{
+							...datos,
+							gapHorizontal: gapActual, // mantener el gap actual
+						}
+					);
+				} else {
+					// INVITADO: Solo guardar el color en preferencias personales
+					// Los invitados no pueden cambiar nombre, card_design, etc.
+					if (datos.color && preferenciasVisuales?.guardarPreferenciasAlimentador) {
+						await preferenciasVisuales.guardarPreferenciasAlimentador(
+							alimentadorEnEdicion.id,
+							{ color: datos.color }
+						);
 					}
-				);                                                    // edición de alimentador existente
+				}
 				cerrarModal("alimentador");                           // en edición, cerrar después de guardar
 			}
 		} catch (error) {
@@ -846,7 +875,7 @@ const {
 					/* Caso 3: Tiene workspace y puestos */
 					<>
 						<GrillaTarjetas
-							alimentadores={puestoSeleccionado.alimentadores}
+							alimentadores={alimentadoresConPreferencias}
 							lecturas={lecturasTarjetas}
 							puestoId={puestoSeleccionado.id}
 							workspaceId={configuracionSeleccionada?.id}
