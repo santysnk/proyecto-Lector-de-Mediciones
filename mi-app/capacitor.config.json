@@ -3,17 +3,16 @@
   "appName": "RelayWatch",
   "webDir": "dist",
   "server": {
-    "androidScheme": "https"
-  },
-  "android": {
-    "adjustMarginsForEdgeToEdge": "disable"
+    "androidScheme": "https",
+    "url": "http://192.168.16.204:5174",
+    "cleartext": true
   },
   "plugins": {
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "SystemBars": {
-      "insetsHandling": "disable"
+      "style": "DARK"
     }
   }
 }

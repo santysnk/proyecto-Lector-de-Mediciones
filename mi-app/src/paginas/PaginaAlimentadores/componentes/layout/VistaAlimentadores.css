@@ -16,118 +16,120 @@
    LAYOUT GENERAL
    ========================================================= */
 .alim-page {
-   min-height: 100vh;
-   min-height: 100dvh; /* Dynamic viewport height para móviles */
-   background-color: #f5f7fb;
-   display: flex;
-   flex-direction: column;
-   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
-   color: #1e293b;
+	min-height: 100vh;
+	min-height: 100dvh;
+	/* Dynamic viewport height para móviles */
+	/* Fondo oscuro igual que navbar para evitar línea visible en el gap */
+	background-color: #0f172a;
+	display: flex;
+	flex-direction: column;
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+		sans-serif;
+	color: #1e293b;
+	/* Navbar es relative, no necesita padding-top compensatorio */
 }
-
-/* Nota: El espacio para la status bar se maneja automáticamente en Android
-   mediante WindowCompat.setDecorFitsSystemWindows(window, true) en MainActivity.java */
 
 /* Estados de carga y error */
 .alim-page--cargando,
 .alim-page--error {
-   justify-content: center;
-   align-items: center;
+	justify-content: center;
+	align-items: center;
 }
 
 .alim-loading,
 .alim-error {
-   text-align: center;
-   padding: 2rem;
+	text-align: center;
+	padding: 2rem;
 }
 
 .alim-loading__spinner {
-   width: 40px;
-   height: 40px;
-   margin: 0 auto 1rem;
-   border: 3px solid #e2e8f0;
-   border-top-color: #3b82f6;
-   border-radius: 50%;
-   animation: spin 0.8s linear infinite;
+	width: 40px;
+	height: 40px;
+	margin: 0 auto 1rem;
+	border: 3px solid #e2e8f0;
+	border-top-color: #3b82f6;
+	border-radius: 50%;
+	animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-   to {
-      transform: rotate(360deg);
-   }
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .alim-loading p,
 .alim-error p {
-   color: #64748b;
-   margin-bottom: 1rem;
+	color: #64748b;
+	margin-bottom: 1rem;
 }
 
 .alim-error button {
-   padding: 8px 16px;
-   background: #3b82f6;
-   color: white;
-   border: none;
-   border-radius: 6px;
-   cursor: pointer;
+	padding: 8px 16px;
+	background: #3b82f6;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
 }
 
 .alim-error button:hover {
-   background: #2563eb;
+	background: #2563eb;
 }
 
 /* Estado sin workspaces (dentro de main) */
 .alim-sin-workspace {
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
-   height: 100%;
-   min-height: 300px;
-   text-align: center;
-   padding: 2rem;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-height: 300px;
+	text-align: center;
+	padding: 2rem;
 }
 
 .alim-sin-workspace h2 {
-   color: #475569;
-   margin-bottom: 0.5rem;
-   font-size: 1.25rem;
+	color: #475569;
+	margin-bottom: 0.5rem;
+	font-size: 1.25rem;
 }
 
 .alim-sin-workspace p {
-   color: #64748b;
-   margin-bottom: 0.5rem;
+	color: #64748b;
+	margin-bottom: 0.5rem;
 }
 
 .alim-sin-workspace button {
-   margin-top: 1rem;
-   padding: 10px 20px;
-   background: #3b82f6;
-   color: white;
-   border: none;
-   border-radius: 6px;
-   cursor: pointer;
-   font-weight: 500;
+	margin-top: 1rem;
+	padding: 10px 20px;
+	background: #3b82f6;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 500;
 }
 
 .alim-sin-workspace button:hover {
-   background: #2563eb;
+	background: #2563eb;
 }
 
 .alim-main {
-   flex: 1;
-   padding: 0 1.5rem 1.5rem 1.5rem;
-   width: 100%;
-   min-width: 0; /* Permite que flex shrink funcione correctamente */
-   overflow-x: hidden; /* Evita scroll horizontal no deseado */
+	flex: 1;
+	padding: 0 1.5rem calc(1.5rem + var(--safe-area-inset-bottom, 0px)) 1.5rem;
+	width: 100%;
+	min-width: 0;
+	/* Permite que flex shrink funcione correctamente */
+	overflow-x: hidden;
+	/* Evita scroll horizontal no deseado */
 }
 
 /* Ajuste de paddings en pantallas chicas/medianas */
 @media (max-width: 982px) {
-   .alim-main {
-      padding: 0 0.75rem 1rem 0.75rem;
-   }
+	.alim-main {
+		padding: 0 0.75rem 1rem 0.75rem;
+	}
 }
 
 
@@ -138,87 +140,87 @@
 
 /* Botones de puesto / genéricos */
 .alim-btn {
-   border: none;
-   border-radius: 10px;
-   padding: 0.45rem 1.2rem;
-   font-size: 0.9rem;
-   font-weight: 600;
-   cursor: pointer;
-   background-color: #22c55e;
-   color: #022c22;
-   transition: transform 0.1s ease, box-shadow 0.1s ease,
-      background-color 0.15s ease;
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
+	border: none;
+	border-radius: 10px;
+	padding: 0.45rem 1.2rem;
+	font-size: 0.9rem;
+	font-weight: 600;
+	cursor: pointer;
+	background-color: #22c55e;
+	color: #022c22;
+	transition: transform 0.1s ease, box-shadow 0.1s ease,
+		background-color 0.15s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .alim-btn:hover {
-   background-color: #16a34a;
-   box-shadow: 0 4px 10px rgba(21, 128, 61, 0.4);
-   transform: translateY(-1px);
+	background-color: #16a34a;
+	box-shadow: 0 4px 10px rgba(21, 128, 61, 0.4);
+	transform: translateY(-1px);
 }
 
 .alim-btn:active {
-   transform: translateY(0);
-   box-shadow: none;
+	transform: translateY(0);
+	box-shadow: none;
 }
 
 /* Botón de puesto activo */
 .alim-btn-active {
-   background-color: #0ea5e9;
-   color: #0f172a;
+	background-color: #0ea5e9;
+	color: #0f172a;
 }
 
 /* Botón "+" para agregar puesto (nav y drawer) */
 .alim-btn-add {
-   background-color: transparent;
-   color: #e5e7eb;
-   border: 1px dashed #9ca3af;
-   width: 2.5rem;
-   height: 2.5rem;
-   padding: 0;
-   font-size: 2rem;
-   line-height: 1;
+	background-color: transparent;
+	color: #e5e7eb;
+	border: 1px dashed #9ca3af;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+	font-size: 2rem;
+	line-height: 1;
 }
 
 .alim-btn-add-icon {
-   display: block;
-   transform: translateY(-3px);
+	display: block;
+	transform: translateY(-3px);
 }
 
 .alim-btn-add:hover {
-   background-color: rgba(148, 163, 184, 0.2);
-   box-shadow: none;
-   transform: none;
+	background-color: rgba(148, 163, 184, 0.2);
+	box-shadow: none;
+	transform: none;
 }
 
 /* Botón salir - estilo rojo gradient */
 .alim-btn-exit {
-   border: 1px solid #f87171;
-   border-radius: 8px;
-   padding: 0.5rem 1rem;
-   font-size: 0.875rem;
-   font-weight: 600;
-   cursor: pointer;
-   background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-   color: #fef2f2;
-   transition: all 0.2s ease;
-   display: inline-flex;
-   align-items: center;
-   justify-content: center;
+	border: 1px solid #f87171;
+	border-radius: 8px;
+	padding: 0.5rem 1rem;
+	font-size: 0.875rem;
+	font-weight: 600;
+	cursor: pointer;
+	background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+	color: #fef2f2;
+	transition: all 0.2s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .alim-btn-exit:hover {
-   background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
-   border-color: #fca5a5;
-   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
-   transform: translateY(-1px);
+	background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+	border-color: #fca5a5;
+	box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+	transform: translateY(-1px);
 }
 
 .alim-btn-exit:active {
-   transform: translateY(0);
-   box-shadow: none;
+	transform: translateY(0);
+	box-shadow: none;
 }
 
 
@@ -226,129 +228,140 @@
    ESTADOS VACÍOS
    ========================================================= */
 .alim-empty {
-   height: 100%;
-   display: flex;
-   align-items: flex-start;
-   justify-content: center;
-   padding-top: 2rem;
-   color: #64748b;
-   font-size: 0.95rem;
-   text-align: center;
+	height: 100%;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 2rem;
+	color: #64748b;
+	font-size: 0.95rem;
+	text-align: center;
 }
 
 .alim-empty-state {
-   margin-bottom: 1rem;
-   color: #020202;
-   font-size: 0.95rem;
+	margin-bottom: 1rem;
+	color: #020202;
+	font-size: 0.95rem;
 }
 
 /* =========================================================
    OVERLAY DE PROBLEMA DE CONEXIÓN
    ========================================================= */
 .alim-overlay-conexion {
-   position: absolute;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   z-index: 100;
-   display: flex;
-   align-items: flex-start;
-   justify-content: center;
-   padding-top: 15vh;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 100;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding-top: 15vh;
 }
 
 /* Capa de blur constante */
 .alim-overlay-conexion::before {
-   content: '';
-   position: absolute;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   backdrop-filter: blur(2px);
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	backdrop-filter: blur(2px);
 }
 
 /* Capa de oscuridad constante */
 .alim-overlay-conexion::after {
-   content: '';
-   position: absolute;
-   top: 0;
-   left: 0;
-   right: 0;
-   bottom: 0;
-   background: rgba(0, 0, 0, 0.6);
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.6);
 }
 
 .alim-overlay-conexion__contenido {
-   position: relative;
-   z-index: 1;
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   gap: 0.5rem;
-   padding: 1.5rem 2rem;
-   background: rgba(30, 20, 0, 0.95);
-   border: 2px solid #f59e0b;
-   border-radius: 12px;
-   box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-   animation: contenidoPulse 3.5s ease-in-out infinite;
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 1.5rem 2rem;
+	background: rgba(30, 20, 0, 0.95);
+	border: 2px solid #f59e0b;
+	border-radius: 12px;
+	box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+	animation: contenidoPulse 3.5s ease-in-out infinite;
 }
 
 .alim-overlay-conexion__icono {
-   font-size: 2rem;
-   color: #fbbf24;
-   animation: iconoPulse 3.5s ease-in-out infinite;
+	font-size: 2rem;
+	color: #fbbf24;
+	animation: iconoPulse 3.5s ease-in-out infinite;
 }
 
 .alim-overlay-conexion__titulo {
-   font-size: 1.25rem;
-   font-weight: 700;
-   color: #fbbf24;
-   letter-spacing: 0.05em;
+	font-size: 1.25rem;
+	font-weight: 700;
+	color: #fbbf24;
+	letter-spacing: 0.05em;
 }
 
 .alim-overlay-conexion__texto {
-   font-size: 0.9rem;
-   color: #fcd34d;
-   text-align: center;
+	font-size: 0.9rem;
+	color: #fcd34d;
+	text-align: center;
 }
 
 /* Animación continua del fondo (breathing) */
 @keyframes fondoPulse {
-   0%, 100% {
-      opacity: 0.4;
-   }
-   50% {
-      opacity: 1;
-   }
+
+	0%,
+	100% {
+		opacity: 0.4;
+	}
+
+	50% {
+		opacity: 1;
+	}
 }
 
 /* Animación continua del contenido/cartel (breathing con pausa en máximo) */
 @keyframes contenidoPulse {
-   0%, 100% {
-      transform: scale(0.88);
-   }
-   45%, 55% {
-      transform: scale(1.12);
-   }
+
+	0%,
+	100% {
+		transform: scale(0.88);
+	}
+
+	45%,
+	55% {
+		transform: scale(1.12);
+	}
 }
 
 /* Animación del icono (con pausa en máximo) */
 @keyframes iconoPulse {
-   0%, 100% {
-      transform: scale(1);
-      opacity: 1;
-   }
-   45%, 55% {
-      transform: scale(1.55);
-      opacity: 0.85;
-   }
+
+	0%,
+	100% {
+		transform: scale(1);
+		opacity: 1;
+	}
+
+	45%,
+	55% {
+		transform: scale(1.55);
+		opacity: 0.85;
+	}
 }
 
 /* El main necesita position relative para que el overlay absolute funcione */
 .alim-main {
-   position: relative;
+	position: relative;
 }
 
 /* =========================================================

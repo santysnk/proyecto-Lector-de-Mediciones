@@ -16,344 +16,354 @@
    NAVBAR (DESKTOP)
    ========================================================= */
 .alim-navbar {
-   display: flex;
-   justify-content: space-between;
-   align-items: center;
-   padding: 0.6rem 1.25rem;
-   background-color: #0f172a;
-   color: #e5e7eb;
-   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.4);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 0.6rem 1.25rem;
+	background-color: #0f172a;
+	color: #e5e7eb;
+	box-shadow: 0 4px 10px rgba(15, 23, 42, 0.4);
+	/* z-index bajo para no tapar modales */
+	z-index: 50;
+	width: 100%;
+	/* Navbar normal (no fixed/sticky) - se desplaza con el contenido */
+	position: relative;
+	border: none;
+	margin: 0;
+	box-sizing: border-box;
 }
 
+
 .alim-navbar-left {
-   display: flex;
-   flex-direction: column;
+	display: flex;
+	flex-direction: column;
 }
 
 .alim-title {
-   margin: 0;
-   font-size: 1.3rem;
+	margin: 0;
+	font-size: 1.3rem;
 }
 
 /* Fila con nombre del puesto y botón maestro */
 .alim-puesto-row {
-   display: flex;
-   align-items: center;
-   gap: 0.5rem;
-   margin-top: 0.15rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-top: 0.15rem;
 }
 
 /* Botón del nombre del puesto - mejorado */
 .alim-puesto-nombre-btn {
-   background: rgba(30, 58, 95, 0.5);
-   border: 1px solid #334155;
-   padding: 0.3rem 0.6rem;
-   border-radius: 6px;
-   color: #e5e7eb;
-   font-size: 0.85rem;
-   font-weight: 500;
-   cursor: pointer;
-   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+	background: rgba(30, 58, 95, 0.5);
+	border: 1px solid #334155;
+	padding: 0.3rem 0.6rem;
+	border-radius: 6px;
+	color: #e5e7eb;
+	font-size: 0.85rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
 
 .alim-puesto-nombre-btn:hover {
-   background: rgba(59, 130, 246, 0.2);
-   border-color: #3b82f6;
-   color: #60a5fa;
+	background: rgba(59, 130, 246, 0.2);
+	border-color: #3b82f6;
+	color: #60a5fa;
 }
 
 .alim-puesto-nombre-btn:active {
-   background: rgba(59, 130, 246, 0.3);
+	background: rgba(59, 130, 246, 0.3);
 }
 
 /* Botón maestro de maestros */
 .alim-maestro-btn {
-   padding: 0.4rem 0.6rem;
-   background: #1e3a5f;
-   border: 1px solid #3b82f6;
-   border-radius: 4px;
-   color: #60a5fa;
-   font-size: 1rem;
-   cursor: pointer;
-   transition: background 0.2s, transform 0.1s, border-color 0.2s;
-   line-height: 1;
-   display: flex;
-   align-items: center;
-   justify-content: center;
+	padding: 0.4rem 0.6rem;
+	background: #1e3a5f;
+	border: 1px solid #3b82f6;
+	border-radius: 4px;
+	color: #60a5fa;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+	line-height: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .alim-maestro-btn:hover {
-   background: #2563eb;
-   color: #fff;
+	background: #2563eb;
+	color: #fff;
 }
 
 .alim-maestro-btn:active {
-   transform: scale(0.95);
+	transform: scale(0.95);
 }
 
 .alim-maestro-btn--stop {
-   background: #5f1e1e;
-   border-color: #ef4444;
-   color: #f87171;
+	background: #5f1e1e;
+	border-color: #ef4444;
+	color: #f87171;
 }
 
 .alim-maestro-btn--stop:hover {
-   background: #dc2626;
-   color: #fff;
+	background: #dc2626;
+	color: #fff;
 }
 
 .alim-maestro-btn--disabled {
-   background: #374151;
-   border-color: #4b5563;
-   color: #6b7280;
-   cursor: not-allowed;
-   opacity: 0.7;
+	background: #374151;
+	border-color: #4b5563;
+	color: #6b7280;
+	cursor: not-allowed;
+	opacity: 0.7;
 }
 
 .alim-maestro-btn--disabled:hover {
-   background: #374151;
-   color: #6b7280;
+	background: #374151;
+	color: #6b7280;
 }
 
 /* Botón maestro con texto (INICIAR MEDICIONES / PARAR MEDICIONES) */
 .alim-maestro-btn-texto {
-   padding: 0.3rem 0.6rem;
-   background: #1e3a5f;
-   border: 1px solid #3b82f6;
-   border-radius: 6px;
-   color: #60a5fa;
-   font-size: 0.85rem;
-   font-weight: 500;
-   cursor: pointer;
-   transition: background 0.2s, transform 0.1s, border-color 0.2s;
-   white-space: nowrap;
+	padding: 0.3rem 0.6rem;
+	background: #1e3a5f;
+	border: 1px solid #3b82f6;
+	border-radius: 6px;
+	color: #60a5fa;
+	font-size: 0.85rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s, border-color 0.2s;
+	white-space: nowrap;
 }
 
 .alim-maestro-btn-texto:hover {
-   background: #2563eb;
-   color: #fff;
+	background: #2563eb;
+	color: #fff;
 }
 
 .alim-maestro-btn-texto:active {
-   transform: scale(0.97);
+	transform: scale(0.97);
 }
 
 .alim-maestro-btn-texto--stop {
-   background: #5f1e1e;
-   border-color: #ef4444;
-   color: #f87171;
+	background: #5f1e1e;
+	border-color: #ef4444;
+	color: #f87171;
 }
 
 .alim-maestro-btn-texto--stop:hover {
-   background: #dc2626;
-   color: #fff;
+	background: #dc2626;
+	color: #fff;
 }
 
 .alim-maestro-btn-texto--disabled {
-   background: #374151;
-   border-color: #4b5563;
-   color: #6b7280;
-   cursor: not-allowed;
-   opacity: 0.7;
+	background: #374151;
+	border-color: #4b5563;
+	color: #6b7280;
+	cursor: not-allowed;
+	opacity: 0.7;
 }
 
 .alim-maestro-btn-texto--disabled:hover {
-   background: #374151;
-   color: #6b7280;
+	background: #374151;
+	color: #6b7280;
 }
 
 /* Estilo para modo compacto */
 .alim-current-puesto-btn {
-   background: rgba(30, 58, 95, 0.5);
-   border: 1px solid #334155;
-   padding: 0.45rem 0.85rem;
-   border-radius: 6px;
-   color: #e5e7eb;
-   font-size: 0.95rem;
-   font-weight: 500;
-   cursor: pointer;
-   transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   line-height: 1;
+	background: rgba(30, 58, 95, 0.5);
+	border: 1px solid #334155;
+	padding: 0.45rem 0.85rem;
+	border-radius: 6px;
+	color: #e5e7eb;
+	font-size: 0.95rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	line-height: 1;
 }
 
 .alim-current-puesto-btn:hover {
-   background: rgba(59, 130, 246, 0.2);
-   border-color: #3b82f6;
-   color: #60a5fa;
+	background: rgba(59, 130, 246, 0.2);
+	border-color: #3b82f6;
+	color: #60a5fa;
 }
 
 .alim-current-puesto-btn:active {
-   background: rgba(59, 130, 246, 0.3);
+	background: rgba(59, 130, 246, 0.3);
 }
 
 /* Contenedor de botones de la nav */
 .alim-nav-buttons {
-   display: flex;
-   align-items: center;
-   gap: 2rem;
+	display: flex;
+	align-items: center;
+	gap: 2rem;
 }
 
 /* Bloque 2: botones de puestos */
 .alim-nav-bloque-puestos {
-   display: flex;
-   align-items: center;
-   gap: 2rem;
+	display: flex;
+	align-items: center;
+	gap: 2rem;
 }
 
 /* Bloque 1: +, editar, salir */
 .alim-nav-bloque-controles {
-   display: flex;
-   align-items: center;
-   gap: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
 }
 
 /* Boton menu: oculto por defecto (solo se usa en modo compacto) */
 .alim-navbar-menu-btn {
-   display: none;
-   border: none;
-   background: transparent;
-   color: #e5e7eb;
-   font-size: 1.4rem;
-   cursor: pointer;
+	display: none;
+	border: none;
+	background: transparent;
+	color: #e5e7eb;
+	font-size: 1.4rem;
+	cursor: pointer;
 }
 
 /* =========================================================
    NAVBAR (MODO COMPACTO)
    ========================================================= */
 @media (max-width: 900px) {
-   /* El contenedor principal del nav pasa a modo centrado */
-   .alim-navbar {
-      justify-content: center;
-   }
 
-   .alim-navbar-compact {
-      justify-content: space-between;
-      align-items: center;
-   }
+	/* El contenedor principal del nav pasa a modo centrado */
+	.alim-navbar {
+		justify-content: center;
+	}
 
-   /* Ajuste vertical de botones en modo compacto */
-   .alim-navbar-compact .alim-current-puesto-btn,
-   .alim-navbar-compact .alim-maestro-btn {
-      margin-top: 2px;
-   }
+	.alim-navbar-compact {
+		justify-content: space-between;
+		align-items: center;
+	}
 
-   /* Texto centrado con el nombre del puesto (sin botón puesto) */
-   .alim-navbar-compact-title {
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      text-align: center;
-   }
+	/* Ajuste vertical de botones en modo compacto */
+	.alim-navbar-compact .alim-current-puesto-btn,
+	.alim-navbar-compact .alim-maestro-btn {
+		margin-top: 2px;
+	}
 
-   /* Mostramos el boton hamburguesa */
-   .alim-navbar-menu-btn {
-      display: block;
-      background: none;
-      border: none;
-      color: #e5e7eb;
-      font-size: 1.3rem;
-      cursor: pointer;
-   }
+	/* Texto centrado con el nombre del puesto (sin botón puesto) */
+	.alim-navbar-compact-title {
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		text-align: center;
+	}
 
-   /* Ocultamos titulo grande y zona de botones de la derecha */
-   .alim-title {
-      display: none;
-   }
+	/* Mostramos el boton hamburguesa */
+	.alim-navbar-menu-btn {
+		display: block;
+		background: none;
+		border: none;
+		color: #e5e7eb;
+		font-size: 1.3rem;
+		cursor: pointer;
+	}
 
-   .alim-nav-buttons {
-      display: none;
-   }
+	/* Ocultamos titulo grande y zona de botones de la derecha */
+	.alim-title {
+		display: none;
+	}
+
+	.alim-nav-buttons {
+		display: none;
+	}
 }
 
 /* =========================================================
    DIÁLOGO DE CONFIRMACIÓN (MEDICIONES)
    ========================================================= */
 .alim-confirmacion-overlay {
-   position: fixed;
-   inset: 0;
-   background: rgba(0, 0, 0, 0.75);
-   display: flex;
-   align-items: center;
-   justify-content: center;
-   z-index: 1100;
-   padding: 1rem;
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.75);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1100;
+	padding: 1rem;
 }
 
 .alim-confirmacion {
-   background: #1e293b;
-   border-radius: 12px;
-   padding: 1.5rem;
-   max-width: 400px;
-   width: 90%;
-   text-align: center;
-   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-   border: 1px solid #334155;
+	background: #1e293b;
+	border-radius: 12px;
+	padding: 1.5rem;
+	max-width: 400px;
+	width: 90%;
+	text-align: center;
+	box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+	border: 1px solid #334155;
 }
 
 .alim-confirmacion__icono {
-   font-size: 2.5rem;
-   margin-bottom: 0.75rem;
+	font-size: 2.5rem;
+	margin-bottom: 0.75rem;
 }
 
 .alim-confirmacion__titulo {
-   margin: 0 0 0.5rem 0;
-   font-size: 1.1rem;
-   font-weight: 600;
-   color: #f1f5f9;
+	margin: 0 0 0.5rem 0;
+	font-size: 1.1rem;
+	font-weight: 600;
+	color: #f1f5f9;
 }
 
 .alim-confirmacion__mensaje {
-   margin: 0 0 1.25rem 0;
-   font-size: 0.9rem;
-   color: #94a3b8;
-   line-height: 1.5;
+	margin: 0 0 1.25rem 0;
+	font-size: 0.9rem;
+	color: #94a3b8;
+	line-height: 1.5;
 }
 
 .alim-confirmacion__botones {
-   display: flex;
-   justify-content: center;
-   gap: 0.75rem;
+	display: flex;
+	justify-content: center;
+	gap: 0.75rem;
 }
 
 .alim-confirmacion__btn {
-   padding: 0.6rem 1.25rem;
-   border: none;
-   border-radius: 6px;
-   font-size: 0.9rem;
-   font-weight: 500;
-   cursor: pointer;
-   transition: background 0.2s, transform 0.1s;
+	padding: 0.6rem 1.25rem;
+	border: none;
+	border-radius: 6px;
+	font-size: 0.9rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.1s;
 }
 
 .alim-confirmacion__btn:active {
-   transform: scale(0.98);
+	transform: scale(0.98);
 }
 
 .alim-confirmacion__btn--cancelar {
-   background: #475569;
-   color: #f1f5f9;
+	background: #475569;
+	color: #f1f5f9;
 }
 
 .alim-confirmacion__btn--cancelar:hover {
-   background: #64748b;
+	background: #64748b;
 }
 
 .alim-confirmacion__btn--iniciar {
-   background: #2563eb;
-   color: #fff;
+	background: #2563eb;
+	color: #fff;
 }
 
 .alim-confirmacion__btn--iniciar:hover {
-   background: #1d4ed8;
+	background: #1d4ed8;
 }
 
 .alim-confirmacion__btn--detener {
-   background: #dc2626;
-   color: #fff;
+	background: #dc2626;
+	color: #fff;
 }
 
 .alim-confirmacion__btn--detener:hover {
-   background: #b91c1c;
+	background: #b91c1c;
 }

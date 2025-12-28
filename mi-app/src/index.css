@@ -243,16 +243,26 @@ body::-webkit-scrollbar,
 
 /* =========================================================
    ESTILOS PARA CAPACITOR (App Nativa Android/iOS)
-   El plugin @capacitor-community/safe-area establece las variables
-   --safe-area-inset-* cuando las barras del sistema son transparentes.
+   Android 15+ fuerza edge-to-edge, usamos CSS para compensar.
+   Capacitor inyecta --safe-area-inset-* automáticamente.
    ========================================================= */
-body.capacitor-native {
-   /* Aplicar safe-areas al body para que todo el contenido respete los márgenes */
-   padding-top: var(--safe-area-inset-top, 0px);
-   padding-bottom: var(--safe-area-inset-bottom, 0px);
-   padding-left: var(--safe-area-inset-left, 0px);
-   padding-right: var(--safe-area-inset-right, 0px);
-   /* El fondo del body debe cubrir toda la pantalla incluyendo las áreas de sistema */
+html.capacitor-native {
    background-color: #0f172a;
+   margin: 0;
+   padding: 0;
 }
+
+body.capacitor-native {
+   background-color: #0f172a;
+   margin: 0;
+   padding: 0;
+}
+
+.capacitor-native #root {
+   background-color: #0f172a;
+   margin: 0;
+   padding: 0;
+}
+
+/* El div#status-bar-cover se crea dinámicamente en main.jsx para cubrir la status bar */
 

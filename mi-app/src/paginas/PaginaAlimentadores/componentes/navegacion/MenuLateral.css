@@ -27,7 +27,8 @@
    opacity: 0;
    pointer-events: none;
    transition: opacity 0.22s ease;
-   z-index: 60;
+   /* z-index alto para estar sobre navbar (10000) y cobertura status bar (9999) */
+   z-index: 10001;
 }
 
 /* Cuando el drawer está abierto: overlay visible y clickeable */
@@ -45,8 +46,8 @@
    max-height: 100dvh; /* viewport dinámico para móviles */
    background-color: #020617;
    color: #e5e7eb;
-   padding: 1.4rem 1.1rem;
-   padding-bottom: calc(var(--safe-area-inset-bottom, 0px) + 2.5rem); /* espacio extra al final */
+   /* Padding con safe-areas para Android 15+ edge-to-edge */
+   padding: calc(1.4rem + var(--safe-area-inset-top, 0px)) 1.1rem calc(2.5rem + var(--safe-area-inset-bottom, 0px)) calc(1.1rem + var(--safe-area-inset-left, 0px));
    box-shadow: 8px 0 25px rgba(15, 23, 42, 0.6);
    transform: translateX(-100%);
    transition: transform 0.22s ease-out;

@@ -7,24 +7,13 @@ import App from "./App.jsx";                       // componente raíz de la apl
 import "./index.css";                              // estilos globales (tailwind + tema general)
 import "./fuentes.css";                            // fuentes locales desde public/fonts/
 import { Capacitor } from "@capacitor/core";       // para detectar plataforma nativa
-import { SafeArea } from "@capacitor-community/safe-area"; // plugin para safe-area en Android
 
 // Configurar plataforma nativa (Android/iOS)
 if (Capacitor.isNativePlatform()) {
-   // Agregar clase al body para aplicar estilos específicos de app nativa (padding-top, etc.)
+   // Agregar clase a html y body para estilos específicos de app nativa
+   document.documentElement.classList.add('capacitor-native');
    document.body.classList.add('capacitor-native');
-
-   // Habilitar el plugin SafeArea - esto inyecta las variables CSS --safe-area-inset-*
-   // y configura las barras del sistema como transparentes para edge-to-edge
-   SafeArea.enable({
-      config: {
-         customColorsForSystemBars: true,
-         statusBarColor: '#00000000',      // Transparente
-         statusBarContent: 'light',         // Iconos claros
-         navigationBarColor: '#00000000',   // Transparente
-         navigationBarContent: 'light',     // Iconos claros
-      },
-   }).catch(err => console.warn('SafeArea enable:', err));
+   // Los insets se manejan desde MainActivity.java con ViewCompat.setOnApplyWindowInsetsListener
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(   // crea la raíz de React sobre el div#root
