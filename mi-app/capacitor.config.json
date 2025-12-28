@@ -4,7 +4,6 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
-    "url": "http://192.168.16.204:5174",
     "cleartext": true
   },
   "plugins": {
