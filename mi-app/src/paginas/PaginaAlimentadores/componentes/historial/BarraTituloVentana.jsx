@@ -1,6 +1,7 @@
 /**
  * Barra de titulo arrastrable para ventanas flotantes de historial
  * Incluye titulo, botones de minimizar/maximizar/cerrar
+ * En móvil solo muestra el botón de cerrar
  */
 
 import { forwardRef } from "react";
@@ -35,9 +36,10 @@ const BarraTituloVentana = forwardRef(({
         <span className="ventana-historial-nombre">{nombre}</span>
       </div>
       <div className="ventana-historial-controles">
+        {/* Botones minimizar/maximizar ocultos en móvil via CSS */}
         <button
           type="button"
-          className="ventana-btn ventana-btn--minimizar"
+          className="ventana-btn ventana-btn--minimizar ventana-btn--desktop-only"
           onClick={onMinimizar}
           title="Minimizar"
         >
@@ -45,7 +47,7 @@ const BarraTituloVentana = forwardRef(({
         </button>
         <button
           type="button"
-          className="ventana-btn ventana-btn--maximizar"
+          className="ventana-btn ventana-btn--maximizar ventana-btn--desktop-only"
           onClick={onMaximizar}
           title={maximizada ? "Restaurar" : "Maximizar"}
         >

@@ -638,6 +638,11 @@
   cursor: not-allowed;
 }
 
+/* Botones de flechas para escala Y - ocultos por defecto (solo visibles en landscape móvil) */
+.ventana-escala-y-btn {
+  display: none;
+}
+
 /* Panel lateral de datos */
 .ventana-panel-datos {
   width: 260px;
@@ -940,30 +945,503 @@
   color: #ffffff;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ===== MODO LANDSCAPE MÓVIL - Solo gráfico a pantalla completa ===== */
+@media (max-width: 900px) and (orientation: landscape) {
+  /* Modal a pantalla completa sin bordes - con safe-areas incorporadas */
   .ventana-historial {
-    min-width: 100%;
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
+    min-width: 100vw !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
-  }
-
-  .ventana-controles {
+    right: 0 !important;
+    bottom: 0 !important;
+    resize: none !important;
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
+    overflow: hidden;
+    box-sizing: border-box;
+    margin: 0;
+    /* Safe areas aplicadas al modal completo en landscape */
+    padding-top: var(--safe-area-inset-top, 0px);
+    padding-bottom: var(--safe-area-inset-bottom, 0px);
+    padding-left: var(--safe-area-inset-left, 0px);
+    padding-right: var(--safe-area-inset-right, 0px);
+    /* Fondo oscuro para las áreas de safe-area */
+    background-color: #0f172a;
   }
 
-  .ventana-cache {
-    margin-left: 0;
-    justify-content: flex-end;
-  }
-
+  /* Ocultar header, controles, panel de datos y stats */
+  .ventana-historial-header,
+  .ventana-controles,
+  .ventana-panel-datos,
   .ventana-stats {
+    display: none !important;
+  }
+
+  /* Contenido ocupa todo - las safe areas ya están en el padre */
+  .ventana-historial-content {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    /* Padding interno mínimo */
+    padding: clamp(2px, 0.5dvh, 4px) clamp(4px, 1dvw, 8px);
+    display: flex;
+    flex-direction: row;
+    gap: clamp(4px, 1dvw, 8px);
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Contenedor gráfico en fila - altura limitada */
+  .ventana-grafico-container {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: clamp(4px, 1dvw, 8px);
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Escala Y - contenedor con botones arriba y abajo - mismo alto que gráfico */
+  .ventana-escala-y {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(4px, 1dvh, 8px) 0;
+    background: #0f172a;
+    border-right: 1px solid #334155;
+    /* Ancho más estrecho */
+    width: clamp(32px, 6dvw, 42px);
+    min-width: clamp(32px, 6dvw, 42px);
+    max-width: clamp(32px, 6dvw, 42px);
+    /* Mismo alto que el contenedor padre */
+    height: 100%;
+    max-height: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    gap: clamp(2px, 0.5dvh, 4px);
+  }
+
+  /* Ocultar label, reset e input en landscape */
+  .ventana-escala-y-label,
+  .ventana-escala-y-reset,
+  .ventana-escala-y-input {
+    display: none !important;
+  }
+
+  /* Botones de flecha visibles en landscape móvil */
+  .ventana-escala-y-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: clamp(24px, 5dvw, 34px);
+    height: clamp(24px, 5dvw, 34px);
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: clamp(3px, 0.8dvw, 5px);
+    color: #e2e8f0;
+    font-size: clamp(0.75rem, 2dvw, 1rem);
+    cursor: pointer;
+    flex-shrink: 0;
+    z-index: 10;
+    transition: all 0.15s ease;
+  }
+
+  .ventana-escala-y-btn:active {
+    background: #0ea5e9;
+    border-color: #0ea5e9;
+    transform: scale(0.95);
+  }
+
+  .ventana-escala-y-btn--arriba {
+    order: -1;
+  }
+
+  .ventana-escala-y-btn--abajo {
+    order: 10;
+  }
+
+  /* Slider vertical nativo usando writing-mode */
+  .ventana-escala-y-slider {
+    /* writing-mode hace el slider vertical de forma nativa */
+    writing-mode: vertical-lr;
+    direction: rtl; /* Invierte: arriba = max, abajo = min */
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+    /* El ancho del slider debe ser igual al thumb para que quede centrado */
+    width: clamp(14px, 3.5dvw, 18px);
+    background: transparent;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* Track del slider - gradiente vertical (rojo arriba, verde abajo) */
+  .ventana-escala-y-slider::-webkit-slider-runnable-track {
+    /* Track más angosto que el slider - se centra automáticamente */
+    width: clamp(5px, 1.2dvw, 8px);
+    height: 100%;
+    background: linear-gradient(to bottom, #ef4444 0%, #eab308 50%, #22c55e 100%);
+    border-radius: clamp(2px, 0.6dvw, 4px);
+  }
+
+  .ventana-escala-y-slider::-moz-range-track {
+    width: clamp(5px, 1.2dvw, 8px);
+    height: 100%;
+    background: linear-gradient(to bottom, #ef4444 0%, #eab308 50%, #22c55e 100%);
+    border-radius: clamp(2px, 0.6dvw, 4px);
+  }
+
+  /* Thumb del slider */
+  .ventana-escala-y-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: clamp(14px, 3.5dvw, 18px);
+    height: clamp(14px, 3.5dvw, 18px);
+    background: #e2e8f0;
+    border: 2px solid #64748b;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  .ventana-escala-y-slider::-moz-range-thumb {
+    width: clamp(14px, 3.5dvw, 18px);
+    height: clamp(14px, 3.5dvw, 18px);
+    background: #e2e8f0;
+    border: 2px solid #64748b;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+
+  /* Gráfico - ocupa el espacio restante sin alturas fijas */
+  .ventana-grafico {
+    flex: 1;
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+    min-height: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+  }
+
+  /* Ajustar ApexCharts */
+  .ventana-grafico > div,
+  .ventana-grafico .apexcharts-canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Ocultar barra de tareas */
+  .ventanas-barra-tareas {
+    display: none !important;
+  }
+}
+
+/* ===== RESPONSIVE MÓVIL (Portrait) ===== */
+@media (max-width: 600px) and (orientation: portrait) {
+  /* Modal a pantalla completa con safe-areas */
+  .ventana-historial {
+    min-width: 100% !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    resize: none !important;
+    /* Safe areas para portrait - top y bottom */
+    padding-top: var(--safe-area-inset-top, 0px);
+    padding-bottom: var(--safe-area-inset-bottom, 0px);
+    padding-left: var(--safe-area-inset-left, 0px);
+    padding-right: var(--safe-area-inset-right, 0px);
+    box-sizing: border-box;
+    /* Fondo oscuro para las áreas de safe-area */
+    background-color: #0f172a;
+  }
+
+  /* Ocultar botones de minimizar/maximizar y exportar en móvil */
+  .ventana-btn--desktop-only {
+    display: none !important;
+  }
+
+  /* Ocultar botón toggle de datos - tabla siempre visible en móvil */
+  .ventana-toggle-datos {
+    display: none !important;
+  }
+
+  /* Header más compacto */
+  .ventana-historial-header {
+    padding: 0.5rem 0.75rem;
+    cursor: default;
+  }
+
+  .ventana-historial-nombre {
+    font-size: 0.9rem;
+    max-width: none;
+  }
+
+  /* Botón cerrar más grande para táctil */
+  .ventana-btn--cerrar {
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+
+  /* Contenido con menos padding */
+  .ventana-historial-content {
+    padding: 0.5rem;
+  }
+
+  /* Barra de controles - diseño fluido con wrap */
+  .ventana-controles {
+    display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.75rem;
+    align-items: center;
+    gap: clamp(0.3rem, 1.5vw, 0.5rem);
+    padding: clamp(0.35rem, 1.5vw, 0.5rem);
+    margin-bottom: 0.5rem;
+  }
+
+  /* Tabs de zona - primera fila (ancho completo) */
+  .ventana-tabs {
+    width: 100%;
+    order: 1;
+    gap: clamp(0.2rem, 1vw, 0.4rem);
+  }
+
+  .ventana-tab {
+    flex: 1;
+    padding: clamp(0.3rem, 1.2vw, 0.5rem) clamp(0.3rem, 1vw, 0.5rem);
+    font-size: clamp(0.6rem, 2.2vw, 0.75rem);
+    text-align: center;
+    max-width: none;
+  }
+
+  /* Fila de rango + calendario - diseño fluido */
+  .ventana-rango {
+    order: 2;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: clamp(0.25rem, 1vw, 0.4rem);
+    flex: 1 1 auto;
+  }
+
+  /* Botones de rango - tamaño fluido que se adapta al espacio */
+  .ventana-rango-btn {
+    /* min 28px, ideal ~9% del ancho, max 40px */
+    width: clamp(28px, 9vw, 40px);
+    min-width: clamp(28px, 9vw, 40px);
+    height: clamp(30px, 8vw, 38px);
+    padding: 0;
+    font-size: clamp(0.65rem, 2.2vw, 0.8rem);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Grupo de gráficos */
+  .ventana-grupo-graficos {
+    order: 2;
+    display: contents;
+  }
+
+  /* Selector de fecha - pegado a la derecha */
+  .ventana-selector-dia {
+    order: 2;
+    padding-right: 0;
+    margin-left: auto;
+  }
+
+  /* Botón del calendario - mismo tamaño fluido que botones de rango */
+  .ventana-selector-dia .selector-fecha-btn {
+    width: clamp(30px, 9vw, 40px);
+    height: clamp(30px, 8vw, 38px);
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+  }
+
+  .ventana-selector-dia .selector-fecha-icono {
+    font-size: clamp(0.85rem, 2.8vw, 1rem);
+  }
+
+  /* Ocultar texto de fecha seleccionada en móvil */
+  .ventana-dia-seleccionado {
+    display: none;
+  }
+
+  /* Tipo de gráfico - fila completa, botones distribuidos */
+  .ventana-tipo-grafico {
+    order: 3;
+    width: 100%;
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: stretch;
+    gap: clamp(0.3rem, 1.5vw, 0.5rem);
+    padding: 0;
+    border-left: none;
+  }
+
+  .ventana-tipo-btn {
+    flex: 1;
+    width: auto;
+    height: clamp(32px, 9vw, 40px);
+    font-size: clamp(0.9rem, 3vw, 1.2rem);
+  }
+
+  /* Selector de alimentador - cuarta fila (ancho completo) */
+  .ventana-selector-alimentador-container {
+    order: 4;
+    width: 100%;
+    flex: 1 1 100%;
+    padding: 0;
+    margin-right: 0;
+  }
+
+  .ventana-selector-alimentador {
+    width: 100%;
+    max-width: none;
+    padding: clamp(0.3rem, 1.2vw, 0.45rem) 2rem clamp(0.3rem, 1.2vw, 0.45rem) 0.75rem;
+    font-size: clamp(0.7rem, 2.3vw, 0.85rem);
+    height: clamp(32px, 9vw, 40px);
+  }
+
+  /* Cache - quinta fila */
+  .ventana-cache {
+    order: 5;
+    margin-left: 0;
+    width: 100%;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: clamp(0.3rem, 1.2vw, 0.5rem);
+  }
+
+  /* Barra de progreso - ocupa espacio disponible */
+  .ventana-cache-barra {
+    flex: 1;
+    width: auto;
+    min-width: 80px;
+    max-width: none;
+    height: clamp(5px, 1.5vw, 7px);
+  }
+
+  .ventana-cache-texto {
+    font-size: clamp(0.6rem, 2vw, 0.75rem);
+  }
+
+  .ventana-fuente {
+    font-size: clamp(0.55rem, 1.8vw, 0.7rem);
+    padding: clamp(0.1rem, 0.5vw, 0.18rem) clamp(0.25rem, 1vw, 0.4rem);
+  }
+
+  .ventana-btn-limpiar {
+    font-size: clamp(0.8rem, 2.5vw, 1rem);
+  }
+
+  /* Contenedor gráfico + panel */
+  .ventana-grafico-container {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Panel de datos en móvil - siempre visible */
+  .ventana-panel-datos {
+    width: 100%;
+    max-height: 200px;
+    order: 1;
+    display: flex !important; /* Forzar visible */
+  }
+
+  .ventana-panel-tabla {
+    font-size: 0.75rem;
+  }
+
+  .ventana-panel-tabla th,
+  .ventana-panel-tabla td {
+    padding: 0.3rem 0.25rem;
+  }
+
+  /* Ocultar escala Y en móvil - ocupa mucho espacio */
+  .ventana-escala-y {
+    display: none;
+  }
+
+  /* Gráfico ocupa el resto */
+  .ventana-grafico {
+    flex: 1;
+    min-height: 180px;
+    order: 0;
+  }
+
+  /* Estadísticas: 2 columnas principales separadas */
+  .ventana-stats {
+    display: grid;
+    /* Col1: etiqueta + valor, separador, Col2: etiqueta + valor */
+    grid-template-columns: auto auto 2.5rem auto auto;
+    row-gap: 0.35rem;
+    column-gap: 0.2rem;
+    padding: 0.6rem 1rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .ventana-stat {
+    display: contents; /* Los hijos van directo al grid */
+    font-size: 0.8rem;
+  }
+
+  .ventana-stat b {
+    text-align: right;
+    white-space: nowrap;
+    color: #94a3b8;
+  }
+
+  .ventana-stat-input {
+    font-size: 0.9rem;
+    padding: 0.15rem 0.3rem;
+    width: auto;
+    min-width: 55px;
+    text-align: left;
+  }
+
+  /* Fila 1: Puntos (col 1-2), Mín (col 4-5) */
+  .ventana-stat:nth-child(1) b { grid-column: 1; grid-row: 1; }
+  .ventana-stat:nth-child(1) .ventana-stat-input { grid-column: 2; grid-row: 1; }
+  .ventana-stat:nth-child(2) b { grid-column: 4; grid-row: 1; }
+  .ventana-stat:nth-child(2) .ventana-stat-input { grid-column: 5; grid-row: 1; }
+
+  /* Fila 2: Máx (col 1-2), Prom (col 4-5) */
+  .ventana-stat:nth-child(3) b { grid-column: 1; grid-row: 2; }
+  .ventana-stat:nth-child(3) .ventana-stat-input { grid-column: 2; grid-row: 2; }
+  .ventana-stat:nth-child(4) b { grid-column: 4; grid-row: 2; }
+  .ventana-stat:nth-child(4) .ventana-stat-input { grid-column: 5; grid-row: 2; }
+
+  .ventana-stat-fecha {
+    display: none;
+  }
+
+  /* Ocultar barra de tareas en móvil */
+  .ventanas-barra-tareas {
+    display: none;
   }
 }

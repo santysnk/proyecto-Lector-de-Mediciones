@@ -13,12 +13,11 @@
    },
    "dependencies": {
       "@aparajita/capacitor-biometric-auth": "^9.1.2",
+      "@capacitor-community/safe-area": "^8.0.1",
       "@capacitor/android": "^8.0.0",
       "@capacitor/cli": "^8.0.0",
       "@capacitor/core": "^8.0.0",
       "@capacitor/push-notifications": "^8.0.0",
-      "@capacitor/status-bar": "^8.0.0",
-      "@capawesome/capacitor-android-edge-to-edge-support": "^8.0.0",
       "@supabase/supabase-js": "^2.87.1",
       "@tailwindcss/vite": "^4.1.17",
       "apexcharts": "^5.3.6",

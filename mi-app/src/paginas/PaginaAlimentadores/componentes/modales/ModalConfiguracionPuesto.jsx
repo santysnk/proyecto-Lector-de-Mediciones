@@ -103,16 +103,15 @@ const ModalConfiguracionPuesto = ({
 		return tieneBoxHabilitado;
 	};
 
-	// Obtener información completa del registrador para mostrar
+	// Obtener nombre del registrador para mostrar
 	const obtenerInfoRegistrador = (alim, zona) => {
 		const regId = obtenerRegistradorIdZona(alim, zona);
 		if (!regId || !buscarRegistrador) return "Sin asignar";
 		const reg = buscarRegistrador(regId);
 		if (!reg) return "Sin asignar";
 
-		// Formato: "Nombre (Agente) - IP:Puerto | Reg: inicio-fin"
-		const rangoFin = reg.indice_inicial + (reg.cantidad_registros || 1) - 1;
-		return `${reg.nombre} - ${reg.ip}:${reg.puerto} | Reg: ${reg.indice_inicial}-${rangoFin}`;
+		// Solo mostrar el nombre del registrador
+		return reg.nombre;
 	};
 
 	// ===== BOTÓN MAESTRO GLOBAL =====
@@ -208,78 +207,46 @@ const ModalConfiguracionPuesto = ({
 											borderBottomColor: alim.color || "#22c55e",
 										}}
 									>
-										{/* Header de la card */}
+										{/* Header de la card: Nombre + Play + Período */}
 										<div className="puesto-card__header">
 											<span className="puesto-card__nombre">{alim.nombre}</span>
-											<button
-												type="button"
-												className={`puesto-card__play-btn ${polling ? "puesto-card__play-btn--stop" : ""} ${!puedePolling ? "puesto-card__play-btn--disabled" : ""}`}
-												onClick={() => puedePolling && onPlayStopClick?.(alim.id)}
-												disabled={!puedePolling}
-												title={!puedePolling ? "Configuración incompleta" : polling ? "Detener lectura" : "Iniciar lectura"}
-											>
-												{!puedePolling ? "⊘" : polling ? "⏹" : "▶"}
-											</button>
+											<div className="puesto-card__header-right">
+												<button
+													type="button"
+													className={`puesto-card__play-btn ${polling ? "puesto-card__play-btn--stop" : ""} ${!puedePolling ? "puesto-card__play-btn--disabled" : ""}`}
+													onClick={() => puedePolling && onPlayStopClick?.(alim.id)}
+													disabled={!puedePolling}
+													title={!puedePolling ? "Configuración incompleta" : polling ? "Detener lectura" : "Iniciar lectura"}
+												>
+													{!puedePolling ? "⊘" : polling ? "⏹" : "▶"}
+												</button>
+												<span className="puesto-card__periodo-badge">
+													{periodoSeg ? `${periodoSeg}s` : "-"}
+												</span>
+											</div>
 										</div>
 
-										{/* Contenido de la card */}
+										{/* Contenido: Superior e Inferior lado a lado */}
 										<div className="puesto-card__body">
-											{/* Fila Superior */}
-											<div className="puesto-card__row">
-												<div className="puesto-card__field puesto-card__field--tipo">
-													<label>&nbsp;</label>
+											<div className="puesto-card__zonas">
+												{/* Zona Superior */}
+												<div className="puesto-card__zona">
 													<span className="puesto-card__tipo-badge puesto-card__tipo-badge--superior">
 														Superior
 													</span>
+													<span className="puesto-card__registrador" title={obtenerInfoRegistrador(alim, "superior")}>
+														{obtenerInfoRegistrador(alim, "superior")}
+													</span>
 												</div>
-												<div className="puesto-card__fields">
-													<div className="puesto-card__field puesto-card__field--registrador">
-														<label>Registrador</label>
-														<input
-															type="text"
-															value={obtenerInfoRegistrador(alim, "superior")}
-															readOnly
-															className="puesto-card__input--readonly"
-															title={obtenerInfoRegistrador(alim, "superior")}
-														/>
-													</div>
-													<div className="puesto-card__field puesto-card__field--periodo">
-														<label>Período (s)</label>
-														<input
-															type="text"
-															value={periodoSeg ?? "-"}
-															readOnly
-															className="puesto-card__input--readonly"
-														/>
-													</div>
-												</div>
-											</div>
 
-											{/* Fila Inferior */}
-											<div className="puesto-card__row">
-												<div className="puesto-card__field puesto-card__field--tipo">
+												{/* Zona Inferior */}
+												<div className="puesto-card__zona">
 													<span className="puesto-card__tipo-badge puesto-card__tipo-badge--inferior">
 														Inferior
 													</span>
-												</div>
-												<div className="puesto-card__fields">
-													<div className="puesto-card__field puesto-card__field--registrador">
-														<input
-															type="text"
-															value={obtenerInfoRegistrador(alim, "inferior")}
-															readOnly
-															className="puesto-card__input--readonly"
-															title={obtenerInfoRegistrador(alim, "inferior")}
-														/>
-													</div>
-													<div className="puesto-card__field puesto-card__field--periodo">
-														<input
-															type="text"
-															value={periodoSeg ?? "-"}
-															readOnly
-															className="puesto-card__input--readonly"
-														/>
-													</div>
+													<span className="puesto-card__registrador" title={obtenerInfoRegistrador(alim, "inferior")}>
+														{obtenerInfoRegistrador(alim, "inferior")}
+													</span>
 												</div>
 											</div>
 										</div>

@@ -135,6 +135,16 @@
       min-height: 100vh;
       min-height: 100dvh; /* Dynamic viewport height para móviles */
    }
+
+   /* Safe Area Insets - Compatibilidad con plugin @capacitor-community/safe-area
+      El plugin establece variables var(--safe-area-inset-*) en Android.
+      Usamos fallback a env() para navegadores que lo soportan nativamente. */
+   :root {
+      --safe-area-inset-top: env(safe-area-inset-top, 0px);
+      --safe-area-inset-right: env(safe-area-inset-right, 0px);
+      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+      --safe-area-inset-left: env(safe-area-inset-left, 0px);
+   }
 }
 
 /* Fuentes digitales para los displays de los alimentadores */
@@ -229,5 +239,20 @@ html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 *::-webkit-scrollbar {
    display: none; /* Chrome, Safari, Edge */
+}
+
+/* =========================================================
+   ESTILOS PARA CAPACITOR (App Nativa Android/iOS)
+   El plugin @capacitor-community/safe-area establece las variables
+   --safe-area-inset-* cuando las barras del sistema son transparentes.
+   ========================================================= */
+body.capacitor-native {
+   /* Aplicar safe-areas al body para que todo el contenido respete los márgenes */
+   padding-top: var(--safe-area-inset-top, 0px);
+   padding-bottom: var(--safe-area-inset-bottom, 0px);
+   padding-left: var(--safe-area-inset-left, 0px);
+   padding-right: var(--safe-area-inset-right, 0px);
+   /* El fondo del body debe cubrir toda la pantalla incluyendo las áreas de sistema */
+   background-color: #0f172a;
 }
 

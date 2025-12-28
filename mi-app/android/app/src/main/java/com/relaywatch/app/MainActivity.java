@@ -1,8 +1,13 @@
 package com.relaywatch.app;
 
+import android.os.Bundle;
+import androidx.activity.EdgeToEdge;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
-    // La configuración de edge-to-edge se maneja mediante capacitor.config.json
-    // con la opción "adjustMarginsForEdgeToEdge": "auto"
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this); // Habilitar modo edge-to-edge para safe areas
+    }
 }

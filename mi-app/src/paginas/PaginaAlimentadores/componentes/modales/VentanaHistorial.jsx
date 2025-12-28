@@ -654,6 +654,20 @@ const VentanaHistorial = ({
           {/* Slider vertical para escala Y (elemento separado) */}
           {datosGrafico.length > 0 && !cargando && !error && (
             <div className="ventana-escala-y">
+              {/* Botón subir escala (solo visible en landscape móvil via CSS) */}
+              <button
+                type="button"
+                className="ventana-escala-y-btn ventana-escala-y-btn--arriba"
+                onClick={() => {
+                  const valorActual = escalaYMax ?? limitesEscalaY.min;
+                  const redondeado = Math.ceil(valorActual / 10) * 10;
+                  const nuevoValor = redondeado === valorActual ? valorActual + 10 : redondeado;
+                  setEscalaYMax(Math.min(nuevoValor, limitesEscalaY.max));
+                }}
+                title="Aumentar escala +10"
+              >
+                ▲
+              </button>
               {editandoEscalaY ? (
                 <input
                   type="number"
@@ -686,6 +700,20 @@ const VentanaHistorial = ({
                 title={`Escala Y: 0 - ${escalaYMax ?? limitesEscalaY.min}`}
               />
               <span className="ventana-escala-y-label">0</span>
+              {/* Botón bajar escala (solo visible en landscape móvil via CSS) */}
+              <button
+                type="button"
+                className="ventana-escala-y-btn ventana-escala-y-btn--abajo"
+                onClick={() => {
+                  const valorActual = escalaYMax ?? limitesEscalaY.min;
+                  const redondeado = Math.floor(valorActual / 10) * 10;
+                  const nuevoValor = redondeado === valorActual ? valorActual - 10 : redondeado;
+                  setEscalaYMax(Math.max(nuevoValor, limitesEscalaY.min));
+                }}
+                title="Disminuir escala -10"
+              >
+                ▼
+              </button>
               <button
                 type="button"
                 className="ventana-escala-y-reset"
@@ -750,10 +778,10 @@ const VentanaHistorial = ({
               <b>Prom:</b>
               <input type="text" className="ventana-stat-input" value={estadisticasGrafico.promedio} size={estadisticasGrafico.promedio.length || 1} readOnly />
             </span>
-            <button type="button" className="ventana-btn-exportar" onClick={handleExportarCSV} disabled={datosGrafico.length === 0}>
+            <button type="button" className="ventana-btn-exportar ventana-btn--desktop-only" onClick={handleExportarCSV} disabled={datosGrafico.length === 0}>
               CSV
             </button>
-            <button type="button" className="ventana-btn-exportar ventana-btn-informe" onClick={handleAbrirModalInforme} disabled={datosGrafico.length === 0}>
+            <button type="button" className="ventana-btn-exportar ventana-btn-informe ventana-btn--desktop-only" onClick={handleAbrirModalInforme} disabled={datosGrafico.length === 0}>
               Informe
             </button>
           </div>
