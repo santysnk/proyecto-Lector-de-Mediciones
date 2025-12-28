@@ -55,6 +55,8 @@ const BarraControlesHistorial = ({
   precargando,
   fuenteDatos,
   onLimpiarCache,
+  graficoVisible,
+  onToggleGrafico,
 }) => {
   return (
     <div className="ventana-controles">
@@ -172,6 +174,15 @@ const BarraControlesHistorial = ({
 
       {/* Cache + Fuente */}
       <div className="ventana-cache">
+        {/* Botón toggle gráfico - solo visible en móvil portrait */}
+        <button
+          type="button"
+          className={`ventana-toggle-grafico ${graficoVisible ? "" : "ventana-toggle-grafico--cerrado"}`}
+          onClick={onToggleGrafico}
+          title={graficoVisible ? "Ocultar gráfico" : "Mostrar gráfico"}
+        >
+          <span className="ventana-toggle-grafico-icono">▼</span>
+        </button>
         <div className="ventana-cache-barra">
           <div
             className={`ventana-cache-progreso ${precargaCompleta ? "ventana-cache-progreso--completo" : ""}`}
@@ -223,6 +234,8 @@ BarraControlesHistorial.propTypes = {
   precargando: PropTypes.bool,
   fuenteDatos: PropTypes.oneOf(["local", "remoto", "mixto", null]),
   onLimpiarCache: PropTypes.func.isRequired,
+  graficoVisible: PropTypes.bool,
+  onToggleGrafico: PropTypes.func,
 };
 
 BarraControlesHistorial.defaultProps = {
@@ -237,6 +250,8 @@ BarraControlesHistorial.defaultProps = {
   precargaCompleta: false,
   precargando: false,
   fuenteDatos: null,
+  graficoVisible: true,
+  onToggleGrafico: () => {},
 };
 
 export default BarraControlesHistorial;

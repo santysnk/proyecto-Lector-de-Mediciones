@@ -141,6 +141,7 @@ const VentanaHistorial = ({
   const [tipoGrafico, setTipoGrafico] = useState("line"); // line, area, bar
   const [modalInformeVisible, setModalInformeVisible] = useState(false);
   const [escalaYMax, setEscalaYMax] = useState(null); // null = auto, valor = máximo personalizado
+  const [graficoVisible, setGraficoVisible] = useState(true); // Toggle para mostrar/ocultar gráfico en móvil
   const [editandoEscalaY, setEditandoEscalaY] = useState(false); // Para edición manual del valor
 
   // Títulos de zonas
@@ -637,10 +638,12 @@ const VentanaHistorial = ({
           precargando={precargando}
           fuenteDatos={fuenteDatosEfectiva}
           onLimpiarCache={handleLimpiarCache}
+          graficoVisible={graficoVisible}
+          onToggleGrafico={() => setGraficoVisible(!graficoVisible)}
         />
 
         {/* Contenedor del gráfico y panel de datos */}
-        <div className="ventana-grafico-container">
+        <div className={`ventana-grafico-container ${!graficoVisible ? "ventana-grafico-container--oculto" : ""}`}>
           {/* Panel lateral de datos */}
           <PanelDatosHistorial
             abierto={panelDatosAbierto}

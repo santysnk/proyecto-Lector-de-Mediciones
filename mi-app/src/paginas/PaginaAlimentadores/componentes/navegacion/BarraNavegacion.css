@@ -26,8 +26,9 @@
 	/* z-index bajo para no tapar modales */
 	z-index: 50;
 	width: 100%;
-	/* Navbar normal (no fixed/sticky) - se desplaza con el contenido */
-	position: relative;
+	/* Navbar sticky: fijo al hacer scroll pero sin tapar modales */
+	position: sticky;
+	top: 0;
 	border: none;
 	margin: 0;
 	box-sizing: border-box;

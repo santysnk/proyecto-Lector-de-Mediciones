@@ -397,3 +397,11 @@
 .selector-fecha-anio-item--seleccionado:hover {
   background: #0284c7;
 }
+
+/* Móvil portrait: dropdown hacia la izquierda */
+@media (max-width: 600px) and (orientation: portrait) {
+  .selector-fecha-dropdown {
+    left: auto;
+    right: 0;
+  }
+}
