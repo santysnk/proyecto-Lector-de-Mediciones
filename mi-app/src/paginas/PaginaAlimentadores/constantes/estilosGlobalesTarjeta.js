@@ -122,6 +122,5 @@ export const COLORES_VALOR_PREDEFINIDOS = [
   "#ff9900", // naranja
   "#ff6666", // rojo claro
   "#ffffff", // blanco
-  "#66ff66", // verde claro
   "#99ccff", // azul claro
 ];

@@ -521,6 +521,18 @@ const PreviewTarjeta = ({ estilos, valores, onRandomizar, onResetearValores }) =
 const VALORES_DEFAULT = ["--,--", "--,--", "--,--"];
 
 /**
+ * Nombres de los slides del carrusel para móvil
+ */
+const SLIDES_CARRUSEL = [
+  { id: "header", label: "Header" },
+  { id: "zona", label: "Zona" },
+  { id: "fases", label: "Fases" },
+  { id: "valores1", label: "Valores 1/2" },
+  { id: "valores2", label: "Valores 2/2" },
+  { id: "dimensiones", label: "Dimensiones" },
+];
+
+/**
  * Componente para configurar la apariencia global de las tarjetas
  */
 const TabApariencia = ({
@@ -530,6 +542,9 @@ const TabApariencia = ({
 }) => {
   // Ref para guardar los estilos iniciales y solo sincronizar una vez
   const estilosInicialesRef = useRef(null);
+
+  // Estado para el carrusel en móvil
+  const [slideActual, setSlideActual] = useState(0);
 
   // Estado local para los estilos (copia editable)
   const [estilos, setEstilos] = useState(() => ({
@@ -622,6 +637,15 @@ const TabApariencia = ({
 
   const resetearValoresPreview = useCallback(() => {
     setValoresPreview(VALORES_DEFAULT);
+  }, []);
+
+  // Navegación del carrusel
+  const irAlSlideAnterior = useCallback(() => {
+    setSlideActual((prev) => (prev > 0 ? prev - 1 : SLIDES_CARRUSEL.length - 1));
+  }, []);
+
+  const irAlSlideSiguiente = useCallback(() => {
+    setSlideActual((prev) => (prev < SLIDES_CARRUSEL.length - 1 ? prev + 1 : 0));
   }, []);
 
   // Guardar cambios
@@ -718,7 +742,8 @@ const TabApariencia = ({
       <div className="apariencia-layout">
         {/* Columna de controles - todo en un contenedor con separadores */}
         <div className="apariencia-controles-columna">
-          <div className="apariencia-controles-unificado">
+          {/* Versión Desktop: contenedor con scroll */}
+          <div className="apariencia-controles-unificado apariencia-controles-desktop">
             {/* Header */}
             <div className="apariencia-grupo">
               <span className="apariencia-grupo-label">Header</span>
@@ -879,33 +904,203 @@ const TabApariencia = ({
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Botones de configuración - solo visibles en móvil dentro del contenedor */}
-            <div className="apariencia-separador apariencia-separador--mobile-only" />
-            <div className="apariencia-botones-config-mobile">
+          {/* Versión Móvil: Carrusel con flechas */}
+          <div className="apariencia-carrusel">
+            {/* Navegación del carrusel con título en el centro */}
+            <div className="carrusel-navegacion">
               <button
                 type="button"
-                className="apariencia-btn apariencia-btn--reset"
-                onClick={restaurarDefecto}
+                className="carrusel-flecha carrusel-flecha--izq"
+                onClick={irAlSlideAnterior}
+                aria-label="Slide anterior"
               >
-                Restaurar
+                ◀
               </button>
+
+              <span className="carrusel-titulo-central">
+                {SLIDES_CARRUSEL[slideActual].label}
+              </span>
+
               <button
                 type="button"
-                className="apariencia-btn apariencia-btn--importar"
-                onClick={() => inputArchivoRef.current?.click()}
-                title="Importar configuración desde archivo"
+                className="carrusel-flecha carrusel-flecha--der"
+                onClick={irAlSlideSiguiente}
+                aria-label="Slide siguiente"
               >
-                Importar
+                ▶
               </button>
-              <button
-                type="button"
-                className="apariencia-btn apariencia-btn--exportar"
-                onClick={exportarConfiguracion}
-                title="Exportar configuración a archivo"
-              >
-                Exportar
-              </button>
+            </div>
+
+            {/* Contenedor de slides */}
+            <div className="carrusel-contenedor">
+              {/* Slide 0: Header */}
+              <div className={`carrusel-slide ${slideActual === 0 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Fuente:</span>
+                  <SelectorFuente
+                    value={estilos.header.fontFamily}
+                    onChange={(fontFamily) => actualizarHeader({ fontFamily })}
+                    fuentes={FUENTES_DISPONIBLES}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Tamaño:</span>
+                  <SliderConFlechas
+                    value={remANumero(estilos.header.fontSize)}
+                    onChange={(val) => actualizarHeader({ fontSize: `${val}rem` })}
+                    min={LIMITES_TAMAÑO.header.min}
+                    max={LIMITES_TAMAÑO.header.max}
+                    step={LIMITES_TAMAÑO.header.step}
+                    valorDisplay={estilos.header.fontSize}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 1: Zona */}
+              <div className={`carrusel-slide ${slideActual === 1 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Fuente:</span>
+                  <SelectorFuente
+                    value={estilos.tituloZona.fontFamily}
+                    onChange={(fontFamily) => actualizarTituloZona({ fontFamily })}
+                    fuentes={FUENTES_DISPONIBLES}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Tamaño:</span>
+                  <SliderConFlechas
+                    value={remANumero(estilos.tituloZona.fontSize)}
+                    onChange={(val) => actualizarTituloZona({ fontSize: `${val}rem` })}
+                    min={LIMITES_TAMAÑO.tituloZona.min}
+                    max={LIMITES_TAMAÑO.tituloZona.max}
+                    step={LIMITES_TAMAÑO.tituloZona.step}
+                    valorDisplay={estilos.tituloZona.fontSize}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 2: Fases */}
+              <div className={`carrusel-slide ${slideActual === 2 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Fuente:</span>
+                  <SelectorFuente
+                    value={estilos.tituloBox.fontFamily}
+                    onChange={(fontFamily) => actualizarTituloBox({ fontFamily })}
+                    fuentes={FUENTES_DISPONIBLES}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Tamaño:</span>
+                  <SliderConFlechas
+                    value={remANumero(estilos.tituloBox.fontSize)}
+                    onChange={(val) => actualizarTituloBox({ fontSize: `${val}rem` })}
+                    min={LIMITES_TAMAÑO.tituloBox.min}
+                    max={LIMITES_TAMAÑO.tituloBox.max}
+                    step={LIMITES_TAMAÑO.tituloBox.step}
+                    valorDisplay={estilos.tituloBox.fontSize}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 3: Valores 1/2 (Fuente y Tamaño) */}
+              <div className={`carrusel-slide ${slideActual === 3 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Fuente:</span>
+                  <SelectorFuente
+                    value={estilos.valorBox.fontFamily}
+                    onChange={(fontFamily) => actualizarValorBox({ fontFamily })}
+                    fuentes={FUENTES_DISPONIBLES}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Tamaño:</span>
+                  <SliderConFlechas
+                    value={remANumero(estilos.valorBox.fontSize)}
+                    onChange={(val) => actualizarValorBox({ fontSize: `${val}rem` })}
+                    min={LIMITES_TAMAÑO.valorBox.min}
+                    max={LIMITES_TAMAÑO.valorBox.max}
+                    step={LIMITES_TAMAÑO.valorBox.step}
+                    valorDisplay={estilos.valorBox.fontSize}
+                  />
+                </div>
+              </div>
+
+              {/* Slide 4: Valores 2/2 (Color y Decimales) */}
+              <div className={`carrusel-slide ${slideActual === 4 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila carrusel-fila--colores">
+                  <span className="carrusel-label">Color:</span>
+                  <div className="apariencia-colores-inline">
+                    {COLORES_VALOR_PREDEFINIDOS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={`apariencia-color-btn ${estilos.valorBox.color === color ? "apariencia-color-btn--activo" : ""}`}
+                        style={{ backgroundColor: color }}
+                        onClick={() => actualizarValorBox({ color })}
+                        title={color}
+                      />
+                    ))}
+                    <ColorPickerBoton
+                      color={estilos.valorBox.color}
+                      onChange={(color) => actualizarValorBox({ color })}
+                    />
+                  </div>
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Decimales:</span>
+                  <div className="apariencia-decimales-inline">
+                    {OPCIONES_DECIMALES.map((opcion) => (
+                      <button
+                        key={opcion.valor}
+                        type="button"
+                        className={`apariencia-decimal-btn ${(estilos.valorBox.decimales ?? 2) === opcion.valor ? "apariencia-decimal-btn--activo" : ""}`}
+                        onClick={() => actualizarValorBox({ decimales: opcion.valor })}
+                      >
+                        {opcion.valor}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Slide 5: Dimensiones */}
+              <div className={`carrusel-slide ${slideActual === 5 ? "carrusel-slide--activo" : ""}`}>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Ancho:</span>
+                  <SliderConFlechas
+                    value={pxANumero(estilos.box.width)}
+                    onChange={(val) => actualizarBox({ width: `${val}px` })}
+                    min={LIMITES_TAMAÑO.boxWidth.min}
+                    max={LIMITES_TAMAÑO.boxWidth.max}
+                    step={LIMITES_TAMAÑO.boxWidth.step}
+                    valorDisplay={estilos.box.width}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Alto:</span>
+                  <SliderConFlechas
+                    value={estilos.box.height === "auto" ? LIMITES_TAMAÑO.boxHeight.min : pxANumero(estilos.box.height)}
+                    onChange={(val) => actualizarBox({ height: `${val}px` })}
+                    min={LIMITES_TAMAÑO.boxHeight.min}
+                    max={LIMITES_TAMAÑO.boxHeight.max}
+                    step={LIMITES_TAMAÑO.boxHeight.step}
+                    valorDisplay={estilos.box.height}
+                  />
+                </div>
+                <div className="carrusel-fila">
+                  <span className="carrusel-label">Espacio:</span>
+                  <SliderConFlechas
+                    value={pxANumero(estilos.box.gap)}
+                    onChange={(val) => actualizarBox({ gap: `${val}px` })}
+                    min={LIMITES_TAMAÑO.gap.min}
+                    max={LIMITES_TAMAÑO.gap.max}
+                    step={LIMITES_TAMAÑO.gap.step}
+                    valorDisplay={estilos.box.gap}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
