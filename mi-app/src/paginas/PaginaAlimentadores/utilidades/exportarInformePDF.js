@@ -253,13 +253,14 @@ const generarDefinicionPDF = (config) => {
     margin: [0, 0, 0, 20],
   });
 
-  // === GRÁFICO ===
+  // === GRÁFICO (en página 2) ===
   if (imagenGrafico) {
     contenido.push({
       text: "GRÁFICO DE MEDICIONES",
       style: "subtitulo",
       alignment: "center",
       margin: [0, 10, 0, 10],
+      pageBreak: "before",
     });
 
     contenido.push({
@@ -270,14 +271,14 @@ const generarDefinicionPDF = (config) => {
     });
   }
 
-  // === TABLA DE DATOS ===
+  // === TABLA DE DATOS (en página 3+) ===
   if (datos.length > 0) {
     contenido.push({
       text: "DATOS DE MEDICIONES",
       style: "subtitulo",
       alignment: "center",
       margin: [0, 10, 0, 10],
-      pageBreak: imagenGrafico ? "before" : undefined,
+      pageBreak: "before",
     });
 
     // Crear filas de la tabla
