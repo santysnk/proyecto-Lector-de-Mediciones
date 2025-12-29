@@ -20,6 +20,7 @@ import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";       
 import ModalPanelPermisos from "../modales/ModalPanelPermisos.jsx";                       // modal de panel de permisos (solo superadmin)
 import ContenedorVentanasHistorial from "../modales/ContenedorVentanasHistorial.jsx";     // contenedor de ventanas flotantes de historial
 import { useVentanasHistorial } from "../../hooks/useVentanasHistorial";               // hook para gestionar ventanas de historial
+import { useVentanaConfigAgente } from "../../hooks/useVentanaConfigAgente";           // hook para gestionar ventana de configuración de agentes
 
 import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
 import { useArrastrarSoltar } from "../../hooks/useArrastrarSoltar"; // hook de drag & drop de tarjetas
@@ -133,7 +134,16 @@ const {
 	const [esCompacto, setEsCompacto] = useState(false);             // flag: layout compacto (pantalla angosta)
 	const [guardandoAlimentador, setGuardandoAlimentador] = useState(false); // flag: guardando alimentador (muestra skeleton)
 	const [guardandoPuestos, setGuardandoPuestos] = useState(false); // flag: guardando/eliminando puestos
-	const [modalAgenteAbierto, setModalAgenteAbierto] = useState(false); // estado del modal de configuración del agente
+	// Hook para ventana flotante de configuración de agentes
+	const {
+		ventana: ventanaConfigAgente,
+		abrirVentana: abrirVentanaConfigAgente,
+		cerrarVentana: cerrarVentanaConfigAgente,
+		toggleMinimizar: toggleMinimizarConfigAgente,
+		toggleMaximizar: toggleMaximizarConfigAgente,
+		enfocarVentana: enfocarVentanaConfigAgente,
+		moverVentana: moverVentanaConfigAgente,
+	} = useVentanaConfigAgente();
 	const [modalAccesosAbierto, setModalAccesosAbierto] = useState(false); // estado del modal de gestión de accesos
 	const [modalPanelPermisosAbierto, setModalPanelPermisosAbierto] = useState(false); // estado del modal de panel de permisos
 	const [alimentadoresPolling, setAlimentadoresPolling] = useState({}); // { [alimId]: true/false } para tracking de polling
@@ -303,7 +313,7 @@ const {
 	const abrirModalNuevoPuesto = () => abrirModal("nuevoPuesto");    // abre modal para crear puesto
 	const abrirModalEditarPuestos = () => abrirModal("editarPuestos");// abre modal para editar lista de puestos
 	const abrirModalConfigPuesto = () => abrirModal("configPuesto");  // abre modal de configuración global del puesto
-	const abrirModalConfigurarAgente = () => setModalAgenteAbierto(true); // abre modal de configuración del agente
+	const abrirModalConfigurarAgente = () => abrirVentanaConfigAgente(configuracionSeleccionada?.id); // abre ventana de configuración del agente
 	const abrirModalGestionarAccesos = () => setModalAccesosAbierto(true); // abre modal de gestión de accesos
 	const abrirModalPanelPermisos = () => setModalPanelPermisosAbierto(true); // abre modal de panel de permisos
 
@@ -1019,9 +1029,17 @@ const {
 			/>
 
 			<ModalConfigurarAgente
-				abierto={modalAgenteAbierto}
-				workspaceId={configuracionSeleccionada?.id}
-				onCerrar={() => setModalAgenteAbierto(false)}
+				abierto={ventanaConfigAgente.abierta}
+				workspaceId={ventanaConfigAgente.workspaceId}
+				onCerrar={cerrarVentanaConfigAgente}
+				minimizada={ventanaConfigAgente.minimizada}
+				maximizada={ventanaConfigAgente.maximizada}
+				posicion={ventanaConfigAgente.posicion}
+				zIndex={ventanaConfigAgente.zIndex}
+				onMinimizar={toggleMinimizarConfigAgente}
+				onMaximizar={toggleMaximizarConfigAgente}
+				onEnfocar={enfocarVentanaConfigAgente}
+				onMover={moverVentanaConfigAgente}
 			/>
 
 			<ModalGestionarAccesos

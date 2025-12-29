@@ -1,35 +1,55 @@
 /* src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.css */
-/* Estilos para el modal de configuración de agentes con pestañas */
+/* Estilos para la ventana flotante de configuración de agentes */
 
 /* ============================================ */
-/* Overlay y Modal Base                        */
+/* Variables CSS para el tema                  */
 /* ============================================ */
-.config-agente-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+:root {
+  --ca-bg-primary: #1e293b;
+  --ca-bg-secondary: #334155;
+  --ca-bg-tertiary: #475569;
+  --ca-bg-dark: #0f172a;
+  --ca-border-color: #475569;
+  --ca-border-light: rgba(255, 255, 255, 0.05);
+  --ca-text-primary: #e2e8f0;
+  --ca-text-secondary: #94a3b8;
+  --ca-text-muted: #64748b;
+  --ca-accent-blue: #0ea5e9;
+  --ca-accent-green: #22c55e;
+  --ca-accent-yellow: #fbbf24;
+  --ca-accent-red: #ef4444;
+  --ca-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --ca-transition-fast: 0.15s ease;
+  --ca-border-radius: 8px;
 }
 
-.config-agente-modal {
-  border-radius: 16px;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
-  max-width: 700px;
-  width: 95%;
-  min-height: 500px;
-  max-height: 85vh;
-  background: #0f172a;
-  color: #e2e8f0;
-  animation: config-agente-aparecer 0.2s ease-out;
+/* ============================================ */
+/* Ventana Flotante (reemplaza overlay+modal)  */
+/* ============================================ */
+.config-agente-ventana {
+  background: var(--ca-bg-dark);
+  border-radius: var(--ca-border-radius);
+  box-shadow: var(--ca-shadow-lg), 0 0 0 1px var(--ca-border-light);
   display: flex;
   flex-direction: column;
+  min-width: 600px;
+  min-height: 400px;
   overflow: hidden;
+  color: var(--ca-text-primary);
+  animation: config-agente-aparecer 0.2s ease-out;
+}
+
+.config-agente-ventana--maximizada {
+  border-radius: 0;
+}
+
+.config-agente-ventana--arrastrando {
+  opacity: 0.9;
+  cursor: grabbing;
+}
+
+.config-agente-ventana--redimensionando {
+  user-select: none;
 }
 
 @keyframes config-agente-aparecer {
@@ -44,24 +64,131 @@
 }
 
 /* ============================================ */
-/* Header                                      */
+/* Header arrastrable                          */
 /* ============================================ */
 .config-agente-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.2rem 1.5rem;
-  border-bottom: 1px solid #1e293b;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(180deg, var(--ca-bg-secondary) 0%, var(--ca-bg-primary) 100%);
+  border-bottom: 1px solid var(--ca-border-color);
+  cursor: grab;
+  user-select: none;
   flex-shrink: 0;
+}
+
+.config-agente-ventana--arrastrando .config-agente-header {
+  cursor: grabbing;
+}
+
+.config-agente-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.config-agente-icono {
+  font-size: 1rem;
 }
 
 .config-agente-header h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #e2e8f0;
+  color: var(--ca-text-primary);
 }
 
+/* ============================================ */
+/* Controles de Ventana (min/max/cerrar)       */
+/* ============================================ */
+.config-agente-controles-ventana {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.config-agente-btn-ventana {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all var(--ca-transition-fast);
+}
+
+.config-agente-btn-ventana--minimizar {
+  background: var(--ca-bg-tertiary);
+  color: var(--ca-text-primary);
+}
+
+.config-agente-btn-ventana--minimizar:hover {
+  background: var(--ca-accent-yellow);
+  color: var(--ca-bg-dark);
+}
+
+.config-agente-btn-ventana--maximizar {
+  background: var(--ca-bg-tertiary);
+  color: var(--ca-text-primary);
+}
+
+.config-agente-btn-ventana--maximizar:hover {
+  background: var(--ca-accent-green);
+  color: var(--ca-bg-dark);
+}
+
+.config-agente-btn-ventana--cerrar {
+  background: var(--ca-bg-tertiary);
+  color: var(--ca-text-primary);
+}
+
+.config-agente-btn-ventana--cerrar:hover {
+  background: var(--ca-accent-red);
+  color: #ffffff;
+}
+
+/* ============================================ */
+/* Handle de Resize                            */
+/* ============================================ */
+.config-agente-resize-handle {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    transparent 50%,
+    var(--ca-bg-tertiary) 50%,
+    var(--ca-bg-tertiary) 100%
+  );
+  border-bottom-right-radius: var(--ca-border-radius);
+  opacity: 0.6;
+  transition: opacity var(--ca-transition-fast);
+}
+
+.config-agente-resize-handle:hover {
+  opacity: 1;
+}
+
+.config-agente-resize-handle::before {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--ca-text-secondary);
+  border-bottom: 2px solid var(--ca-text-secondary);
+}
+
+/* Botón cerrar antiguo (para compatibilidad) */
 .config-agente-cerrar {
   width: 32px;
   height: 32px;

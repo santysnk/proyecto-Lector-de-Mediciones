@@ -1,7 +1,8 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.jsx
-// Modal para configurar agentes con pestañas dinámicas según rol
+// Ventana flotante para configurar agentes con pestañas dinámicas según rol
+// Soporta: arrastrar, minimizar, maximizar, redimensionar, múltiples instancias
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   // Nueva arquitectura
   listarAgentesWorkspace,
@@ -35,8 +36,35 @@ import "./ModalConfigurarAgente.css";
  * vincular ni desvincular agentes. Solo el creador del workspace o superadmin
  * tienen esa capacidad.
  */
-const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
+const ModalConfigurarAgente = ({
+  abierto,
+  workspaceId,
+  onCerrar,
+  // Props para comportamiento de ventana flotante
+  minimizada = false,
+  maximizada = false,
+  posicion = { x: 100, y: 50 },
+  zIndex = 1000,
+  onMinimizar,
+  onMaximizar,
+  onEnfocar,
+  onMover,
+}) => {
   const { rolGlobal, configuracionSeleccionada } = usarContextoConfiguracion();
+
+  // Refs para drag y resize
+  const ventanaRef = useRef(null);
+  const headerRef = useRef(null);
+
+  // Estados para drag
+  const [arrastrando, setArrastrando] = useState(false);
+  const [offsetArrastre, setOffsetArrastre] = useState({ x: 0, y: 0 });
+
+  // Estados para resize
+  const [redimensionando, setRedimensionando] = useState(false);
+  const [dimensiones, setDimensiones] = useState({ width: 900, height: 600 });
+  const [dimensionesIniciales, setDimensionesIniciales] = useState({ width: 0, height: 0 });
+  const [posicionInicialResize, setPosicionInicialResize] = useState({ x: 0, y: 0 });
 
   // Determinar permisos según rol
   // - rolGlobal: rol del usuario en el sistema
@@ -504,7 +532,91 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
     navigator.clipboard.writeText(texto);
   };
 
+  // --- Drag & Drop ---
+  const handleMouseDown = (e) => {
+    if (maximizada) return;
+    if (e.target.closest("button")) return;
+    if (onEnfocar) onEnfocar();
+    setArrastrando(true);
+    const rect = ventanaRef.current.getBoundingClientRect();
+    setOffsetArrastre({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  useEffect(() => {
+    if (!arrastrando) return;
+
+    const handleMouseMove = (e) => {
+      const newX = Math.max(0, e.clientX - offsetArrastre.x);
+      const newY = Math.max(0, e.clientY - offsetArrastre.y);
+      if (onMover) {
+        onMover({ x: newX, y: newY });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setArrastrando(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [arrastrando, offsetArrastre, onMover]);
+
+  // --- Resize ---
+  const handleResizeMouseDown = (e) => {
+    if (maximizada) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setRedimensionando(true);
+    setPosicionInicialResize({ x: e.clientX, y: e.clientY });
+    const rect = ventanaRef.current.getBoundingClientRect();
+    setDimensionesIniciales({ width: rect.width, height: rect.height });
+  };
+
+  useEffect(() => {
+    if (!redimensionando) return;
+
+    const handleMouseMove = (e) => {
+      const deltaX = e.clientX - posicionInicialResize.x;
+      const deltaY = e.clientY - posicionInicialResize.y;
+      const newWidth = Math.max(600, dimensionesIniciales.width + deltaX);
+      const newHeight = Math.max(400, dimensionesIniciales.height + deltaY);
+      setDimensiones({ width: newWidth, height: newHeight });
+    };
+
+    const handleMouseUp = () => {
+      setRedimensionando(false);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [redimensionando, posicionInicialResize, dimensionesIniciales]);
+
+  // Manejadores para minimizar/maximizar (con fallbacks internos si no se proveen)
+  const handleMinimizar = useCallback(() => {
+    if (onMinimizar) onMinimizar();
+  }, [onMinimizar]);
+
+  const handleMaximizar = useCallback(() => {
+    if (onMaximizar) onMaximizar();
+  }, [onMaximizar]);
+
+  const handleEnfocar = useCallback(() => {
+    if (onEnfocar) onEnfocar();
+  }, [onEnfocar]);
+
   if (!abierto) return null;
+  if (minimizada) return null;
 
   // Renderizar indicador de estado de conexión
   const renderEstadoConexion = (agente) => (
@@ -733,14 +845,62 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
     );
   };
 
+  // Estilo dinámico de la ventana
+  const estiloVentana = maximizada
+    ? { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, width: "100%", height: "100%", zIndex }
+    : {
+        position: "fixed",
+        top: posicion.y,
+        left: posicion.x,
+        width: dimensiones.width,
+        height: dimensiones.height,
+        zIndex,
+      };
+
   return (
-    <div className="config-agente-overlay" onClick={onCerrar}>
-      <div className="config-agente-modal" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="config-agente-header">
+    <div
+      ref={ventanaRef}
+      className={`config-agente-ventana ${maximizada ? "config-agente-ventana--maximizada" : ""} ${arrastrando ? "config-agente-ventana--arrastrando" : ""} ${redimensionando ? "config-agente-ventana--redimensionando" : ""}`}
+      style={estiloVentana}
+      onMouseDown={handleEnfocar}
+    >
+      {/* Header arrastrable */}
+      <header
+        ref={headerRef}
+        className="config-agente-header"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="config-agente-titulo">
+          <span className="config-agente-icono">⚙️</span>
           <h2>Configuración de Agentes</h2>
-          <button className="config-agente-cerrar" onClick={onCerrar}>×</button>
         </div>
+        <div className="config-agente-controles-ventana">
+          <button
+            type="button"
+            className="config-agente-btn-ventana config-agente-btn-ventana--minimizar"
+            onClick={handleMinimizar}
+            title="Minimizar"
+          >
+            <span>─</span>
+          </button>
+          <button
+            type="button"
+            className="config-agente-btn-ventana config-agente-btn-ventana--maximizar"
+            onClick={handleMaximizar}
+            title={maximizada ? "Restaurar" : "Maximizar"}
+          >
+            <span>{maximizada ? "❐" : "□"}</span>
+          </button>
+          <button
+            type="button"
+            className="config-agente-btn-ventana config-agente-btn-ventana--cerrar"
+            onClick={onCerrar}
+            title="Cerrar"
+          >
+            <span>×</span>
+          </button>
+        </div>
+      </header>
 
         {/* Pestañas */}
         <div className="config-agente-tabs">
@@ -1086,22 +1246,30 @@ const ModalConfigurarAgente = ({ abierto, workspaceId, onCerrar }) => {
           </div>
         )}
 
-        {/* Indicador de test en progreso */}
-        {testEnCurso && (
-          <div className="config-agente-test-progreso">
-            <div className="config-agente-test-progreso-contenido">
-              <span className="config-agente-spinner"></span>
-              <span>Esperando respuesta del agente...</span>
-              <div className="config-agente-test-progreso-barra">
-                <div
-                  className="config-agente-test-progreso-fill"
-                  style={{ width: `${testEnCurso.progreso}%` }}
-                ></div>
-              </div>
+      {/* Indicador de test en progreso */}
+      {testEnCurso && (
+        <div className="config-agente-test-progreso">
+          <div className="config-agente-test-progreso-contenido">
+            <span className="config-agente-spinner"></span>
+            <span>Esperando respuesta del agente...</span>
+            <div className="config-agente-test-progreso-barra">
+              <div
+                className="config-agente-test-progreso-fill"
+                style={{ width: `${testEnCurso.progreso}%` }}
+              ></div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Handle de resize en esquina inferior derecha */}
+      {!maximizada && (
+        <div
+          className="config-agente-resize-handle"
+          onMouseDown={handleResizeMouseDown}
+          title="Arrastrar para redimensionar"
+        />
+      )}
     </div>
   );
 };
