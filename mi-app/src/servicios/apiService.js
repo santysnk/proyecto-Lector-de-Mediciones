@@ -500,6 +500,20 @@ export async function consultarTestRegistrador(agenteId, testId) {
   return fetchConAuth(`/api/agentes/${agenteId}/test-registrador/${testId}`);
 }
 
+/**
+ * Solicita un test de lectura de coils (Modbus función 01)
+ * Para leer estados de protecciones como bits individuales
+ * @param {string} agenteId - ID del agente que ejecutará el test
+ * @param {object} datos - Datos del test: ip, puerto, unitId, direccionCoil, cantidadBits
+ * @returns {Promise<{testId: string, mensaje: string, timeoutSegundos: number}>}
+ */
+export async function solicitarTestCoils(agenteId, datos) {
+  return fetchConAuth(`/api/agentes/${agenteId}/test-coils`, {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
 // ============================================
 // TEST DE CONEXIÓN MODBUS
 // ============================================
@@ -769,6 +783,7 @@ export default {
   toggleRegistradorAgente,
   solicitarTestRegistrador,
   consultarTestRegistrador,
+  solicitarTestCoils,
   // Test conexión Modbus
   testConexionModbus,
   // Registradores

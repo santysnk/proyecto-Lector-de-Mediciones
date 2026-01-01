@@ -22,6 +22,7 @@ import {
   consultarTestRegistrador,
 } from "../../../../servicios/apiService";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
+import ConfiguracionRele from "./ConfiguracionRele";
 import "./ModalConfigurarAgente.css";
 
 /**
@@ -113,12 +114,15 @@ const ModalConfigurarAgente = ({
   const [nuevoRegistrador, setNuevoRegistrador] = useState({
     nombre: '',
     tipo: 'modbus',
+    tipoDispositivo: 'analizador', // 'analizador' | 'rele'
     ip: '',
     puerto: '',
     unitId: '',
     indiceInicial: '',
     cantidadRegistros: '',
     intervaloSegundos: '',
+    // Configuración específica para relés de protección
+    configuracionRele: null,
   });
   const [guardandoRegistrador, setGuardandoRegistrador] = useState(false);
   const [registradorProcesando, setRegistradorProcesando] = useState(null); // ID del registrador que está procesando
@@ -155,12 +159,14 @@ const ModalConfigurarAgente = ({
     setNuevoRegistrador({
       nombre: '',
       tipo: 'modbus',
+      tipoDispositivo: 'analizador',
       ip: '',
       puerto: '',
       unitId: '',
       indiceInicial: '',
       cantidadRegistros: '',
       intervaloSegundos: '',
+      configuracionRele: null,
     });
     setRegistradorEditando(null);
   };
@@ -305,18 +311,57 @@ const ModalConfigurarAgente = ({
   // Crear o editar registrador
   const handleGuardarRegistrador = async (e, agenteId) => {
     e.preventDefault();
-    if (!nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) return;
+
+    // Validación básica
+    if (!nuevoRegistrador.nombre.trim()) return;
+
+    // Para relés, la validación de conexión viene del componente ConfiguracionRele
+    const esRele = nuevoRegistrador.tipoDispositivo === 'rele';
+
+    if (esRele) {
+      // Validar que tenga configuración de relé
+      if (!nuevoRegistrador.configuracionRele) {
+        setError('Debes configurar el relé de protección');
+        return;
+      }
+    } else {
+      // Para analizadores, validar campos tradicionales
+      if (!nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) return;
+    }
 
     try {
       setGuardandoRegistrador(true);
       setError(null);
 
-      // Preparar datos con valores por defecto para campos opcionales
-      const datos = {
-        ...nuevoRegistrador,
-        unitId: nuevoRegistrador.unitId || '1',
-        intervaloSegundos: nuevoRegistrador.intervaloSegundos || '60',
-      };
+      // Preparar datos según tipo de dispositivo
+      let datos;
+
+      if (esRele) {
+        // Para relés, usar la configuración del componente ConfiguracionRele
+        const configRele = nuevoRegistrador.configuracionRele;
+        // Convertir intervaloPollingMs (en ms) a intervaloSegundos
+        const intervaloSegundos = Math.round((configRele.intervaloPollingMs || 5000) / 1000);
+        datos = {
+          nombre: nuevoRegistrador.nombre,
+          tipo: 'modbus',
+          tipoDispositivo: 'rele',
+          ip: configRele.conexion.ip,
+          puerto: String(configRele.conexion.puerto),
+          unitId: String(configRele.conexion.unitId),
+          indiceInicial: '0', // Los relés usan registros específicos por configuración
+          cantidadRegistros: '200', // Rango amplio para cubrir todos los registros posibles
+          intervaloSegundos: String(intervaloSegundos),
+          configuracionRele: configRele,
+        };
+      } else {
+        // Para analizadores, usar formato tradicional
+        datos = {
+          ...nuevoRegistrador,
+          tipoDispositivo: 'analizador',
+          unitId: nuevoRegistrador.unitId || '1',
+          intervaloSegundos: nuevoRegistrador.intervaloSegundos || '60',
+        };
+      }
 
       if (registradorEditando) {
         // Editar
@@ -342,12 +387,14 @@ const ModalConfigurarAgente = ({
     setNuevoRegistrador({
       nombre: reg.nombre || '',
       tipo: reg.tipo || 'modbus',
+      tipoDispositivo: reg.tipo_dispositivo || 'analizador',
       ip: reg.ip || '',
       puerto: String(reg.puerto || '502'),
       unitId: String(reg.unit_id || '1'),
       indiceInicial: String(reg.indice_inicial || '0'),
       cantidadRegistros: String(reg.cantidad_registros || '10'),
       intervaloSegundos: String(reg.intervalo_segundos || '60'),
+      configuracionRele: reg.configuracion_rele || null,
     });
     setMostrarFormRegistrador(reg.agente_id);
   };
@@ -681,110 +728,199 @@ const ModalConfigurarAgente = ({
         {conAcciones && mostrarFormRegistrador === agenteId && (
           <form className="config-agente-reg-form" onSubmit={(e) => handleGuardarRegistrador(e, agenteId)}>
             <h5>{registradorEditando ? 'Editar Registrador' : 'Nuevo Registrador'}</h5>
-            <div className="config-agente-reg-form-grid">
-              <div className="config-agente-form-grupo">
-                <label>Nombre *</label>
-                <input
-                  type="text"
-                  value={nuevoRegistrador.nombre}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, nombre: e.target.value }))}
-                  placeholder="Ej: Relé Alimentador 1"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label>IP *</label>
-                <input
-                  type="text"
-                  value={nuevoRegistrador.ip}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, ip: e.target.value }))}
-                  placeholder="192.168.1.100"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label>Puerto *</label>
-                <input
-                  type="number"
-                  value={nuevoRegistrador.puerto}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, puerto: e.target.value }))}
-                  placeholder="Ej: 502"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label title="Slave ID del dispositivo Modbus (usualmente 1)">Unit ID</label>
-                <input
-                  type="number"
-                  value={nuevoRegistrador.unitId}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, unitId: e.target.value }))}
-                  placeholder="Ej: 1"
-                  title="Identificador del esclavo Modbus en la red"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label>Índice Inicial *</label>
-                <input
-                  type="number"
-                  value={nuevoRegistrador.indiceInicial}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, indiceInicial: e.target.value }))}
-                  placeholder="Ej: 137"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label>Cantidad Registros *</label>
-                <input
-                  type="number"
-                  value={nuevoRegistrador.cantidadRegistros}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, cantidadRegistros: e.target.value }))}
-                  placeholder="Ej: 20"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-              <div className="config-agente-form-grupo">
-                <label>Intervalo (seg)</label>
-                <input
-                  type="number"
-                  value={nuevoRegistrador.intervaloSegundos}
-                  onChange={e => setNuevoRegistrador(prev => ({ ...prev, intervaloSegundos: e.target.value }))}
-                  placeholder="Ej: 60"
-                  disabled={guardandoRegistrador}
-                />
-              </div>
-            </div>
-            <div className="config-agente-form-acciones">
-              <button
-                type="button"
-                className="config-agente-btn config-agente-btn--test"
-                onClick={() => handleTestRegistrador(agenteId)}
-                disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
-                title="Probar conexión antes de guardar"
+
+            {/* Selector de tipo de dispositivo */}
+            <div className="config-agente-tipo-row">
+              <label className="config-agente-tipo-label">Tipo de Dispositivo:</label>
+              <select
+                value={nuevoRegistrador.tipoDispositivo}
+                onChange={e => setNuevoRegistrador(prev => ({
+                  ...prev,
+                  tipoDispositivo: e.target.value,
+                  configuracionRele: e.target.value === 'analizador' ? null : prev.configuracionRele,
+                }))}
+                disabled={guardandoRegistrador}
+                className="config-agente-select-tipo"
               >
-                {testEnCurso ? 'Probando...' : 'Test'}
-              </button>
-              <div className="config-agente-form-acciones-derecha">
-                <button
-                  type="button"
-                  className="config-agente-btn config-agente-btn--secundario"
-                  onClick={() => {
-                    setMostrarFormRegistrador(null);
-                    resetFormRegistrador();
-                  }}
-                  disabled={guardandoRegistrador || testEnCurso}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="config-agente-btn config-agente-btn--primario"
-                  disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
-                >
-                  {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
-                </button>
-              </div>
+                <option value="analizador">📊 Analizador de Redes</option>
+                <option value="rele">🛡️ Relé de Protección</option>
+              </select>
             </div>
+
+            {/* Formulario para Analizador de Redes */}
+            {nuevoRegistrador.tipoDispositivo === 'analizador' && (
+              <div className="config-agente-analizador">
+                {/* Nombre del registrador */}
+                <div className="config-agente-analizador-nombre">
+                  <label>Nombre del Registrador</label>
+                  <input
+                    type="text"
+                    value={nuevoRegistrador.nombre}
+                    onChange={e => setNuevoRegistrador(prev => ({ ...prev, nombre: e.target.value }))}
+                    placeholder="Ej: Analizador Trafo 1"
+                    disabled={guardandoRegistrador}
+                  />
+                </div>
+
+                {/* Secciones en dos columnas */}
+                <div className="config-agente-analizador-grid">
+                  {/* Sección Conexión */}
+                  <div className="config-agente-analizador-seccion">
+                    <h6>📡 Conexión Modbus TCP</h6>
+                    <div className="config-agente-analizador-campos">
+                      <div className="config-agente-campo-inline">
+                        <label>IP</label>
+                        <input
+                          type="text"
+                          value={nuevoRegistrador.ip}
+                          onChange={e => setNuevoRegistrador(prev => ({ ...prev, ip: e.target.value }))}
+                          placeholder="192.168.1.100"
+                          disabled={guardandoRegistrador}
+                        />
+                      </div>
+                      <div className="config-agente-campo-inline">
+                        <label>Puerto</label>
+                        <input
+                          type="number"
+                          value={nuevoRegistrador.puerto}
+                          onChange={e => setNuevoRegistrador(prev => ({ ...prev, puerto: e.target.value }))}
+                          placeholder="502"
+                          disabled={guardandoRegistrador}
+                        />
+                      </div>
+                      <div className="config-agente-campo-inline">
+                        <label>Unit ID</label>
+                        <input
+                          type="number"
+                          value={nuevoRegistrador.unitId}
+                          onChange={e => setNuevoRegistrador(prev => ({ ...prev, unitId: e.target.value }))}
+                          placeholder="1"
+                          disabled={guardandoRegistrador}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sección Registros */}
+                  <div className="config-agente-analizador-seccion">
+                    <h6>📋 Registros Modbus</h6>
+                    <div className="config-agente-analizador-campos">
+                      <div className="config-agente-campo-inline">
+                        <label>Índice Inicial</label>
+                        <input
+                          type="number"
+                          value={nuevoRegistrador.indiceInicial}
+                          onChange={e => setNuevoRegistrador(prev => ({ ...prev, indiceInicial: e.target.value }))}
+                          placeholder="0"
+                          disabled={guardandoRegistrador}
+                        />
+                      </div>
+                      <div className="config-agente-campo-inline">
+                        <label>Cantidad</label>
+                        <input
+                          type="number"
+                          value={nuevoRegistrador.cantidadRegistros}
+                          onChange={e => setNuevoRegistrador(prev => ({ ...prev, cantidadRegistros: e.target.value }))}
+                          placeholder="20"
+                          disabled={guardandoRegistrador}
+                        />
+                      </div>
+                      <div className="config-agente-campo-inline">
+                        <label>Intervalo</label>
+                        <div className="config-agente-input-con-sufijo">
+                          <input
+                            type="number"
+                            value={nuevoRegistrador.intervaloSegundos}
+                            onChange={e => setNuevoRegistrador(prev => ({ ...prev, intervaloSegundos: e.target.value }))}
+                            placeholder="60"
+                            disabled={guardandoRegistrador}
+                          />
+                          <span>seg</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="config-agente-form-acciones">
+                  <button
+                    type="button"
+                    className="config-agente-btn config-agente-btn--test"
+                    onClick={() => handleTestRegistrador(agenteId)}
+                    disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
+                    title="Probar conexión antes de guardar"
+                  >
+                    {testEnCurso ? 'Probando...' : 'Test'}
+                  </button>
+                  <div className="config-agente-form-acciones-derecha">
+                    <button
+                      type="button"
+                      className="config-agente-btn config-agente-btn--secundario"
+                      onClick={() => {
+                        setMostrarFormRegistrador(null);
+                        resetFormRegistrador();
+                      }}
+                      disabled={guardandoRegistrador || testEnCurso}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="config-agente-btn config-agente-btn--primario"
+                      disabled={guardandoRegistrador || testEnCurso || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros}
+                    >
+                      {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Formulario para Relé de Protección */}
+            {nuevoRegistrador.tipoDispositivo === 'rele' && (
+              <>
+                {/* Nombre del registrador (compartido con analizadores) */}
+                <div className="config-agente-rele-nombre">
+                  <label>Nombre del Registrador</label>
+                  <input
+                    type="text"
+                    value={nuevoRegistrador.nombre}
+                    onChange={e => setNuevoRegistrador(prev => ({ ...prev, nombre: e.target.value }))}
+                    placeholder="Ej: Relé REF615 Bahía 1"
+                    disabled={guardandoRegistrador}
+                  />
+                </div>
+                <ConfiguracionRele
+                  configuracionInicial={nuevoRegistrador.configuracionRele}
+                  onChange={(config) => setNuevoRegistrador(prev => ({
+                    ...prev,
+                    configuracionRele: config,
+                  }))}
+                  agenteId={agenteId}
+                />
+                <div className="config-agente-form-acciones">
+                  <div className="config-agente-form-acciones-derecha">
+                    <button
+                      type="button"
+                      className="config-agente-btn config-agente-btn--secundario"
+                      onClick={() => {
+                        setMostrarFormRegistrador(null);
+                        resetFormRegistrador();
+                      }}
+                      disabled={guardandoRegistrador}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="config-agente-btn config-agente-btn--primario"
+                      disabled={guardandoRegistrador || !nuevoRegistrador.nombre.trim() || !nuevoRegistrador.configuracionRele}
+                    >
+                      {guardandoRegistrador ? 'Guardando...' : (registradorEditando ? 'Guardar' : 'Crear')}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </form>
         )}
 
@@ -793,19 +929,32 @@ const ModalConfigurarAgente = ({
           <div className="config-agente-regs-vacio">Sin registradores configurados</div>
         ) : (
           <div className="config-agente-regs-lista">
-            {regs.map(reg => (
-              <div key={reg.id} className={`config-agente-reg-item ${conAcciones ? 'config-agente-reg-item--admin' : ''}`}>
-                <div className="config-agente-reg-info">
-                  <span
-                    className={`config-agente-reg-estado ${reg.activo ? 'config-agente-reg-estado--activo' : ''}`}
-                    title={reg.activo ? 'Activo' : 'Inactivo'}
-                  ></span>
-                  <span className="config-agente-reg-nombre">{reg.nombre}</span>
-                  <span className="config-agente-reg-detalle">
-                    {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1} | {reg.intervalo_segundos}s
-                  </span>
-                </div>
-                {conAcciones && (
+            {regs.map(reg => {
+              const esRele = reg.tipo_dispositivo === 'rele';
+              const configRele = reg.configuracion_rele;
+
+              return (
+                <div key={reg.id} className={`config-agente-reg-item ${conAcciones ? 'config-agente-reg-item--admin' : ''} ${esRele ? 'config-agente-reg-item--rele' : ''}`}>
+                  <div className="config-agente-reg-info">
+                    <span
+                      className={`config-agente-reg-estado ${reg.activo ? 'config-agente-reg-estado--activo' : ''}`}
+                      title={reg.activo ? 'Activo' : 'Inactivo'}
+                    ></span>
+                    <span className="config-agente-reg-tipo" title={esRele ? 'Relé de Protección' : 'Analizador de Redes'}>
+                      {esRele ? '🛡️' : '📊'}
+                    </span>
+                    <span className="config-agente-reg-nombre">{reg.nombre}</span>
+                    {esRele && configRele ? (
+                      <span className="config-agente-reg-detalle">
+                        {reg.ip}:{reg.puerto} | {configRele.modeloId} - {configRele.configuracionId} | {reg.intervalo_segundos}s
+                      </span>
+                    ) : (
+                      <span className="config-agente-reg-detalle">
+                        {reg.ip}:{reg.puerto} | Reg: {reg.indice_inicial}-{reg.indice_inicial + reg.cantidad_registros - 1} | {reg.intervalo_segundos}s
+                      </span>
+                    )}
+                  </div>
+                  {conAcciones && (
                   <div className="config-agente-reg-acciones">
                     <button
                       className={`config-agente-btn-icon ${reg.activo ? 'config-agente-btn-icon--success' : ''}`}
@@ -836,9 +985,10 @@ const ModalConfigurarAgente = ({
                       🗑
                     </button>
                   </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

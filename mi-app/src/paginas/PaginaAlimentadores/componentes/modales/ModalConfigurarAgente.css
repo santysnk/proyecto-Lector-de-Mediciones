@@ -706,9 +706,19 @@
   animation: config-agente-pulse 2s infinite;
 }
 
+.config-agente-reg-tipo {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
 .config-agente-reg-nombre {
   color: #e2e8f0;
   font-weight: 500;
+}
+
+/* Registrador de tipo relé */
+.config-agente-reg-item--rele {
+  border-left: 2px solid #f59e0b;
 }
 
 .config-agente-reg-detalle {
@@ -777,8 +787,16 @@
 .config-agente-form-acciones {
   display: flex;
   gap: 0.75rem;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #334155;
+}
+
+/* Cuando hay elementos a la izquierda (ej: botón Test), usar space-between */
+.config-agente-form-acciones:has(> .config-agente-btn--test) {
+  justify-content: space-between;
 }
 
 .config-agente-form-acciones-derecha {
@@ -883,24 +901,206 @@
   color: #0ea5e9;
 }
 
-.config-agente-reg-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+/* ============================================ */
+/* Select de Tipo de Dispositivo               */
+/* ============================================ */
+.config-agente-tipo-row {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-.config-agente-reg-form .config-agente-form-grupo {
-  margin-bottom: 0;
-}
-
-.config-agente-reg-form .config-agente-form-grupo label {
-  font-size: 0.75rem;
-}
-
-.config-agente-reg-form .config-agente-form-grupo input {
-  padding: 0.5rem 0.7rem;
+.config-agente-tipo-label {
+  color: #ffffff;
   font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.config-agente-select-tipo {
+  flex: 1;
+  max-width: 280px;
+  padding: 0.5rem 0.75rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+.config-agente-select-tipo:hover {
+  border-color: #475569;
+}
+
+.config-agente-select-tipo:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.config-agente-select-tipo:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-agente-select-tipo option {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 0.5rem;
+}
+
+/* ============================================ */
+/* Formulario Analizador de Redes - Rediseño   */
+/* ============================================ */
+.config-agente-analizador {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.config-agente-analizador-nombre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.config-agente-analizador-nombre label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.config-agente-analizador-nombre input {
+  padding: 0.6rem 0.8rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+
+.config-agente-analizador-nombre input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.config-agente-analizador-nombre input::placeholder {
+  color: #475569;
+}
+
+.config-agente-analizador-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(200px, 280px));
+  gap: 1rem;
+  justify-content: start;
+}
+
+.config-agente-analizador-seccion {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.875rem;
+}
+
+.config-agente-analizador-seccion h6 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #334155;
+}
+
+.config-agente-analizador-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.config-agente-campo-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.config-agente-campo-inline label {
+  font-size: 0.85rem;
+  color: #ffffff;
+  min-width: 80px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.config-agente-campo-inline label::after {
+  content: " :";
+}
+
+.config-agente-campo-inline input {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  color: #f1f5f9;
+  font-size: 0.85rem;
+  max-width: 120px;
+  transition: border-color 0.15s;
+}
+
+.config-agente-campo-inline input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.config-agente-campo-inline input::placeholder {
+  color: #475569;
+}
+
+/* Inputs más cortos para valores numéricos pequeños */
+.config-agente-analizador-seccion:last-child .config-agente-campo-inline input {
+  max-width: 80px;
+}
+
+/* Input con sufijo (ej: "seg") */
+.config-agente-input-con-sufijo {
+  display: flex;
+  align-items: stretch;
+  max-width: 100px;
+}
+
+.config-agente-input-con-sufijo input {
+  flex: 1;
+  max-width: none;
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+}
+
+.config-agente-input-con-sufijo span {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  background: #334155;
+  border: 1px solid #334155;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .config-agente-analizador-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ============================================ */
@@ -1158,6 +1358,43 @@
   background: linear-gradient(90deg, #0ea5e9 0%, #22c55e 100%);
   border-radius: 2px;
   transition: width 0.35s ease-out;
+}
+
+/* ============================================ */
+/* Campo nombre para registradores de tipo relé*/
+/* ============================================ */
+.config-agente-rele-nombre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.config-agente-rele-nombre label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.config-agente-rele-nombre input {
+  padding: 0.6rem 0.8rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #f1f5f9;
+  font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+
+.config-agente-rele-nombre input:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.config-agente-rele-nombre input::placeholder {
+  color: #475569;
 }
 
 /* ============================================ */
