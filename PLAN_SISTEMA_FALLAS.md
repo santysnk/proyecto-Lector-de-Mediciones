@@ -1,548 +1,753 @@
-# Plan de Implementación: Sistema de Detección de Fallas REF615
+# Plan de Implementación: Sistema de Detección de Fallas ABB 615 Series
 
 > **Fecha de creación**: 2025-12-28
-> **Estado**: Planificación inicial
+> **Última actualización**: 2025-12-29
+> **Estado**: Planificación revisada
 > **Rama de trabajo**: dev
 
 ---
 
 ## Resumen Ejecutivo
 
-Implementar un sistema completo de detección, registro y notificación de fallas/disparos en relés de protección ABB REF615 (y compatibles) mediante protocolo Modbus TCP.
+Implementar un sistema **extensible y dinámico** de detección, registro y notificación de fallas/disparos en relés de protección ABB Serie 615 (REF615, RET615) mediante protocolo Modbus TCP.
 
-### Objetivos
+### Principio de Diseño: Configuración sobre Código
 
-1. Configurar registradores de tipo "relé" desde el frontend
-2. Leer estados de protecciones via Modbus (registros 171-201)
-3. Detectar fallas (START/OPERATE) y su estado (titilando/fijo)
-4. Registrar eventos en historial
-5. Notificar al frontend y dispositivos Android en tiempo real
-
----
-
-## Arquitectura del Sistema
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           FLUJO DE DETECCIÓN DE FALLAS                       │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  FRONTEND                 BACKEND                 AGENTE                    │
-│  (Config)                 (Lógica + Notif)        (Lectura)                 │
-│                                                                              │
-│  ┌──────────┐            ┌──────────────┐        ┌──────────────┐           │
-│  │ Crear    │───────────►│ Guardar en   │───────►│ Obtener      │           │
-│  │ Registra-│            │ Supabase     │        │ Config       │           │
-│  │ dor RELÉ │            │              │        │              │           │
-│  │ + config │            │ tipo: 'rele' │        │ Sabe que es  │           │
-│  │ fallas   │            │ config_fallas│        │ relé y debe  │           │
-│  └──────────┘            └──────────────┘        │ leer fallas  │           │
-│                                                   └──────┬───────┘           │
-│                                                          │                   │
-│                                                          ▼                   │
-│                                                   ┌──────────────┐           │
-│                                                   │ Leer regs    │           │
-│                                                   │ 171-201      │           │
-│                                                   │ (protecciones)│          │
-│                                                   └──────┬───────┘           │
-│                                                          │                   │
-│                                                          ▼                   │
-│                          ┌──────────────┐        ┌──────────────┐           │
-│  ┌──────────┐            │ Detectar     │◄───────│ POST /fallas │           │
-│  │ UI:      │◄───────────│ falla nueva  │        │ {proteccion, │           │
-│  │ Alerta   │            │              │        │  estado,     │           │
-│  │ en card  │            │ Guardar en   │        │  titilando}  │           │
-│  └──────────┘            │ historial    │        └──────────────┘           │
-│                          │              │                                    │
-│  ┌──────────┐            │ Enviar push  │                                    │
-│  │ Android: │◄───────────│ notification │                                    │
-│  │ Push     │            └──────────────┘                                    │
-│  │ Notif    │                                                                │
-│  └──────────┘                                                                │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+El sistema debe permitir agregar nuevos modelos de relés y configuraciones **sin modificar código**, mediante:
+- Gestión de modelos de relé (REF615, RET615, REX615 futuro, etc.)
+- Gestión de configuraciones por modelo (FE03, FE06, TE02, etc.)
+- Mapeo dinámico de protecciones y registros Modbus
 
 ---
 
-## Contexto Técnico: Protecciones REF615
+## Contexto Técnico: Subestación CELTA 1
 
-### Cómo funcionan las protecciones
+### Inventario de Equipos
 
-Cada función de protección del REF615 tiene señales que se pueden leer via Modbus:
+| # | Ubicación | Modelo | Config | IP | Características |
+|---|-----------|--------|--------|-----|-----------------|
+| 1 | ALIMENTADOR 1 | REF615 | FE03 | 172.16.0.1 | Solo corriente, autorecierre |
+| 2 | ALIMENTADOR 2 | REF615 | FE03 | 172.16.0.2 | Solo corriente, autorecierre |
+| 3 | ALIMENTADOR 3 | REF615 | FE03 | 172.16.0.3 | Solo corriente, autorecierre |
+| 4 | ALIMENTADOR 4 | REF615 | FE03 | 172.16.0.4 | Solo corriente, autorecierre |
+| 5 | ALIMENTADOR 8 | REF615 | FE03 | 172.16.0.8 | Solo corriente, autorecierre |
+| 6 | TRAFO 1 (Dif) | RET615 | TE02 | 172.16.0.5 | Protección diferencial |
+| 7 | TRAFO 1 (Salida) | REF615 | FE03 | 172.16.0.6 | Solo corriente |
+| 8 | TRAFO 2 (Dif) | RET615 | TE02 | 172.16.0.7 | Protección diferencial |
+| 9 | TRAFO 2 (Salida) | REF615 | FE03 | 172.16.0.9 | Solo corriente |
+| 10 | TRAFO 3 | RET615 | TE02 | 172.16.0.10 | Diferencial (HW Rev C 2009) |
+| 11 | TERNA 3 | REF615 | FE06 | 172.16.0.11 | **Con tensión**, direccional |
+| 12 | TERNA 4 | REF615 | FE06 | 172.16.0.12 | **Con tensión**, direccional |
 
-| Señal | Significado |
-|-------|-------------|
-| `START` | La protección arrancó (detectó condición anormal) |
-| `START_MCD` | START sin reconocer (LED titilando) |
-| `OPERATE` | La protección operó (ejecutó disparo) |
-| `OPERATE_MCD` | OPERATE sin reconocer (LED titilando) |
+### Configuraciones de Software
 
-### Interpretación del estado
+| Config | Modelo | Descripción | Capacidades |
+|--------|--------|-------------|-------------|
+| **FE03** | REF615 | Feeder con Autorecierre | Corriente, Autorecierre, NO tensión |
+| **FE06** | REF615 | Feeder con Tensión/Direccional | Corriente, Tensión, Direccional, Potencia |
+| **TE02** | RET615 | Transformer Differential | Diferencial 87T, REF, Térmica |
+
+---
+
+## Registros Modbus Exactos
+
+### Mediciones de Corriente (Todos los relés)
+
+| Registro | Variable | Escala | Descripción |
+|----------|----------|--------|-------------|
+| **138** | IL1 | ÷1000 × In | Corriente Fase A |
+| **139** | IL2 | ÷1000 × In | Corriente Fase B |
+| **140** | IL3 | ÷1000 × In | Corriente Fase C |
+| **141** | Io | ÷1000 × In | Corriente Residual |
+
+### Mediciones de Tensión (Solo FE06 - Ternas)
+
+| Registro | Variable | Escala | Descripción |
+|----------|----------|--------|-------------|
+| **152** | VA | ÷1000 × Un | Tensión Fase A-Tierra |
+| **153** | VB | ÷1000 × Un | Tensión Fase B-Tierra |
+| **154** | VC | ÷1000 × Un | Tensión Fase C-Tierra |
+| **155** | VAB | ÷1000 × Un | Tensión Línea A-B |
+| **156** | VBC | ÷1000 × Un | Tensión Línea B-C |
+| **157** | VCA | ÷1000 × Un | Tensión Línea C-A |
+
+### Estado del Interruptor
+
+| Registro | Bit | Significado |
+|----------|-----|-------------|
+| **175** | Bit 4 | Cerrado (1 = Cerrado) |
+| **175** | Bit 5 | Abierto (1 = Abierto) |
+| **175** | Bit 6 | Error/Intermedio |
+
+### Estados de Protección (Fallas)
+
+| Registro | Bit | Protección | Tipo |
+|----------|-----|------------|------|
+| **180** | 0 | PHLPTOC1 (Sobrecorriente baja) | Start |
+| **180** | 8 | PHLPTOC1 | Operate |
+| **180** | 10 | PHHPTOC1 (Sobrecorriente alta) | Start |
+| **181** | 2 | PHHPTOC1 | Operate |
+| **181** | 14 | PHIPTOC1 (Instantánea) | Start |
+| **182** | 6 | PHIPTOC1 | Operate |
+| **182** | 8 | DEFLPDEF1 (Falla tierra dir.) | Start |
+| **182** | 10 | DEFLPDEF1 | Operate |
+| **183** | 4 | EFLPTOC1 (Falla tierra baja) | Start |
+| **183** | 6 | EFLPTOC1 | Operate |
+| **183** | 12 | EFHPTOC1 (Falla tierra alta) | Start |
+| **183** | 14 | EFHPTOC1 | Operate |
+
+### Nota: Direccionamiento Base 0 vs Base 1
+
+- **Documentación ABB**: Base 1 (registro 138 = registro 138)
+- **modbus-serial**: Base 0 (registro 138 = leer dirección 137)
+- **Siempre restar 1** al usar la librería
+
+---
+
+## Arquitectura del Sistema Extensible
+
+### Modelo de Datos Dinámico
 
 ```
-START=0, OPERATE=0          → Normal (sin falla)
-START=1, START_MCD=1        → Arrancó, titilando (sin reconocer)
-START=1, START_MCD=0        → Arrancó, fijo (reconocido)
-OPERATE=1, OPERATE_MCD=1    → Operó/Disparó, titilando (sin reconocer)
-OPERATE=1, OPERATE_MCD=0    → Operó/Disparó, fijo (reconocido)
+┌─────────────────────────────────────────────────────────────────┐
+│                    JERARQUÍA DE CONFIGURACIÓN                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────┐                                           │
+│  │ MODELOS DE RELÉ  │  (Nivel más alto - definido por admin)    │
+│  │ ────────────────  │                                           │
+│  │ • REF615         │                                           │
+│  │ • RET615         │                                           │
+│  │ • REX615 (fut.)  │                                           │
+│  └────────┬─────────┘                                           │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌──────────────────┐                                           │
+│  │ CONFIGURACIONES  │  (Por modelo - define capacidades)        │
+│  │ ────────────────  │                                           │
+│  │ REF615:          │                                           │
+│  │  • FE03          │ ─► Solo corriente, autorecierre           │
+│  │  • FE06          │ ─► Corriente + tensión + direccional      │
+│  │ RET615:          │                                           │
+│  │  • TE02          │ ─► Diferencial + respaldo                 │
+│  └────────┬─────────┘                                           │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌──────────────────┐                                           │
+│  │  PROTECCIONES    │  (Por configuración - bits específicos)   │
+│  │ ────────────────  │                                           │
+│  │ FE03:            │                                           │
+│  │  • PHLPTOC1      │ ─► Reg 180, Start bit 0, Operate bit 8    │
+│  │  • PHHPTOC1      │ ─► Reg 180/181, bits específicos          │
+│  │  • EFHPTOC1      │ ─► Reg 183, Start bit 12, Operate bit 14  │
+│  │  • ...           │                                           │
+│  └────────┬─────────┘                                           │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌──────────────────┐                                           │
+│  │   ALIMENTADOR    │  (Instancia específica)                   │
+│  │ ────────────────  │                                           │
+│  │ • Modelo: REF615 │                                           │
+│  │ • Config: FE03   │                                           │
+│  │ • IP: 172.16.0.1 │                                           │
+│  │ • CT: 600/1A     │                                           │
+│  │ • Protecciones   │                                           │
+│  │   monitoreadas:  │                                           │
+│  │   [PHLPTOC1 ✓]   │                                           │
+│  │   [PHHPTOC1 ✓]   │                                           │
+│  │   [EFHPTOC1 ✓]   │                                           │
+│  └──────────────────┘                                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-### Registros Modbus de protecciones
+### Flujo de Datos
 
-| Registro | Contenido |
-|----------|-----------|
-| 171 | Global Start/Trip (LEDPTRC1, TRPPTRC1) |
-| 173 | LEDs programables (11 LEDs) |
-| 180-181 | Sobrecorriente fase (PHLPTOC1, PHHPTOC1, PHHPTOC2) |
-| 182-183 | Falla tierra direccional y no direccional |
-| 184-185 | Secuencia negativa, térmica |
-| 193-198 | Sobretensión, subtensión (requieren medición de tensión) |
-| 200-201 | Frecuencia (solo algunas configuraciones) |
-
-### Protecciones por tipo de configuración
-
-**Solo corriente (FE01, FE02, FE03):**
-- PHLPTOC1, PHHPTOC1, PHHPTOC2, PHIPTOC1 (Sobrecorriente fase)
-- EFLPTOC1, EFLPTOC2, EFHPTOC1, EFIPTOC1 (Falla tierra)
-- DEFLPDEF1, DEFLPDEF2, DEFHPDEF1 (Tierra direccional)
-- NSPTOC1, NSPTOC2, PDNSPTOC1 (Secuencia negativa)
-- T1PTTR1 (Térmica)
-- CCBRBRF1 (Falla interruptor)
-
-**Requieren tensión (FE04+):**
-- PHPTOV1, PHPTOV2, PHPTOV3 (Sobretensión)
-- PHPTUV1, PHPTUV2, PHPTUV3 (Subtensión)
-- ROVPTOV1, ROVPTOV2, ROVPTOV3 (Tensión residual)
-
-**Requieren frecuencia (FE08, FE09):**
-- FRPFRQ1, FRPFRQ2, FRPFRQ3 (Frecuencia)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      FLUJO DE DETECCIÓN                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  RELÉ ABB          AGENTE              BACKEND         FRONTEND │
+│  (Modbus)          (Electron)          (Node)          (React)  │
+│                                                                  │
+│  ┌─────────┐      ┌──────────┐       ┌─────────┐     ┌─────────┐│
+│  │Registros│      │ Obtener  │       │         │     │         ││
+│  │180-183  │─────►│ config   │       │         │     │ Config  ││
+│  │         │      │ del relé │       │         │     │ Modelos ││
+│  └─────────┘      │ (modelo, │       │         │     │ y Prots ││
+│                   │ config)  │       │         │     │         ││
+│                   └────┬─────┘       │         │     └─────────┘│
+│                        │             │         │                 │
+│                        ▼             │         │                 │
+│                   ┌──────────┐       │         │                 │
+│                   │ Leer     │       │         │                 │
+│                   │ registros│       │         │                 │
+│                   │ según    │       │         │                 │
+│                   │ config   │       │         │                 │
+│                   └────┬─────┘       │         │                 │
+│                        │             │         │                 │
+│                        ▼             │         │                 │
+│                   ┌──────────┐       │         │                 │
+│                   │ Extraer  │       │         │                 │
+│                   │ bits de  │       │         │                 │
+│                   │ protec-  │       │         │                 │
+│                   │ ciones   │       │         │                 │
+│                   └────┬─────┘       │         │                 │
+│                        │             │         │                 │
+│                        ▼             │         │                 │
+│                   ┌──────────┐  POST ┌─────────┐     ┌─────────┐│
+│                   │ Detectar │──────►│ Guardar │────►│ Alertas ││
+│                   │ cambios  │       │ evento  │     │ en UI   ││
+│                   │ (START/  │       │         │     │         ││
+│                   │  OPERATE)│       │ Enviar  │     │ Push    ││
+│                   └──────────┘       │ notif   │────►│ Android ││
+│                                      └─────────┘     └─────────┘│
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Fases de Implementación
 
-### FASE 1: Base de Datos (Supabase)
+### FASE 0: Diseño de UI (Actual)
 
-**Objetivo**: Preparar el esquema para soportar registradores de tipo relé y eventos de protección.
+**Objetivo**: Definir la interfaz de usuario para gestión de modelos, configuraciones y asignación a alimentadores.
 
-#### 1.1 Modificar tabla `registradores`
+#### 0.1 UI - Gestión de Modelos de Relé
 
-```sql
--- Agregar columna para distinguir tipo de registrador
-ALTER TABLE registradores
-ADD COLUMN IF NOT EXISTS tipo_dispositivo VARCHAR(20) DEFAULT 'medicion';
--- Valores: 'medicion', 'rele', 'ambos'
+Panel para agregar/editar modelos de relé:
+- Nombre del modelo (REF615, RET615, etc.)
+- Fabricante
+- Familia
+- Lista de configuraciones disponibles
 
--- Agregar configuración específica para relés
-ALTER TABLE registradores
-ADD COLUMN IF NOT EXISTS config_protecciones JSONB DEFAULT NULL;
+#### 0.2 UI - Gestión de Configuraciones
 
--- Ejemplo de config_protecciones:
--- {
---   "modelo": "REF615",
---   "configuracion": "FE01",  -- Solo corriente
---   "protecciones_habilitadas": ["PHLPTOC1", "PHHPTOC1", "EFHPTOC1", "T1PTTR1"],
---   "etiquetas_personalizadas": {
---     "PHLPTOC1": "Sobrecorriente Fase - Etapa 1",
---     "LED3": "Falla Tierra"
---   },
---   "intervalo_fallas_ms": 5000,  -- Polling más frecuente para fallas
---   "registros_protecciones": {
---     "inicio": 171,
---     "cantidad": 30
---   }
--- }
+Panel para definir cada configuración:
+- Nombre (FE03, FE06, TE02)
+- Descripción
+- Capacidades (checkboxes): Corriente, Tensión, Direccional, Autorecierre
+- Registros Modbus: Inicio corrientes, inicio tensiones, estado CB, protecciones
+- Lista de protecciones con sus bits específicos
+
+#### 0.3 UI - Configuración del Alimentador
+
+Formulario cuando se selecciona "Relé de Protección":
+- Selector de modelo (de los definidos)
+- Selector de configuración (según modelo)
+- Parámetros de conexión: IP, Puerto, Unit ID, Timeout
+- Parámetros de escala: CT primario, CT secundario (1A/5A), VT primario (si aplica)
+- Checkboxes de protecciones a monitorear (según configuración)
+- Opciones de notificación por protección
+
+**Entregables Fase 0:**
+- [ ] Mockups de UI aprobados
+- [ ] Estructura de datos JSON definida
+- [ ] Plan actualizado (este documento)
+
+---
+
+### FASE 1: Base de Datos
+
+**Objetivo**: Crear el esquema extensible en Supabase/localStorage.
+
+#### 1.1 Tabla/JSON `modelos_rele`
+
+```javascript
+{
+  "REF615": {
+    id: "ref615",
+    nombre: "REF615",
+    fabricante: "ABB",
+    familia: "Relion 615",
+    descripcion: "Feeder Protection Relay",
+    configuraciones: ["FE03", "FE06"]
+  },
+  "RET615": {
+    id: "ret615",
+    nombre: "RET615",
+    fabricante: "ABB",
+    familia: "Relion 615",
+    descripcion: "Transformer Protection Relay",
+    configuraciones: ["TE02"]
+  }
+}
 ```
 
-#### 1.2 Crear tabla `eventos_proteccion`
+#### 1.2 Tabla/JSON `configuraciones_rele`
+
+```javascript
+{
+  "FE03": {
+    id: "fe03",
+    nombre: "FE03",
+    descripcion: "Feeder con Autorecierre",
+    modeloId: "ref615",
+    capacidades: {
+      medicionCorriente: true,
+      medicionTension: false,
+      proteccionDireccional: false,
+      autorecierre: true
+    },
+    registros: {
+      corrientes: { inicio: 138, cantidad: 4, escala: 1000 },
+      tensiones: null,
+      estadoCB: { registro: 175, bitCerrado: 4, bitAbierto: 5, bitError: 6 },
+      protecciones: { inicio: 180, cantidad: 4 }
+    },
+    protecciones: [
+      {
+        codigo: "PHLPTOC1",
+        nombre: "Sobrecorriente Fase Baja",
+        descripcion: "Phase Low-set Time Overcurrent",
+        registroStart: 180,
+        bitStart: 0,
+        registroOperate: 180,
+        bitOperate: 8
+      },
+      {
+        codigo: "PHHPTOC1",
+        nombre: "Sobrecorriente Fase Alta",
+        descripcion: "Phase High-set Time Overcurrent",
+        registroStart: 180,
+        bitStart: 10,
+        registroOperate: 181,
+        bitOperate: 2
+      },
+      {
+        codigo: "PHIPTOC1",
+        nombre: "Sobrecorriente Instantánea",
+        descripcion: "Phase Instantaneous Overcurrent",
+        registroStart: 181,
+        bitStart: 14,
+        registroOperate: 182,
+        bitOperate: 6
+      },
+      {
+        codigo: "EFLPTOC1",
+        nombre: "Falla a Tierra Baja",
+        descripcion: "Earth Fault Low-set Time Overcurrent",
+        registroStart: 183,
+        bitStart: 4,
+        registroOperate: 183,
+        bitOperate: 6
+      },
+      {
+        codigo: "EFHPTOC1",
+        nombre: "Falla a Tierra Alta",
+        descripcion: "Earth Fault High-set Time Overcurrent",
+        registroStart: 183,
+        bitStart: 12,
+        registroOperate: 183,
+        bitOperate: 14
+      },
+      {
+        codigo: "NSPTOC1",
+        nombre: "Secuencia Negativa",
+        descripcion: "Negative Sequence Overcurrent",
+        registroStart: 184,
+        bitStart: 0,
+        registroOperate: 184,
+        bitOperate: 2
+      },
+      {
+        codigo: "T1PTTR1",
+        nombre: "Sobrecarga Térmica",
+        descripcion: "Thermal Overload",
+        registroStart: 185,
+        bitStart: 0,
+        registroOperate: 185,
+        bitOperate: 2
+      },
+      {
+        codigo: "CCBRBRF1",
+        nombre: "Fallo de Interruptor",
+        descripcion: "Breaker Failure",
+        registroStart: 186,
+        bitStart: 0,
+        registroOperate: 186,
+        bitOperate: 2
+      }
+    ]
+  },
+  "FE06": {
+    id: "fe06",
+    nombre: "FE06",
+    descripcion: "Feeder con Tensión y Direccional",
+    modeloId: "ref615",
+    capacidades: {
+      medicionCorriente: true,
+      medicionTension: true,
+      proteccionDireccional: true,
+      autorecierre: true
+    },
+    registros: {
+      corrientes: { inicio: 138, cantidad: 4, escala: 1000 },
+      tensiones: { inicio: 152, cantidad: 6, escala: 1000 },
+      estadoCB: { registro: 175, bitCerrado: 4, bitAbierto: 5, bitError: 6 },
+      protecciones: { inicio: 180, cantidad: 20 }
+    },
+    protecciones: [
+      // Todas las de FE03 más:
+      {
+        codigo: "DEFLPDEF1",
+        nombre: "Falla Tierra Direccional Baja",
+        descripcion: "Directional Earth Fault Low-set",
+        registroStart: 182,
+        bitStart: 8,
+        registroOperate: 182,
+        bitOperate: 10
+      },
+      {
+        codigo: "PHPTUV1",
+        nombre: "Subtensión",
+        descripcion: "Three-phase Undervoltage",
+        registroStart: 193,
+        bitStart: 0,
+        registroOperate: 193,
+        bitOperate: 2
+      },
+      {
+        codigo: "PHPTOV1",
+        nombre: "Sobretensión",
+        descripcion: "Three-phase Overvoltage",
+        registroStart: 194,
+        bitStart: 0,
+        registroOperate: 194,
+        bitOperate: 2
+      }
+      // ... más protecciones de tensión
+    ]
+  },
+  "TE02": {
+    id: "te02",
+    nombre: "TE02",
+    descripcion: "Transformer Differential Protection",
+    modeloId: "ret615",
+    capacidades: {
+      medicionCorriente: true,
+      medicionTension: false,
+      proteccionDireccional: false,
+      autorecierre: false,
+      proteccionDiferencial: true
+    },
+    registros: {
+      corrientes: { inicio: 138, cantidad: 7, escala: 1000 }, // 4 AT + 3 BT
+      tensiones: null,
+      estadoCB: { registro: 175, bitCerrado: 4, bitAbierto: 5, bitError: 6 },
+      protecciones: { inicio: 180, cantidad: 10 }
+    },
+    protecciones: [
+      {
+        codigo: "TR2PTDF1",
+        nombre: "Diferencial Estabilizada",
+        descripcion: "Transformer Differential (87T)",
+        registroStart: 180,
+        bitStart: 0,
+        registroOperate: 180,
+        bitOperate: 2
+      },
+      {
+        codigo: "LREFPNDF1",
+        nombre: "Falla Tierra Restringida",
+        descripcion: "Low Impedance REF (87N)",
+        registroStart: 181,
+        bitStart: 0,
+        registroOperate: 181,
+        bitOperate: 2
+      },
+      {
+        codigo: "T2PTTR1",
+        nombre: "Térmica Transformador",
+        descripcion: "Transformer Thermal Overload",
+        registroStart: 182,
+        bitStart: 0,
+        registroOperate: 182,
+        bitOperate: 2
+      }
+      // ... más protecciones de transformador
+    ]
+  }
+}
+```
+
+#### 1.3 Configuración de Alimentador (en localStorage o Supabase)
+
+```javascript
+{
+  id: "alimentador-1",
+  nombre: "Alimentador 1",
+  tipoRegistrador: "rele", // "analizador" | "rele"
+
+  // Solo si tipoRegistrador === "rele"
+  configRele: {
+    modeloId: "ref615",
+    configuracionId: "fe03",
+    conexion: {
+      ip: "172.16.0.1",
+      puerto: 502,
+      unitId: 1,
+      timeout: 3000
+    },
+    escala: {
+      ctPrimario: 600,
+      ctSecundario: 1, // 1 o 5
+      vtPrimario: null, // Solo si config tiene tensión
+      vtSecundario: null
+    },
+    proteccionesMonitoreadas: [
+      { codigo: "PHLPTOC1", habilitado: true, notificar: true, etiquetaPersonalizada: null },
+      { codigo: "PHHPTOC1", habilitado: true, notificar: true, etiquetaPersonalizada: "Sobrecorriente Alta" },
+      { codigo: "EFHPTOC1", habilitado: true, notificar: true, etiquetaPersonalizada: null },
+      { codigo: "T1PTTR1", habilitado: false, notificar: false, etiquetaPersonalizada: null }
+    ],
+    intervaloPollingMs: 5000
+  }
+}
+```
+
+#### 1.4 Tabla `eventos_proteccion` (Supabase)
 
 ```sql
-CREATE TABLE IF NOT EXISTS eventos_proteccion (
+CREATE TABLE eventos_proteccion (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  registrador_id UUID NOT NULL REFERENCES registradores(id) ON DELETE CASCADE,
+  alimentador_id UUID NOT NULL,
+  registrador_ip VARCHAR(15) NOT NULL,
 
-  -- Identificación de la protección
-  codigo_proteccion VARCHAR(20) NOT NULL,  -- Ej: 'PHLPTOC1', 'EFHPTOC1'
-  nombre_proteccion VARCHAR(100),           -- Nombre legible
-  etiqueta_personalizada VARCHAR(100),      -- Etiqueta del usuario
+  -- Identificación
+  codigo_proteccion VARCHAR(20) NOT NULL,
+  nombre_proteccion VARCHAR(100),
+  etiqueta_personalizada VARCHAR(100),
 
-  -- Estado del evento
-  tipo_evento VARCHAR(20) NOT NULL,         -- 'START', 'OPERATE', 'CLEAR'
-  estado_anterior VARCHAR(20),              -- Estado previo
-  estado_nuevo VARCHAR(20) NOT NULL,        -- 'ACTIVO_TITILANDO', 'ACTIVO_FIJO', 'NORMAL'
-
-  -- Detalles adicionales
-  fase VARCHAR(5),                          -- 'A', 'B', 'C', NULL (si es general)
-  valor_registro INTEGER,                   -- Valor crudo del registro Modbus
+  -- Estado
+  tipo_evento VARCHAR(10) NOT NULL, -- 'START', 'OPERATE', 'CLEAR'
+  valor_registro INTEGER,
 
   -- Timestamps
   timestamp_deteccion TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  timestamp_reconocimiento TIMESTAMPTZ,     -- Cuando se reconoció (MCD=0)
-  timestamp_normalizacion TIMESTAMPTZ,      -- Cuando volvió a normal
+  timestamp_normalizacion TIMESTAMPTZ,
 
-  -- Notificaciones
+  -- Notificación
   notificacion_enviada BOOLEAN DEFAULT false,
-  notificacion_timestamp TIMESTAMPTZ,
 
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Índices para consultas frecuentes
-CREATE INDEX idx_eventos_registrador ON eventos_proteccion(registrador_id);
+CREATE INDEX idx_eventos_alimentador ON eventos_proteccion(alimentador_id);
 CREATE INDEX idx_eventos_timestamp ON eventos_proteccion(timestamp_deteccion DESC);
-CREATE INDEX idx_eventos_codigo ON eventos_proteccion(codigo_proteccion);
-CREATE INDEX idx_eventos_tipo ON eventos_proteccion(tipo_evento);
-CREATE INDEX idx_eventos_pendientes ON eventos_proteccion(estado_nuevo)
-  WHERE estado_nuevo IN ('ACTIVO_TITILANDO', 'ACTIVO_FIJO');
-```
-
-#### 1.3 Crear tabla `lecturas_protecciones` (opcional, para historial detallado)
-
-```sql
-CREATE TABLE IF NOT EXISTS lecturas_protecciones (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  registrador_id UUID NOT NULL REFERENCES registradores(id) ON DELETE CASCADE,
-  timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- Valores crudos de los registros
-  registros_raw JSONB NOT NULL,  -- { "171": 1234, "173": 5678, ... }
-
-  -- Estados interpretados
-  protecciones_activas JSONB,    -- [{ "codigo": "PHLPTOC1", "estado": "START", "mcd": true }, ...]
-
-  -- Resumen
-  hay_falla BOOLEAN DEFAULT false,
-  cantidad_activas INTEGER DEFAULT 0,
-
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX idx_lecturas_prot_registrador ON lecturas_protecciones(registrador_id);
-CREATE INDEX idx_lecturas_prot_timestamp ON lecturas_protecciones(timestamp DESC);
-CREATE INDEX idx_lecturas_prot_falla ON lecturas_protecciones(hay_falla) WHERE hay_falla = true;
-```
-
-#### 1.4 Crear vista para estado actual de fallas
-
-```sql
-CREATE OR REPLACE VIEW v_fallas_activas AS
-SELECT
-  e.id,
-  e.registrador_id,
-  r.nombre AS nombre_registrador,
-  r.ip,
-  r.puerto,
-  a.id AS alimentador_id,
-  a.nombre AS nombre_alimentador,
-  p.id AS puesto_id,
-  p.nombre AS nombre_puesto,
-  p.workspace_id,
-  e.codigo_proteccion,
-  e.nombre_proteccion,
-  e.etiqueta_personalizada,
-  e.tipo_evento,
-  e.estado_nuevo,
-  e.fase,
-  e.timestamp_deteccion,
-  e.notificacion_enviada
-FROM eventos_proteccion e
-JOIN registradores r ON e.registrador_id = r.id
-LEFT JOIN alimentadores a ON r.id = ANY(
-  SELECT (jsonb_array_elements(a2.card_design->'superior'->'boxes')->>'registrador_id')::uuid
-  FROM alimentadores a2
-  UNION
-  SELECT (jsonb_array_elements(a2.card_design->'inferior'->'boxes')->>'registrador_id')::uuid
-  FROM alimentadores a2
-)
-LEFT JOIN puestos p ON a.puesto_id = p.id
-WHERE e.estado_nuevo IN ('ACTIVO_TITILANDO', 'ACTIVO_FIJO')
-  AND e.timestamp_normalizacion IS NULL
-ORDER BY e.timestamp_deteccion DESC;
+CREATE INDEX idx_eventos_activos ON eventos_proteccion(tipo_evento)
+  WHERE timestamp_normalizacion IS NULL;
 ```
 
 **Entregables Fase 1:**
-- [ ] Script SQL para modificar `registradores`
-- [ ] Script SQL para crear `eventos_proteccion`
-- [ ] Script SQL para crear `lecturas_protecciones`
-- [ ] Script SQL para crear vista `v_fallas_activas`
-- [ ] Ejecutar migraciones en Supabase
+- [ ] Estructura JSON para modelos y configuraciones
+- [ ] Migración SQL para eventos_proteccion
+- [ ] Funciones CRUD para modelos/configuraciones
+- [ ] Tests de estructura de datos
 
 ---
 
-### FASE 2: Frontend - Configuración de Registradores Relé
+### FASE 2: Frontend - UI de Configuración
 
-**Objetivo**: Permitir al superadmin crear registradores de tipo "relé" con configuración de protecciones.
+**Objetivo**: Implementar la UI extensible para gestión de relés.
 
-#### 2.1 Modificar formulario de nuevo registrador
+#### 2.1 Componente `GestionModelosRele.jsx`
 
-**Archivo**: `mi-app/src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.jsx`
+Panel para administrar modelos de relé:
+- Lista de modelos existentes
+- Botón agregar nuevo modelo
+- Edición de modelo (nombre, fabricante, configuraciones asociadas)
+- Eliminación con confirmación
 
-Cambios:
-- Agregar selector de tipo: "Medición" | "Relé" | "Ambos"
-- Si tipo incluye "Relé":
-  - Selector de modelo (REF615, REF620, etc.)
-  - Selector de configuración (FE01-FE09)
-  - Lista de protecciones disponibles (checkboxes)
-  - Campo para etiquetas personalizadas
-  - Intervalo de polling para fallas
+#### 2.2 Componente `GestionConfiguraciones.jsx`
 
-#### 2.2 Crear componente de configuración de protecciones
+Panel para administrar configuraciones:
+- Lista de configuraciones por modelo
+- Editor de capacidades (checkboxes)
+- Editor de registros Modbus
+- Editor de protecciones (agregar, editar, eliminar)
 
-**Nuevo archivo**: `mi-app/src/paginas/PaginaAlimentadores/componentes/modales/ConfiguracionProtecciones.jsx`
+#### 2.3 Modificar `ModalConfigurarAgente.jsx`
 
-```jsx
-// Props: modelo, configuracion, onProteccionesChange
-// - Lista de protecciones disponibles según configuración
-// - Checkbox para habilitar/deshabilitar cada una
-// - Input para etiqueta personalizada
-// - Preview de qué se va a monitorear
-```
+Agregar pestaña/sección para tipo "Relé":
+- Selector de modelo (combobox dinámico)
+- Selector de configuración (filtrado por modelo)
+- Campos de conexión Modbus
+- Campos de escala CT/VT
+- Lista de protecciones (checkboxes según configuración)
+- Opciones de notificación
 
-#### 2.3 Crear constantes de protecciones
+#### 2.4 Constantes Base `datosBaseReles.js`
 
-**Nuevo archivo**: `mi-app/src/paginas/PaginaAlimentadores/constantes/proteccionesREF615.js`
-
-```javascript
-export const PROTECCIONES_REF615 = {
-  PHLPTOC1: {
-    nombre: 'Sobrecorriente Fase - Etapa Baja',
-    registro: 180,
-    requiere: 'corriente',
-    // ... bits
-  },
-  // ... todas las protecciones
-};
-
-export const CONFIGURACIONES_REF615 = {
-  FE01: { nombre: 'Alimentador básico', protecciones: [...] },
-  // ...
-};
-```
+Datos precargados para ABB 615 Series:
+- REF615 con FE03 y FE06
+- RET615 con TE02
+- Protecciones con sus bits exactos
 
 **Entregables Fase 2:**
-- [ ] Componente `ConfiguracionProtecciones.jsx`
-- [ ] Constantes `proteccionesREF615.js`
-- [ ] Modificar `ModalConfigurarAgente.jsx`
-- [ ] Actualizar `apiService.js` con nuevos campos
-- [ ] Tests manuales de creación de registrador tipo relé
+- [ ] Componente `GestionModelosRele.jsx`
+- [ ] Componente `GestionConfiguraciones.jsx`
+- [ ] Modificación de `ModalConfigurarAgente.jsx`
+- [ ] Archivo `datosBaseReles.js`
+- [ ] Hook `useModelosRele.js`
+- [ ] Tests de UI
 
 ---
 
-### FASE 3: Agente Electron - Lectura de Fallas
+### FASE 3: Agente Electron - Lectura Dinámica
 
-**Objetivo**: El agente detecta registradores de tipo relé y lee sus protecciones.
+**Objetivo**: El agente lee protecciones según la configuración del relé.
 
-#### 3.1 Crear módulo de protecciones
-
-**Nuevo archivo**: `lector-mediciones-electron/src/main/modbus/proteccionesREF615.js`
+#### 3.1 Módulo `lectorProtecciones.js`
 
 ```javascript
-// - Mapa de protecciones con registros y bits
-// - Función extraerBit(valor, posicion)
-// - Función interpretarProteccion(registros, config)
-// - Función leerTodasProtecciones(cliente, config)
+// Funciones:
+// - obtenerConfiguracionRele(alimentadorId)
+// - leerRegistrosProteccion(cliente, config)
+// - extraerBit(valor, posicion)
+// - interpretarEstadoProteccion(registros, proteccion)
+// - detectarCambios(estadoAnterior, estadoActual)
+// - enviarEventos(eventos)
 ```
 
-#### 3.2 Modificar lógica de polling
+#### 3.2 Modificar Loop de Polling
 
-**Archivo**: `lector-mediciones-electron/src/main/index.js`
-
-Cambios:
-- Detectar `tipo_dispositivo` del registrador
-- Si es 'rele' o 'ambos': ejecutar polling de protecciones
-- Comparar con estado anterior para detectar cambios
+- Detectar si alimentador es tipo "rele"
+- Obtener configuración del relé (modelo, config, protecciones habilitadas)
+- Leer solo los registros necesarios según configuración
+- Extraer bits de cada protección monitoreada
+- Comparar con estado anterior
 - Enviar eventos de cambio al backend
 
-#### 3.3 Crear endpoint de envío de eventos
+#### 3.3 Manejo de Errores de Conexión
 
-```javascript
-// POST /api/agente/eventos-proteccion
-// Body: {
-//   registradorId: "uuid",
-//   eventos: [
-//     { codigo: "PHLPTOC1", tipo: "START", estado: "ACTIVO_TITILANDO", fase: "A" },
-//     ...
-//   ],
-//   lecturaCompleta: { "171": 1234, "180": 5678, ... }
-// }
-```
+- Timeout configurable por relé
+- Reintentos automáticos
+- Log de errores de comunicación
+- Alerta si relé no responde
 
 **Entregables Fase 3:**
-- [ ] Módulo `proteccionesREF615.js`
-- [ ] Modificar `index.js` para detectar tipo de registrador
-- [ ] Implementar polling de protecciones
-- [ ] Implementar detección de cambios
-- [ ] Implementar envío de eventos al backend
-- [ ] Tests con relé real o simulado
+- [ ] Módulo `lectorProtecciones.js`
+- [ ] Modificación del loop principal
+- [ ] Tests con datos simulados
+- [ ] Tests con relé real
 
 ---
 
-### FASE 4: Backend - Lógica y Notificaciones
+### FASE 4: Backend - Eventos y Notificaciones
 
-**Objetivo**: Procesar eventos de protección, guardar historial y enviar notificaciones.
+**Objetivo**: Procesar eventos y enviar notificaciones.
 
-#### 4.1 Crear controlador de eventos de protección
+#### 4.1 Controlador `eventosProteccionController.js`
 
-**Nuevo archivo**: `lector-mediciones-backend/src/controllers/eventosProteccionController.js`
+- `POST /api/eventos-proteccion` - Recibir eventos del agente
+- `GET /api/alimentadores/:id/fallas-activas` - Fallas activas
+- `GET /api/alimentadores/:id/historial-fallas` - Historial con filtros
+- `PUT /api/eventos/:id/reconocer` - Marcar como reconocido
 
-```javascript
-// - recibirEventos(req, res) - POST desde agente
-// - obtenerEventosActivos(req, res) - GET para frontend
-// - obtenerHistorial(req, res) - GET con filtros
-// - reconocerEvento(req, res) - PUT para marcar como visto
-```
+#### 4.2 Servicio de Notificaciones
 
-#### 4.2 Crear servicio de notificaciones de fallas
-
-**Nuevo archivo**: `lector-mediciones-backend/src/servicios/notificacionesFallasService.js`
-
-```javascript
-// - procesarNuevoEvento(evento)
-// - determinarDestinatarios(evento) - usuarios del workspace
-// - enviarPushNotification(usuarios, evento)
-// - registrarNotificacionEnviada(eventoId)
-```
-
-#### 4.3 Agregar rutas
-
-**Archivo**: `lector-mediciones-backend/src/routes/index.js`
-
-```javascript
-// Rutas para agente
-router.post('/api/agente/eventos-proteccion', authAgente, eventosController.recibirEventos);
-
-// Rutas para frontend
-router.get('/api/workspaces/:id/fallas-activas', auth, eventosController.obtenerEventosActivos);
-router.get('/api/registradores/:id/historial-fallas', auth, eventosController.obtenerHistorial);
-router.put('/api/eventos-proteccion/:id/reconocer', auth, eventosController.reconocerEvento);
-```
+- Determinar usuarios a notificar (workspace)
+- Enviar push notification (Firebase)
+- Registrar notificación enviada
 
 **Entregables Fase 4:**
-- [ ] Controlador `eventosProteccionController.js`
-- [ ] Servicio `notificacionesFallasService.js`
-- [ ] Agregar rutas al backend
-- [ ] Integrar con Firebase Cloud Messaging
+- [ ] Controlador de eventos
+- [ ] Servicio de notificaciones
+- [ ] Integración Firebase
 - [ ] Tests de endpoints
 
 ---
 
 ### FASE 5: Frontend - Visualización de Fallas
 
-**Objetivo**: Mostrar alertas de fallas en la UI y permitir ver historial.
+**Objetivo**: Mostrar alertas y historial en la UI.
 
-#### 5.1 Indicador de falla en tarjetas
+#### 5.1 Indicador en Tarjetas
 
-**Modificar**: `TarjetaAlimentador.jsx`
+- Icono de alerta si hay falla activa
+- Color según severidad (START amarillo, OPERATE rojo)
+- Tooltip con detalle
 
-- Si el alimentador tiene registrador con falla activa: mostrar indicador visual
-- Icono de alerta (triángulo amarillo/rojo)
-- Tooltip con detalle de la falla
-- Click para ver más información
+#### 5.2 Panel de Fallas Activas
 
-#### 5.2 Panel de fallas activas
-
-**Nuevo componente**: `PanelFallasActivas.jsx`
-
-- Lista de fallas activas en el workspace
+- Lista de fallas en el workspace
 - Filtros por puesto/alimentador
-- Botón para reconocer falla
-- Link al historial
+- Botón reconocer
+- Link a historial
 
-#### 5.3 Modal de historial de fallas
+#### 5.3 Modal Historial de Fallas
 
-**Nuevo componente**: `ModalHistorialFallas.jsx`
-
-- Tabla con historial de eventos
-- Filtros por fecha, protección, estado
-- Exportar a CSV/Excel
-- Gráfico de frecuencia de fallas
-
-#### 5.4 Notificaciones en tiempo real
-
-- Polling periódico de fallas activas
-- O implementar WebSocket/SSE para tiempo real
-- Toast notification cuando hay nueva falla
+- Tabla con eventos
+- Filtros por fecha, protección, tipo
+- Exportar CSV
 
 **Entregables Fase 5:**
-- [ ] Indicador visual en `TarjetaAlimentador.jsx`
-- [ ] Componente `PanelFallasActivas.jsx`
-- [ ] Componente `ModalHistorialFallas.jsx`
+- [ ] Indicador en tarjetas
+- [ ] Panel de fallas activas
+- [ ] Modal historial
 - [ ] Hook `useFallasActivas.js`
-- [ ] Integración con sistema de notificaciones
-- [ ] Tests de UI
-
----
-
-## Preguntas Pendientes de Definir
-
-1. **¿Un registrador puede ser de mediciones Y de fallas simultáneamente?**
-   - Opción A: Dos registradores separados (uno medición, uno fallas)
-   - Opción B: Un registrador con ambas funciones
-
-2. **¿Qué hacer cuando se detecta una falla?**
-   - Solo registrar y notificar
-   - Pausar mediciones normales
-   - Aumentar frecuencia de polling
-
-3. **¿Cómo se "reconoce" una falla?**
-   - Automáticamente cuando MCD cambia a 0
-   - Manualmente desde el frontend
-   - Ambos
-
-4. **¿Retención de historial?**
-   - ¿Cuánto tiempo guardar eventos?
-   - ¿Agrupar eventos repetidos?
-
-5. **¿Prioridad de notificaciones?**
-   - ¿Todas las fallas notifican igual?
-   - ¿Diferenciar START vs OPERATE?
-   - ¿Configurar qué protecciones notifican?
 
 ---
 
 ## Archivos a Crear/Modificar
 
-### Base de Datos
-- `migrations/004_sistema_fallas.sql` (nuevo)
+### Frontend (mi-app/src)
 
-### Frontend (mi-app)
-- `src/paginas/PaginaAlimentadores/constantes/proteccionesREF615.js` (nuevo)
-- `src/paginas/PaginaAlimentadores/componentes/modales/ConfiguracionProtecciones.jsx` (nuevo)
-- `src/paginas/PaginaAlimentadores/componentes/modales/ModalConfigurarAgente.jsx` (modificar)
-- `src/paginas/PaginaAlimentadores/componentes/modales/PanelFallasActivas.jsx` (nuevo)
-- `src/paginas/PaginaAlimentadores/componentes/modales/ModalHistorialFallas.jsx` (nuevo)
-- `src/paginas/PaginaAlimentadores/componentes/tarjetas/TarjetaAlimentador.jsx` (modificar)
-- `src/paginas/PaginaAlimentadores/hooks/useFallasActivas.js` (nuevo)
-- `src/servicios/apiService.js` (modificar)
+**Nuevos:**
+- `constantes/datosBaseReles.js` - Datos precargados ABB 615
+- `componentes/configuracion/GestionModelosRele.jsx`
+- `componentes/configuracion/GestionConfiguraciones.jsx`
+- `componentes/configuracion/EditorProtecciones.jsx`
+- `componentes/fallas/PanelFallasActivas.jsx`
+- `componentes/fallas/ModalHistorialFallas.jsx`
+- `hooks/useModelosRele.js`
+- `hooks/useFallasActivas.js`
 
-### Backend (lector-mediciones-backend)
-- `src/controllers/eventosProteccionController.js` (nuevo)
-- `src/servicios/notificacionesFallasService.js` (nuevo)
-- `src/routes/index.js` (modificar)
+**Modificar:**
+- `componentes/modales/ModalConfigurarAgente.jsx`
+- `componentes/tarjetas/TarjetaAlimentador.jsx`
+- `servicios/apiService.js`
 
-### Agente (lector-mediciones-electron)
-- `src/main/modbus/proteccionesREF615.js` (nuevo)
-- `src/main/index.js` (modificar)
+### Backend (lector-mediciones-backend/src)
+
+**Nuevos:**
+- `controllers/eventosProteccionController.js`
+- `services/notificacionesFallasService.js`
+- `models/eventoProteccion.js`
+
+**Modificar:**
+- `routes/index.js`
+
+### Agente (lector-mediciones-electron/src/main)
+
+**Nuevos:**
+- `modbus/lectorProtecciones.js`
+- `modbus/configuracionesRele.js`
+
+**Modificar:**
+- `index.js` (loop de polling)
+
+---
+
+## Referencias Técnicas
+
+- **Informe Técnico Completo**: `Informe_Tecnico_Completo_Reles_CELTA1.md`
+- **Inventario de Relés**: `INVENTARIO_RELES_ABB.md`
+- **Guía Registros Modbus**: `GUIA_REGISTROS_MODBUS_ABB615.md`
+- **Manual Modbus ABB**: `REF615_Modbuspoint-756581-ENe.pdf`
 
 ---
 
 ## Registro de Cambios
 
-| Fecha | Cambio | Estado |
-|-------|--------|--------|
-| 2025-12-28 | Creación del plan | Completado |
-| | Fase 1: Base de datos | Pendiente |
-| | Fase 2: Frontend config | Pendiente |
-| | Fase 3: Agente lectura | Pendiente |
-| | Fase 4: Backend lógica | Pendiente |
-| | Fase 5: Frontend visualización | Pendiente |
-
----
-
-## Referencias
-
-- Manual Modbus REF615: `REF615_Modbuspoint-756581-ENe.pdf`
-- Documentación ABB: Application Manual, Technical Manual
-- Código actual del agente: `lector-mediciones-electron/src/main/index.js`
-- Código actual del modal: `ModalConfigurarAgente.jsx`
+| Fecha | Cambio |
+|-------|--------|
+| 2025-12-28 | Creación inicial del plan |
+| 2025-12-29 | **Revisión completa** con información de: |
+| | - Informe técnico CELTA 1 (configs reales: FE03, FE06, TE02) |
+| | - Guía registros Modbus (bits exactos de protecciones) |
+| | - Inventario de 12 relés con IPs |
+| | - Rediseño hacia sistema extensible (configuración sobre código) |
