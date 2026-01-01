@@ -319,9 +319,14 @@ const ModalConfigurarAgente = ({
     const esRele = nuevoRegistrador.tipoDispositivo === 'rele';
 
     if (esRele) {
-      // Validar que tenga configuración de relé
-      if (!nuevoRegistrador.configuracionRele) {
-        setError('Debes configurar el relé de protección');
+      // Validar que tenga configuración de relé con plantilla seleccionada
+      const configRele = nuevoRegistrador.configuracionRele;
+      if (!configRele || !configRele.plantillaId) {
+        setError('Debes seleccionar una plantilla de configuración');
+        return;
+      }
+      if (!configRele.conexion?.ip) {
+        setError('Debes configurar la IP del relé');
         return;
       }
     } else {
@@ -337,20 +342,18 @@ const ModalConfigurarAgente = ({
       let datos;
 
       if (esRele) {
-        // Para relés, usar la configuración del componente ConfiguracionRele
+        // Para relés, usar la configuración del componente ConfiguracionRele (nuevo formato con plantillas)
         const configRele = nuevoRegistrador.configuracionRele;
-        // Convertir intervaloPollingMs (en ms) a intervaloSegundos
-        const intervaloSegundos = Math.round((configRele.intervaloPollingMs || 5000) / 1000);
         datos = {
           nombre: nuevoRegistrador.nombre,
           tipo: 'modbus',
           tipoDispositivo: 'rele',
           ip: configRele.conexion.ip,
-          puerto: String(configRele.conexion.puerto),
-          unitId: String(configRele.conexion.unitId),
-          indiceInicial: '0', // Los relés usan registros específicos por configuración
-          cantidadRegistros: '200', // Rango amplio para cubrir todos los registros posibles
-          intervaloSegundos: String(intervaloSegundos),
+          puerto: String(configRele.conexion.puerto || 502),
+          unitId: String(configRele.conexion.unitId || 1),
+          indiceInicial: String(configRele.registroInicial || 120),
+          cantidadRegistros: String(configRele.cantidadRegistros || 80),
+          intervaloSegundos: '60', // Default, se puede agregar al formulario si es necesario
           configuracionRele: configRele,
         };
       } else {

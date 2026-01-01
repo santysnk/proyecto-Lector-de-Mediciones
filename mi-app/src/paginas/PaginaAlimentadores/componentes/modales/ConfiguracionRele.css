@@ -1,329 +1,187 @@
 /* ============================================================================
-   ConfiguracionRele.css
-   Estilos para el componente de configuración de relés de protección
+   ConfiguracionRele.css - Diseño Simplificado
+   Estilos para el componente de configuración de relés basado en plantillas
    ============================================================================ */
 
 .config-rele {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 20px;
+  padding: 8px 0;
 }
 
 /* ============================================================================
-   FILA MODELO Y CONFIGURACIÓN
+   SECCIONES
    ============================================================================ */
 
-.config-rele-modelo-row {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #334155;
+.config-rele-seccion {
+  background: #252b3b;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #2a3447;
 }
 
-.config-rele-campo {
+.config-rele-seccion h6 {
+  margin: 0 0 14px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e4e4e7;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
-.config-rele-campo label {
-  font-size: 0.85rem;
-  color: #94a3b8;
-  white-space: nowrap;
+/* Contador de funcionalidades */
+.config-rele-contador {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #71717a;
+  background: #1a1f2e;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* ============================================================================
+   SECCIÓN PLANTILLA
+   ============================================================================ */
+
+.config-rele-plantilla-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .config-rele-select {
-  padding: 0.5rem 0.75rem;
-  background: #0f172a;
-  border: 1px solid #334155;
+  flex: 1;
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
   border-radius: 6px;
-  color: #f1f5f9;
-  font-size: 0.85rem;
-  min-width: 200px;
+  color: #e4e4e7;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.config-rele-select:hover {
-  border-color: #475569;
 }
 
 .config-rele-select:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.15);
+  border-color: #2563eb;
 }
 
-.config-rele-select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.config-rele-select--error {
+  border-color: #dc2626;
 }
 
-/* Select con botón a la derecha */
-.config-rele-select-con-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.config-rele-select-con-btn .config-rele-select {
-  flex: 1;
-}
-
-.config-rele-btn-editar {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e293b;
-  border: 1px solid #334155;
+.config-rele-btn-plantilla {
+  padding: 10px 16px;
+  background: #2563eb;
+  color: white;
+  border: none;
   border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.15s;
-}
-
-.config-rele-btn-editar:hover {
-  background: #334155;
-  border-color: #475569;
-}
-
-.config-rele-btn-nuevo {
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  background: transparent;
-  border: 1px dashed #0ea5e9;
-  border-radius: 6px;
-  color: #0ea5e9;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-left: auto;
-}
-
-.config-rele-btn-nuevo:hover {
-  background: rgba(14, 165, 233, 0.1);
-  border-style: solid;
-}
-
-/* ============================================================================
-   BADGES DE CAPACIDADES
-   ============================================================================ */
-
-.config-rele-capacidades {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-}
-
-.config-rele-badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.6rem;
-  background: rgba(14, 165, 233, 0.1);
-  color: #7dd3fc;
-  border-radius: 999px;
-  border: 1px solid rgba(14, 165, 233, 0.3);
-}
-
-/* ============================================================================
-   GRID DE SECCIONES
-   ============================================================================ */
-
-.config-rele-seccion {
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-/* Grid principal de 4 cuadrantes (2 columnas) */
-.config-rele-grid-principal {
-  display: grid;
-  grid-template-columns: 480px 1fr;
-  gap: 1rem;
-  align-items: stretch;
-}
-
-/* Columna izquierda */
-.config-rele-columna-izq {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Columna derecha */
-.config-rele-columna-der {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-/* Placeholder para futuro contenido */
-.config-rele-seccion-placeholder {
-  min-height: 100px;
-  border: 1px dashed #334155;
-  border-radius: 8px;
-  background: transparent;
-}
-
-/* Grid para índice, cantidad e intervalo - fila horizontal */
-.config-rele-indice-grid {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.config-rele-indice-grid .config-rele-campo-inline {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.config-rele-indice-grid .config-rele-campo-inline label {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.config-rele-indice-grid .config-rele-campo-inline input {
-  width: 70px;
-  text-align: center;
-}
-
-/* Intervalo con sufijo en la fila de índice */
-.config-rele-indice-grid .config-rele-input-sufijo {
-  width: auto;
-}
-
-.config-rele-indice-grid .config-rele-input-sufijo input {
-  width: 50px;
-}
-
-/* Legacy: Grid para conexión y registros lado a lado (mantener por compatibilidad) */
-.config-rele-grid-conexion {
-  display: grid;
-  grid-template-columns: 480px 1fr;
-  gap: 1rem;
-}
-
-/* Sección de Conexión Modbus */
-.config-rele-grid-conexion > .config-rele-seccion:first-child {
-  margin-bottom: 0;
-}
-
-/* Sección de Registros Modbus */
-.config-rele-grid-conexion > .config-rele-seccion:nth-child(2) {
-  margin-bottom: 0;
-}
-
-/* Cuando solo hay conexión (sin registros), ocupar solo su espacio */
-.config-rele-grid-conexion:has(> .config-rele-seccion:only-child) {
-  grid-template-columns: 480px 1fr;
-}
-
-.config-rele-grid-conexion > .config-rele-seccion:only-child {
-  grid-column: 1;
-}
-
-.config-rele-seccion h6 {
-  margin: 0 0 1rem 0;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #e2e8f0;
-  padding-bottom: 0.6rem;
-  border-bottom: 1px solid #334155;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
 }
 
-.config-rele-contador {
-  font-size: 0.7rem;
-  font-weight: normal;
-  color: #64748b;
-  background: #0f172a;
-  padding: 0.2rem 0.5rem;
+.config-rele-btn-plantilla:hover {
+  background: #1d4ed8;
+}
+
+.config-rele-btn-plantilla--secundario {
+  background: #374151;
+}
+
+.config-rele-btn-plantilla--secundario:hover {
+  background: #4b5563;
+}
+
+/* Alertas y mensajes */
+.config-rele-alerta {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 0.85rem;
+}
+
+.config-rele-mensaje {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  color: #93c5fd;
+  font-size: 0.85rem;
+}
+
+.config-rele-plantilla-desc {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: #1a1f2e;
   border-radius: 4px;
-  margin-left: auto;
-}
-
-.config-rele-campos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* Layout para conexión Modbus - IP flexible, resto compacto (70px) */
-.config-rele-conexion-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.config-rele-conexion-grid > .config-rele-campo-inline:first-child {
-  flex: 1;
-  min-width: 120px;
-}
-
-.config-rele-conexion-grid > .config-rele-campo-inline:not(:first-child) {
-  width: 70px;
-  flex: 0 0 70px;
-}
-
-.config-rele-campos-horizontal {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 /* ============================================================================
-   CAMPOS INLINE (label : input)
+   SECCIÓN CONEXIÓN MODBUS
+   ============================================================================ */
+
+.config-rele-conexion-grid {
+  display: grid;
+  grid-template-columns: 1fr 100px 80px;
+  gap: 12px;
+}
+
+.config-rele-registros-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #2a3447;
+}
+
+/* ============================================================================
+   CAMPOS INLINE
    ============================================================================ */
 
 .config-rele-campo-inline {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  align-items: center;
+  gap: 6px;
 }
 
 .config-rele-campo-inline label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ffffff;
-  white-space: nowrap;
-  text-align: center;
+  font-size: 0.8rem;
+  color: #a1a1aa;
 }
 
 .config-rele-campo-inline input {
-  padding: 0.5rem 0.65rem;
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 5px;
-  color: #f1f5f9;
-  font-size: 0.85rem;
-  width: 100%;
-  transition: all 0.15s;
-}
-
-.config-rele-campo-inline input:hover {
-  border-color: #475569;
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.9rem;
 }
 
 .config-rele-campo-inline input:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+  border-color: #2563eb;
 }
 
 .config-rele-campo-inline input::placeholder {
-  color: #475569;
+  color: #52525b;
+}
+
+.config-rele-campo-inline input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Ocultar spinners en inputs number */
@@ -337,323 +195,112 @@
   -moz-appearance: textfield;
 }
 
-/* Input con sufijo (A, V, s) */
-.config-rele-input-sufijo {
-  display: flex;
-  align-items: stretch;
-  width: 100%;
-}
-
-.config-rele-input-sufijo input {
-  flex: 1;
-  width: auto;
-  border-radius: 5px 0 0 5px;
-  border-right: none;
-}
-
-.config-rele-input-sufijo span {
-  display: flex;
-  align-items: center;
-  padding: 0 0.5rem;
-  background: #334155;
-  border: 1px solid #334155;
-  border-radius: 0 5px 5px 0;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-/* Radio buttons */
-.config-rele-radio-group {
-  display: flex;
-  gap: 1rem;
-}
-
-.config-rele-radio {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  font-size: 0.85rem;
-  color: #cbd5e1;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  transition: background 0.15s;
-}
-
-.config-rele-radio:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.config-rele-radio input[type="radio"] {
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: #0ea5e9;
-}
-
 /* ============================================================================
-   SECCIÓN PROTECCIONES
+   SECCIÓN FUNCIONALIDADES
    ============================================================================ */
 
-.config-rele-seccion-protecciones {
-  max-width: none;
-  grid-column: 1 / -1;
-}
-
-.config-rele-protecciones {
+.config-rele-funcionalidades {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 16px;
 }
 
 .config-rele-categoria {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 8px;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
   overflow: hidden;
 }
 
 .config-rele-categoria-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.875rem;
-  background: #1e293b;
-  border-bottom: 1px solid #334155;
+  padding: 10px 14px;
+  background: #1a1f2e;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  font-weight: 500;
 }
 
-.categoria-icono {
+.config-rele-func-lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-rele-func-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-top: 1px solid #2a3447;
+  transition: background 0.2s;
+}
+
+.config-rele-func-item:first-child {
+  border-top: none;
+}
+
+.config-rele-func-item.activo {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.config-rele-func-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.config-rele-func-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.config-rele-func-nombre {
+  color: #e4e4e7;
   font-size: 0.9rem;
 }
 
-.categoria-nombre {
-  flex: 1;
-  font-weight: 500;
-  font-size: 0.85rem;
-  color: #e2e8f0;
-}
-
-.categoria-acciones {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.btn-categoria {
-  width: 24px;
-  height: 24px;
+.config-rele-func-registro {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  border: 1px solid #475569;
-  border-radius: 4px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s;
+  gap: 8px;
 }
 
-.btn-categoria:hover {
-  background: #0ea5e9;
-  color: white;
-  border-color: #0ea5e9;
-}
-
-/* Grid de protecciones */
-.config-rele-protecciones-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.4rem;
-  padding: 0.6rem;
-}
-
-.config-rele-proteccion {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 0.6rem;
-  background: #1e293b;
-  border: 1px solid #334155;
-  border-radius: 5px;
-  transition: all 0.15s;
-}
-
-.config-rele-proteccion.activa {
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.1);
-}
-
-.config-rele-proteccion.inactiva {
-  opacity: 0.5;
-}
-
-.config-rele-proteccion:hover {
-  border-color: #475569;
-}
-
-.config-rele-proteccion.activa:hover {
-  border-color: #0ea5e9;
-}
-
-/* Checkbox de protección */
-.proteccion-check {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-  flex: 1;
-}
-
-.proteccion-check input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-  accent-color: #0ea5e9;
-}
-
-.proteccion-indicador {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.proteccion-codigo {
+.config-rele-func-registro label {
   font-size: 0.8rem;
-  font-weight: 500;
-  color: #f1f5f9;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  color: #71717a;
 }
 
-/* Notificar */
-.proteccion-notificar {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  opacity: 0.4;
-  transition: opacity 0.15s;
-  padding: 0.15rem;
-}
-
-.proteccion-notificar:hover {
-  opacity: 1;
-}
-
-.proteccion-notificar input[type="checkbox"] {
-  display: none;
-}
-
-.notificar-icono {
-  font-size: 0.8rem;
-  filter: grayscale(1);
-  transition: filter 0.15s;
-}
-
-.proteccion-notificar input:checked + .notificar-icono {
-  filter: grayscale(0);
-}
-
-.proteccion-notificar input:disabled + .notificar-icono {
-  opacity: 0.3;
-}
-
-/* ============================================================================
-   SECCIÓN REGISTROS MODBUS
-   ============================================================================ */
-
-.config-rele-registros {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.config-rele-registros-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-self: flex-start;
-}
-
-.config-rele-registro-grupo {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  justify-content: flex-end;
-}
-
-.registro-grupo-label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #ffffff;
-  white-space: nowrap;
-  padding-bottom: 0.5rem;
-  flex-shrink: 0;
-}
-
-.config-rele-registro-campos {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Para filas con 3 campos (tensiones) - no necesita modificador */
-.config-rele-registro-campos--tres {
-  /* Mismo comportamiento flex */
-}
-
-.config-rele-campo-mini {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  align-items: center;
+.config-rele-func-registro input {
   width: 70px;
-  flex-shrink: 0;
-}
-
-.config-rele-campo-mini label {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: #ffffff;
-  text-align: center;
-}
-
-.config-rele-campo-mini input {
-  width: 100%;
-  padding: 0.45rem 0.5rem;
-  background: #0f172a;
-  border: 1px solid #334155;
+  padding: 6px 8px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
   border-radius: 4px;
-  color: #f1f5f9;
+  color: #e4e4e7;
   font-size: 0.85rem;
   text-align: center;
-  transition: all 0.15s;
 }
 
-.config-rele-campo-mini input:hover {
-  border-color: #475569;
+.config-rele-func-registro input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
-.config-rele-campo-mini input:focus {
+.config-rele-func-registro input:focus {
   outline: none;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
-}
-
-.config-rele-campo-mini input::placeholder {
-  color: #475569;
-  font-size: 0.85rem;
+  border-color: #2563eb;
 }
 
 /* Ocultar spinners en inputs number */
-.config-rele-campo-mini input[type="number"]::-webkit-outer-spin-button,
-.config-rele-campo-mini input[type="number"]::-webkit-inner-spin-button {
+.config-rele-func-registro input[type="number"]::-webkit-outer-spin-button,
+.config-rele-func-registro input[type="number"]::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-.config-rele-campo-mini input[type="number"] {
+.config-rele-func-registro input[type="number"] {
   -moz-appearance: textfield;
 }
 
@@ -662,413 +309,38 @@
    ============================================================================ */
 
 @media (max-width: 600px) {
-  .config-rele-modelo-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
+  .config-rele-conexion-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .config-rele-campo {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
+  .config-rele-conexion-grid .config-rele-campo-inline:first-child {
+    grid-column: 1 / -1;
   }
 
-  .config-rele-campo label {
-    text-align: left;
+  .config-rele-registros-row {
+    grid-template-columns: 1fr;
+  }
+
+  .config-rele-plantilla-row {
+    flex-wrap: wrap;
   }
 
   .config-rele-select {
     width: 100%;
-    min-width: auto;
   }
 
-  .config-rele-btn-nuevo {
-    margin-left: 0;
+  .config-rele-btn-plantilla {
+    flex: 1;
   }
 
-  .config-rele-grid {
-    grid-template-columns: 1fr;
-    max-width: none;
-  }
-
-  .config-rele-campo-inline {
-    grid-template-columns: 80px 1fr;
-  }
-
-  .config-rele-protecciones-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .config-rele-grid-conexion {
-    grid-template-columns: 1fr;
-  }
-
-  .config-rele-grid-principal {
-    grid-template-columns: 1fr;
-  }
-
-  .config-rele-conexion-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .config-rele-registro-grupo {
+  .config-rele-func-item {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    gap: 10px;
   }
 
-  .registro-grupo-label {
-    min-width: auto;
-    padding-bottom: 0;
+  .config-rele-func-registro {
+    width: 100%;
+    justify-content: flex-end;
   }
-
-  .config-rele-registro-campos {
-    flex-wrap: wrap;
-  }
-
-  .config-rele-campo-mini {
-    min-width: 70px;
-  }
-}
-
-/* ============================================================================
-   SECCIÓN TEST DE CONEXIÓN
-   ============================================================================ */
-
-.config-rele-seccion-test {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  flex: 1;
-}
-
-.config-rele-test-consola {
-  background: #0f172a;
-  border: 1px solid #334155;
-  border-radius: 6px;
-  min-height: 200px;
-  overflow-y: auto;
-  font-family: "Consolas", "Monaco", monospace;
-  font-size: 0.8rem;
-  flex: 1;
-}
-
-.test-consola-vacio {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 200px;
-  color: #64748b;
-  font-style: italic;
-}
-
-.test-consola-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  height: 100%;
-  min-height: 200px;
-  color: #0ea5e9;
-}
-
-.test-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid #334155;
-  border-top-color: #0ea5e9;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.test-consola-resultado {
-  padding: 0.75rem;
-}
-
-.test-consola-resultado.error .test-consola-header {
-  color: #f87171;
-}
-
-.test-consola-resultado.exito .test-consola-header {
-  color: #4ade80;
-}
-
-.test-consola-header {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #334155;
-}
-
-.test-consola-titulo {
-  color: #94a3b8;
-  font-weight: 600;
-  margin-top: 0.5rem;
-  margin-bottom: 0.25rem;
-  font-size: 0.75rem;
-}
-
-.test-consola-linea {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.15rem 0;
-  color: #e2e8f0;
-}
-
-.test-consola-linea .test-label {
-  color: #94a3b8;
-}
-
-.test-consola-linea .test-valor {
-  font-weight: 500;
-}
-
-.test-consola-proteccion .test-valor {
-  font-size: 0.75rem;
-}
-
-/* Lista de registros - estilo tabla */
-.test-consola-registro-item {
-  display: grid;
-  grid-template-columns: 55px 1fr;
-  gap: 0.5rem;
-  font-family: "Consolas", "Monaco", monospace;
-  font-size: 0.85rem;
-  color: #475569;
-  padding: 0.2rem 0.35rem;
-  border-bottom: 1px solid #1e293b;
-}
-
-.test-consola-registro-item.relevante {
-  color: #e2e8f0;
-  background: rgba(14, 165, 233, 0.08);
-}
-
-.test-consola-registro-item .registro-num {
-  color: #64748b;
-  text-align: right;
-}
-
-.test-consola-registro-item.relevante .registro-num {
-  color: #0ea5e9;
-  font-weight: 600;
-}
-
-.test-consola-registro-item .registro-valor {
-  text-align: right;
-  font-weight: 500;
-}
-
-
-/* Alarmas activas - resaltadas en rojo */
-.test-consola-alarma {
-  background: rgba(239, 68, 68, 0.15);
-  border-left: 3px solid #ef4444;
-  padding-left: 0.5rem !important;
-  margin: 0.15rem 0;
-  border-radius: 0 4px 4px 0;
-}
-
-.test-consola-alarma .test-label {
-  color: #fca5a5 !important;
-  font-weight: 600;
-}
-
-.test-consola-alarma .test-valor {
-  color: #f87171;
-  font-size: 0.7rem;
-}
-
-/* Protecciones OK - resumen compacto */
-.test-consola-protecciones-ok {
-  font-size: 0.7rem;
-  color: #4ade80;
-  padding: 0.25rem 0;
-  line-height: 1.4;
-}
-
-/* Contenedor de botones de test */
-.config-rele-test-acciones {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.config-rele-btn-test {
-  padding: 0.4rem 0.75rem;
-  background: #0ea5e9;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: 600;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.config-rele-btn-test:hover:not(:disabled) {
-  background: #0284c7;
-}
-
-.config-rele-btn-test:disabled {
-  background: #334155;
-  color: #64748b;
-  cursor: not-allowed;
-}
-
-.config-rele-btn-exportar {
-  padding: 0.4rem 0.6rem;
-  background: #10b981;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-weight: 600;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.config-rele-btn-exportar:hover:not(:disabled) {
-  background: #059669;
-}
-
-.config-rele-btn-exportar:disabled {
-  background: #334155;
-  color: #64748b;
-  cursor: not-allowed;
-}
-
-/* ============================================================================
-   SECCIÓN TEST DE COILS (BITS) - EXPERIMENTAL
-   ============================================================================ */
-
-.config-rele-seccion-test-coils {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.config-rele-seccion-test-coils h6 {
-  font-size: 0.85rem;
-  color: #f59e0b;
-  margin: 0 0 0.25rem 0;
-}
-
-.config-rele-coils-params {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.config-rele-coils-params .config-rele-campo-inline {
-  flex: 0 0 auto;
-  min-width: 80px;
-}
-
-.config-rele-coils-params .config-rele-campo-inline input {
-  width: 80px;
-  text-align: center;
-}
-
-.config-rele-btn-test-coils {
-  padding: 0.45rem 0.75rem;
-  background: #f59e0b;
-  border: none;
-  border-radius: 5px;
-  color: #000;
-  font-weight: 600;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-
-.config-rele-btn-test-coils:hover:not(:disabled) {
-  background: #d97706;
-}
-
-.config-rele-btn-test-coils:disabled {
-  background: #334155;
-  color: #64748b;
-  cursor: not-allowed;
-}
-
-.config-rele-coils-consola {
-  min-height: 120px;
-  max-height: 200px;
-}
-
-/* Resultado de coils */
-.test-coils-activos {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: rgba(245, 158, 11, 0.1);
-  border-radius: 4px;
-  margin-bottom: 0.5rem;
-  font-size: 0.8rem;
-}
-
-.test-coils-activos strong {
-  color: #f59e0b;
-  white-space: nowrap;
-}
-
-.coils-lista-activos {
-  color: #fbbf24;
-  font-family: "Consolas", "Monaco", monospace;
-  word-break: break-all;
-}
-
-.coils-ninguno {
-  color: #4ade80;
-  font-style: italic;
-}
-
-/* Grid visual de coils */
-.test-coils-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-  gap: 3px;
-  max-height: 120px;
-  overflow-y: auto;
-}
-
-.test-coil-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 0.25rem;
-  border-radius: 3px;
-  font-size: 0.7rem;
-  transition: all 0.15s;
-}
-
-.test-coil-item.inactivo {
-  background: #1e293b;
-  color: #475569;
-}
-
-.test-coil-item.activo {
-  background: #f59e0b;
-  color: #000;
-  font-weight: 600;
-}
-
-.test-coil-item .coil-dir {
-  font-size: 0.65rem;
-  opacity: 0.8;
-}
-
-.test-coil-item .coil-val {
-  font-weight: 600;
-  font-size: 0.75rem;
 }
