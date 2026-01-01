@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import {
-  FUNCIONALIDADES_DISPONIBLES,
-  getFuncionalidadesPorCategoria,
-} from "../../constantes/funcionalidadesRele";
 import "./ModalPlantillasRele.css";
+
+// Categorías disponibles para las funcionalidades
+const CATEGORIAS = {
+  mediciones: { id: "mediciones", nombre: "Mediciones", icono: "📊" },
+  estados: { id: "estados", nombre: "Estados y Alarmas", icono: "🚦" },
+  sistema: { id: "sistema", nombre: "Sistema", icono: "⚙️" },
+};
 
 /**
  * Modal para gestionar plantillas de relés de protección.
- * Permite crear, editar, ver y eliminar plantillas.
+ * Permite crear funcionalidades personalizadas con registros individuales.
  */
 const ModalPlantillasRele = ({
   abierto,
@@ -22,12 +25,16 @@ const ModalPlantillasRele = ({
   const [modo, setModo] = useState("lista"); // "lista" | "crear" | "editar"
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
-  const [funcionalidades, setFuncionalidades] = useState({});
+  const [funcionalidades, setFuncionalidades] = useState([]);
   const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
   const [error, setError] = useState("");
 
-  // Funcionalidades agrupadas por categoría
-  const funcionalidadesPorCategoria = getFuncionalidadesPorCategoria();
+  // Estado para agregar nueva funcionalidad
+  const [nuevaFunc, setNuevaFunc] = useState({
+    nombre: "",
+    cantidad: 1,
+    categoria: "mediciones",
+  });
 
   // Si se pasa una plantilla para editar, entrar en modo edición
   useEffect(() => {
@@ -36,7 +43,16 @@ const ModalPlantillasRele = ({
       setPlantillaSeleccionada(plantillaEditando);
       setNombre(plantillaEditando.nombre);
       setDescripcion(plantillaEditando.descripcion || "");
-      setFuncionalidades(plantillaEditando.funcionalidades || {});
+      // Convertir funcionalidades del formato objeto al formato array
+      const funcsArray = Object.entries(plantillaEditando.funcionalidades || {}).map(
+        ([id, data]) => ({
+          id,
+          nombre: data.nombre || id,
+          habilitado: data.habilitado !== false,
+          registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
+        })
+      );
+      setFuncionalidades(funcsArray);
     }
   }, [plantillaEditando, abierto]);
 
@@ -51,22 +67,14 @@ const ModalPlantillasRele = ({
     setModo("lista");
     setNombre("");
     setDescripcion("");
-    setFuncionalidades({});
+    setFuncionalidades([]);
     setPlantillaSeleccionada(null);
     setError("");
+    setNuevaFunc({ nombre: "", cantidad: 1, categoria: "mediciones" });
   };
 
   const iniciarCreacion = () => {
     resetFormulario();
-    // Inicializar con todas las funcionalidades con sus valores por defecto
-    const funcInicial = {};
-    Object.values(FUNCIONALIDADES_DISPONIBLES).forEach((func) => {
-      funcInicial[func.id] = {
-        habilitado: false,
-        registro: func.registroDefault,
-      };
-    });
-    setFuncionalidades(funcInicial);
     setModo("crear");
   };
 
@@ -75,37 +83,91 @@ const ModalPlantillasRele = ({
     setNombre(plantilla.nombre);
     setDescripcion(plantilla.descripcion || "");
 
-    // Cargar funcionalidades existentes, completando con defaults para las que no existan
-    const funcCargadas = {};
-    Object.values(FUNCIONALIDADES_DISPONIBLES).forEach((func) => {
-      const existente = plantilla.funcionalidades?.[func.id];
-      funcCargadas[func.id] = {
-        habilitado: existente?.habilitado || false,
-        registro: existente?.registro || func.registroDefault,
-      };
-    });
-    setFuncionalidades(funcCargadas);
+    // Convertir funcionalidades del formato objeto al formato array
+    const funcsArray = Object.entries(plantilla.funcionalidades || {}).map(
+      ([id, data]) => ({
+        id,
+        nombre: data.nombre || id,
+        habilitado: data.habilitado !== false,
+        registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
+      })
+    );
+    setFuncionalidades(funcsArray);
     setModo("editar");
   };
 
-  const handleToggleFuncionalidad = (funcId) => {
-    setFuncionalidades((prev) => ({
-      ...prev,
-      [funcId]: {
-        ...prev[funcId],
-        habilitado: !prev[funcId]?.habilitado,
-      },
-    }));
+  // Generar ID único para funcionalidad
+  const generarIdFunc = () => {
+    return "func-" + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   };
 
-  const handleCambiarRegistro = (funcId, valor) => {
-    setFuncionalidades((prev) => ({
-      ...prev,
-      [funcId]: {
-        ...prev[funcId],
-        registro: valor === "" ? "" : parseInt(valor) || 0,
-      },
+  // Agregar nueva funcionalidad
+  const handleAgregarFuncionalidad = () => {
+    if (!nuevaFunc.nombre.trim()) {
+      setError("Ingresa un nombre para la funcionalidad");
+      return;
+    }
+
+    const cantidad = parseInt(nuevaFunc.cantidad) || 1;
+
+    // Crear array de registros vacíos según la cantidad
+    const registros = Array.from({ length: cantidad }, () => ({
+      etiqueta: "",
+      valor: 0,
     }));
+
+    const nuevaFuncionalidad = {
+      id: generarIdFunc(),
+      nombre: nuevaFunc.nombre.trim(),
+      categoria: nuevaFunc.categoria,
+      habilitado: true,
+      registros,
+    };
+
+    setFuncionalidades((prev) => [...prev, nuevaFuncionalidad]);
+    setNuevaFunc({ nombre: "", cantidad: 1, categoria: nuevaFunc.categoria });
+    setError("");
+  };
+
+  // Eliminar funcionalidad
+  const handleEliminarFuncionalidad = (funcId) => {
+    setFuncionalidades((prev) => prev.filter((f) => f.id !== funcId));
+  };
+
+  // Toggle habilitar/deshabilitar funcionalidad
+  const handleToggleFuncionalidad = (funcId) => {
+    setFuncionalidades((prev) =>
+      prev.map((f) =>
+        f.id === funcId ? { ...f, habilitado: !f.habilitado } : f
+      )
+    );
+  };
+
+  // Cambiar etiqueta de un registro
+  const handleCambiarEtiqueta = (funcId, regIndex, valor) => {
+    setFuncionalidades((prev) =>
+      prev.map((f) => {
+        if (f.id !== funcId) return f;
+        const nuevosRegistros = [...f.registros];
+        nuevosRegistros[regIndex] = { ...nuevosRegistros[regIndex], etiqueta: valor };
+        return { ...f, registros: nuevosRegistros };
+      })
+    );
+  };
+
+  // Cambiar valor de un registro
+  const handleCambiarValorRegistro = (funcId, regIndex, valor) => {
+    setFuncionalidades((prev) =>
+      prev.map((f) => {
+        if (f.id !== funcId) return f;
+        const nuevosRegistros = [...f.registros];
+        nuevosRegistros[regIndex] = {
+          ...nuevosRegistros[regIndex],
+          valor: valor === "" ? "" : parseInt(valor) || 0,
+        };
+        return { ...f, registros: nuevosRegistros };
+      })
+    );
   };
 
   const validarFormulario = () => {
@@ -114,9 +176,12 @@ const ModalPlantillasRele = ({
       return false;
     }
 
-    const hayFuncionalidadActiva = Object.values(funcionalidades).some(
-      (f) => f.habilitado
-    );
+    if (funcionalidades.length === 0) {
+      setError("Debes agregar al menos una funcionalidad");
+      return false;
+    }
+
+    const hayFuncionalidadActiva = funcionalidades.some((f) => f.habilitado);
     if (!hayFuncionalidadActiva) {
       setError("Debe habilitar al menos una funcionalidad");
       return false;
@@ -129,13 +194,17 @@ const ModalPlantillasRele = ({
   const handleGuardar = () => {
     if (!validarFormulario()) return;
 
-    // Filtrar solo funcionalidades habilitadas para guardar
+    // Convertir array de funcionalidades a objeto para guardar
     const funcParaGuardar = {};
-    Object.entries(funcionalidades).forEach(([id, data]) => {
-      if (data.habilitado) {
-        funcParaGuardar[id] = {
+    funcionalidades.forEach((func) => {
+      if (func.habilitado) {
+        funcParaGuardar[func.id] = {
+          nombre: func.nombre,
+          categoria: func.categoria || "mediciones",
           habilitado: true,
-          registro: data.registro,
+          registros: func.registros,
+          // Mantener compatibilidad: primer registro como "registro" principal
+          registro: func.registros[0]?.valor || 0,
         };
       }
     });
@@ -167,6 +236,13 @@ const ModalPlantillasRele = ({
     ) {
       onEliminar(plantilla.id);
     }
+  };
+
+  // Contar funcionalidades en una plantilla
+  const contarFuncionalidades = (plantilla) => {
+    return Object.values(plantilla.funcionalidades || {}).filter(
+      (f) => f.habilitado !== false
+    ).length;
   };
 
   if (!abierto) return null;
@@ -223,12 +299,7 @@ const ModalPlantillasRele = ({
                           </span>
                         )}
                         <span className="modal-plantillas-item-func">
-                          {
-                            Object.values(plantilla.funcionalidades || {}).filter(
-                              (f) => f.habilitado
-                            ).length
-                          }{" "}
-                          funcionalidades
+                          {contarFuncionalidades(plantilla)} funcionalidades
                         </span>
                       </div>
                       <div className="modal-plantillas-item-acciones">
@@ -281,63 +352,161 @@ const ModalPlantillasRele = ({
                 />
               </div>
 
+              {/* Sección para agregar funcionalidad */}
               <div className="modal-plantillas-seccion">
-                <h4>Funcionalidades disponibles</h4>
-                <p className="modal-plantillas-hint">
-                  Selecciona qué funcionalidades incluirá esta plantilla
-                </p>
+                <h4>Agregar Funcionalidad</h4>
+                <div className="modal-plantillas-agregar-func">
+                  <div className="modal-plantillas-agregar-row">
+                    <div className="modal-plantillas-agregar-campo">
+                      <label>Nombre</label>
+                      <input
+                        type="text"
+                        value={nuevaFunc.nombre}
+                        onChange={(e) =>
+                          setNuevaFunc((prev) => ({ ...prev, nombre: e.target.value }))
+                        }
+                        placeholder="Ej: Corrientes de Fase"
+                      />
+                    </div>
+                    <div className="modal-plantillas-agregar-campo modal-plantillas-agregar-campo--pequeño">
+                      <label>Cant. Reg.</label>
+                      <input
+                        type="number"
+                        value={nuevaFunc.cantidad}
+                        onChange={(e) =>
+                          setNuevaFunc((prev) => ({
+                            ...prev,
+                            cantidad: e.target.value,
+                          }))
+                        }
+                        min={1}
+                        max={20}
+                      />
+                    </div>
+                    <div className="modal-plantillas-agregar-campo modal-plantillas-agregar-campo--categoria">
+                      <label>Categoría</label>
+                      <select
+                        value={nuevaFunc.categoria}
+                        onChange={(e) =>
+                          setNuevaFunc((prev) => ({
+                            ...prev,
+                            categoria: e.target.value,
+                          }))
+                        }
+                      >
+                        {Object.values(CATEGORIAS).map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.icono} {cat.nombre}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      className="modal-plantillas-btn-agregar"
+                      onClick={handleAgregarFuncionalidad}
+                    >
+                      + Agregar
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                {Object.entries(funcionalidadesPorCategoria).map(
-                  ([catId, categoria]) => (
-                    <div key={catId} className="modal-plantillas-categoria">
-                      <h5>
-                        {categoria.icono} {categoria.nombre}
-                      </h5>
-                      <div className="modal-plantillas-func-lista">
-                        {categoria.funcionalidades.map((func) => {
-                          const estado = funcionalidades[func.id] || {
-                            habilitado: false,
-                            registro: func.registroDefault,
-                          };
-                          return (
+              {/* Lista de funcionalidades agregadas - Agrupadas por categoría */}
+              {funcionalidades.length > 0 && (
+                <div className="modal-plantillas-seccion">
+                  <h4>Funcionalidades ({funcionalidades.length})</h4>
+
+                  {Object.values(CATEGORIAS).map((categoria) => {
+                    const funcsDeCategoria = funcionalidades.filter(
+                      (f) => (f.categoria || "mediciones") === categoria.id
+                    );
+
+                    if (funcsDeCategoria.length === 0) return null;
+
+                    return (
+                      <div key={categoria.id} className="modal-plantillas-categoria">
+                        <h5>
+                          {categoria.icono} {categoria.nombre}
+                        </h5>
+                        <div className="modal-plantillas-func-lista">
+                          {funcsDeCategoria.map((func) => (
                             <div
                               key={func.id}
-                              className={`modal-plantillas-func-item ${
-                                estado.habilitado ? "activo" : ""
+                              className={`modal-plantillas-func-card ${
+                                func.habilitado ? "activo" : "inactivo"
                               }`}
                             >
-                              <label className="modal-plantillas-func-check">
-                                <input
-                                  type="checkbox"
-                                  checked={estado.habilitado}
-                                  onChange={() =>
-                                    handleToggleFuncionalidad(func.id)
-                                  }
-                                />
-                                <span className="modal-plantillas-func-nombre">
-                                  {func.nombre}
-                                </span>
-                              </label>
-                              <div className="modal-plantillas-func-registro">
-                                <label>Registro:</label>
-                                <input
-                                  type="number"
-                                  value={estado.registro}
-                                  onChange={(e) =>
-                                    handleCambiarRegistro(func.id, e.target.value)
-                                  }
-                                  disabled={!estado.habilitado}
-                                  min={0}
-                                />
+                              <div className="modal-plantillas-func-header">
+                                <label className="modal-plantillas-func-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={func.habilitado}
+                                    onChange={() => handleToggleFuncionalidad(func.id)}
+                                  />
+                                  <span className="modal-plantillas-func-nombre">
+                                    {func.nombre}
+                                  </span>
+                                </label>
+                                <button
+                                  type="button"
+                                  className="modal-plantillas-func-eliminar"
+                                  onClick={() => handleEliminarFuncionalidad(func.id)}
+                                  title="Eliminar funcionalidad"
+                                >
+                                  ×
+                                </button>
+                              </div>
+
+                              {/* Registros individuales */}
+                              <div className="modal-plantillas-registros">
+                                {func.registros.map((reg, index) => (
+                                  <div
+                                    key={index}
+                                    className="modal-plantillas-registro-item"
+                                  >
+                                    <input
+                                      type="text"
+                                      className="modal-plantillas-registro-etiqueta"
+                                      value={reg.etiqueta}
+                                      onChange={(e) =>
+                                        handleCambiarEtiqueta(func.id, index, e.target.value)
+                                      }
+                                      placeholder={`Etiqueta ${index + 1}`}
+                                      disabled={!func.habilitado}
+                                    />
+                                    <span className="modal-plantillas-registro-separador">→</span>
+                                    <input
+                                      type="number"
+                                      className="modal-plantillas-registro-valor"
+                                      value={reg.valor}
+                                      onChange={(e) =>
+                                        handleCambiarValorRegistro(func.id, index, e.target.value)
+                                      }
+                                      placeholder={`${137 + index}`}
+                                      disabled={!func.habilitado}
+                                      min={0}
+                                    />
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )
-                )}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {funcionalidades.length === 0 && (
+                <div className="modal-plantillas-vacio-func">
+                  <p>No hay funcionalidades agregadas</p>
+                  <p className="modal-plantillas-hint">
+                    Usa el formulario de arriba para agregar funcionalidades
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

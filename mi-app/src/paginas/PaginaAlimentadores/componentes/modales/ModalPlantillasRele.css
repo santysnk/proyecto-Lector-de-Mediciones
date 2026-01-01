@@ -368,3 +368,233 @@
 .modal-plantillas-btn-guardar:hover {
   background: #1d4ed8;
 }
+
+/* ========================================
+   NUEVA UI: Agregar funcionalidad
+   ======================================== */
+
+.modal-plantillas-agregar-func {
+  background: #252b3b;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px dashed #3b4557;
+}
+
+.modal-plantillas-agregar-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.modal-plantillas-agregar-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.modal-plantillas-agregar-campo--pequeño {
+  flex: 0 0 70px;
+}
+
+.modal-plantillas-agregar-campo--categoria {
+  flex: 0 0 140px;
+}
+
+.modal-plantillas-agregar-campo select {
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.modal-plantillas-agregar-campo select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-agregar-campo label {
+  font-size: 0.8rem;
+  color: #a1a1aa;
+}
+
+.modal-plantillas-agregar-campo input {
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.9rem;
+}
+
+.modal-plantillas-agregar-campo input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-agregar-campo input::placeholder {
+  color: #52525b;
+}
+
+.modal-plantillas-btn-agregar {
+  padding: 10px 16px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.modal-plantillas-btn-agregar:hover {
+  background: #047857;
+}
+
+/* ========================================
+   Funcionalidad Card (nueva estructura)
+   ======================================== */
+
+.modal-plantillas-func-card {
+  background: #252b3b;
+  border-radius: 8px;
+  padding: 14px;
+  border: 1px solid #2a3447;
+  transition: all 0.2s;
+}
+
+.modal-plantillas-func-card.activo {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.modal-plantillas-func-card.inactivo {
+  opacity: 0.6;
+}
+
+.modal-plantillas-func-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.modal-plantillas-func-eliminar {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-plantillas-func-eliminar:hover {
+  color: #ef4444;
+}
+
+/* ========================================
+   Registros individuales
+   ======================================== */
+
+.modal-plantillas-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 26px; /* Alinear con el texto del checkbox */
+}
+
+.modal-plantillas-registro-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-plantillas-registro-etiqueta {
+  flex: 1;
+  max-width: 150px;
+  padding: 8px 10px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+}
+
+.modal-plantillas-registro-etiqueta:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-registro-etiqueta::placeholder {
+  color: #52525b;
+}
+
+.modal-plantillas-registro-etiqueta:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.modal-plantillas-registro-separador {
+  color: #52525b;
+  font-size: 0.9rem;
+}
+
+.modal-plantillas-registro-valor {
+  width: 80px;
+  padding: 8px 10px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.modal-plantillas-registro-valor:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-registro-valor:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   Ocultar spinners en TODOS los inputs number del modal
+   ======================================== */
+
+.modal-plantillas-contenido input[type="number"]::-webkit-outer-spin-button,
+.modal-plantillas-contenido input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.modal-plantillas-contenido input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Estado vacío para funcionalidades */
+.modal-plantillas-vacio-func {
+  text-align: center;
+  padding: 30px 20px;
+  background: #252b3b;
+  border-radius: 8px;
+  border: 1px dashed #3b4557;
+  color: #71717a;
+}
+
+.modal-plantillas-vacio-func p {
+  margin: 4px 0;
+}
+
+.modal-plantillas-vacio-func .modal-plantillas-hint {
+  font-size: 0.85rem;
+  color: #52525b;
+}

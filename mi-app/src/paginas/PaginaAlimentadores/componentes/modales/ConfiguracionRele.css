@@ -11,6 +11,160 @@
 }
 
 /* ============================================================================
+   FILA SUPERIOR: Conexión + Plantilla lado a lado
+   ============================================================================ */
+
+.config-rele-row-superior {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.config-rele-seccion--conexion {
+  /* Conexión a la izquierda - ancho basado en contenido */
+}
+
+.config-rele-seccion--plantilla {
+  /* Plantilla a la derecha */
+}
+
+/* Fila inferior: Consola (izq) + Funcionalidades (der) lado a lado */
+.config-rele-row-inferior {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.config-rele-seccion--consola {
+  /* Consola a la izquierda */
+  display: flex;
+  flex-direction: column;
+}
+
+.config-rele-seccion--funcionalidades {
+  /* Funcionalidades a la derecha */
+  overflow-y: auto;
+}
+
+/* ============================================================================
+   CONSOLA DE TEST
+   ============================================================================ */
+
+.config-rele-consola {
+  background: #0d1117;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  padding: 12px;
+  flex: 1;
+  min-height: 300px;
+  overflow-y: auto;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.config-rele-consola-vacio {
+  color: #52525b;
+  font-style: italic;
+  text-align: center;
+  padding-top: 80px;
+}
+
+.config-rele-consola-linea {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.config-rele-consola-timestamp {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.config-rele-consola-mensaje {
+  word-break: break-word;
+}
+
+/* Tipos de log */
+.config-rele-consola-linea--info .config-rele-consola-mensaje {
+  color: #93c5fd;
+}
+
+.config-rele-consola-linea--success .config-rele-consola-mensaje {
+  color: #86efac;
+}
+
+.config-rele-consola-linea--error .config-rele-consola-mensaje {
+  color: #fca5a5;
+}
+
+.config-rele-consola-linea--data .config-rele-consola-mensaje {
+  color: #fde68a;
+}
+
+/* Acciones de la consola */
+.config-rele-consola-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.config-rele-btn-test,
+.config-rele-btn-csv,
+.config-rele-btn-limpiar {
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.config-rele-btn-test {
+  background: #2563eb;
+  color: white;
+  flex: 1;
+}
+
+.config-rele-btn-test:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.config-rele-btn-test:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.config-rele-btn-csv {
+  background: #059669;
+  color: white;
+}
+
+.config-rele-btn-csv:hover:not(:disabled) {
+  background: #047857;
+}
+
+.config-rele-btn-csv:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.config-rele-btn-limpiar {
+  background: #374151;
+  color: #e4e4e7;
+}
+
+.config-rele-btn-limpiar:hover:not(:disabled) {
+  background: #4b5563;
+}
+
+.config-rele-btn-limpiar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================================
    SECCIONES
    ============================================================================ */
 
@@ -48,18 +202,23 @@
 
 .config-rele-plantilla-row {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
+}
+
+.config-rele-plantilla-row .config-rele-select {
+  flex: 1;
+  min-width: 0;
 }
 
 .config-rele-select {
   flex: 1;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #1a1f2e;
   border: 1px solid #2a3447;
   border-radius: 6px;
   color: #e4e4e7;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   cursor: pointer;
 }
 
@@ -73,12 +232,12 @@
 }
 
 .config-rele-btn-plantilla {
-  padding: 10px 16px;
+  padding: 10px 12px;
   background: #2563eb;
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s;
@@ -131,19 +290,30 @@
    SECCIÓN CONEXIÓN MODBUS
    ============================================================================ */
 
-.config-rele-conexion-grid {
-  display: grid;
-  grid-template-columns: 1fr 100px 80px;
+.config-rele-conexion-fila {
+  display: flex;
+  align-items: flex-end;
   gap: 12px;
 }
 
-.config-rele-registros-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.config-rele-conexion-grupo {
+  display: flex;
+  align-items: flex-end;
   gap: 12px;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #2a3447;
+  background: #1a1f2e;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #2a3447;
+}
+
+.config-rele-conexion-grupo .config-rele-campo-inline {
+  flex: 0 0 auto;
+  width: 60px;
+}
+
+/* Solo el primer grupo tiene IP que necesita ser más ancho */
+.config-rele-conexion-grupo:first-child .config-rele-campo-inline:first-child {
+  width: 120px;
 }
 
 /* ============================================================================
@@ -157,17 +327,26 @@
 }
 
 .config-rele-campo-inline label {
-  font-size: 0.8rem;
-  color: #a1a1aa;
+  font-size: 0.75rem;
+  color: #e4e4e7;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .config-rele-campo-inline input {
-  padding: 10px 12px;
+  padding: 8px 4px;
   background: #1a1f2e;
   border: 1px solid #2a3447;
   border-radius: 6px;
   color: #e4e4e7;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  text-align: center;
+  width: 100%;
+}
+
+.config-rele-conexion-grupo .config-rele-campo-inline:first-child input {
+  text-align: left;
+  padding: 8px 10px;
 }
 
 .config-rele-campo-inline input:focus {
@@ -209,6 +388,7 @@
   border: 1px solid #2a3447;
   border-radius: 6px;
   overflow: hidden;
+  padding-bottom: 12px;
 }
 
 .config-rele-categoria-header {
@@ -221,7 +401,9 @@
 
 .config-rele-func-lista {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 14px 0 14px;
 }
 
 .config-rele-func-item {
@@ -305,8 +487,109 @@
 }
 
 /* ============================================================================
+   NUEVA ESTRUCTURA: FUNCIONALIDADES COMO CARDS
+   ============================================================================ */
+
+.config-rele-func-card {
+  background: #1a1f2e;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #3b4557;
+  transition: all 0.2s;
+  flex: 0 0 auto;
+}
+
+.config-rele-func-card.activo {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.config-rele-func-card.inactivo {
+  opacity: 0.7;
+  border-color: #3b4557;
+}
+
+.config-rele-func-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* Registros individuales en ConfiguracionRele */
+.config-rele-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 26px;
+}
+
+.config-rele-registro-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-rele-registro-etiqueta {
+  min-width: 80px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+}
+
+.config-rele-registro-separador {
+  color: #52525b;
+  font-size: 0.85rem;
+}
+
+.config-rele-registro-valor {
+  width: 80px;
+  padding: 6px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.config-rele-registro-valor:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.config-rele-registro-valor:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ocultar spinners */
+.config-rele-registro-valor::-webkit-outer-spin-button,
+.config-rele-registro-valor::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.config-rele-registro-valor {
+  -moz-appearance: textfield;
+}
+
+/* ============================================================================
    RESPONSIVE
    ============================================================================ */
+
+@media (max-width: 900px) {
+  .config-rele-row-superior {
+    grid-template-columns: 1fr;
+  }
+
+  .config-rele-row-inferior {
+    grid-template-columns: 1fr;
+  }
+
+  .config-rele-seccion--funcionalidades {
+    max-height: none;
+  }
+}
 
 @media (max-width: 600px) {
   .config-rele-conexion-grid {
