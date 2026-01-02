@@ -65,7 +65,10 @@
 
 .config-rele-seccion--funcionalidades {
   /* Funcionalidades a la derecha */
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 652px;
 }
 
 /* ============================================================================
@@ -997,6 +1000,369 @@
 }
 
 /* ============================================================================
+   TABLA DE FUNCIONALIDADES CON FILAS EXPANDIBLES
+   ============================================================================ */
+
+/* ============================================================================
+   TABS DE FUNCIONALIDADES
+   ============================================================================ */
+
+.config-rele-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #2a3447;
+  padding-bottom: 0;
+}
+
+.config-rele-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #71717a;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.config-rele-tab:hover {
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.config-rele-tab.activo {
+  color: #e4e4e7;
+  border-bottom-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.config-rele-tab-icono {
+  font-size: 1rem;
+}
+
+.config-rele-tab-nombre {
+  font-weight: 500;
+}
+
+.config-rele-tab-contador {
+  background: #2a3447;
+  color: #71717a;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.config-rele-tab.activo .config-rele-tab-contador {
+  background: #2563eb;
+  color: white;
+}
+
+.config-rele-tab-contenido {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  background: #1a1f2e;
+  /* Scrollbar personalizado */
+  scrollbar-width: thin;
+  scrollbar-color: #4b5567 #1a1f2e;
+}
+
+.config-rele-tab-contenido::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config-rele-tab-contenido::-webkit-scrollbar-track {
+  background: #1a1f2e;
+  border-radius: 4px;
+}
+
+.config-rele-tab-contenido::-webkit-scrollbar-thumb {
+  background: #4b5567;
+  border-radius: 4px;
+}
+
+.config-rele-tab-contenido::-webkit-scrollbar-thumb:hover {
+  background: #5b6577;
+}
+
+.config-rele-tab-vacio {
+  text-align: center;
+  color: #52525b;
+  font-style: italic;
+  padding: 40px 20px;
+}
+
+.config-rele-tabla-funcionalidades {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-rele-tabla-categoria {
+  background: #1a1f2e;
+  border-radius: 8px;
+  border: 1px solid #2a3447;
+  overflow: hidden;
+}
+
+.config-rele-tabla-categoria-header {
+  padding: 10px 14px;
+  background: #252b3b;
+  border-bottom: 1px solid #2a3447;
+  font-size: 0.85rem;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.config-rele-tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.config-rele-tabla thead {
+  background: #161b26;
+}
+
+.config-rele-tabla th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a3447;
+}
+
+.config-rele-tabla-th-check {
+  width: 40px;
+  text-align: center;
+}
+
+.config-rele-tabla-th-nombre {
+  min-width: 200px;
+}
+
+.config-rele-tabla-th-registros {
+  min-width: 180px;
+}
+
+.config-rele-tabla-th-ti-tv {
+  min-width: 140px;
+}
+
+/* Filas de la tabla */
+.config-rele-tabla-fila {
+  border-bottom: 1px solid #2a3447;
+  transition: background 0.15s;
+}
+
+.config-rele-tabla-fila:last-child {
+  border-bottom: none;
+}
+
+.config-rele-tabla-fila:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.config-rele-tabla-fila.activo {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.config-rele-tabla-fila.inactivo {
+  opacity: 0.6;
+}
+
+.config-rele-tabla-fila.expandida {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+/* Celdas */
+.config-rele-tabla td {
+  padding: 10px 12px;
+  vertical-align: top;
+  font-size: 0.85rem;
+  color: #e4e4e7;
+}
+
+.config-rele-tabla-td-check {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.config-rele-tabla-td-check input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+/* Botón expandir */
+.config-rele-tabla-btn-expandir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #e4e4e7;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.config-rele-tabla-btn-expandir:hover .config-rele-tabla-nombre-texto {
+  color: #93c5fd;
+}
+
+.config-rele-tabla-chevron {
+  font-size: 0.6rem;
+  color: #71717a;
+  transition: transform 0.2s;
+}
+
+.config-rele-tabla-chevron.expandido {
+  transform: rotate(90deg);
+}
+
+.config-rele-tabla-nombre-texto {
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+/* Contenido expandido */
+.config-rele-tabla-expandido {
+  padding: 8px;
+  background: #0d1117;
+  border-radius: 6px;
+  border: 1px solid #2a3447;
+}
+
+/* Fila expandida ocupa todo el ancho */
+.config-rele-tabla-fila-expandida {
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.config-rele-tabla-fila-expandida > td {
+  padding: 10px 12px;
+}
+
+/* Subtabla de registros */
+.config-rele-subtabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.config-rele-subtabla th {
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #2a3447;
+  white-space: nowrap;
+}
+
+/* Columna Etiqueta: se estira */
+.config-rele-subtabla th:first-child,
+.config-rele-subtabla td:first-child {
+  width: 100%;
+}
+
+/* Columna Registro: ancho fijo */
+.config-rele-subtabla th:last-child,
+.config-rele-subtabla td:last-child {
+  width: 100px;
+  text-align: center;
+}
+
+.config-rele-subtabla td {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  border-bottom: 1px solid rgba(42, 52, 71, 0.5);
+  white-space: nowrap;
+}
+
+.config-rele-subtabla tr:last-child td {
+  border-bottom: none;
+}
+
+.config-rele-subtabla-input {
+  width: 80px;
+  padding: 5px 8px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.config-rele-subtabla-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.config-rele-subtabla-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ocultar spinners */
+.config-rele-subtabla-input::-webkit-outer-spin-button,
+.config-rele-subtabla-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.config-rele-subtabla-input {
+  -moz-appearance: textfield;
+}
+
+/* Resumen de registros (colapsado) */
+.config-rele-tabla-resumen {
+  color: #71717a;
+  font-size: 0.8rem;
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+/* Columna TI/TV */
+.config-rele-tabla-transformador {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-rele-tabla-ti-tv-nombre {
+  color: #93c5fd;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.config-rele-tabla-ti-tv-formula {
+  color: #71717a;
+  font-size: 0.75rem;
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+.config-rele-tabla-sin-ti-tv {
+  color: #52525b;
+}
+
+/* ============================================================================
    RESPONSIVE
    ============================================================================ */
 
@@ -1010,7 +1376,7 @@
   }
 
   .config-rele-seccion--funcionalidades {
-    max-height: none;
+    min-height: 300px;
   }
 }
 

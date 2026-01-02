@@ -7,7 +7,7 @@ import { useTransformadores } from "../../hooks/useTransformadores";
 import "./ModalPlantillasRele.css";
 
 /**
- * Dropdown personalizado para seleccionar TI/TV
+ * Dropdown personalizado para seleccionar TI/TV/Relación
  * Con líneas divisorias degradadas y fórmula en input readonly
  */
 const DropdownTransformador = ({
@@ -15,7 +15,8 @@ const DropdownTransformador = ({
   onChange,
   disabled,
   tis,
-  tvs
+  tvs,
+  relaciones = []
 }) => {
   const [abierto, setAbierto] = useState(false);
   const dropdownRef = useRef(null);
@@ -35,7 +36,7 @@ const DropdownTransformador = ({
 
   // Encontrar el transformador seleccionado
   const transformadorSeleccionado = value
-    ? [...tis, ...tvs].find(t => t.id === value)
+    ? [...tis, ...tvs, ...relaciones].find(t => t.id === value)
     : null;
 
   const handleSeleccionar = (id) => {
@@ -123,10 +124,31 @@ const DropdownTransformador = ({
             </div>
           ))}
 
+          {/* Línea divisoria entre TVs y Relaciones */}
+          {(tis.length > 0 || tvs.length > 0) && relaciones.length > 0 && <div className="dropdown-transformador-divider" />}
+
+          {/* Relaciones */}
+          {relaciones.map((t) => (
+            <div
+              key={t.id}
+              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
+              onClick={() => handleSeleccionar(t.id)}
+            >
+              <span className="dropdown-transformador-nombre">{t.nombre}</span>
+              <input
+                type="text"
+                className="dropdown-transformador-formula"
+                value={t.formula}
+                readOnly
+                tabIndex={-1}
+              />
+            </div>
+          ))}
+
           {/* Mensaje si no hay transformadores */}
-          {tis.length === 0 && tvs.length === 0 && (
+          {tis.length === 0 && tvs.length === 0 && relaciones.length === 0 && (
             <div className="dropdown-transformador-vacio">
-              No hay TI/TV configurados
+              No hay TI/TV/Relaciones configurados
             </div>
           )}
         </div>
@@ -159,7 +181,7 @@ const ModalPlantillasRele = ({
   plantillaEditando = null,
 }) => {
   // Hook de transformadores
-  const { obtenerTIs, obtenerTVs } = useTransformadores();
+  const { obtenerTIs, obtenerTVs, obtenerRelaciones } = useTransformadores();
 
   // Estado del formulario
   const [modo, setModo] = useState("lista"); // "lista" | "crear" | "editar"
@@ -851,7 +873,7 @@ const ModalPlantillasRele = ({
                                     {func.nombre}
                                   </span>
                                 </label>
-                                {/* Selector de TI/TV solo para mediciones */}
+                                {/* Selector de TI/TV/Relación solo para mediciones */}
                                 {categoria.id === "mediciones" && (
                                   <DropdownTransformador
                                     value={func.transformadorId || ""}
@@ -859,6 +881,7 @@ const ModalPlantillasRele = ({
                                     disabled={!func.habilitado}
                                     tis={obtenerTIs()}
                                     tvs={obtenerTVs()}
+                                    relaciones={obtenerRelaciones()}
                                   />
                                 )}
                                 <button

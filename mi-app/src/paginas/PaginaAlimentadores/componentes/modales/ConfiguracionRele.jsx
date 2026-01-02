@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { usePlantillasRele } from "../../hooks/usePlantillasRele";
 import { useTransformadores } from "../../hooks/useTransformadores";
 import { solicitarTestRegistrador, consultarTestRegistrador } from "../../../../servicios/apiService";
@@ -42,6 +42,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     transformadores,
     obtenerTIs,
     obtenerTVs,
+    obtenerRelaciones,
     obtenerPorId: obtenerTransformadorPorId,
     crearTransformador,
     actualizarTransformador,
@@ -64,6 +65,12 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
   // Estado del dropdown de transformadores
   const [dropdownTransformadoresAbierto, setDropdownTransformadoresAbierto] = useState(false);
   const dropdownTransformadoresRef = useRef(null);
+
+  // Estado para filas expandidas en la tabla de funcionalidades
+  const [filasExpandidas, setFilasExpandidas] = useState(new Set());
+
+  // Estado para el tab activo en funcionalidades
+  const [tabFuncionalidadesActivo, setTabFuncionalidadesActivo] = useState("mediciones");
 
   // Estado de la consola de test
   const [consolaLogs, setConsolaLogs] = useState([]);
@@ -286,6 +293,19 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     }));
   };
 
+  // Toggle expandir/colapsar fila en la tabla de funcionalidades
+  const toggleFilaExpandida = (funcId) => {
+    setFilasExpandidas((prev) => {
+      const nuevas = new Set(prev);
+      if (nuevas.has(funcId)) {
+        nuevas.delete(funcId);
+      } else {
+        nuevas.add(funcId);
+      }
+      return nuevas;
+    });
+  };
+
   // Handlers para el modal de plantillas
   const abrirModalCrear = () => {
     setPlantillaParaEditar(null);
@@ -345,6 +365,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
 
   const limpiarConsola = () => {
     setConsolaLogs([]);
+    setRegistrosCrudos(null);
   };
 
   // Manejadores del resizer
@@ -657,16 +678,16 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
 
         {/* Sección: Transformadores - Compacto */}
         <div className="config-rele-seccion config-rele-seccion--transformadores">
-          <h6>⚡ Transformadores</h6>
+          <h6>⚡ Relaciones de transformación</h6>
           <div className="config-rele-transformadores-compacto" ref={dropdownTransformadoresRef}>
             <div className="config-rele-campo-inline">
-              <label>TI / TV</label>
+              <label>TI / TV / Relación [ x : y ]</label>
               <button
                 type="button"
                 className="config-rele-btn-ver-transformadores"
                 onClick={() => setDropdownTransformadoresAbierto(!dropdownTransformadoresAbierto)}
               >
-                <span>Ver disponibles ({obtenerTIs().length + obtenerTVs().length})</span>
+                <span>Ver disponibles ({obtenerTIs().length + obtenerTVs().length + obtenerRelaciones().length})</span>
                 <span className={`config-rele-dropdown-arrow ${dropdownTransformadoresAbierto ? "abierto" : ""}`}>▼</span>
               </button>
             </div>
@@ -704,7 +725,18 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                     ))}
                   </div>
                 )}
-                {obtenerTIs().length === 0 && obtenerTVs().length === 0 && (
+                {obtenerRelaciones().length > 0 && (
+                  <div className="config-rele-dropdown-grupo">
+                    <div className="config-rele-dropdown-titulo">Relación [ x : y ]</div>
+                    {obtenerRelaciones().map((t) => (
+                      <div key={t.id} className="config-rele-dropdown-item">
+                        <span className="config-rele-dropdown-nombre">{t.nombre}</span>
+                        <span className="config-rele-dropdown-formula">{t.formula}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {obtenerTIs().length === 0 && obtenerTVs().length === 0 && obtenerRelaciones().length === 0 && (
                   <div className="config-rele-dropdown-vacio">
                     No hay transformadores configurados
                   </div>
@@ -963,14 +995,14 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
               type="button"
               className="config-rele-btn-limpiar"
               onClick={limpiarConsola}
-              disabled={consolaLogs.length === 0}
+              disabled={consolaLogs.length === 0 && !registrosCrudos}
             >
               Limpiar
             </button>
           </div>
         </div>
 
-        {/* Sección: Funcionalidades a Monitorear - Derecha */}
+        {/* Sección: Funcionalidades a Monitorear - Tabs */}
         {plantillaSeleccionada && funcionalidadesPlantilla.length > 0 && (
           <div className="config-rele-seccion config-rele-seccion--funcionalidades">
             <h6>
@@ -978,101 +1010,154 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
               <span className="config-rele-contador">{cantidadActivas} activas</span>
             </h6>
 
-            <div className="config-rele-funcionalidades">
+            {/* Tabs de categorías */}
+            <div className="config-rele-tabs">
               {Object.values(CATEGORIAS).map((categoria) => {
                 const funcsDeCategoria = funcionalidadesPlantilla.filter(
                   ([, func]) => (func.categoria || "mediciones") === categoria.id
                 );
+                const cantidadEnCategoria = funcsDeCategoria.length;
 
-                if (funcsDeCategoria.length === 0) return null;
+                if (cantidadEnCategoria === 0) return null;
 
                 return (
-                  <div key={categoria.id} className="config-rele-categoria">
-                    <div className="config-rele-categoria-header">
-                      <span>
-                        {categoria.icono} {categoria.nombre}
-                      </span>
-                    </div>
+                  <button
+                    key={categoria.id}
+                    type="button"
+                    className={`config-rele-tab ${tabFuncionalidadesActivo === categoria.id ? "activo" : ""}`}
+                    onClick={() => setTabFuncionalidadesActivo(categoria.id)}
+                  >
+                    <span className="config-rele-tab-icono">{categoria.icono}</span>
+                    <span className="config-rele-tab-nombre">{categoria.nombre}</span>
+                    <span className="config-rele-tab-contador">{cantidadEnCategoria}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-                    <div className="config-rele-func-lista">
+            {/* Contenido del tab activo */}
+            <div className="config-rele-tab-contenido">
+              {(() => {
+                const categoriaActiva = CATEGORIAS[tabFuncionalidadesActivo];
+                const funcsDeCategoria = funcionalidadesPlantilla.filter(
+                  ([, func]) => (func.categoria || "mediciones") === tabFuncionalidadesActivo
+                );
+
+                if (funcsDeCategoria.length === 0) {
+                  return (
+                    <div className="config-rele-tab-vacio">
+                      No hay funcionalidades en esta categoría
+                    </div>
+                  );
+                }
+
+                return (
+                  <table className="config-rele-tabla">
+                    <thead>
+                      <tr>
+                        <th className="config-rele-tabla-th-check"></th>
+                        <th className="config-rele-tabla-th-nombre">Funcionalidad</th>
+                        <th className="config-rele-tabla-th-registros">Registros</th>
+                        <th className="config-rele-tabla-th-ti-tv">TI / TV</th>
+                      </tr>
+                    </thead>
+                    <tbody>
                       {funcsDeCategoria.map(([funcId, plantillaFunc]) => {
                         const estadoActivo = config.funcionalidadesActivas[funcId];
                         const estaHabilitado = estadoActivo?.habilitado || false;
                         const registros = estadoActivo?.registros || plantillaFunc.registros || [];
+                        const estaExpandida = filasExpandidas.has(funcId);
 
                         // Obtener el transformador asociado a esta funcionalidad
                         const transformadorFunc = plantillaFunc.transformadorId
                           ? obtenerTransformadorPorId(plantillaFunc.transformadorId)
                           : null;
 
+                        // Resumen de registros para mostrar en la fila colapsada
+                        const resumenRegistros = registros
+                          .map((r) => `${r.etiqueta || "Reg"}: ${r.valor}`)
+                          .join(" | ");
+
                         return (
-                          <div
-                            key={funcId}
-                            className={`config-rele-func-card ${estaHabilitado ? "activo" : "inactivo"}`}
-                          >
-                            <div className="config-rele-func-header">
-                              <label className="config-rele-func-check">
+                          <React.Fragment key={funcId}>
+                            <tr
+                              className={`config-rele-tabla-fila ${estaHabilitado ? "activo" : "inactivo"} ${estaExpandida ? "expandida" : ""}`}
+                            >
+                              <td className="config-rele-tabla-td-check">
                                 <input
                                   type="checkbox"
                                   checked={estaHabilitado}
                                   onChange={() => handleToggleFuncionalidad(funcId)}
                                 />
-                                <span className="config-rele-func-nombre">
-                                  {plantillaFunc.nombre}
-                                </span>
-                              </label>
-                            </div>
-
-                            {/* Contenido: Registros + Separador + Transformador */}
-                            <div className="config-rele-func-contenido">
-                              {/* Registros individuales */}
-                              <div className="config-rele-registros">
-                                {registros.map((reg, index) => (
-                                  <div key={index} className="config-rele-registro-item">
-                                    <span className="config-rele-registro-etiqueta">
-                                      {reg.etiqueta || `Reg ${index + 1}`}
+                              </td>
+                              <td className="config-rele-tabla-td-nombre">
+                                <button
+                                  type="button"
+                                  className="config-rele-tabla-btn-expandir"
+                                  onClick={() => toggleFilaExpandida(funcId)}
+                                >
+                                  <span className={`config-rele-tabla-chevron ${estaExpandida ? "expandido" : ""}`}>
+                                    ▶
+                                  </span>
+                                  <span className="config-rele-tabla-nombre-texto">
+                                    {plantillaFunc.nombre}
+                                  </span>
+                                </button>
+                              </td>
+                              <td className="config-rele-tabla-td-registros">
+                                {!estaExpandida && (
+                                  <span className="config-rele-tabla-resumen">
+                                    {resumenRegistros}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="config-rele-tabla-td-ti-tv">
+                                {transformadorFunc ? (
+                                  <div className="config-rele-tabla-transformador">
+                                    <span className="config-rele-tabla-ti-tv-nombre">
+                                      {transformadorFunc.nombre}
                                     </span>
-                                    <div className="config-rele-registro-input-grupo">
-                                      <span className="config-rele-registro-separador">→</span>
-                                      <input
-                                        type="number"
-                                        className="config-rele-registro-valor"
-                                        value={reg.valor}
-                                        onChange={(e) =>
-                                          handleCambiarRegistro(funcId, index, e.target.value)
-                                        }
-                                        disabled={!estaHabilitado}
-                                        min={0}
-                                      />
-                                    </div>
+                                    <span className="config-rele-tabla-ti-tv-formula">
+                                      {transformadorFunc.formula}
+                                    </span>
                                   </div>
-                                ))}
-                              </div>
-
-                              {/* Separador vertical + Transformador */}
-                              {transformadorFunc && (
-                                <>
-                                  <div className="config-rele-func-separador-vertical" />
-                                  <div className="config-rele-func-transformador">
-                                  <span className="config-rele-func-transformador-nombre">{transformadorFunc.nombre}</span>
-                                  <input
-                                    type="text"
-                                    className="config-rele-func-transformador-formula"
-                                    value={transformadorFunc.formula}
-                                    readOnly
-                                    tabIndex={-1}
-                                  />
-                                </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                                ) : (
+                                  <span className="config-rele-tabla-sin-ti-tv">—</span>
+                                )}
+                              </td>
+                            </tr>
+                            {/* Fila expandida con subtabla - ocupa todo el ancho */}
+                            {estaExpandida && (
+                              <tr className="config-rele-tabla-fila-expandida">
+                                <td colSpan={4}>
+                                  <div className="config-rele-tabla-expandido">
+                                    <table className="config-rele-subtabla">
+                                      <thead>
+                                        <tr>
+                                          <th>Etiqueta</th>
+                                          <th>Registro</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {registros.map((reg, index) => (
+                                          <tr key={index}>
+                                            <td>{reg.etiqueta || `Reg ${index + 1}`}</td>
+                                            <td>{reg.valor}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         );
                       })}
-                    </div>
-                  </div>
+                    </tbody>
+                  </table>
                 );
-              })}
+              })()}
             </div>
           </div>
         )}

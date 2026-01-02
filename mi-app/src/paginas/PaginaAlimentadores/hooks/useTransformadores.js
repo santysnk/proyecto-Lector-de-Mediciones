@@ -73,6 +73,9 @@ export const useTransformadores = () => {
   // Obtener TVs
   const obtenerTVs = useCallback(() => obtenerPorTipo("TV"), [obtenerPorTipo]);
 
+  // Obtener Relaciones
+  const obtenerRelaciones = useCallback(() => obtenerPorTipo("REL"), [obtenerPorTipo]);
+
   // Obtener transformador por ID
   const obtenerPorId = useCallback(
     (id) => {
@@ -131,6 +134,7 @@ export const useTransformadores = () => {
     cargando,
     obtenerTIs,
     obtenerTVs,
+    obtenerRelaciones,
     obtenerPorId,
     crearTransformador,
     actualizarTransformador,

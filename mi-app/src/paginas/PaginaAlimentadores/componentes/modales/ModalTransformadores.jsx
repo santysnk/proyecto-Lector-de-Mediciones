@@ -4,6 +4,31 @@ import "./ModalTransformadores.css";
 /**
  * Modal para gestionar transformadores de intensidad (TI) y voltaje (TV)
  */
+// Configuración de los tipos de transformadores
+const TIPOS_CONFIG = {
+  TI: {
+    nombre: "T.I. (Intensidad)",
+    nombreCorto: "T.I.",
+    placeholder: "TI 200/1",
+    ayudaFormula: "x * 200 / 1000",
+    descripcionVacio: "intensidad",
+  },
+  TV: {
+    nombre: "T.V. (Voltaje)",
+    nombreCorto: "T.V.",
+    placeholder: "TV 33kV",
+    ayudaFormula: "x * 33000 / 10000",
+    descripcionVacio: "voltaje",
+  },
+  REL: {
+    nombre: "Relación [ x : y ]",
+    nombreCorto: "Relación",
+    placeholder: "Rel 1:100",
+    ayudaFormula: "x * 100",
+    descripcionVacio: "relación",
+  },
+};
+
 const ModalTransformadores = ({
   abierto,
   onCerrar,
@@ -11,7 +36,7 @@ const ModalTransformadores = ({
   onCrear,
   onActualizar,
   onEliminar,
-  tipoInicial = "TI", // "TI" o "TV"
+  tipoInicial = "TI", // "TI", "TV" o "REL"
 }) => {
   const [tipoActivo, setTipoActivo] = useState(tipoInicial);
   const [modoEdicion, setModoEdicion] = useState(null); // null | "crear" | id del transformador
@@ -100,20 +125,17 @@ const ModalTransformadores = ({
           </button>
         </div>
 
-        {/* Tabs TI / TV */}
+        {/* Tabs TI / TV / REL */}
         <div className="modal-transformadores-tabs">
-          <button
-            className={`modal-transformadores-tab ${tipoActivo === "TI" ? "activo" : ""}`}
-            onClick={() => setTipoActivo("TI")}
-          >
-            T.I. (Intensidad)
-          </button>
-          <button
-            className={`modal-transformadores-tab ${tipoActivo === "TV" ? "activo" : ""}`}
-            onClick={() => setTipoActivo("TV")}
-          >
-            T.V. (Voltaje)
-          </button>
+          {Object.entries(TIPOS_CONFIG).map(([tipo, config]) => (
+            <button
+              key={tipo}
+              className={`modal-transformadores-tab ${tipoActivo === tipo ? "activo" : ""}`}
+              onClick={() => setTipoActivo(tipo)}
+            >
+              {config.nombre}
+            </button>
+          ))}
         </div>
 
         <div className="modal-transformadores-contenido">
@@ -121,7 +143,7 @@ const ModalTransformadores = ({
           <div className="modal-transformadores-lista">
             {transformadoresFiltrados.length === 0 ? (
               <div className="modal-transformadores-vacio">
-                No hay transformadores de {tipoActivo === "TI" ? "intensidad" : "voltaje"} configurados
+                No hay transformadores de {TIPOS_CONFIG[tipoActivo].descripcionVacio} configurados
               </div>
             ) : (
               transformadoresFiltrados.map((t) => (
@@ -210,7 +232,7 @@ const ModalTransformadores = ({
                     onChange={(e) =>
                       setFormData({ ...formData, nombre: e.target.value })
                     }
-                    placeholder={`Nombre (ej: ${tipoActivo} 200/1)`}
+                    placeholder={`Nombre (ej: ${TIPOS_CONFIG[tipoActivo].placeholder})`}
                     className="modal-transformadores-input"
                     autoFocus
                   />
@@ -249,7 +271,7 @@ const ModalTransformadores = ({
               className="modal-transformadores-btn-nuevo"
               onClick={handleNuevo}
             >
-              + Nuevo {tipoActivo === "TI" ? "T.I." : "T.V."}
+              + Nuevo {TIPOS_CONFIG[tipoActivo].nombreCorto}
             </button>
           )}
 
@@ -257,7 +279,7 @@ const ModalTransformadores = ({
           <div className="modal-transformadores-ayuda">
             <strong>Fórmula:</strong> Use <code>x</code> para representar el valor leído del registro.
             <br />
-            Ejemplo: <code>x * 200 / 1000</code> multiplica el valor por 200 y divide entre 1000.
+            Ejemplo: <code>{TIPOS_CONFIG[tipoActivo].ayudaFormula}</code> multiplica el valor por {tipoActivo === "REL" ? "100" : "200"} {tipoActivo !== "REL" && "y divide entre 1000"}.
           </div>
         </div>
       </div>
