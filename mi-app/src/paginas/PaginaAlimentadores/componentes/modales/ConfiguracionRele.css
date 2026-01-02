@@ -17,11 +17,32 @@
 .config-rele-row-superior {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
+}
+
+/* Wrapper izquierdo contiene Conexión y Transformadores lado a lado */
+.config-rele-col-izquierda {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+}
+
+/* Conexión ocupa el espacio que necesita */
+.config-rele-col-izquierda .config-rele-seccion--conexion {
+  flex: 0 0 auto;
+}
+
+/* Transformadores ocupa el resto */
+.config-rele-col-izquierda .config-rele-seccion--transformadores {
+  flex: 1;
 }
 
 .config-rele-seccion--conexion {
   /* Conexión a la izquierda - ancho basado en contenido */
+}
+
+.config-rele-seccion--transformadores {
+  /* Transformadores en el centro */
 }
 
 .config-rele-seccion--plantilla {
@@ -51,17 +72,226 @@
    CONSOLA DE TEST
    ============================================================================ */
 
+.config-rele-consola-container {
+  display: flex;
+  gap: 0;
+  position: relative;
+}
+
+/* Resizer (splitter) entre los paneles */
+.config-rele-resizer {
+  width: 8px;
+  background: #2a3447;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.config-rele-resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 40px;
+  background: #4b5567;
+  border-radius: 2px;
+}
+
+.config-rele-resizer:hover {
+  background: #3b4557;
+}
+
+.config-rele-resizer:hover::after {
+  background: #6b7587;
+}
+
+.config-rele-resizer:active {
+  background: #2563eb;
+}
+
+.config-rele-resizer:active::after {
+  background: #93c5fd;
+}
+
 .config-rele-consola {
+  flex: none;
   background: #0d1117;
   border: 1px solid #2a3447;
   border-radius: 6px;
   padding: 12px;
-  flex: 1;
-  min-height: 300px;
-  overflow-y: auto;
+  height: 530px;
+  max-height: 530px;
+  overflow-y: scroll;
   font-family: "Consolas", "Monaco", "Courier New", monospace;
   font-size: 0.85rem;
   line-height: 1.5;
+  /* Firefox scrollbar */
+  scrollbar-width: auto;
+  scrollbar-color: #4b5567 #1a1f2e;
+}
+
+/* Scrollbar personalizado para la consola - siempre visible */
+.config-rele-consola::-webkit-scrollbar {
+  width: 36px;
+  background: #1a1f2e;
+}
+
+.config-rele-consola::-webkit-scrollbar-track {
+  background: #1a1f2e;
+  border-radius: 4px;
+}
+
+.config-rele-consola::-webkit-scrollbar-thumb {
+  background: #5b6577;
+  border-radius: 8px;
+  border: 4px solid #1a1f2e;
+}
+
+.config-rele-consola::-webkit-scrollbar-thumb:hover {
+  background: #4b5567;
+}
+
+/* Panel de registros (derecha de la consola) */
+.config-rele-registros-panel {
+  flex: none;
+  background: #0d1117;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  padding: 12px;
+  height: 530px;
+  max-height: 530px;
+  overflow-y: scroll;
+  overflow-x: auto;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  scrollbar-width: auto;
+  scrollbar-color: #4b5567 #1a1f2e;
+}
+
+.config-rele-registros-panel::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: #1a1f2e;
+}
+
+.config-rele-registros-panel::-webkit-scrollbar-track {
+  background: #1a1f2e;
+  border-radius: 4px;
+}
+
+.config-rele-registros-panel::-webkit-scrollbar-thumb {
+  background: #5b6577;
+  border-radius: 6px;
+  border: 2px solid #1a1f2e;
+}
+
+.config-rele-registros-panel::-webkit-scrollbar-thumb:hover {
+  background: #6b7587;
+}
+
+.config-rele-registros-panel::-webkit-scrollbar-corner {
+  background: #1a1f2e;
+}
+
+.config-rele-registros-vacio {
+  color: #52525b;
+  font-style: italic;
+  text-align: center;
+  padding-top: 80px;
+}
+
+/* Panel de funcionalidades con valores */
+.config-rele-funcionalidades-valores {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.config-rele-valores-categoria {
+  margin-bottom: 8px;
+}
+
+.config-rele-valores-categoria-titulo {
+  color: #a1a1aa;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #2a3447;
+}
+
+.config-rele-valores-func {
+  margin-bottom: 12px;
+}
+
+.config-rele-valores-func-nombre {
+  color: #93c5fd;
+  font-weight: 500;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+
+.config-rele-valores-registros {
+  padding-left: 16px;
+}
+
+.config-rele-valores-registro {
+  color: #fde68a;
+  font-size: 0.85rem;
+  padding: 2px 0;
+}
+
+/* Valor transformado con fórmula TI/TV */
+.config-rele-valor-transformado {
+  color: #86efac;
+  font-weight: 500;
+  cursor: help;
+}
+
+.config-rele-registros-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.config-rele-registros-tabla th {
+  position: sticky;
+  top: 0;
+  background: #1a1f2e;
+  color: #a1a1aa;
+  font-weight: 500;
+  font-size: 0.8rem;
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid #2a3447;
+}
+
+.config-rele-registros-tabla td {
+  padding: 4px 10px;
+  color: #e4e4e7;
+  border-bottom: 1px solid #1a1f2e;
+}
+
+.config-rele-registros-tabla tr:hover td {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.config-rele-registros-tabla .col-registro {
+  color: #71717a;
+  font-size: 0.8rem;
+}
+
+.config-rele-registros-tabla .col-decimal {
+  color: #fde68a;
+}
+
+.config-rele-registros-tabla .col-hex {
+  color: #93c5fd;
+  font-size: 0.8rem;
 }
 
 .config-rele-consola-vacio {
@@ -317,6 +547,134 @@
 }
 
 /* ============================================================================
+   SECCIÓN TRANSFORMADORES - COMPACTO
+   ============================================================================ */
+
+.config-rele-transformadores-compacto {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  position: relative;
+  background: #1a1f2e;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #2a3447;
+}
+
+.config-rele-transformadores-compacto .config-rele-campo-inline {
+  flex: 1;
+}
+
+.config-rele-btn-ver-transformadores {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.config-rele-btn-ver-transformadores:hover {
+  border-color: #2563eb;
+  color: #93c5fd;
+}
+
+.config-rele-dropdown-arrow {
+  font-size: 0.7rem;
+  color: #71717a;
+  transition: transform 0.2s;
+}
+
+.config-rele-dropdown-arrow.abierto {
+  transform: rotate(180deg);
+}
+
+.config-rele-btn-editar-transformador {
+  padding: 8px 10px;
+  background: #374151;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.85rem;
+}
+
+.config-rele-btn-editar-transformador:hover {
+  background: #4b5563;
+}
+
+/* Dropdown de transformadores */
+.config-rele-transformadores-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: #1e2433;
+  border: 1px solid #2a3447;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: 250px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.config-rele-dropdown-grupo {
+  padding: 8px 0;
+}
+
+.config-rele-dropdown-grupo:not(:last-child) {
+  border-bottom: 1px solid #2a3447;
+}
+
+.config-rele-dropdown-titulo {
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #71717a;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.config-rele-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 12px;
+}
+
+.config-rele-dropdown-item:hover {
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.config-rele-dropdown-nombre {
+  color: #e4e4e7;
+  font-size: 0.85rem;
+}
+
+.config-rele-dropdown-formula {
+  color: #71717a;
+  font-size: 0.75rem;
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+.config-rele-dropdown-vacio {
+  padding: 16px 12px;
+  color: #52525b;
+  font-size: 0.85rem;
+  text-align: center;
+  font-style: italic;
+}
+
+/* ============================================================================
    CAMPOS INLINE
    ============================================================================ */
 
@@ -428,7 +786,6 @@
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  flex: 1;
 }
 
 .config-rele-func-check input[type="checkbox"] {
@@ -439,8 +796,9 @@
 }
 
 .config-rele-func-nombre {
-  color: #e4e4e7;
+  color: #ffffff;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .config-rele-func-registro {
@@ -511,34 +869,99 @@
 
 .config-rele-func-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  gap: 12px;
 }
 
-/* Registros individuales en ConfiguracionRele */
+/* Contenido de la card: registros + transformador */
+.config-rele-func-contenido {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+/* Contenedor de registros */
 .config-rele-registros {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 6px;
-  padding-left: 26px;
+  padding: 10px 14px;
+  background: #0d1117;
+  border-radius: 6px;
+  border: 1px solid #2a3447;
+}
+
+/* Separador vertical con degradado */
+.config-rele-func-separador-vertical {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    #3b4557 20%,
+    #4b5567 50%,
+    #3b4557 80%,
+    transparent 100%
+  );
+}
+
+/* Contenedor del transformador */
+.config-rele-func-transformador {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #0d1117;
+  border-radius: 6px;
+  border: 1px solid #2a3447;
+}
+
+.config-rele-func-transformador-nombre {
+  color: #93c5fd;
+  font-weight: 500;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.config-rele-func-transformador-formula {
+  padding: 5px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  font-family: "Consolas", "Monaco", monospace;
+  pointer-events: none;
+  width: auto;
+  field-sizing: content;
+  text-align: center;
 }
 
 .config-rele-registro-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .config-rele-registro-etiqueta {
-  min-width: 80px;
   font-size: 0.85rem;
-  color: #a1a1aa;
+  color: #ffffff;
+}
+
+.config-rele-registro-input-grupo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .config-rele-registro-separador {
   color: #52525b;
-  font-size: 0.85rem;
+  font-size: 1.2rem;
 }
 
 .config-rele-registro-valor {
@@ -626,4 +1049,159 @@
     width: 100%;
     justify-content: flex-end;
   }
+}
+
+/* ============================================================================
+   INTERPRETACIÓN DE REGISTROS REF615
+   Estilos para mostrar la decodificación binaria de registros de estado
+   ============================================================================ */
+
+/* Contenedor del registro con interpretación */
+.config-rele-valores-registro-container {
+  margin-bottom: 8px;
+}
+
+/* Sección de interpretación debajo del valor */
+.config-rele-interpretacion {
+  margin-top: 4px;
+  margin-left: 8px;
+  padding: 6px 10px;
+  background: rgba(26, 31, 46, 0.8);
+  border-left: 3px solid #4b5567;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Interpretación especial (estado de interruptor, etc.) */
+.config-rele-interpretacion-especial {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.config-rele-interpretacion-especial .interpretacion-estado {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Contenedor de bits activos */
+.config-rele-interpretacion-bits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Badge/chip para cada bit activo */
+.config-rele-bit {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: help;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.config-rele-bit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Sin señales activas */
+.config-rele-interpretacion-vacio {
+  color: #52525b;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* ============================================================================
+   CLASES DE TIPO PARA BITS E INTERPRETACIONES
+   ============================================================================ */
+
+/* Estado OK / Normal */
+.interpretacion-ok {
+  background: rgba(34, 197, 94, 0.2);
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+.interpretacion-ok .interpretacion-estado {
+  color: #22c55e;
+}
+
+/* Estado normal (indicador de estado) */
+.interpretacion-estado {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+/* Información */
+.interpretacion-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+/* Advertencia / Warning */
+.interpretacion-warning {
+  background: rgba(234, 179, 8, 0.2);
+  color: #fde68a;
+}
+
+.config-rele-interpretacion-especial.interpretacion-warning {
+  border: 1px solid #ca8a04;
+}
+
+/* Alarma */
+.interpretacion-alarma {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.config-rele-interpretacion-especial.interpretacion-alarma {
+  border: 1px solid #dc2626;
+}
+
+/* Error */
+.interpretacion-error {
+  background: rgba(220, 38, 38, 0.25);
+  color: #fca5a5;
+  border: 1px solid rgba(220, 38, 38, 0.5);
+}
+
+.config-rele-interpretacion-especial.interpretacion-error {
+  background: rgba(220, 38, 38, 0.3);
+  border: 1px solid #dc2626;
+  animation: pulse-error 2s infinite;
+}
+
+/* Desconocido */
+.interpretacion-unknown {
+  background: rgba(113, 113, 122, 0.2);
+  color: #a1a1aa;
+}
+
+/* Animación de pulso para errores */
+@keyframes pulse-error {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
+  }
+}
+
+/* Ajustar borde izquierdo de interpretación según tipo más grave */
+.config-rele-interpretacion:has(.interpretacion-error) {
+  border-left-color: #dc2626;
+}
+
+.config-rele-interpretacion:has(.interpretacion-alarma):not(:has(.interpretacion-error)) {
+  border-left-color: #ef4444;
+}
+
+.config-rele-interpretacion:has(.interpretacion-warning):not(:has(.interpretacion-error)):not(:has(.interpretacion-alarma)) {
+  border-left-color: #eab308;
+}
+
+.config-rele-interpretacion:has(.interpretacion-ok) {
+  border-left-color: #22c55e;
 }

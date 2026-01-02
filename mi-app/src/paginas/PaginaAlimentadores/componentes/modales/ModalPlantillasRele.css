@@ -133,12 +133,12 @@
 
 .modal-plantillas-item-desc {
   font-size: 0.85rem;
-  color: #71717a;
+  color: #a1a1aa;
 }
 
 .modal-plantillas-item-func {
   font-size: 0.8rem;
-  color: #52525b;
+  color: #9ca3af;
 }
 
 .modal-plantillas-item-acciones {
@@ -480,7 +480,146 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   margin-bottom: 12px;
+}
+
+/* ========================================
+   DROPDOWN PERSONALIZADO TI/TV
+   ======================================== */
+
+.dropdown-transformador {
+  position: relative;
+}
+
+.dropdown-transformador.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.dropdown-transformador-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: max-content;
+}
+
+.dropdown-transformador-trigger:hover:not(:disabled) {
+  border-color: #3b4557;
+  background: #252b3b;
+}
+
+.dropdown-transformador-trigger:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.dropdown-transformador-texto {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-transformador-chevron {
+  font-size: 0.6rem;
+  color: #71717a;
+  transition: transform 0.2s;
+}
+
+/* Menu desplegable - ancho dinámico, crece hacia la izquierda */
+.dropdown-transformador-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 100%;
+  width: max-content;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+/* Línea divisoria con degradado */
+.dropdown-transformador-divider {
+  height: 1px;
+  margin: 8px 16px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    #3b4557 20%,
+    #4b5567 50%,
+    #3b4557 80%,
+    transparent 100%
+  );
+}
+
+/* Opción individual */
+.dropdown-transformador-opcion {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.dropdown-transformador-opcion:hover {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+.dropdown-transformador-opcion.seleccionado {
+  background: rgba(37, 99, 235, 0.25);
+}
+
+.dropdown-transformador-opcion.seleccionado .dropdown-transformador-nombre {
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.dropdown-transformador-nombre {
+  color: #e4e4e7;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Input readonly para la fórmula */
+.dropdown-transformador-formula {
+  padding: 5px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  font-family: "Consolas", "Monaco", monospace;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  width: auto;
+  field-sizing: content;
+}
+
+/* Estado vacío */
+.dropdown-transformador-vacio {
+  padding: 16px;
+  text-align: center;
+  color: #71717a;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .modal-plantillas-func-eliminar {
@@ -597,4 +736,355 @@
 .modal-plantillas-vacio-func .modal-plantillas-hint {
   font-size: 0.85rem;
   color: #52525b;
+}
+
+/* ========================================
+   SECCIÓN DE ETIQUETAS DE BITS (LEDs)
+   ======================================== */
+
+.modal-plantillas-seccion-etiquetas {
+  margin-top: 16px;
+  border: 1px solid #2a3447;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-plantillas-seccion-header-colapsable {
+  background: #1a1f2e;
+  padding: 12px 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: background 0.2s;
+}
+
+.modal-plantillas-seccion-header-colapsable:hover {
+  background: #252b3b;
+}
+
+.modal-plantillas-seccion-header-colapsable h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-plantillas-chevron {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+  color: #71717a;
+}
+
+.modal-plantillas-chevron.abierto {
+  transform: rotate(90deg);
+}
+
+.modal-plantillas-badge {
+  background: #2563eb;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.modal-plantillas-hint-inline {
+  font-size: 0.8rem;
+  color: #71717a;
+  margin-left: 20px;
+}
+
+.modal-plantillas-etiquetas-contenido {
+  padding: 16px;
+  background: #1a1f2e;
+  border-top: 1px solid #2a3447;
+}
+
+/* Acciones: selector de plantilla + limpiar */
+.modal-plantillas-etiquetas-acciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a3447;
+}
+
+.modal-plantillas-etiquetas-acciones label {
+  font-size: 0.85rem;
+  color: #a1a1aa;
+}
+
+.modal-plantillas-etiquetas-acciones select {
+  flex: 1;
+  max-width: 200px;
+  padding: 8px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.modal-plantillas-etiquetas-acciones select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-btn-limpiar {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  color: #a1a1aa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-plantillas-btn-limpiar:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* Lista de bits */
+.modal-plantillas-bits-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-plantillas-bit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-plantillas-bit-numero {
+  width: 50px;
+  font-size: 0.8rem;
+  color: #71717a;
+  font-family: monospace;
+}
+
+.modal-plantillas-bit-etiqueta {
+  flex: 1;
+  padding: 8px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+}
+
+.modal-plantillas-bit-etiqueta:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-bit-etiqueta::placeholder {
+  color: #52525b;
+}
+
+.modal-plantillas-bit-severidad {
+  width: 110px;
+  padding: 8px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.modal-plantillas-bit-severidad:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+/* Colores de severidad para el select */
+.modal-plantillas-bit-severidad.severidad-info {
+  border-left: 3px solid #93c5fd;
+}
+
+.modal-plantillas-bit-severidad.severidad-estado {
+  border-left: 3px solid #93c5fd;
+}
+
+.modal-plantillas-bit-severidad.severidad-warning {
+  border-left: 3px solid #fde68a;
+}
+
+.modal-plantillas-bit-severidad.severidad-alarma {
+  border-left: 3px solid #fca5a5;
+}
+
+.modal-plantillas-bit-severidad.severidad-error {
+  border-left: 3px solid #ef4444;
+}
+
+/* ========================================
+   NUEVA PLANTILLA DE ETIQUETAS
+   ======================================== */
+
+.modal-plantillas-nueva-plantilla-etiquetas {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(37, 99, 235, 0.1);
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+}
+
+.modal-plantillas-nueva-plantilla-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.modal-plantillas-nueva-plantilla-nombre {
+  flex: 1;
+  padding: 10px 12px;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-size: 0.9rem;
+}
+
+.modal-plantillas-nueva-plantilla-nombre:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.modal-plantillas-nueva-plantilla-nombre::placeholder {
+  color: #71717a;
+}
+
+.modal-plantillas-nueva-plantilla-botones {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-plantillas-btn-guardar-etiquetas {
+  padding: 8px 16px;
+  background: #059669;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.modal-plantillas-btn-guardar-etiquetas:hover {
+  background: #047857;
+}
+
+.modal-plantillas-btn-cancelar-etiquetas {
+  padding: 8px 16px;
+  background: transparent;
+  color: #a1a1aa;
+  border: 1px solid #52525b;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-plantillas-btn-cancelar-etiquetas:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ========================================
+   BOTONES AGREGAR/QUITAR BITS
+   ======================================== */
+
+.modal-plantillas-bits-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #2a3447;
+}
+
+.modal-plantillas-btn-agregar-bit,
+.modal-plantillas-btn-quitar-bit {
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid #3b4557;
+  border-radius: 4px;
+  color: #a1a1aa;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modal-plantillas-btn-agregar-bit:hover {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.modal-plantillas-btn-quitar-bit:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* ========================================
+   PLANTILLAS GUARDADAS
+   ======================================== */
+
+.modal-plantillas-etiquetas-guardadas {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #2a3447;
+}
+
+.modal-plantillas-etiquetas-guardadas-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #71717a;
+  margin-bottom: 8px;
+}
+
+.modal-plantillas-etiquetas-guardadas-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modal-plantillas-etiqueta-guardada {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 12px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  color: #a1a1aa;
+}
+
+.modal-plantillas-btn-eliminar-etiqueta {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-plantillas-btn-eliminar-etiqueta:hover {
+  color: #ef4444;
 }

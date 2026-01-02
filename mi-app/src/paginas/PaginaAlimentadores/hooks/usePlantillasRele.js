@@ -60,8 +60,10 @@ export const usePlantillasRele = () => {
 
   /**
    * Crea una nueva plantilla
-   * @param {Object} datos - { nombre, descripcion, funcionalidades }
+   * @param {Object} datos - { nombre, descripcion, funcionalidades, etiquetasBits, plantillaEtiquetasId }
    * funcionalidades es un objeto con { [idFuncionalidad]: { habilitado, registro } }
+   * etiquetasBits es un objeto con { [bit]: { texto, severidad } }
+   * plantillaEtiquetasId es el ID de la plantilla de etiquetas seleccionada (para restaurar al editar)
    */
   const crearPlantilla = useCallback(
     (datos) => {
@@ -71,6 +73,8 @@ export const usePlantillasRele = () => {
         descripcion: datos.descripcion?.trim() || "",
         fechaCreacion: new Date().toISOString(),
         funcionalidades: datos.funcionalidades || {},
+        etiquetasBits: datos.etiquetasBits || {},
+        plantillaEtiquetasId: datos.plantillaEtiquetasId || null,
       };
 
       const nuevasPlantillas = [...plantillas, nuevaPlantilla];
@@ -96,6 +100,10 @@ export const usePlantillasRele = () => {
         nombre: datos.nombre?.trim() || plantillas[indice].nombre,
         descripcion: datos.descripcion?.trim() ?? plantillas[indice].descripcion,
         funcionalidades: datos.funcionalidades || plantillas[indice].funcionalidades,
+        etiquetasBits: datos.etiquetasBits ?? plantillas[indice].etiquetasBits ?? {},
+        plantillaEtiquetasId: datos.plantillaEtiquetasId !== undefined
+          ? datos.plantillaEtiquetasId
+          : plantillas[indice].plantillaEtiquetasId ?? null,
         fechaModificacion: new Date().toISOString(),
       };
 

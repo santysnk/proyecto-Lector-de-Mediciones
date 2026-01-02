@@ -1,5 +1,139 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import {
+  SEVERIDADES_DISPONIBLES,
+  PLANTILLAS_ETIQUETAS_LEDS
+} from "../../utilidades/interpreteRegistrosREF615";
+import { useTransformadores } from "../../hooks/useTransformadores";
 import "./ModalPlantillasRele.css";
+
+/**
+ * Dropdown personalizado para seleccionar TI/TV
+ * Con líneas divisorias degradadas y fórmula en input readonly
+ */
+const DropdownTransformador = ({
+  value,
+  onChange,
+  disabled,
+  tis,
+  tvs
+}) => {
+  const [abierto, setAbierto] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Cerrar al hacer click fuera
+  useEffect(() => {
+    const handleClickFuera = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setAbierto(false);
+      }
+    };
+    if (abierto) {
+      document.addEventListener("mousedown", handleClickFuera);
+    }
+    return () => document.removeEventListener("mousedown", handleClickFuera);
+  }, [abierto]);
+
+  // Encontrar el transformador seleccionado
+  const transformadorSeleccionado = value
+    ? [...tis, ...tvs].find(t => t.id === value)
+    : null;
+
+  const handleSeleccionar = (id) => {
+    onChange(id);
+    setAbierto(false);
+  };
+
+  return (
+    <div
+      className={`dropdown-transformador ${disabled ? "disabled" : ""}`}
+      ref={dropdownRef}
+    >
+      <button
+        type="button"
+        className="dropdown-transformador-trigger"
+        onClick={() => !disabled && setAbierto(!abierto)}
+        disabled={disabled}
+      >
+        {transformadorSeleccionado ? (
+          <>
+            <span className="dropdown-transformador-nombre">{transformadorSeleccionado.nombre}</span>
+            <input
+              type="text"
+              className="dropdown-transformador-formula"
+              value={transformadorSeleccionado.formula}
+              readOnly
+              tabIndex={-1}
+            />
+          </>
+        ) : (
+          <span className="dropdown-transformador-texto">Sin TI / TV</span>
+        )}
+        <span className="dropdown-transformador-chevron">{abierto ? "▲" : "▼"}</span>
+      </button>
+
+      {abierto && (
+        <div className="dropdown-transformador-menu">
+          {/* Opción: Sin TI/TV */}
+          <div
+            className={`dropdown-transformador-opcion ${!value ? "seleccionado" : ""}`}
+            onClick={() => handleSeleccionar("")}
+          >
+            <span className="dropdown-transformador-nombre">Sin TI / TV</span>
+          </div>
+
+          {/* Línea divisoria después de Sin TI/TV si hay TIs */}
+          {tis.length > 0 && <div className="dropdown-transformador-divider" />}
+
+          {/* TIs */}
+          {tis.map((t) => (
+            <div
+              key={t.id}
+              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
+              onClick={() => handleSeleccionar(t.id)}
+            >
+              <span className="dropdown-transformador-nombre">{t.nombre}</span>
+              <input
+                type="text"
+                className="dropdown-transformador-formula"
+                value={t.formula}
+                readOnly
+                tabIndex={-1}
+              />
+            </div>
+          ))}
+
+          {/* Línea divisoria entre TIs y TVs */}
+          {tis.length > 0 && tvs.length > 0 && <div className="dropdown-transformador-divider" />}
+
+          {/* TVs */}
+          {tvs.map((t) => (
+            <div
+              key={t.id}
+              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
+              onClick={() => handleSeleccionar(t.id)}
+            >
+              <span className="dropdown-transformador-nombre">{t.nombre}</span>
+              <input
+                type="text"
+                className="dropdown-transformador-formula"
+                value={t.formula}
+                readOnly
+                tabIndex={-1}
+              />
+            </div>
+          ))}
+
+          {/* Mensaje si no hay transformadores */}
+          {tis.length === 0 && tvs.length === 0 && (
+            <div className="dropdown-transformador-vacio">
+              No hay TI/TV configurados
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Categorías disponibles para las funcionalidades
 const CATEGORIAS = {
@@ -7,6 +141,9 @@ const CATEGORIAS = {
   estados: { id: "estados", nombre: "Estados y Alarmas", icono: "🚦" },
   sistema: { id: "sistema", nombre: "Sistema", icono: "⚙️" },
 };
+
+// Clave para guardar plantillas de etiquetas personalizadas en localStorage
+const STORAGE_KEY_PLANTILLAS_ETIQUETAS = "plantillasEtiquetasLeds";
 
 /**
  * Modal para gestionar plantillas de relés de protección.
@@ -21,6 +158,9 @@ const ModalPlantillasRele = ({
   onEliminar,
   plantillaEditando = null,
 }) => {
+  // Hook de transformadores
+  const { obtenerTIs, obtenerTVs } = useTransformadores();
+
   // Estado del formulario
   const [modo, setModo] = useState("lista"); // "lista" | "crear" | "editar"
   const [nombre, setNombre] = useState("");
@@ -36,6 +176,31 @@ const ModalPlantillasRele = ({
     categoria: "mediciones",
   });
 
+  // Estado para etiquetas de bits (LEDs del panel frontal)
+  // Formato: { [bit]: { texto: "Arranque I>", severidad: "warning" } }
+  const [etiquetasBits, setEtiquetasBits] = useState({});
+  const [seccionEtiquetasAbierta, setSeccionEtiquetasAbierta] = useState(false);
+
+  // Estado para modo de creación de plantilla de etiquetas personalizada
+  const [modoNuevaPlantillaEtiquetas, setModoNuevaPlantillaEtiquetas] = useState(false);
+  const [nombreNuevaPlantillaEtiquetas, setNombreNuevaPlantillaEtiquetas] = useState("");
+  const [cantidadBits, setCantidadBits] = useState(1); // Cantidad de filas de bits
+  const [plantillasEtiquetasPersonalizadas, setPlantillasEtiquetasPersonalizadas] = useState({});
+  // Estado para rastrear la plantilla de etiquetas seleccionada en el combobox
+  const [plantillaEtiquetasSeleccionada, setPlantillaEtiquetasSeleccionada] = useState("");
+
+  // Cargar plantillas de etiquetas personalizadas desde localStorage al montar
+  useEffect(() => {
+    try {
+      const guardadas = localStorage.getItem(STORAGE_KEY_PLANTILLAS_ETIQUETAS);
+      if (guardadas) {
+        setPlantillasEtiquetasPersonalizadas(JSON.parse(guardadas));
+      }
+    } catch (error) {
+      console.error("Error al cargar plantillas de etiquetas:", error);
+    }
+  }, []);
+
   // Si se pasa una plantilla para editar, entrar en modo edición
   useEffect(() => {
     if (plantillaEditando && abierto) {
@@ -49,10 +214,26 @@ const ModalPlantillasRele = ({
           id,
           nombre: data.nombre || id,
           habilitado: data.habilitado !== false,
+          categoria: data.categoria || "mediciones",
           registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
+          transformadorId: data.transformadorId || null,
         })
       );
       setFuncionalidades(funcsArray);
+      // Cargar etiquetas de bits si existen
+      setEtiquetasBits(plantillaEditando.etiquetasBits || {});
+      // Restaurar la plantilla de etiquetas seleccionada
+      setPlantillaEtiquetasSeleccionada(plantillaEditando.plantillaEtiquetasId || "");
+      // Actualizar cantidad de bits basado en las etiquetas guardadas
+      const etiquetasGuardadas = plantillaEditando.etiquetasBits || {};
+      if (Object.keys(etiquetasGuardadas).length > 0) {
+        const maxBit = Math.max(...Object.keys(etiquetasGuardadas).map(Number));
+        setCantidadBits(maxBit + 1);
+      }
+      // Abrir sección si hay etiquetas configuradas
+      if (plantillaEditando.etiquetasBits && Object.keys(plantillaEditando.etiquetasBits).length > 0) {
+        setSeccionEtiquetasAbierta(true);
+      }
     }
   }, [plantillaEditando, abierto]);
 
@@ -71,6 +252,13 @@ const ModalPlantillasRele = ({
     setPlantillaSeleccionada(null);
     setError("");
     setNuevaFunc({ nombre: "", cantidad: 1, categoria: "mediciones" });
+    setEtiquetasBits({});
+    setSeccionEtiquetasAbierta(false);
+    // Reset de creación de plantilla de etiquetas
+    setModoNuevaPlantillaEtiquetas(false);
+    setNombreNuevaPlantillaEtiquetas("");
+    setCantidadBits(1);
+    setPlantillaEtiquetasSeleccionada("");
   };
 
   const iniciarCreacion = () => {
@@ -89,10 +277,25 @@ const ModalPlantillasRele = ({
         id,
         nombre: data.nombre || id,
         habilitado: data.habilitado !== false,
+        categoria: data.categoria || "mediciones",
         registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
+        transformadorId: data.transformadorId || null,
       })
     );
     setFuncionalidades(funcsArray);
+    // Cargar etiquetas de bits
+    setEtiquetasBits(plantilla.etiquetasBits || {});
+    // Restaurar la plantilla de etiquetas seleccionada
+    setPlantillaEtiquetasSeleccionada(plantilla.plantillaEtiquetasId || "");
+    // Actualizar cantidad de bits basado en las etiquetas guardadas
+    const etiquetasGuardadas = plantilla.etiquetasBits || {};
+    if (Object.keys(etiquetasGuardadas).length > 0) {
+      const maxBit = Math.max(...Object.keys(etiquetasGuardadas).map(Number));
+      setCantidadBits(maxBit + 1);
+    }
+    if (plantilla.etiquetasBits && Object.keys(plantilla.etiquetasBits).length > 0) {
+      setSeccionEtiquetasAbierta(true);
+    }
     setModo("editar");
   };
 
@@ -170,6 +373,170 @@ const ModalPlantillasRele = ({
     );
   };
 
+  // Cambiar transformador asociado a una funcionalidad
+  const handleCambiarTransformador = (funcId, transformadorId) => {
+    setFuncionalidades((prev) =>
+      prev.map((f) =>
+        f.id === funcId ? { ...f, transformadorId: transformadorId || null } : f
+      )
+    );
+  };
+
+  // ============================================
+  // FUNCIONES PARA ETIQUETAS DE BITS
+  // ============================================
+
+  // Cambiar texto de una etiqueta de bit
+  const handleCambiarEtiquetaBit = (bit, texto) => {
+    setEtiquetasBits((prev) => ({
+      ...prev,
+      [bit]: {
+        ...prev[bit],
+        texto: texto,
+        severidad: prev[bit]?.severidad || "info"
+      }
+    }));
+  };
+
+  // Cambiar severidad de una etiqueta de bit
+  const handleCambiarSeveridadBit = (bit, severidad) => {
+    setEtiquetasBits((prev) => ({
+      ...prev,
+      [bit]: {
+        ...prev[bit],
+        texto: prev[bit]?.texto || "",
+        severidad: severidad
+      }
+    }));
+  };
+
+  // Aplicar una plantilla predefinida de etiquetas (incluye personalizadas)
+  const handleAplicarPlantillaEtiquetas = (tipoPlantilla) => {
+    // Primero buscar en plantillas predefinidas
+    if (PLANTILLAS_ETIQUETAS_LEDS[tipoPlantilla]) {
+      setEtiquetasBits(PLANTILLAS_ETIQUETAS_LEDS[tipoPlantilla].etiquetas);
+      setCantidadBits(Object.keys(PLANTILLAS_ETIQUETAS_LEDS[tipoPlantilla].etiquetas).length);
+      setModoNuevaPlantillaEtiquetas(false);
+      setPlantillaEtiquetasSeleccionada(tipoPlantilla);
+      return;
+    }
+    // Luego buscar en plantillas personalizadas
+    if (plantillasEtiquetasPersonalizadas[tipoPlantilla]) {
+      setEtiquetasBits(plantillasEtiquetasPersonalizadas[tipoPlantilla].etiquetas);
+      setCantidadBits(Object.keys(plantillasEtiquetasPersonalizadas[tipoPlantilla].etiquetas).length);
+      setModoNuevaPlantillaEtiquetas(false);
+      setPlantillaEtiquetasSeleccionada(tipoPlantilla);
+    }
+  };
+
+  // Iniciar modo de creación de nueva plantilla de etiquetas
+  const handleNuevaPlantillaEtiquetas = () => {
+    setModoNuevaPlantillaEtiquetas(true);
+    setNombreNuevaPlantillaEtiquetas("");
+    setCantidadBits(1);
+    setEtiquetasBits({ 0: { texto: "", severidad: "info" } });
+  };
+
+  // Cancelar creación de nueva plantilla de etiquetas
+  const handleCancelarNuevaPlantillaEtiquetas = () => {
+    setModoNuevaPlantillaEtiquetas(false);
+    setNombreNuevaPlantillaEtiquetas("");
+    setCantidadBits(1);
+    setEtiquetasBits({});
+  };
+
+  // Agregar una fila de bit
+  const handleAgregarFilaBit = () => {
+    const nuevoBit = cantidadBits;
+    setCantidadBits(nuevoBit + 1);
+    setEtiquetasBits((prev) => ({
+      ...prev,
+      [nuevoBit]: { texto: "", severidad: "info" }
+    }));
+  };
+
+  // Quitar la última fila de bit
+  const handleQuitarFilaBit = () => {
+    if (cantidadBits <= 1) return;
+    const bitAQuitar = cantidadBits - 1;
+    setCantidadBits(bitAQuitar);
+    setEtiquetasBits((prev) => {
+      const nuevas = { ...prev };
+      delete nuevas[bitAQuitar];
+      return nuevas;
+    });
+  };
+
+  // Guardar plantilla de etiquetas personalizada
+  const handleGuardarPlantillaEtiquetas = () => {
+    if (!nombreNuevaPlantillaEtiquetas.trim()) {
+      setError("Ingresa un nombre para la plantilla de etiquetas");
+      return;
+    }
+
+    // Limpiar etiquetas vacías
+    const etiquetasLimpias = {};
+    Object.entries(etiquetasBits).forEach(([bit, etiqueta]) => {
+      if (etiqueta.texto && etiqueta.texto.trim() !== "") {
+        etiquetasLimpias[bit] = {
+          texto: etiqueta.texto.trim(),
+          severidad: etiqueta.severidad || "info"
+        };
+      }
+    });
+
+    // Generar ID único
+    const id = "custom-" + Date.now().toString(36);
+
+    const nuevaPlantilla = {
+      nombre: nombreNuevaPlantillaEtiquetas.trim(),
+      etiquetas: etiquetasLimpias
+    };
+
+    const nuevasPlantillas = {
+      ...plantillasEtiquetasPersonalizadas,
+      [id]: nuevaPlantilla
+    };
+
+    // Guardar en localStorage
+    try {
+      localStorage.setItem(STORAGE_KEY_PLANTILLAS_ETIQUETAS, JSON.stringify(nuevasPlantillas));
+      setPlantillasEtiquetasPersonalizadas(nuevasPlantillas);
+      setModoNuevaPlantillaEtiquetas(false);
+      setNombreNuevaPlantillaEtiquetas("");
+      setError("");
+    } catch (error) {
+      console.error("Error al guardar plantilla de etiquetas:", error);
+      setError("Error al guardar la plantilla");
+    }
+  };
+
+  // Eliminar plantilla de etiquetas personalizada
+  const handleEliminarPlantillaEtiquetas = (id) => {
+    const nuevasPlantillas = { ...plantillasEtiquetasPersonalizadas };
+    delete nuevasPlantillas[id];
+
+    try {
+      localStorage.setItem(STORAGE_KEY_PLANTILLAS_ETIQUETAS, JSON.stringify(nuevasPlantillas));
+      setPlantillasEtiquetasPersonalizadas(nuevasPlantillas);
+    } catch (error) {
+      console.error("Error al eliminar plantilla de etiquetas:", error);
+    }
+  };
+
+  // Limpiar todas las etiquetas
+  const handleLimpiarEtiquetas = () => {
+    setEtiquetasBits({});
+    setModoNuevaPlantillaEtiquetas(false);
+    setCantidadBits(1);
+    setPlantillaEtiquetasSeleccionada("");
+  };
+
+  // Contar etiquetas configuradas
+  const contarEtiquetasConfiguradas = () => {
+    return Object.values(etiquetasBits).filter(e => e.texto && e.texto.trim() !== "").length;
+  };
+
   const validarFormulario = () => {
     if (!nombre.trim()) {
       setError("El nombre de la plantilla es requerido");
@@ -205,6 +572,19 @@ const ModalPlantillasRele = ({
           registros: func.registros,
           // Mantener compatibilidad: primer registro como "registro" principal
           registro: func.registros[0]?.valor || 0,
+          // Transformador asociado (solo para mediciones)
+          transformadorId: func.transformadorId || null,
+        };
+      }
+    });
+
+    // Limpiar etiquetas vacías antes de guardar
+    const etiquetasLimpias = {};
+    Object.entries(etiquetasBits).forEach(([bit, etiqueta]) => {
+      if (etiqueta.texto && etiqueta.texto.trim() !== "") {
+        etiquetasLimpias[bit] = {
+          texto: etiqueta.texto.trim(),
+          severidad: etiqueta.severidad || "info"
         };
       }
     });
@@ -213,6 +593,8 @@ const ModalPlantillasRele = ({
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
       funcionalidades: funcParaGuardar,
+      etiquetasBits: etiquetasLimpias,
+      plantillaEtiquetasId: plantillaEtiquetasSeleccionada || null,
     };
 
     if (modo === "crear") {
@@ -243,6 +625,24 @@ const ModalPlantillasRele = ({
     return Object.values(plantilla.funcionalidades || {}).filter(
       (f) => f.habilitado !== false
     ).length;
+  };
+
+  // Obtener nombre de la plantilla de etiquetas de LEDs
+  const obtenerNombrePlantillaEtiquetas = (plantilla) => {
+    const idPlantillaEtiquetas = plantilla.plantillaEtiquetasId;
+    if (!idPlantillaEtiquetas) return null;
+
+    // Buscar en plantillas predefinidas
+    if (PLANTILLAS_ETIQUETAS_LEDS[idPlantillaEtiquetas]) {
+      return PLANTILLAS_ETIQUETAS_LEDS[idPlantillaEtiquetas].nombre;
+    }
+
+    // Buscar en plantillas personalizadas
+    if (plantillasEtiquetasPersonalizadas[idPlantillaEtiquetas]) {
+      return plantillasEtiquetasPersonalizadas[idPlantillaEtiquetas].nombre;
+    }
+
+    return null;
   };
 
   if (!abierto) return null;
@@ -300,6 +700,9 @@ const ModalPlantillasRele = ({
                         )}
                         <span className="modal-plantillas-item-func">
                           {contarFuncionalidades(plantilla)} funcionalidades
+                          {obtenerNombrePlantillaEtiquetas(plantilla) && (
+                            <> · Panel: {obtenerNombrePlantillaEtiquetas(plantilla)}</>
+                          )}
                         </span>
                       </div>
                       <div className="modal-plantillas-item-acciones">
@@ -448,6 +851,16 @@ const ModalPlantillasRele = ({
                                     {func.nombre}
                                   </span>
                                 </label>
+                                {/* Selector de TI/TV solo para mediciones */}
+                                {categoria.id === "mediciones" && (
+                                  <DropdownTransformador
+                                    value={func.transformadorId || ""}
+                                    onChange={(id) => handleCambiarTransformador(func.id, id)}
+                                    disabled={!func.habilitado}
+                                    tis={obtenerTIs()}
+                                    tvs={obtenerTVs()}
+                                  />
+                                )}
                                 <button
                                   type="button"
                                   className="modal-plantillas-func-eliminar"
@@ -507,6 +920,189 @@ const ModalPlantillasRele = ({
                   </p>
                 </div>
               )}
+
+              {/* Sección de Etiquetas de Bits (LEDs) */}
+              <div className="modal-plantillas-seccion modal-plantillas-seccion-etiquetas">
+                <div
+                  className="modal-plantillas-seccion-header-colapsable"
+                  onClick={() => setSeccionEtiquetasAbierta(!seccionEtiquetasAbierta)}
+                >
+                  <h4>
+                    <span className={`modal-plantillas-chevron ${seccionEtiquetasAbierta ? "abierto" : ""}`}>
+                      ▶
+                    </span>
+                    Etiquetas de LEDs (Registro 172)
+                    {contarEtiquetasConfiguradas() > 0 && (
+                      <span className="modal-plantillas-badge">
+                        {contarEtiquetasConfiguradas()}
+                      </span>
+                    )}
+                  </h4>
+                  <span className="modal-plantillas-hint-inline">
+                    Define qué significa cada LED del panel frontal
+                  </span>
+                </div>
+
+                {seccionEtiquetasAbierta && (
+                  <div className="modal-plantillas-etiquetas-contenido">
+                    {/* Selector de plantilla predefinida o crear nueva */}
+                    <div className="modal-plantillas-etiquetas-acciones">
+                      <label>Plantilla:</label>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value === "__nueva__") {
+                            handleNuevaPlantillaEtiquetas();
+                          } else if (e.target.value) {
+                            handleAplicarPlantillaEtiquetas(e.target.value);
+                          } else {
+                            // Si selecciona "Seleccionar...", limpiar la selección
+                            setPlantillaEtiquetasSeleccionada("");
+                          }
+                        }}
+                        value={modoNuevaPlantillaEtiquetas ? "__nueva__" : plantillaEtiquetasSeleccionada}
+                      >
+                        <option value="">Seleccionar...</option>
+                        <option value="__nueva__">+ Nueva plantilla...</option>
+                        {/* Plantillas predefinidas */}
+                        <optgroup label="Predefinidas">
+                          {Object.entries(PLANTILLAS_ETIQUETAS_LEDS).map(([key, plantilla]) => (
+                            <option key={key} value={key}>
+                              {plantilla.nombre}
+                            </option>
+                          ))}
+                        </optgroup>
+                        {/* Plantillas personalizadas */}
+                        {Object.keys(plantillasEtiquetasPersonalizadas).length > 0 && (
+                          <optgroup label="Mis plantillas">
+                            {Object.entries(plantillasEtiquetasPersonalizadas).map(([key, plantilla]) => (
+                              <option key={key} value={key}>
+                                {plantilla.nombre}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                      {contarEtiquetasConfiguradas() > 0 && !modoNuevaPlantillaEtiquetas && (
+                        <button
+                          type="button"
+                          className="modal-plantillas-btn-limpiar"
+                          onClick={handleLimpiarEtiquetas}
+                        >
+                          Limpiar
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Formulario para crear nueva plantilla de etiquetas */}
+                    {modoNuevaPlantillaEtiquetas && (
+                      <div className="modal-plantillas-nueva-plantilla-etiquetas">
+                        <div className="modal-plantillas-nueva-plantilla-header">
+                          <input
+                            type="text"
+                            className="modal-plantillas-nueva-plantilla-nombre"
+                            value={nombreNuevaPlantillaEtiquetas}
+                            onChange={(e) => setNombreNuevaPlantillaEtiquetas(e.target.value)}
+                            placeholder="Nombre de la plantilla..."
+                          />
+                          <div className="modal-plantillas-nueva-plantilla-botones">
+                            <button
+                              type="button"
+                              className="modal-plantillas-btn-guardar-etiquetas"
+                              onClick={handleGuardarPlantillaEtiquetas}
+                              title="Guardar plantilla"
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              type="button"
+                              className="modal-plantillas-btn-cancelar-etiquetas"
+                              onClick={handleCancelarNuevaPlantillaEtiquetas}
+                              title="Cancelar"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Lista de bits configurables */}
+                    <div className="modal-plantillas-bits-lista">
+                      {Array.from({ length: cantidadBits }, (_, bit) => (
+                        <div key={bit} className="modal-plantillas-bit-item">
+                          <span className="modal-plantillas-bit-numero">Bit {bit}:</span>
+                          <input
+                            type="text"
+                            className="modal-plantillas-bit-etiqueta"
+                            value={etiquetasBits[bit]?.texto || ""}
+                            onChange={(e) => handleCambiarEtiquetaBit(bit, e.target.value)}
+                            placeholder={`LED ${bit + 1} (sin etiqueta)`}
+                          />
+                          <select
+                            className={`modal-plantillas-bit-severidad severidad-${etiquetasBits[bit]?.severidad || "info"}`}
+                            value={etiquetasBits[bit]?.severidad || "info"}
+                            onChange={(e) => handleCambiarSeveridadBit(bit, e.target.value)}
+                          >
+                            {SEVERIDADES_DISPONIBLES.map((sev) => (
+                              <option key={sev.id} value={sev.id}>
+                                {sev.nombre}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Botones para agregar/quitar filas (solo en modo nueva plantilla o si hay etiquetas) */}
+                    {(modoNuevaPlantillaEtiquetas || contarEtiquetasConfiguradas() > 0) && (
+                      <div className="modal-plantillas-bits-acciones">
+                        <button
+                          type="button"
+                          className="modal-plantillas-btn-agregar-bit"
+                          onClick={handleAgregarFilaBit}
+                          title="Agregar fila"
+                        >
+                          + Agregar bit
+                        </button>
+                        {cantidadBits > 1 && (
+                          <button
+                            type="button"
+                            className="modal-plantillas-btn-quitar-bit"
+                            onClick={handleQuitarFilaBit}
+                            title="Quitar última fila"
+                          >
+                            − Quitar bit
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Lista de plantillas personalizadas guardadas para eliminar */}
+                    {Object.keys(plantillasEtiquetasPersonalizadas).length > 0 && !modoNuevaPlantillaEtiquetas && (
+                      <div className="modal-plantillas-etiquetas-guardadas">
+                        <span className="modal-plantillas-etiquetas-guardadas-label">
+                          Mis plantillas guardadas:
+                        </span>
+                        <div className="modal-plantillas-etiquetas-guardadas-lista">
+                          {Object.entries(plantillasEtiquetasPersonalizadas).map(([key, plantilla]) => (
+                            <div key={key} className="modal-plantillas-etiqueta-guardada">
+                              <span>{plantilla.nombre}</span>
+                              <button
+                                type="button"
+                                className="modal-plantillas-btn-eliminar-etiqueta"
+                                onClick={() => handleEliminarPlantillaEtiquetas(key)}
+                                title="Eliminar plantilla"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

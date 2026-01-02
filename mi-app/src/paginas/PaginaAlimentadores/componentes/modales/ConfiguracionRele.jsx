@@ -1,6 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { usePlantillasRele } from "../../hooks/usePlantillasRele";
+import { useTransformadores } from "../../hooks/useTransformadores";
+import { solicitarTestRegistrador, consultarTestRegistrador } from "../../../../servicios/apiService";
+import {
+  interpretarRegistro,
+  categoriaRequiereInterpretacion,
+  obtenerClaseTipo
+} from "../../utilidades/interpreteRegistrosREF615";
 import ModalPlantillasRele from "./ModalPlantillasRele";
+import ModalTransformadores from "./ModalTransformadores";
 import "./ConfiguracionRele.css";
 
 // Categorías disponibles para las funcionalidades
@@ -29,6 +37,17 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     obtenerPlantilla,
   } = usePlantillasRele();
 
+  // Hook de transformadores
+  const {
+    transformadores,
+    obtenerTIs,
+    obtenerTVs,
+    obtenerPorId: obtenerTransformadorPorId,
+    crearTransformador,
+    actualizarTransformador,
+    eliminarTransformador,
+  } = useTransformadores();
+
   // Ref para evitar bucle infinito en notificación de cambios
   const configAnteriorRef = useRef(null);
   const inicializadoRef = useRef(false);
@@ -38,9 +57,21 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
   const [modalPlantillasAbierto, setModalPlantillasAbierto] = useState(false);
   const [plantillaParaEditar, setPlantillaParaEditar] = useState(null);
 
+  // Estado del modal de transformadores
+  const [modalTransformadoresAbierto, setModalTransformadoresAbierto] = useState(false);
+  const [tipoTransformadorModal, setTipoTransformadorModal] = useState("TI");
+
+  // Estado del dropdown de transformadores
+  const [dropdownTransformadoresAbierto, setDropdownTransformadoresAbierto] = useState(false);
+  const dropdownTransformadoresRef = useRef(null);
+
   // Estado de la consola de test
   const [consolaLogs, setConsolaLogs] = useState([]);
   const [ejecutandoTest, setEjecutandoTest] = useState(false);
+  const [registrosCrudos, setRegistrosCrudos] = useState(null); // Datos del último test exitoso
+  const [consolaWidth, setConsolaWidth] = useState(60); // Porcentaje del ancho de la consola
+  const resizerRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Estado del formulario
   const [config, setConfig] = useState({
@@ -53,6 +84,8 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     registroInicial: 120,
     cantidadRegistros: 80,
     intervalo: 60,
+    transformadorTIId: "",
+    transformadorTVId: "",
     funcionalidadesActivas: {},
   });
 
@@ -71,6 +104,8 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
         registroInicial: configuracionInicial.registroInicial || 120,
         cantidadRegistros: configuracionInicial.cantidadRegistros || 80,
         intervalo: configuracionInicial.intervalo || 60,
+        transformadorTIId: configuracionInicial.transformadorTIId || "",
+        transformadorTVId: configuracionInicial.transformadorTVId || "",
         funcionalidadesActivas:
           configuracionInicial.funcionalidadesActivas || {},
       }));
@@ -167,6 +202,44 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     }));
   };
 
+  const handleTransformadorTIChange = (id) => {
+    setConfig((prev) => ({
+      ...prev,
+      transformadorTIId: id,
+    }));
+  };
+
+  const handleTransformadorTVChange = (id) => {
+    setConfig((prev) => ({
+      ...prev,
+      transformadorTVId: id,
+    }));
+  };
+
+  // Abrir modal de transformadores
+  const abrirModalTransformadores = (tipo) => {
+    setTipoTransformadorModal(tipo);
+    setModalTransformadoresAbierto(true);
+    setDropdownTransformadoresAbierto(false);
+  };
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownTransformadoresRef.current && !dropdownTransformadoresRef.current.contains(event.target)) {
+        setDropdownTransformadoresAbierto(false);
+      }
+    };
+
+    if (dropdownTransformadoresAbierto) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownTransformadoresAbierto]);
+
   // Toggle habilitar/deshabilitar una funcionalidad
   const handleToggleFuncionalidad = (funcId) => {
     setConfig((prev) => {
@@ -227,10 +300,35 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
   const handleCrearPlantilla = (datos) => {
     const nueva = crearPlantilla(datos);
     if (nueva) {
-      // Seleccionar la plantilla recién creada
-      handlePlantillaChange({ target: { value: nueva.id } });
+      // Seleccionar la plantilla recién creada usando directamente los datos
+      // (no podemos usar handlePlantillaChange porque el estado aún no se actualizó)
+      const funcionalidadesIniciales = generarConfigDesdeePlantilla(nueva);
+      setConfig((prev) => ({
+        ...prev,
+        plantillaId: nueva.id,
+        funcionalidadesActivas: funcionalidadesIniciales,
+      }));
     }
     return nueva;
+  };
+
+  const handleActualizarPlantilla = (id, datos) => {
+    const exito = actualizarPlantilla(id, datos);
+    if (exito && config.plantillaId === id) {
+      // Si es la plantilla actualmente seleccionada, actualizar las funcionalidades
+      // Construir la plantilla actualizada con los nuevos datos
+      const plantillaActualizada = {
+        id,
+        ...datos,
+        funcionalidades: datos.funcionalidades || {},
+      };
+      const funcionalidadesActualizadas = generarConfigDesdeePlantilla(plantillaActualizada);
+      setConfig((prev) => ({
+        ...prev,
+        funcionalidadesActivas: funcionalidadesActualizadas,
+      }));
+    }
+    return exito;
   };
 
   // Funciones de la consola
@@ -249,76 +347,210 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
     setConsolaLogs([]);
   };
 
-  // Ejecutar test Modbus
+  // Manejadores del resizer
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
+  const handleMouseMove = (e) => {
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+    // Limitar entre 30% y 80%
+    const clampedWidth = Math.min(80, Math.max(30, newWidth));
+    setConsolaWidth(clampedWidth);
+  };
+
+  const handleMouseUp = () => {
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  };
+
+  // Ejecutar test Modbus real usando el agente
   const ejecutarTest = async () => {
+    // Validaciones
     if (!config.conexion.ip) {
       agregarLog("Error: Debes ingresar una IP", "error");
       return;
     }
 
+    if (!agenteId) {
+      agregarLog("Error: No hay agente configurado para ejecutar el test", "error");
+      agregarLog("El test requiere un agente conectado para comunicarse con el relé", "info");
+      return;
+    }
+
     setEjecutandoTest(true);
+    setRegistrosCrudos(null);
     limpiarConsola();
+
+    const indiceInicial = config.registroInicial || 0;
+    const cantidad = config.cantidadRegistros || 20;
+
     agregarLog(`Iniciando test de conexión...`, "info");
     agregarLog(`IP: ${config.conexion.ip}:${config.conexion.puerto} (Unit ID: ${config.conexion.unitId})`, "info");
-    agregarLog(`Registros: ${config.registroInicial} - ${config.registroInicial + config.cantidadRegistros - 1}`, "info");
+    agregarLog(`Registros: ${indiceInicial} - ${indiceInicial + cantidad - 1} (${cantidad} registros)`, "info");
+    agregarLog(`Agente: ${agenteId}`, "info");
 
     try {
-      // TODO: Integrar con backend real cuando esté disponible
-      // Por ahora simulamos el test
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      agregarLog("Conectando al dispositivo...", "info");
+      // Solicitar el test al agente
+      agregarLog("Enviando solicitud al agente...", "info");
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      agregarLog("Conexión establecida", "success");
-
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      agregarLog(`Leyendo ${config.cantidadRegistros} registros desde dirección ${config.registroInicial}...`, "info");
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Simular lectura de algunos registros
-      const registrosLeidos = [];
-      for (let i = 0; i < Math.min(config.cantidadRegistros, 10); i++) {
-        const valor = Math.floor(Math.random() * 1000);
-        registrosLeidos.push({ address: config.registroInicial + i, value: valor });
-      }
-
-      agregarLog(`Registros leídos correctamente:`, "success");
-      registrosLeidos.forEach((reg) => {
-        agregarLog(`  [${reg.address}] = ${reg.value}`, "data");
+      const respuesta = await solicitarTestRegistrador(agenteId, {
+        ip: config.conexion.ip,
+        puerto: parseInt(config.conexion.puerto) || 502,
+        unitId: parseInt(config.conexion.unitId) || 1,
+        indiceInicial,
+        cantidadRegistros: cantidad,
       });
 
-      if (config.cantidadRegistros > 10) {
-        agregarLog(`  ... y ${config.cantidadRegistros - 10} registros más`, "data");
+      const testId = respuesta.testId;
+      agregarLog(`Solicitud enviada (ID: ${testId})`, "success");
+      agregarLog("Esperando respuesta del agente...", "info");
+
+      // Polling para obtener resultado (max 30 segundos)
+      const maxIntentos = 15;
+      const intervaloMs = 2000;
+      let intentos = 0;
+      let resultado = null;
+
+      while (intentos < maxIntentos) {
+        await new Promise((resolve) => setTimeout(resolve, intervaloMs));
+        intentos++;
+
+        resultado = await consultarTestRegistrador(agenteId, testId);
+
+        if (resultado.estado === "completado") {
+          // Test exitoso
+          const registros = resultado.valores || [];
+          const tiempoMs = resultado.tiempo_respuesta_ms || 0;
+
+          agregarLog(`Conexión exitosa (${tiempoMs}ms)`, "success");
+          agregarLog(`Registros leídos: ${registros.length}`, "success");
+
+          // Mostrar TODOS los registros en la consola
+          for (let i = 0; i < registros.length; i++) {
+            const regNum = indiceInicial + i;
+            const valor = registros[i];
+            agregarLog(`  [${regNum}] = ${valor}`, "data");
+          }
+
+          // Guardar registros crudos para exportación CSV
+          setRegistrosCrudos({
+            valores: registros,
+            indiceInicial,
+            ip: config.conexion.ip,
+            puerto: config.conexion.puerto,
+            tiempoMs,
+          });
+
+          agregarLog("Test completado exitosamente", "success");
+          return;
+
+        } else if (resultado.estado === "error" || resultado.estado === "timeout") {
+          // Test falló
+          agregarLog(`Error: ${resultado.error_mensaje || "Error de conexión"}`, "error");
+          if (resultado.tiempo_respuesta_ms) {
+            agregarLog(`Tiempo transcurrido: ${resultado.tiempo_respuesta_ms}ms`, "info");
+          }
+          return;
+        }
+
+        // Si está pendiente/enviado/ejecutando, seguir esperando
+        agregarLog(`Esperando... (${intentos}/${maxIntentos})`, "info");
       }
 
-      agregarLog("Test completado exitosamente", "success");
+      // Timeout del polling
+      agregarLog("Timeout: El agente no respondió a tiempo", "error");
+      agregarLog("Verifica que el agente esté conectado y el dispositivo sea accesible", "info");
+
     } catch (error) {
       agregarLog(`Error: ${error.message}`, "error");
+
+      // Mensajes de ayuda según el tipo de error
+      if (error.message?.includes("esperar")) {
+        agregarLog("Debes esperar antes de ejecutar otro test", "info");
+      } else if (error.message?.includes("agente")) {
+        agregarLog("Verifica que el agente esté conectado", "info");
+      }
     } finally {
       setEjecutandoTest(false);
     }
   };
 
-  // Exportar a CSV
+  // Aplicar fórmula de transformador a un valor
+  const aplicarFormulaTransformador = (valor, transformadorId) => {
+    if (valor === null || valor === undefined || !transformadorId) {
+      return null;
+    }
+
+    const transformador = obtenerTransformadorPorId(transformadorId);
+    if (!transformador || !transformador.formula) {
+      return null;
+    }
+
+    try {
+      // La fórmula usa 'x' como variable para el valor
+      // Ejemplo: "x * 200 / 1000"
+      const x = valor;
+      // eslint-disable-next-line no-new-func
+      const resultado = new Function("x", `return ${transformador.formula}`)(x);
+      return typeof resultado === "number" && !isNaN(resultado) ? resultado : null;
+    } catch (error) {
+      console.error("Error al aplicar fórmula del transformador:", error);
+      return null;
+    }
+  };
+
+  // Exportar registros a CSV
   const exportarCSV = () => {
-    if (consolaLogs.length === 0) {
-      agregarLog("No hay datos para exportar", "error");
+    if (!registrosCrudos || !registrosCrudos.valores || registrosCrudos.valores.length === 0) {
+      agregarLog("No hay registros para exportar. Ejecuta un test primero.", "error");
       return;
     }
 
-    const lineas = consolaLogs.map((log) => `${log.timestamp},${log.tipo},${log.mensaje}`);
-    const contenido = "Timestamp,Tipo,Mensaje\n" + lineas.join("\n");
+    const { valores, indiceInicial, ip, puerto, tiempoMs } = registrosCrudos;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
 
-    const blob = new Blob([contenido], { type: "text/csv;charset=utf-8;" });
+    // Crear contenido CSV con información detallada
+    const cabecera = "Registro,Valor";
+    const filas = valores.map((valor, idx) => {
+      const registro = indiceInicial + idx;
+      return `${registro},${valor}`;
+    });
+
+    // Agregar metadatos como comentarios al inicio
+    const metadatos = [
+      `# Test Modbus - RelayWatch`,
+      `# Fecha: ${new Date().toLocaleString()}`,
+      `# Dispositivo: ${ip}:${puerto}`,
+      `# Registros: ${indiceInicial} - ${indiceInicial + valores.length - 1}`,
+      `# Tiempo de respuesta: ${tiempoMs}ms`,
+      `# Total registros: ${valores.length}`,
+      "",
+    ];
+
+    const contenidoCSV = [...metadatos, cabecera, ...filas].join("\n");
+
+    // Crear y descargar archivo
+    const blob = new Blob([contenidoCSV], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `test-modbus-${config.conexion.ip || "sin-ip"}-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `registros_${ip}_${puerto}_${timestamp}.csv`;
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    agregarLog("CSV exportado correctamente", "success");
+    agregarLog(`CSV exportado: registros_${ip}_${puerto}_${timestamp}.csv`, "success");
   };
 
   // Verificar si la plantilla seleccionada aún existe
@@ -336,10 +568,12 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
 
   return (
     <div className="config-rele">
-      {/* Fila superior: Conexión y Plantilla lado a lado */}
+      {/* Fila superior: Conexión/Transformadores y Plantilla lado a lado */}
       <div className="config-rele-row-superior">
-        {/* Sección: Conexión Modbus TCP - Izquierda */}
-        <div className="config-rele-seccion config-rele-seccion--conexion">
+        {/* Columna izquierda: Conexión + Transformadores */}
+        <div className="config-rele-col-izquierda">
+          {/* Sección: Conexión Modbus TCP */}
+          <div className="config-rele-seccion config-rele-seccion--conexion">
           <h6>📡 Conexión Modbus TCP</h6>
           <div className="config-rele-conexion-fila">
             {/* Grupo 1: Conexión */}
@@ -421,6 +655,66 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
           </div>
         </div>
 
+        {/* Sección: Transformadores - Compacto */}
+        <div className="config-rele-seccion config-rele-seccion--transformadores">
+          <h6>⚡ Transformadores</h6>
+          <div className="config-rele-transformadores-compacto" ref={dropdownTransformadoresRef}>
+            <div className="config-rele-campo-inline">
+              <label>TI / TV</label>
+              <button
+                type="button"
+                className="config-rele-btn-ver-transformadores"
+                onClick={() => setDropdownTransformadoresAbierto(!dropdownTransformadoresAbierto)}
+              >
+                <span>Ver disponibles ({obtenerTIs().length + obtenerTVs().length})</span>
+                <span className={`config-rele-dropdown-arrow ${dropdownTransformadoresAbierto ? "abierto" : ""}`}>▼</span>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="config-rele-btn-editar-transformador"
+              onClick={() => abrirModalTransformadores("TI")}
+              title="Gestionar transformadores"
+            >
+              ⚙️
+            </button>
+
+            {/* Dropdown con lista de transformadores */}
+            {dropdownTransformadoresAbierto && (
+              <div className="config-rele-transformadores-dropdown">
+                {obtenerTIs().length > 0 && (
+                  <div className="config-rele-dropdown-grupo">
+                    <div className="config-rele-dropdown-titulo">T.I. (Intensidad)</div>
+                    {obtenerTIs().map((t) => (
+                      <div key={t.id} className="config-rele-dropdown-item">
+                        <span className="config-rele-dropdown-nombre">{t.nombre}</span>
+                        <span className="config-rele-dropdown-formula">{t.formula}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {obtenerTVs().length > 0 && (
+                  <div className="config-rele-dropdown-grupo">
+                    <div className="config-rele-dropdown-titulo">T.V. (Voltaje)</div>
+                    {obtenerTVs().map((t) => (
+                      <div key={t.id} className="config-rele-dropdown-item">
+                        <span className="config-rele-dropdown-nombre">{t.nombre}</span>
+                        <span className="config-rele-dropdown-formula">{t.formula}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {obtenerTIs().length === 0 && obtenerTVs().length === 0 && (
+                  <div className="config-rele-dropdown-vacio">
+                    No hay transformadores configurados
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        </div>
+
         {/* Sección: Plantilla - Derecha */}
         <div className="config-rele-seccion config-rele-seccion--plantilla">
           <h6>📋 Plantilla de Configuración</h6>
@@ -486,25 +780,165 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
         <div className="config-rele-seccion config-rele-seccion--consola">
           <h6>🖥️ Consola de Test</h6>
 
-          <div
-            ref={consolaRef}
-            className="config-rele-consola"
-          >
-            {consolaLogs.length === 0 ? (
-              <div className="config-rele-consola-vacio">
-                Presiona "Ejecutar Test" para probar la conexión Modbus
-              </div>
-            ) : (
-              consolaLogs.map((log, index) => (
-                <div
-                  key={index}
-                  className={`config-rele-consola-linea config-rele-consola-linea--${log.tipo}`}
-                >
-                  <span className="config-rele-consola-timestamp">[{log.timestamp}]</span>
-                  <span className="config-rele-consola-mensaje">{log.mensaje}</span>
+          <div className="config-rele-consola-container" ref={containerRef}>
+            {/* Panel izquierdo: Logs */}
+            <div
+              ref={consolaRef}
+              className="config-rele-consola"
+              style={{ width: `${consolaWidth}%` }}
+            >
+              {consolaLogs.length === 0 ? (
+                <div className="config-rele-consola-vacio">
+                  Presiona "Ejecutar Test" para probar la conexión Modbus
                 </div>
-              ))
-            )}
+              ) : (
+                consolaLogs.map((log, index) => (
+                  <div
+                    key={index}
+                    className={`config-rele-consola-linea config-rele-consola-linea--${log.tipo}`}
+                  >
+                    <span className="config-rele-consola-timestamp">[{log.timestamp}]</span>
+                    <span className="config-rele-consola-mensaje">{log.mensaje}</span>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Resizer */}
+            <div
+              ref={resizerRef}
+              className="config-rele-resizer"
+              onMouseDown={handleMouseDown}
+            />
+
+            {/* Panel derecho: Funcionalidades con valores */}
+            <div
+              className="config-rele-registros-panel"
+              style={{ width: `${100 - consolaWidth}%` }}
+            >
+              {!registrosCrudos ? (
+                <div className="config-rele-registros-vacio">
+                  Los valores aparecerán aquí después del test
+                </div>
+              ) : !plantillaSeleccionada ? (
+                <div className="config-rele-registros-vacio">
+                  Selecciona una plantilla para ver las funcionalidades
+                </div>
+              ) : (
+                <div className="config-rele-funcionalidades-valores">
+                  {Object.values(CATEGORIAS).map((categoria) => {
+                    // Filtrar funcionalidades activas de esta categoría
+                    const funcsActivas = funcionalidadesPlantilla.filter(
+                      ([funcId, func]) => {
+                        const estadoActivo = config.funcionalidadesActivas[funcId];
+                        return (
+                          estadoActivo?.habilitado &&
+                          (func.categoria || "mediciones") === categoria.id
+                        );
+                      }
+                    );
+
+                    if (funcsActivas.length === 0) return null;
+
+                    // Verificar si esta categoría requiere interpretación binaria
+                    const requiereInterpretacion = categoriaRequiereInterpretacion(categoria.id);
+
+                    return (
+                      <div key={categoria.id} className="config-rele-valores-categoria">
+                        <div className="config-rele-valores-categoria-titulo">
+                          {categoria.nombre}
+                        </div>
+                        {funcsActivas.map(([funcId, plantillaFunc]) => {
+                          const estadoActivo = config.funcionalidadesActivas[funcId];
+                          const registros = estadoActivo?.registros || plantillaFunc.registros || [];
+
+                          return (
+                            <div key={funcId} className="config-rele-valores-func">
+                              <div className="config-rele-valores-func-nombre">
+                                * {plantillaFunc.nombre}
+                              </div>
+                              <div className="config-rele-valores-registros">
+                                {registros.map((reg, index) => {
+                                  // Obtener el valor del registro desde registrosCrudos
+                                  const regNum = reg.valor;
+                                  const indiceEnArray = regNum - registrosCrudos.indiceInicial;
+                                  const valorLeido =
+                                    indiceEnArray >= 0 && indiceEnArray < registrosCrudos.valores.length
+                                      ? registrosCrudos.valores[indiceEnArray]
+                                      : null;
+
+                                  // Aplicar transformador si la funcionalidad tiene uno asociado (solo para mediciones)
+                                  const transformadorId = plantillaFunc.transformadorId;
+                                  const valorTransformado = transformadorId && valorLeido !== null
+                                    ? aplicarFormulaTransformador(valorLeido, transformadorId)
+                                    : null;
+                                  const transformador = transformadorId ? obtenerTransformadorPorId(transformadorId) : null;
+
+                                  // Interpretar el registro si corresponde
+                                  // Para el registro 172 (LEDs), usar etiquetas personalizadas de la plantilla si existen
+                                  const etiquetasPersonalizadas = regNum === 172 && plantillaSeleccionada?.etiquetasBits
+                                    ? plantillaSeleccionada.etiquetasBits
+                                    : null;
+
+                                  const interpretacion = requiereInterpretacion && valorLeido !== null
+                                    ? interpretarRegistro(regNum, valorLeido, etiquetasPersonalizadas)
+                                    : null;
+
+                                  return (
+                                    <div key={index} className="config-rele-valores-registro-container">
+                                      <div className="config-rele-valores-registro">
+                                        {reg.etiqueta || `Reg ${index + 1}`} [{regNum}] = {valorLeido !== null ? valorLeido : "—"}
+                                        {/* Mostrar valor transformado si aplica */}
+                                        {valorTransformado !== null && (
+                                          <span className="config-rele-valor-transformado" title={`Transformado con ${transformador?.nombre}: ${transformador?.formula}`}>
+                                            {" → "}{valorTransformado.toFixed(2)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {/* Mostrar interpretación si existe */}
+                                      {interpretacion && interpretacion.tieneInterpretacion && (
+                                        <div className="config-rele-interpretacion">
+                                          {/* Interpretación especial (como estado de interruptor) */}
+                                          {interpretacion.interpretacionEspecial && (
+                                            <div className={`config-rele-interpretacion-especial ${obtenerClaseTipo(interpretacion.interpretacionEspecial.clase)}`}>
+                                              <span className="interpretacion-estado">{interpretacion.interpretacionEspecial.estado}</span>
+                                            </div>
+                                          )}
+                                          {/* Bits activos */}
+                                          {interpretacion.bitsActivos.length > 0 && (
+                                            <div className="config-rele-interpretacion-bits">
+                                              {interpretacion.bitsActivos.map((bit, bitIdx) => (
+                                                <span
+                                                  key={bitIdx}
+                                                  className={`config-rele-bit ${obtenerClaseTipo(bit.tipo)}`}
+                                                  title={bit.descripcion}
+                                                >
+                                                  {bit.nombre}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {/* Sin señales activas */}
+                                          {interpretacion.bitsActivos.length === 0 && !interpretacion.interpretacionEspecial && (
+                                            <div className="config-rele-interpretacion-vacio">
+                                              Sin señales activas
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="config-rele-consola-acciones">
@@ -520,7 +954,8 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
               type="button"
               className="config-rele-btn-csv"
               onClick={exportarCSV}
-              disabled={consolaLogs.length === 0}
+              disabled={!registrosCrudos}
+              title={registrosCrudos ? `Exportar ${registrosCrudos.valores?.length || 0} registros` : "Ejecuta un test primero"}
             >
               Exportar CSV
             </button>
@@ -565,6 +1000,11 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                         const estaHabilitado = estadoActivo?.habilitado || false;
                         const registros = estadoActivo?.registros || plantillaFunc.registros || [];
 
+                        // Obtener el transformador asociado a esta funcionalidad
+                        const transformadorFunc = plantillaFunc.transformadorId
+                          ? obtenerTransformadorPorId(plantillaFunc.transformadorId)
+                          : null;
+
                         return (
                           <div
                             key={funcId}
@@ -583,26 +1023,48 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                               </label>
                             </div>
 
-                            {/* Registros individuales */}
-                            <div className="config-rele-registros">
-                              {registros.map((reg, index) => (
-                                <div key={index} className="config-rele-registro-item">
-                                  <span className="config-rele-registro-etiqueta">
-                                    {reg.etiqueta || `Reg ${index + 1}`}
-                                  </span>
-                                  <span className="config-rele-registro-separador">→</span>
+                            {/* Contenido: Registros + Separador + Transformador */}
+                            <div className="config-rele-func-contenido">
+                              {/* Registros individuales */}
+                              <div className="config-rele-registros">
+                                {registros.map((reg, index) => (
+                                  <div key={index} className="config-rele-registro-item">
+                                    <span className="config-rele-registro-etiqueta">
+                                      {reg.etiqueta || `Reg ${index + 1}`}
+                                    </span>
+                                    <div className="config-rele-registro-input-grupo">
+                                      <span className="config-rele-registro-separador">→</span>
+                                      <input
+                                        type="number"
+                                        className="config-rele-registro-valor"
+                                        value={reg.valor}
+                                        onChange={(e) =>
+                                          handleCambiarRegistro(funcId, index, e.target.value)
+                                        }
+                                        disabled={!estaHabilitado}
+                                        min={0}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* Separador vertical + Transformador */}
+                              {transformadorFunc && (
+                                <>
+                                  <div className="config-rele-func-separador-vertical" />
+                                  <div className="config-rele-func-transformador">
+                                  <span className="config-rele-func-transformador-nombre">{transformadorFunc.nombre}</span>
                                   <input
-                                    type="number"
-                                    className="config-rele-registro-valor"
-                                    value={reg.valor}
-                                    onChange={(e) =>
-                                      handleCambiarRegistro(funcId, index, e.target.value)
-                                    }
-                                    disabled={!estaHabilitado}
-                                    min={0}
+                                    type="text"
+                                    className="config-rele-func-transformador-formula"
+                                    value={transformadorFunc.formula}
+                                    readOnly
+                                    tabIndex={-1}
                                   />
                                 </div>
-                              ))}
+                                </>
+                              )}
                             </div>
                           </div>
                         );
@@ -625,9 +1087,20 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
         }}
         plantillas={plantillas}
         onCrear={handleCrearPlantilla}
-        onActualizar={actualizarPlantilla}
+        onActualizar={handleActualizarPlantilla}
         onEliminar={eliminarPlantilla}
         plantillaEditando={plantillaParaEditar}
+      />
+
+      {/* Modal de Gestión de Transformadores */}
+      <ModalTransformadores
+        abierto={modalTransformadoresAbierto}
+        onCerrar={() => setModalTransformadoresAbierto(false)}
+        transformadores={transformadores}
+        onCrear={crearTransformador}
+        onActualizar={actualizarTransformador}
+        onEliminar={eliminarTransformador}
+        tipoInicial={tipoTransformadorModal}
       />
     </div>
   );
