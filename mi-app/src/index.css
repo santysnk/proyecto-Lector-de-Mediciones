@@ -1,64 +1,21 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-
 /* src/index.css */
-/* 
-   NOTA PERSONAL SOBRE ESTE ARCHIVO (index.css)
-   - Este archivo define la “base” de estilos globales de la app.
-   - Primero importa Tailwind (`tailwindcss` y `tw-animate-css`) para poder usar
-      las utilidades y animaciones en todos los componentes.
-   - Luego declara muchas CSS custom properties (variables) para colores, radios,
-      fondos, etc., que funcionan como un pequeño sistema de diseño común.
-   - La sección `.dark { ... }` redefine esas mismas variables cuando el
-      documento tiene la clase `dark`, habilitando el tema oscuro.
-   - En `@layer base` se aplican estilos base de Tailwind al `body` y a todos
-      los elementos (borde/outline según el tema).
-   - Al final se registra la fuente “DS-Digital”, que se usa en los displays
-      numéricos de las tarjetas de alimentadores para simular un display digital.
+/*
+   ESTILOS GLOBALES DE LA APP
+   - Define variables CSS (custom properties) para colores, radios, etc.
+   - Sistema de diseño con tema claro/oscuro
+   - Fuentes digitales para displays numéricos
 */
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
+/* =========================================================
+   VARIABLES CSS - TEMA CLARO (por defecto)
+   ========================================================= */
+:root {
+   --radius: 0.625rem;
    --radius-sm: calc(var(--radius) - 4px);
    --radius-md: calc(var(--radius) - 2px);
    --radius-lg: var(--radius);
    --radius-xl: calc(var(--radius) + 4px);
-   --color-background: var(--background);
-   --color-foreground: var(--foreground);
-   --color-card: var(--card);
-   --color-card-foreground: var(--card-foreground);
-   --color-popover: var(--popover);
-   --color-popover-foreground: var(--popover-foreground);
-   --color-primary: var(--primary);
-   --color-primary-foreground: var(--primary-foreground);
-   --color-secondary: var(--secondary);
-   --color-secondary-foreground: var(--secondary-foreground);
-   --color-muted: var(--muted);
-   --color-muted-foreground: var(--muted-foreground);
-   --color-accent: var(--accent);
-   --color-accent-foreground: var(--accent-foreground);
-   --color-destructive: var(--destructive);
-   --color-border: var(--border);
-   --color-input: var(--input);
-   --color-ring: var(--ring);
-   --color-chart-1: var(--chart-1);
-   --color-chart-2: var(--chart-2);
-   --color-chart-3: var(--chart-3);
-   --color-chart-4: var(--chart-4);
-   --color-chart-5: var(--chart-5);
-   --color-sidebar: var(--sidebar);
-   --color-sidebar-foreground: var(--sidebar-foreground);
-   --color-sidebar-primary: var(--sidebar-primary);
-   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-   --color-sidebar-accent: var(--sidebar-accent);
-   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-   --color-sidebar-border: var(--sidebar-border);
-   --color-sidebar-ring: var(--sidebar-ring);
-}
 
-:root {
-   --radius: 0.625rem;
    --background: oklch(1 0 0);
    --foreground: oklch(0.145 0 0);
    --card: oklch(1 0 0);
@@ -90,8 +47,17 @@
    --sidebar-accent-foreground: oklch(0.205 0 0);
    --sidebar-border: oklch(0.922 0 0);
    --sidebar-ring: oklch(0.708 0 0);
+
+   /* Safe Area Insets - Compatibilidad con plugin @capacitor-community/safe-area */
+   --safe-area-inset-top: env(safe-area-inset-top, 0px);
+   --safe-area-inset-right: env(safe-area-inset-right, 0px);
+   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+   --safe-area-inset-left: env(safe-area-inset-left, 0px);
 }
 
+/* =========================================================
+   VARIABLES CSS - TEMA OSCURO
+   ========================================================= */
 .dark {
    --background: oklch(0.145 0 0);
    --foreground: oklch(0.985 0 0);
@@ -126,28 +92,26 @@
    --sidebar-ring: oklch(0.556 0 0);
 }
 
-@layer base {
-   * {
-      @apply border-border outline-ring/50;
-   }
-   body {
-      @apply bg-background text-foreground;
-      min-height: 100vh;
-      min-height: 100dvh; /* Dynamic viewport height para móviles */
-   }
-
-   /* Safe Area Insets - Compatibilidad con plugin @capacitor-community/safe-area
-      El plugin establece variables var(--safe-area-inset-*) en Android.
-      Usamos fallback a env() para navegadores que lo soportan nativamente. */
-   :root {
-      --safe-area-inset-top: env(safe-area-inset-top, 0px);
-      --safe-area-inset-right: env(safe-area-inset-right, 0px);
-      --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-area-inset-left: env(safe-area-inset-left, 0px);
-   }
+/* =========================================================
+   ESTILOS BASE
+   ========================================================= */
+* {
+   border-color: var(--border);
+   box-sizing: border-box;
 }
 
-/* Fuentes digitales para los displays de los alimentadores */
+body {
+   background-color: var(--background);
+   color: var(--foreground);
+   min-height: 100vh;
+   min-height: 100dvh; /* Dynamic viewport height para moviles */
+   margin: 0;
+   font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* =========================================================
+   FUENTES DIGITALES PARA DISPLAYS
+   ========================================================= */
 @font-face {
    font-family: "DS-Digital";
    src: url("/fonts/ds-digi.ttf") format("truetype");
@@ -180,7 +144,6 @@
    font-display: swap;
 }
 
-/* Fuentes industriales/técnicas adicionales */
 @font-face {
    font-family: "Orbitron";
    src: url("/fonts/Orbitron-Regular.ttf") format("truetype");
@@ -229,7 +192,9 @@
    font-display: swap;
 }
 
-/* Ocultar scrollbar pero mantener scroll funcional */
+/* =========================================================
+   OCULTAR SCROLLBAR (mantener scroll funcional)
+   ========================================================= */
 html,
 body,
 * {
@@ -243,8 +208,6 @@ body::-webkit-scrollbar,
 
 /* =========================================================
    ESTILOS PARA CAPACITOR (App Nativa Android/iOS)
-   Android 15+ fuerza edge-to-edge, usamos CSS para compensar.
-   Capacitor inyecta --safe-area-inset-* automáticamente.
    ========================================================= */
 html.capacitor-native {
    background-color: #0f172a;
@@ -263,6 +226,3 @@ body.capacitor-native {
    margin: 0;
    padding: 0;
 }
-
-/* El div#status-bar-cover se crea dinámicamente en main.jsx para cubrir la status bar */
-

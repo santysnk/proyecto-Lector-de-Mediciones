@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";           // API moderna de renderizado
 import { BrowserRouter } from "react-router-dom";  // enrutador basado en historial del navegador
 import { AuthProvider } from "./contextos/AuthContext"; // contexto de autenticación con Supabase
 import App from "./App.jsx";                       // componente raíz de la aplicación (define las rutas)
-import "./index.css";                              // estilos globales (tailwind + tema general)
+import "./index.css";                              // estilos globales (variables CSS + tema)
 import "./fuentes.css";                            // fuentes locales desde public/fonts/
 import { Capacitor } from "@capacitor/core";       // para detectar plataforma nativa
 
