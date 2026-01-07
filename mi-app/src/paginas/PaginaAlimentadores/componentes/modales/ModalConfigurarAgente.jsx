@@ -2,26 +2,11 @@
 // Ventana flotante para configurar agentes con pestañas dinámicas según rol
 // Soporta: arrastrar, minimizar, maximizar, redimensionar, múltiples instancias
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  // Nueva arquitectura
-  listarAgentesWorkspace,
-  listarAgentesDisponibles,
-  vincularAgenteWorkspace,
-  desvincularAgenteWorkspace,
-  listarTodosLosAgentes,
-  crearAgente,
-  eliminarAgente,
-  rotarClaveAgentePorId,
-  listarRegistradoresAgente,
-  crearRegistradorAgente,
-  actualizarRegistradorAgente,
-  eliminarRegistradorAgente,
-  toggleRegistradorAgente,
-  solicitarTestRegistrador,
-  consultarTestRegistrador,
-} from "../../../../servicios/apiService";
+import React, { useState, useEffect, useCallback } from "react";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
+import { useVentanaFlotante } from "../../hooks/useVentanaFlotante";
+import { useAgentesConfig } from "../../hooks/useAgentesConfig";
+import { useRegistradoresConfig } from "../../hooks/useRegistradoresConfig";
 import ConfiguracionRele from "./ConfiguracionRele";
 import "./ModalConfigurarAgente.css";
 
@@ -53,32 +38,12 @@ const ModalConfigurarAgente = ({
 }) => {
   const { rolGlobal, configuracionSeleccionada } = usarContextoConfiguracion();
 
-  // Refs para drag y resize
-  const ventanaRef = useRef(null);
-  const headerRef = useRef(null);
-
-  // Estados para drag
-  const [arrastrando, setArrastrando] = useState(false);
-  const [offsetArrastre, setOffsetArrastre] = useState({ x: 0, y: 0 });
-
-  // Estados para resize
-  const [redimensionando, setRedimensionando] = useState(false);
-  const [dimensiones, setDimensiones] = useState({ width: 900, height: 600 });
-  const [dimensionesIniciales, setDimensionesIniciales] = useState({ width: 0, height: 0 });
-  const [posicionInicialResize, setPosicionInicialResize] = useState({ x: 0, y: 0 });
-
   // Determinar permisos según rol
-  // - rolGlobal: rol del usuario en el sistema
-  // - configuracionSeleccionada?.rol: rol del usuario EN ESTE WORKSPACE
   const esSuperadmin = rolGlobal === 'superadmin';
   const rolEnWorkspace = configuracionSeleccionada?.rol;
   const esAdmin = esSuperadmin || rolEnWorkspace === 'admin';
-
-  // Solo el creador del workspace o superadmin pueden vincular/desvincular agentes
   const esCreadorWorkspace = configuracionSeleccionada?.esCreador === true;
   const puedeVincularDesvincular = esSuperadmin || esCreadorWorkspace;
-
-  // La pestaña "Vincular Agente" solo se muestra si puede vincular
   const puedeVincular = puedeVincularDesvincular;
 
   // Pestañas disponibles según rol
@@ -88,238 +53,142 @@ const ModalConfigurarAgente = ({
     { id: 'admin', label: 'Panel SuperAdmin', visible: esSuperadmin },
   ].filter(p => p.visible);
 
-  // Estado
+  // Estado local de UI
   const [pestanaActiva, setPestanaActiva] = useState('vinculados');
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Datos
-  const [agentesVinculados, setAgentesVinculados] = useState([]);
-  const [agentesDisponibles, setAgentesDisponibles] = useState([]);
-  const [todosAgentes, setTodosAgentes] = useState([]);
-  const [registradoresAgente, setRegistradoresAgente] = useState({});
-
-  // Estado para crear agente
-  const [mostrarFormCrear, setMostrarFormCrear] = useState(false);
-  const [nuevoAgente, setNuevoAgente] = useState({ nombre: '', descripcion: '' });
-  const [creando, setCreando] = useState(false);
-  const [claveGenerada, setClaveGenerada] = useState(null);
-
-  // Estado para expandir registradores
-  const [agenteExpandido, setAgenteExpandido] = useState(null);
-
-  // Estado para CRUD de registradores
-  const [mostrarFormRegistrador, setMostrarFormRegistrador] = useState(null); // null | agenteId
-  const [registradorEditando, setRegistradorEditando] = useState(null);
-  const [nuevoRegistrador, setNuevoRegistrador] = useState({
-    nombre: '',
-    tipo: 'modbus',
-    tipoDispositivo: 'analizador', // 'analizador' | 'rele'
-    ip: '',
-    puerto: '',
-    unitId: '',
-    indiceInicial: '',
-    cantidadRegistros: '',
-    intervaloSegundos: '',
-    // Configuración específica para relés de protección
-    configuracionRele: null,
+  // Hook de ventana flotante (drag/resize)
+  const {
+    ventanaRef,
+    headerRef,
+    dimensiones,
+    arrastrando,
+    redimensionando,
+    handleMouseDownDrag,
+    handleMouseDownResize,
+  } = useVentanaFlotante({
+    maximizada,
+    onMover,
+    onEnfocar,
   });
-  const [guardandoRegistrador, setGuardandoRegistrador] = useState(false);
-  const [registradorProcesando, setRegistradorProcesando] = useState(null); // ID del registrador que está procesando
 
-  // Estado para test de registrador
-  const [testEnCurso, setTestEnCurso] = useState(null); // { agenteId, registradorId, testId, estado, progreso }
-  const [resultadoTest, setResultadoTest] = useState(null); // Resultado del test para mostrar en modal
+  // Hook de agentes
+  const {
+    cargando,
+    error,
+    agentesVinculados,
+    agentesDisponibles,
+    todosAgentes,
+    mostrarFormCrear,
+    nuevoAgente,
+    creando,
+    claveGenerada,
+    agenteExpandido,
+    setMostrarFormCrear,
+    setNuevoAgente,
+    setError,
+    cargarDatos,
+    vincularAgente,
+    desvincularAgente,
+    crearNuevoAgente,
+    eliminarAgenteById,
+    rotarClave,
+    toggleExpandirAgente,
+    resetearEstado: resetearEstadoAgentes,
+    limpiarClaveGenerada,
+  } = useAgentesConfig({
+    workspaceId,
+    puedeVincular,
+    esSuperadmin,
+  });
+
+  // Hook de registradores
+  const {
+    registradoresAgente,
+    mostrarFormRegistrador,
+    registradorEditando,
+    nuevoRegistrador,
+    guardandoRegistrador,
+    registradorProcesando,
+    testEnCurso,
+    resultadoTest,
+    setMostrarFormRegistrador,
+    setNuevoRegistrador,
+    resetFormRegistrador,
+    cargarRegistradores,
+    guardarRegistrador,
+    editarRegistrador,
+    eliminarRegistrador,
+    toggleRegistrador,
+    toggleTodosRegistradores,
+    testRegistrador,
+    limpiarResultadoTest,
+    resetearEstado: resetearEstadoRegistradores,
+  } = useRegistradoresConfig();
 
   // Cargar datos al abrir
   useEffect(() => {
     if (abierto && workspaceId) {
       cargarDatos();
     }
-  }, [abierto, workspaceId]);
+  }, [abierto, workspaceId, cargarDatos]);
 
   // Resetear estado al cerrar
   useEffect(() => {
     if (!abierto) {
       setPestanaActiva('vinculados');
-      setError(null);
-      setMostrarFormCrear(false);
-      setClaveGenerada(null);
-      setAgenteExpandido(null);
-      setMostrarFormRegistrador(null);
-      setRegistradorEditando(null);
-      resetFormRegistrador();
-      setTestEnCurso(null);
-      setResultadoTest(null);
+      resetearEstadoAgentes();
+      resetearEstadoRegistradores();
     }
-  }, [abierto]);
+  }, [abierto, resetearEstadoAgentes, resetearEstadoRegistradores]);
 
-  // Reset form de registrador
-  const resetFormRegistrador = () => {
-    setNuevoRegistrador({
-      nombre: '',
-      tipo: 'modbus',
-      tipoDispositivo: 'analizador',
-      ip: '',
-      puerto: '',
-      unitId: '',
-      indiceInicial: '',
-      cantidadRegistros: '',
-      intervaloSegundos: '',
-      configuracionRele: null,
-    });
-    setRegistradorEditando(null);
-  };
-
-  const cargarDatos = async () => {
-    setCargando(true);
-    setError(null);
-
-    try {
-      // Cargar agentes vinculados al workspace
-      const vinculados = await listarAgentesWorkspace(workspaceId);
-      setAgentesVinculados(vinculados || []);
-
-      // Si puede vincular, cargar disponibles
-      if (puedeVincular) {
-        const disponibles = await listarAgentesDisponibles();
-        // Filtrar los que ya están vinculados
-        const idsVinculados = new Set((vinculados || []).map(a => a.id));
-        setAgentesDisponibles((disponibles || []).filter(a => !idsVinculados.has(a.id)));
-      }
-
-      // Si es superadmin, cargar todos
-      if (esSuperadmin) {
-        const todos = await listarTodosLosAgentes();
-        setTodosAgentes(todos || []);
-      }
-    } catch (err) {
-      console.error('Error cargando datos:', err);
-      setError(err.message || 'Error cargando datos');
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // Vincular agente al workspace
+  // Handlers de agentes
   const handleVincular = async (agenteId) => {
-    try {
-      setCargando(true);
-      await vincularAgenteWorkspace(workspaceId, agenteId);
-      await cargarDatos();
-      setPestanaActiva('vinculados');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    const exito = await vincularAgente(agenteId);
+    if (exito) setPestanaActiva('vinculados');
   };
 
-  // Desvincular agente del workspace
   const handleDesvincular = async (agenteId) => {
     if (!confirm('¿Desvincular este agente del workspace?')) return;
-
-    try {
-      setCargando(true);
-      await desvincularAgenteWorkspace(workspaceId, agenteId);
-      await cargarDatos();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    await desvincularAgente(agenteId);
   };
 
-  // Crear nuevo agente (superadmin)
   const handleCrearAgente = async (e) => {
     e.preventDefault();
-    if (!nuevoAgente.nombre.trim()) return;
-
-    try {
-      setCreando(true);
-      setError(null);
-      const resultado = await crearAgente(nuevoAgente.nombre, nuevoAgente.descripcion);
-      setClaveGenerada(resultado.claveSecreta);
-      setNuevoAgente({ nombre: '', descripcion: '' });
-      await cargarDatos();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCreando(false);
-    }
+    await crearNuevoAgente(nuevoAgente.nombre, nuevoAgente.descripcion);
   };
 
-  // Eliminar agente (superadmin)
   const handleEliminarAgente = async (agenteId, nombre) => {
     if (!confirm(`¿Eliminar el agente "${nombre}"? Esta acción no se puede deshacer.`)) return;
-
-    try {
-      setCargando(true);
-      await eliminarAgente(agenteId);
-      await cargarDatos();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    await eliminarAgenteById(agenteId);
   };
 
-  // Rotar clave de agente (superadmin)
   const handleRotarClave = async (agenteId) => {
     if (!confirm('¿Rotar la clave del agente? Deberás actualizar el agente con la nueva clave.')) return;
-
-    try {
-      setCargando(true);
-      const resultado = await rotarClaveAgentePorId(agenteId);
-      setClaveGenerada(resultado.nuevaClave);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setCargando(false);
-    }
+    await rotarClave(agenteId);
   };
 
-  // Cargar registradores de un agente
+  // Toggle registradores de un agente
   const toggleRegistradores = async (agenteId) => {
     if (agenteExpandido === agenteId) {
-      setAgenteExpandido(null);
+      toggleExpandirAgente(null);
       setMostrarFormRegistrador(null);
       return;
     }
 
-    try {
-      if (!registradoresAgente[agenteId]) {
-        const regs = await listarRegistradoresAgente(agenteId);
-        setRegistradoresAgente(prev => ({ ...prev, [agenteId]: regs }));
-      }
-      setAgenteExpandido(agenteId);
-    } catch (err) {
-      console.error('Error cargando registradores:', err);
+    if (!registradoresAgente[agenteId]) {
+      await cargarRegistradores(agenteId);
     }
+    toggleExpandirAgente(agenteId);
   };
 
-  // Recargar registradores de un agente
-  const recargarRegistradores = async (agenteId) => {
-    try {
-      const regs = await listarRegistradoresAgente(agenteId);
-      setRegistradoresAgente(prev => ({ ...prev, [agenteId]: regs }));
-    } catch (err) {
-      console.error('Error recargando registradores:', err);
-    }
-  };
-
-  // Crear o editar registrador
+  // Handlers de registradores - wrappers para validación local
   const handleGuardarRegistrador = async (e, agenteId) => {
     e.preventDefault();
-
-    // Validación básica
     if (!nuevoRegistrador.nombre.trim()) return;
 
-    // Para relés, la validación de conexión viene del componente ConfiguracionRele
     const esRele = nuevoRegistrador.tipoDispositivo === 'rele';
 
     if (esRele) {
-      // Validar que tenga configuración de relé con plantilla seleccionada
       const configRele = nuevoRegistrador.configuracionRele;
       if (!configRele || !configRele.plantillaId) {
         setError('Debes seleccionar una plantilla de configuración');
@@ -330,250 +199,55 @@ const ModalConfigurarAgente = ({
         return;
       }
     } else {
-      // Para analizadores, validar campos tradicionales
       if (!nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) return;
     }
 
     try {
-      setGuardandoRegistrador(true);
-      setError(null);
-
-      // Preparar datos según tipo de dispositivo
-      let datos;
-
-      if (esRele) {
-        // Para relés, usar la configuración del componente ConfiguracionRele (nuevo formato con plantillas)
-        const configRele = nuevoRegistrador.configuracionRele;
-        datos = {
-          nombre: nuevoRegistrador.nombre,
-          tipo: 'modbus',
-          tipoDispositivo: 'rele',
-          ip: configRele.conexion.ip,
-          puerto: String(configRele.conexion.puerto || 502),
-          unitId: String(configRele.conexion.unitId || 1),
-          indiceInicial: String(configRele.registroInicial || 120),
-          cantidadRegistros: String(configRele.cantidadRegistros || 80),
-          intervaloSegundos: '60', // Default, se puede agregar al formulario si es necesario
-          configuracionRele: configRele,
-        };
-      } else {
-        // Para analizadores, usar formato tradicional
-        datos = {
-          ...nuevoRegistrador,
-          tipoDispositivo: 'analizador',
-          unitId: nuevoRegistrador.unitId || '1',
-          intervaloSegundos: nuevoRegistrador.intervaloSegundos || '60',
-        };
-      }
-
-      if (registradorEditando) {
-        // Editar
-        await actualizarRegistradorAgente(agenteId, registradorEditando.id, datos);
-      } else {
-        // Crear
-        await crearRegistradorAgente(agenteId, datos);
-      }
-
-      await recargarRegistradores(agenteId);
-      setMostrarFormRegistrador(null);
-      resetFormRegistrador();
+      await guardarRegistrador(agenteId, nuevoRegistrador, registradorEditando?.id);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setGuardandoRegistrador(false);
     }
   };
 
-  // Editar registrador
   const handleEditarRegistrador = (reg) => {
-    setRegistradorEditando(reg);
-    setNuevoRegistrador({
-      nombre: reg.nombre || '',
-      tipo: reg.tipo || 'modbus',
-      tipoDispositivo: reg.tipo_dispositivo || 'analizador',
-      ip: reg.ip || '',
-      puerto: String(reg.puerto || '502'),
-      unitId: String(reg.unit_id || '1'),
-      indiceInicial: String(reg.indice_inicial || '0'),
-      cantidadRegistros: String(reg.cantidad_registros || '10'),
-      intervaloSegundos: String(reg.intervalo_segundos || '60'),
-      configuracionRele: reg.configuracion_rele || null,
-    });
-    setMostrarFormRegistrador(reg.agente_id);
+    editarRegistrador(reg);
   };
 
-  // Eliminar registrador
   const handleEliminarRegistrador = async (agenteId, registradorId, nombre) => {
     if (!confirm(`¿Eliminar el registrador "${nombre}"?`)) return;
-
     try {
-      setCargando(true);
-      await eliminarRegistradorAgente(agenteId, registradorId);
-      await recargarRegistradores(agenteId);
+      await eliminarRegistrador(agenteId, registradorId);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setCargando(false);
     }
   };
 
-  // Toggle activo registrador
   const handleToggleRegistrador = async (agenteId, registradorId) => {
     try {
-      setRegistradorProcesando(registradorId);
-      await toggleRegistradorAgente(agenteId, registradorId);
-      await recargarRegistradores(agenteId);
+      await toggleRegistrador(agenteId, registradorId);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setRegistradorProcesando(null);
     }
   };
 
-  // Iniciar o parar todos los registradores de un agente
   const handleToggleTodosRegistradores = async (agenteId, iniciar) => {
-    const regs = registradoresAgente[agenteId] || [];
-    const registrosAToggle = regs.filter(r => iniciar ? !r.activo : r.activo);
-
-    if (registrosAToggle.length === 0) return;
-
     try {
-      setRegistradorProcesando('todos');
-      // Toggle cada registrador que necesite cambiar
-      for (const reg of registrosAToggle) {
-        await toggleRegistradorAgente(agenteId, reg.id);
-      }
-      await recargarRegistradores(agenteId);
+      await toggleTodosRegistradores(agenteId, iniciar);
     } catch (err) {
       setError(err.message);
-    } finally {
-      setRegistradorProcesando(null);
     }
   };
 
-  // Test de conexión de registrador (usa datos del formulario)
   const handleTestRegistrador = async (agenteId) => {
-    // Verificar si ya hay un test en curso
-    if (testEnCurso) {
-      return;
-    }
-
-    // Validar que los campos requeridos estén completos
     if (!nuevoRegistrador.ip.trim() || !nuevoRegistrador.puerto || !nuevoRegistrador.indiceInicial || !nuevoRegistrador.cantidadRegistros) {
       setError('Completa IP, Puerto, Índice Inicial y Cantidad de Registros para hacer el test');
       return;
     }
 
-// Crear objeto con datos del formulario (fuera del try para usar en catch)
-    const datosTest = {
-      nombre: nuevoRegistrador.nombre || 'Test',
-      ip: nuevoRegistrador.ip,
-      puerto: parseInt(nuevoRegistrador.puerto),
-      unit_id: parseInt(nuevoRegistrador.unitId) || 1,
-      indice_inicial: parseInt(nuevoRegistrador.indiceInicial),
-      cantidad_registros: parseInt(nuevoRegistrador.cantidadRegistros),
-    };
-
     try {
-      setTestEnCurso({
-        agenteId,
-        registradorId: 'form',
-        testId: null,
-        estado: 'solicitando',
-        progreso: 0,
-      });
-      setResultadoTest(null);
-      setError(null);
-
-      // Solicitar el test
-      const respuesta = await solicitarTestRegistrador(agenteId, {
-        ip: datosTest.ip,
-        puerto: datosTest.puerto,
-        unitId: datosTest.unit_id,
-        indiceInicial: datosTest.indice_inicial,
-        cantidadRegistros: datosTest.cantidad_registros,
-      });
-
-      const { testId, timeoutSegundos } = respuesta;
-
-      setTestEnCurso(prev => ({
-        ...prev,
-        testId,
-        estado: 'esperando',
-        progreso: 0,
-      }));
-
-      // Polling del resultado
-      const tiempoInicio = Date.now();
-      const tiempoMaximo = (timeoutSegundos || 30) * 1000;
-      const intervalo = 1000; // Consultar cada segundo
-
-      const poll = async () => {
-        const tiempoTranscurrido = Date.now() - tiempoInicio;
-
-        if (tiempoTranscurrido > tiempoMaximo) {
-          setTestEnCurso(null);
-          setResultadoTest({
-            exito: false,
-            estado: 'timeout',
-            error_mensaje: 'El agente no respondió a tiempo',
-            registrador: datosTest,
-          });
-          return;
-        }
-
-        try {
-          const resultado = await consultarTestRegistrador(agenteId, testId);
-
-          // Actualizar progreso
-          const progreso = Math.min((tiempoTranscurrido / tiempoMaximo) * 100, 95);
-          setTestEnCurso(prev => prev ? { ...prev, progreso } : null);
-
-          if (resultado.estado === 'completado' || resultado.estado === 'error' || resultado.estado === 'timeout') {
-            // Primero llevar la barra a 100%
-            setTestEnCurso(prev => prev ? { ...prev, progreso: 100 } : null);
-
-            // Esperar un momento para que se vea la barra llena antes de mostrar el resultado
-            setTimeout(() => {
-              setTestEnCurso(null);
-              setResultadoTest({
-                ...resultado,
-                exito: resultado.estado === 'completado',
-                registrador: datosTest,
-              });
-            }, 400);
-          } else {
-            // Seguir esperando
-            setTimeout(poll, intervalo);
-          }
-        } catch (err) {
-          setTestEnCurso(null);
-          setResultadoTest({
-            exito: false,
-            estado: 'error',
-            error_mensaje: err.message,
-            registrador: datosTest,
-          });
-        }
-      };
-
-      // Iniciar polling
-      setTimeout(poll, intervalo);
-
+      await testRegistrador(agenteId, nuevoRegistrador);
     } catch (err) {
-      setTestEnCurso(null);
-
-      // Manejar error de cooldown
-      if (err.message?.includes('esperar')) {
-        setResultadoTest({
-          exito: false,
-          estado: 'cooldown',
-          error_mensaje: err.message,
-          registrador: datosTest,
-        });
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     }
   };
 
@@ -582,77 +256,7 @@ const ModalConfigurarAgente = ({
     navigator.clipboard.writeText(texto);
   };
 
-  // --- Drag & Drop ---
-  const handleMouseDown = (e) => {
-    if (maximizada) return;
-    if (e.target.closest("button")) return;
-    if (onEnfocar) onEnfocar();
-    setArrastrando(true);
-    const rect = ventanaRef.current.getBoundingClientRect();
-    setOffsetArrastre({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  useEffect(() => {
-    if (!arrastrando) return;
-
-    const handleMouseMove = (e) => {
-      const newX = Math.max(0, e.clientX - offsetArrastre.x);
-      const newY = Math.max(0, e.clientY - offsetArrastre.y);
-      if (onMover) {
-        onMover({ x: newX, y: newY });
-      }
-    };
-
-    const handleMouseUp = () => {
-      setArrastrando(false);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [arrastrando, offsetArrastre, onMover]);
-
-  // --- Resize ---
-  const handleResizeMouseDown = (e) => {
-    if (maximizada) return;
-    e.preventDefault();
-    e.stopPropagation();
-    setRedimensionando(true);
-    setPosicionInicialResize({ x: e.clientX, y: e.clientY });
-    const rect = ventanaRef.current.getBoundingClientRect();
-    setDimensionesIniciales({ width: rect.width, height: rect.height });
-  };
-
-  useEffect(() => {
-    if (!redimensionando) return;
-
-    const handleMouseMove = (e) => {
-      const deltaX = e.clientX - posicionInicialResize.x;
-      const deltaY = e.clientY - posicionInicialResize.y;
-      const newWidth = Math.max(600, dimensionesIniciales.width + deltaX);
-      const newHeight = Math.max(400, dimensionesIniciales.height + deltaY);
-      setDimensiones({ width: newWidth, height: newHeight });
-    };
-
-    const handleMouseUp = () => {
-      setRedimensionando(false);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [redimensionando, posicionInicialResize, dimensionesIniciales]);
-
-  // Manejadores para minimizar/maximizar (con fallbacks internos si no se proveen)
+  // Handlers de ventana
   const handleMinimizar = useCallback(() => {
     if (onMinimizar) onMinimizar();
   }, [onMinimizar]);
@@ -1021,7 +625,7 @@ const ModalConfigurarAgente = ({
       <header
         ref={headerRef}
         className="config-agente-header"
-        onMouseDown={handleMouseDown}
+        onMouseDown={handleMouseDownDrag}
       >
         <div className="config-agente-titulo">
           <span className="config-agente-icono">⚙️</span>
@@ -1075,7 +679,7 @@ const ModalConfigurarAgente = ({
             <div className="config-agente-alerta config-agente-alerta--exito">
               <div className="config-agente-alerta-header">
                 <strong>Clave del Agente</strong>
-                <button onClick={() => setClaveGenerada(null)}>×</button>
+                <button onClick={() => limpiarClaveGenerada()}>×</button>
               </div>
               <p>Guarda esta clave, no se mostrará de nuevo:</p>
               <div className="config-agente-clave-box">
@@ -1333,11 +937,11 @@ const ModalConfigurarAgente = ({
 
         {/* Modal de resultado del test */}
         {resultadoTest && (
-          <div className="config-agente-test-overlay" onClick={() => setResultadoTest(null)}>
+          <div className="config-agente-test-overlay" onClick={() => limpiarResultadoTest()}>
             <div className="config-agente-test-modal" onClick={e => e.stopPropagation()}>
               <div className="config-agente-test-header">
                 <h3>Resultado del Test</h3>
-                <button className="config-agente-cerrar" onClick={() => setResultadoTest(null)}>×</button>
+                <button className="config-agente-cerrar" onClick={() => limpiarResultadoTest()}>×</button>
               </div>
               <div className="config-agente-test-contenido">
                 <div className="config-agente-test-info">
@@ -1390,7 +994,7 @@ const ModalConfigurarAgente = ({
               <div className="config-agente-test-acciones">
                 <button
                   className="config-agente-btn config-agente-btn--primario"
-                  onClick={() => setResultadoTest(null)}
+                  onClick={() => limpiarResultadoTest()}
                 >
                   Cerrar
                 </button>
@@ -1419,7 +1023,7 @@ const ModalConfigurarAgente = ({
       {!maximizada && (
         <div
           className="config-agente-resize-handle"
-          onMouseDown={handleResizeMouseDown}
+          onMouseDown={handleMouseDownResize}
           title="Arrastrar para redimensionar"
         />
       )}

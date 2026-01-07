@@ -116,7 +116,8 @@ const GrillaUnifilar = ({
    // Calcular dimensiones
    useEffect(() => {
       let resizeObserver = null;
-      let timer = null;
+      let mutationObserver = null;
+      const timers = [];
 
       const actualizarDimensiones = () => {
          if (!contenedorRef.current) return;
@@ -125,26 +126,52 @@ const GrillaUnifilar = ({
 
          const rect = padre.getBoundingClientRect();
          if (rect.width > 0 && rect.height > 0) {
-            setDimensiones({ ancho: rect.width, alto: rect.height });
+            setDimensiones((prev) => {
+               // Solo actualizar si realmente cambió para evitar re-renders innecesarios
+               if (prev.ancho !== rect.width || prev.alto !== rect.height) {
+                  return { ancho: rect.width, alto: rect.height };
+               }
+               return prev;
+            });
          }
       };
 
+      // Múltiples intentos de actualización para capturar el layout estable
       requestAnimationFrame(actualizarDimensiones);
-      timer = setTimeout(actualizarDimensiones, 50);
-      const timer2 = setTimeout(actualizarDimensiones, 150);
+      timers.push(setTimeout(actualizarDimensiones, 50));
+      timers.push(setTimeout(actualizarDimensiones, 150));
+      timers.push(setTimeout(actualizarDimensiones, 300));
+      timers.push(setTimeout(actualizarDimensiones, 500));
 
       resizeObserver = new ResizeObserver(actualizarDimensiones);
       if (contenedorRef.current?.parentElement) {
          resizeObserver.observe(contenedorRef.current.parentElement);
       }
 
+      // Observar cambios en el body para detectar modales que se abren/cierran
+      mutationObserver = new MutationObserver(() => {
+         // Cuando se agregan/quitan elementos (modales), recalcular después de un pequeño delay
+         requestAnimationFrame(actualizarDimensiones);
+         setTimeout(actualizarDimensiones, 100);
+      });
+      mutationObserver.observe(document.body, { childList: true, subtree: false });
+
+      // También observar el documento para detectar cambios de visibilidad
+      const handleVisibilityChange = () => {
+         if (document.visibilityState === 'visible') {
+            requestAnimationFrame(actualizarDimensiones);
+         }
+      };
+
       window.addEventListener("resize", actualizarDimensiones);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
 
       return () => {
-         clearTimeout(timer);
-         clearTimeout(timer2);
+         timers.forEach(clearTimeout);
          if (resizeObserver) resizeObserver.disconnect();
+         if (mutationObserver) mutationObserver.disconnect();
          window.removeEventListener("resize", actualizarDimensiones);
+         document.removeEventListener("visibilitychange", handleVisibilityChange);
       };
    }, [modoEdicion]);
 
