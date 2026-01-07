@@ -490,6 +490,8 @@
 
 .dropdown-transformador {
   position: relative;
+  flex: 1;
+  min-width: 0;
 }
 
 .dropdown-transformador.disabled {
@@ -500,16 +502,18 @@
 .dropdown-transformador-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   background: #1a1f2e;
   border: 1px solid #2a3447;
   border-radius: 6px;
   color: #e4e4e7;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   cursor: pointer;
   transition: all 0.2s;
-  width: max-content;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .dropdown-transformador-trigger:hover:not(:disabled) {
@@ -528,29 +532,54 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.75rem;
 }
 
 .dropdown-transformador-chevron {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   color: #71717a;
   transition: transform 0.2s;
+  flex-shrink: 0;
 }
 
-/* Menu desplegable - ancho dinámico, crece hacia la izquierda */
+/* Menu desplegable - aparece a la derecha, centrado verticalmente */
 .dropdown-transformador-menu {
   position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 100%;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 200px;
   width: max-content;
   background: #1a1f2e;
   border: 1px solid #2a3447;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 100;
-  max-height: 280px;
+  z-index: 3000;
+  max-height: 300px;
   overflow-y: auto;
   padding: 8px 0;
+}
+
+/* Versión fixed del menú - no es cortado por el modal */
+.dropdown-transformador-menu--fixed {
+  position: fixed;
+  transform: none;
+  max-height: 500px;
+}
+
+/* Fuente más pequeña en el menú desplegable */
+.dropdown-transformador-menu--fixed .dropdown-transformador-nombre {
+  font-size: 0.8rem;
+}
+
+.dropdown-transformador-menu--fixed .dropdown-transformador-formula {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+
+.dropdown-transformador-menu--fixed .dropdown-transformador-opcion {
+  padding: 8px 14px;
+  gap: 12px;
 }
 
 /* Línea divisoria con degradado */
@@ -597,6 +626,22 @@
   white-space: nowrap;
 }
 
+/* Estilos del trigger del dropdown - fuente más pequeña */
+.dropdown-transformador-trigger .dropdown-transformador-nombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+}
+
+/* Mostrar fórmula en el trigger - compacta, sin truncar */
+.dropdown-transformador-trigger .dropdown-transformador-formula {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  padding: 3px 6px;
+}
+
 /* Input readonly para la fórmula */
 .dropdown-transformador-formula {
   padding: 5px 10px;
@@ -620,6 +665,32 @@
   color: #71717a;
   font-size: 0.85rem;
   font-style: italic;
+}
+
+/* Contenedor de acciones (mover y eliminar) */
+.modal-plantillas-func-acciones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Botones de mover arriba/abajo */
+.modal-plantillas-func-mover {
+  background: transparent;
+  border: 1px solid #3b4557;
+  color: #71717a;
+  font-size: 0.65rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.modal-plantillas-func-mover:hover {
+  background: rgba(37, 99, 235, 0.2);
+  border-color: #2563eb;
+  color: #93c5fd;
 }
 
 .modal-plantillas-func-eliminar {

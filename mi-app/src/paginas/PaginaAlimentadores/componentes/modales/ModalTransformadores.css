@@ -180,18 +180,21 @@
   padding: 6px 10px;
 }
 
-/* Formulario inline */
-.modal-transformadores-form-inline {
+/* Formulario vertical (nombre arriba, fórmula + botones abajo) */
+.modal-transformadores-form-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.modal-transformadores-form-fila {
   display: flex;
   gap: 10px;
   align-items: center;
-  width: 100%;
-  flex-wrap: wrap;
 }
 
 .modal-transformadores-input {
-  flex: 1;
-  min-width: 120px;
   padding: 8px 12px;
   background: #1a1f2e;
   border: 1px solid #2a3447;
@@ -205,8 +208,12 @@
   border-color: #2563eb;
 }
 
+.modal-transformadores-input-nombre {
+  width: 100%;
+}
+
 .modal-transformadores-input-formula {
-  flex: 2;
+  flex: 1;
   font-family: "Consolas", "Monaco", monospace;
 }
 

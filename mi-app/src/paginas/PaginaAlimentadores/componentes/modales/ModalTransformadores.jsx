@@ -113,10 +113,9 @@ const ModalTransformadores = ({
   };
 
   return (
-    <div className="modal-transformadores-overlay" onClick={onCerrar}>
+    <div className="modal-transformadores-overlay">
       <div
         className="modal-transformadores"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="modal-transformadores-header">
           <h3>Transformadores de Medida</h3>
@@ -153,7 +152,7 @@ const ModalTransformadores = ({
                 >
                   {modoEdicion === t.id ? (
                     // Modo edición inline
-                    <div className="modal-transformadores-form-inline">
+                    <div className="modal-transformadores-form-vertical">
                       <input
                         type="text"
                         value={formData.nombre}
@@ -161,19 +160,19 @@ const ModalTransformadores = ({
                           setFormData({ ...formData, nombre: e.target.value })
                         }
                         placeholder="Nombre"
-                        className="modal-transformadores-input"
+                        className="modal-transformadores-input modal-transformadores-input-nombre"
                         autoFocus
                       />
-                      <input
-                        type="text"
-                        value={formData.formula}
-                        onChange={(e) =>
-                          setFormData({ ...formData, formula: e.target.value })
-                        }
-                        placeholder="Fórmula (ej: x * 200 / 1000)"
-                        className="modal-transformadores-input modal-transformadores-input-formula"
-                      />
-                      <div className="modal-transformadores-item-acciones">
+                      <div className="modal-transformadores-form-fila">
+                        <input
+                          type="text"
+                          value={formData.formula}
+                          onChange={(e) =>
+                            setFormData({ ...formData, formula: e.target.value })
+                          }
+                          placeholder="Fórmula (ej: x * 200 / 1000)"
+                          className="modal-transformadores-input modal-transformadores-input-formula"
+                        />
                         <button
                           className="modal-transformadores-btn-guardar"
                           onClick={handleGuardar}
@@ -225,7 +224,7 @@ const ModalTransformadores = ({
             {/* Formulario para nuevo transformador */}
             {modoEdicion === "crear" && (
               <div className="modal-transformadores-item editando">
-                <div className="modal-transformadores-form-inline">
+                <div className="modal-transformadores-form-vertical">
                   <input
                     type="text"
                     value={formData.nombre}
@@ -233,19 +232,19 @@ const ModalTransformadores = ({
                       setFormData({ ...formData, nombre: e.target.value })
                     }
                     placeholder={`Nombre (ej: ${TIPOS_CONFIG[tipoActivo].placeholder})`}
-                    className="modal-transformadores-input"
+                    className="modal-transformadores-input modal-transformadores-input-nombre"
                     autoFocus
                   />
-                  <input
-                    type="text"
-                    value={formData.formula}
-                    onChange={(e) =>
-                      setFormData({ ...formData, formula: e.target.value })
-                    }
-                    placeholder="Fórmula (ej: x * 200 / 1000)"
-                    className="modal-transformadores-input modal-transformadores-input-formula"
-                  />
-                  <div className="modal-transformadores-item-acciones">
+                  <div className="modal-transformadores-form-fila">
+                    <input
+                      type="text"
+                      value={formData.formula}
+                      onChange={(e) =>
+                        setFormData({ ...formData, formula: e.target.value })
+                      }
+                      placeholder="Fórmula (ej: x * 200 / 1000)"
+                      className="modal-transformadores-input modal-transformadores-input-formula"
+                    />
                     <button
                       className="modal-transformadores-btn-guardar"
                       onClick={handleGuardar}

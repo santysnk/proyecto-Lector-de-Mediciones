@@ -98,18 +98,78 @@ const REGISTRO_174_INTERRUPTOR = {
 };
 
 /**
- * Registro 127 - Estado del Relé / SSR1
+ * Registro 127 - Estado del Relé / SSR1 (Salud del dispositivo)
+ *
+ * IMPORTANTE: Según el manual ABB, solo los bits 0 y 1 son significativos:
+ * - Bit 0: Error global del dispositivo (crítico)
+ * - Bit 1: Warning global del dispositivo
+ * - Bits 2-15: Reservados (ignorar)
+ *
+ * Un valor como 4 (bit 2) NO indica alarma - el dispositivo está OK.
  */
 const REGISTRO_127_RELE = {
-  nombre: "Estado Relé",
-  descripcion: "Salud general del relé de protección",
+  nombre: "Salud Dispositivo (SSR1)",
+  descripcion: "Estado de salud general del relé de protección",
   bits: {
-    0: { nombre: "Healthy", descripcion: "Relé saludable/operativo", tipo: "estado" },
-    1: { nombre: "Warning", descripcion: "Advertencia activa", tipo: "warning" },
-    2: { nombre: "Alarm", descripcion: "Alarma activa", tipo: "alarma" },
-    3: { nombre: "IntFault", descripcion: "Falla interna detectada", tipo: "error" },
-    4: { nombre: "Test", descripcion: "En modo de prueba", tipo: "info" },
-    5: { nombre: "Blocked", descripcion: "Funciones bloqueadas", tipo: "warning" },
+    0: { nombre: "Error Global", descripcion: "Error crítico del dispositivo - Requiere atención inmediata", tipo: "error" },
+    1: { nombre: "Warning Global", descripcion: "Advertencia del dispositivo - Revisar cuando sea posible", tipo: "warning" },
+    // Bits 2-15 son reservados y se ignoran
+  },
+  interpretacionEspecial: (valor) => {
+    const error = (valor & 0x01) !== 0;    // Bit 0
+    const warning = (valor & 0x02) !== 0;  // Bit 1
+
+    if (error) {
+      return {
+        estado: "ERROR",
+        clase: "error",
+        icono: "⛔",
+        descripcion: "Error global del dispositivo - Requiere atención inmediata"
+      };
+    } else if (warning) {
+      return {
+        estado: "WARNING",
+        clase: "warning",
+        icono: "⚠️",
+        descripcion: "Advertencia del dispositivo - Revisar cuando sea posible"
+      };
+    } else {
+      return {
+        estado: "OK",
+        clase: "ok",
+        icono: "✅",
+        descripcion: "Dispositivo funcionando correctamente"
+      };
+    }
+  }
+};
+
+/**
+ * Registro 131 - Heartbeat / SSR5
+ *
+ * Este es un contador que incrementa constantemente mientras el relé está vivo.
+ * NO se debe interpretar como bits - es un valor numérico de heartbeat.
+ */
+const REGISTRO_131_HEARTBEAT = {
+  nombre: "Heartbeat (SSR5)",
+  descripcion: "Contador de vida del dispositivo",
+  bits: {}, // No tiene bits significativos - es un contador
+  interpretacionEspecial: (valor) => {
+    if (valor > 0) {
+      return {
+        estado: "CONECTADO",
+        clase: "ok",
+        icono: "💚",
+        descripcion: `Dispositivo activo (contador: ${valor})`
+      };
+    } else {
+      return {
+        estado: "VERIFICAR",
+        clase: "warning",
+        icono: "❓",
+        descripcion: "Heartbeat en cero - Verificar conexión"
+      };
+    }
   }
 };
 
@@ -175,6 +235,7 @@ const REGISTRO_182_PROTECCION = {
 
 const MAPA_REGISTROS = {
   127: REGISTRO_127_RELE,
+  131: REGISTRO_131_HEARTBEAT,
   170: REGISTRO_170_DISPARO,
   172: REGISTRO_172_LEDS,
   173: REGISTRO_173_INTERRUPTOR_SIMPLE,
@@ -236,11 +297,12 @@ export function interpretarRegistro(numeroRegistro, valor, etiquetasPersonalizad
       descripcion = bitBase.descripcion;
     }
 
-    // Solo incluir bits que tienen etiqueta definida o están activos
-    if (etiqueta || estaActivo) {
+    // Solo incluir bits que tienen etiqueta definida
+    // IMPORTANTE: NO mostrar bits activos sin etiqueta (evita "Bit 12", "Bit 14" sin significado)
+    if (etiqueta) {
       const bitData = {
         posicion,
-        nombre: etiqueta || `Bit ${posicion}`,
+        nombre: etiqueta,
         descripcion,
         tipo: severidad,
         activo: estaActivo
@@ -248,7 +310,7 @@ export function interpretarRegistro(numeroRegistro, valor, etiquetasPersonalizad
 
       if (estaActivo) {
         bitsActivos.push(bitData);
-      } else if (etiqueta) {
+      } else {
         // Solo incluir bits inactivos si tienen etiqueta
         bitsInactivos.push(bitData);
       }

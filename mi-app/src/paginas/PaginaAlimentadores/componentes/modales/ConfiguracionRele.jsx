@@ -882,7 +882,18 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                         </div>
                         {funcsActivas.map(([funcId, plantillaFunc]) => {
                           const estadoActivo = config.funcionalidadesActivas[funcId];
-                          const registros = estadoActivo?.registros || plantillaFunc.registros || [];
+                          // Usar registros de la plantilla para tener transformadorId actualizado
+                          const registrosPlantilla = plantillaFunc.registros || [];
+                          const registrosEstado = estadoActivo?.registros || [];
+                          const registros = registrosPlantilla.map((regPlantilla, idx) => {
+                            const regEstado = registrosEstado[idx];
+                            return {
+                              ...regPlantilla,
+                              valor: regEstado?.valor ?? regPlantilla.valor,
+                              etiqueta: regEstado?.etiqueta ?? regPlantilla.etiqueta,
+                              transformadorId: regPlantilla.transformadorId,
+                            };
+                          });
 
                           return (
                             <div key={funcId} className="config-rele-valores-func">
@@ -899,8 +910,9 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                                       ? registrosCrudos.valores[indiceEnArray]
                                       : null;
 
-                                  // Aplicar transformador si la funcionalidad tiene uno asociado (solo para mediciones)
-                                  const transformadorId = plantillaFunc.transformadorId;
+                                  // Aplicar transformador si el registro tiene uno asociado (solo para mediciones)
+                                  // Nuevo: cada registro puede tener su propio transformadorId
+                                  const transformadorId = reg.transformadorId || null;
                                   const valorTransformado = transformadorId && valorLeido !== null
                                     ? aplicarFormulaTransformador(valorLeido, transformadorId)
                                     : null;
@@ -930,14 +942,17 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                                       {/* Mostrar interpretación si existe */}
                                       {interpretacion && interpretacion.tieneInterpretacion && (
                                         <div className="config-rele-interpretacion">
-                                          {/* Interpretación especial (como estado de interruptor) */}
+                                          {/* Interpretación especial (como estado de interruptor, heartbeat, etc.) */}
                                           {interpretacion.interpretacionEspecial && (
                                             <div className={`config-rele-interpretacion-especial ${obtenerClaseTipo(interpretacion.interpretacionEspecial.clase)}`}>
+                                              {interpretacion.interpretacionEspecial.icono && (
+                                                <span className="interpretacion-icono">{interpretacion.interpretacionEspecial.icono}</span>
+                                              )}
                                               <span className="interpretacion-estado">{interpretacion.interpretacionEspecial.estado}</span>
                                             </div>
                                           )}
-                                          {/* Bits activos */}
-                                          {interpretacion.bitsActivos.length > 0 && (
+                                          {/* Bits activos - NO mostrar si hay interpretación especial con icono (ej: Heartbeat) */}
+                                          {interpretacion.bitsActivos.length > 0 && !interpretacion.interpretacionEspecial?.icono && (
                                             <div className="config-rele-interpretacion-bits">
                                               {interpretacion.bitsActivos.map((bit, bitIdx) => (
                                                 <span
@@ -950,7 +965,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                                               ))}
                                             </div>
                                           )}
-                                          {/* Sin señales activas */}
+                                          {/* Sin señales activas - solo si no hay interpretación especial */}
                                           {interpretacion.bitsActivos.length === 0 && !interpretacion.interpretacionEspecial && (
                                             <div className="config-rele-interpretacion-vacio">
                                               Sin señales activas
@@ -1065,12 +1080,35 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                       {funcsDeCategoria.map(([funcId, plantillaFunc]) => {
                         const estadoActivo = config.funcionalidadesActivas[funcId];
                         const estaHabilitado = estadoActivo?.habilitado || false;
-                        const registros = estadoActivo?.registros || plantillaFunc.registros || [];
+                        // Usar registros de la plantilla que tienen los transformadorId actualizados
+                        // y combinar con estado activo para mantener valores editados
+                        const registrosPlantilla = plantillaFunc.registros || [];
+                        const registrosEstado = estadoActivo?.registros || [];
+                        // Combinar: usar estructura de plantilla pero permitir override del estado
+                        const registros = registrosPlantilla.map((regPlantilla, idx) => {
+                          const regEstado = registrosEstado[idx];
+                          return {
+                            ...regPlantilla,
+                            // Si hay valor editado en estado, usarlo
+                            valor: regEstado?.valor ?? regPlantilla.valor,
+                            etiqueta: regEstado?.etiqueta ?? regPlantilla.etiqueta,
+                            // El transformadorId siempre viene de la plantilla
+                            transformadorId: regPlantilla.transformadorId,
+                          };
+                        });
                         const estaExpandida = filasExpandidas.has(funcId);
 
-                        // Obtener el transformador asociado a esta funcionalidad
-                        const transformadorFunc = plantillaFunc.transformadorId
-                          ? obtenerTransformadorPorId(plantillaFunc.transformadorId)
+                        // Obtener los transformadores únicos de los registros
+                        const transformadoresUnicos = new Map();
+                        registros.forEach((reg) => {
+                          if (reg.transformadorId) {
+                            const t = obtenerTransformadorPorId(reg.transformadorId);
+                            if (t) transformadoresUnicos.set(reg.transformadorId, t);
+                          }
+                        });
+                        const cantTransformadores = transformadoresUnicos.size;
+                        const primerTransformador = cantTransformadores > 0
+                          ? Array.from(transformadoresUnicos.values())[0]
                           : null;
 
                         // Resumen de registros para mostrar en la fila colapsada
@@ -1112,13 +1150,22 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                                 )}
                               </td>
                               <td className="config-rele-tabla-td-ti-tv">
-                                {transformadorFunc ? (
+                                {cantTransformadores > 1 ? (
                                   <div className="config-rele-tabla-transformador">
                                     <span className="config-rele-tabla-ti-tv-nombre">
-                                      {transformadorFunc.nombre}
+                                      {cantTransformadores} diferentes
                                     </span>
                                     <span className="config-rele-tabla-ti-tv-formula">
-                                      {transformadorFunc.formula}
+                                      (ver detalle)
+                                    </span>
+                                  </div>
+                                ) : primerTransformador ? (
+                                  <div className="config-rele-tabla-transformador">
+                                    <span className="config-rele-tabla-ti-tv-nombre">
+                                      {primerTransformador.nombre}
+                                    </span>
+                                    <span className="config-rele-tabla-ti-tv-formula">
+                                      {primerTransformador.formula}
                                     </span>
                                   </div>
                                 ) : (
@@ -1136,15 +1183,33 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
                                         <tr>
                                           <th>Etiqueta</th>
                                           <th>Registro</th>
+                                          <th>TI / TV / Relación</th>
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        {registros.map((reg, index) => (
-                                          <tr key={index}>
-                                            <td>{reg.etiqueta || `Reg ${index + 1}`}</td>
-                                            <td>{reg.valor}</td>
-                                          </tr>
-                                        ))}
+                                        {registros.map((reg, index) => {
+                                          const transformadorReg = reg.transformadorId
+                                            ? obtenerTransformadorPorId(reg.transformadorId)
+                                            : null;
+                                          return (
+                                            <tr key={index}>
+                                              <td>{reg.etiqueta || `Reg ${index + 1}`}</td>
+                                              <td>{reg.valor}</td>
+                                              <td>
+                                                {transformadorReg ? (
+                                                  <span className="config-rele-subtabla-transformador">
+                                                    {transformadorReg.nombre}
+                                                    <span className="config-rele-subtabla-formula">
+                                                      {transformadorReg.formula}
+                                                    </span>
+                                                  </span>
+                                                ) : (
+                                                  <span className="config-rele-subtabla-sin-ti">—</span>
+                                                )}
+                                              </td>
+                                            </tr>
+                                          );
+                                        })}
                                       </tbody>
                                     </table>
                                   </div>

@@ -9,6 +9,7 @@ import "./ModalPlantillasRele.css";
 /**
  * Dropdown personalizado para seleccionar TI/TV/Relación
  * Con líneas divisorias degradadas y fórmula en input readonly
+ * Usa posición fixed para evitar ser cortado por el modal
  */
 const DropdownTransformador = ({
   value,
@@ -19,12 +20,50 @@ const DropdownTransformador = ({
   relaciones = []
 }) => {
   const [abierto, setAbierto] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef(null);
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+
+  // Calcular posición del menú cuando se abre
+  useEffect(() => {
+    if (abierto && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const menuHeight = 500; // altura máxima aproximada
+      const viewportHeight = window.innerHeight;
+
+      // Posición a la derecha del trigger
+      let left = rect.right + 8;
+
+      // Centrar verticalmente respecto al trigger
+      let top = rect.top + (rect.height / 2) - (menuHeight / 2);
+
+      // Ajustar si se sale por arriba
+      if (top < 10) top = 10;
+
+      // Ajustar si se sale por abajo
+      if (top + menuHeight > viewportHeight - 10) {
+        top = viewportHeight - menuHeight - 10;
+      }
+
+      // Si no cabe a la derecha, ponerlo a la izquierda
+      if (left + 300 > window.innerWidth) {
+        left = rect.left - 308;
+      }
+
+      setMenuPos({ top, left });
+    }
+  }, [abierto]);
 
   // Cerrar al hacer click fuera
   useEffect(() => {
     const handleClickFuera = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        menuRef.current &&
+        !menuRef.current.contains(e.target)
+      ) {
         setAbierto(false);
       }
     };
@@ -54,6 +93,7 @@ const DropdownTransformador = ({
         className="dropdown-transformador-trigger"
         onClick={() => !disabled && setAbierto(!abierto)}
         disabled={disabled}
+        ref={triggerRef}
       >
         {transformadorSeleccionado ? (
           <>
@@ -73,7 +113,11 @@ const DropdownTransformador = ({
       </button>
 
       {abierto && (
-        <div className="dropdown-transformador-menu">
+        <div
+          className="dropdown-transformador-menu dropdown-transformador-menu--fixed"
+          style={{ top: menuPos.top, left: menuPos.left }}
+          ref={menuRef}
+        >
           {/* Opción: Sin TI/TV */}
           <div
             className={`dropdown-transformador-opcion ${!value ? "seleccionado" : ""}`}
@@ -181,7 +225,7 @@ const ModalPlantillasRele = ({
   plantillaEditando = null,
 }) => {
   // Hook de transformadores
-  const { obtenerTIs, obtenerTVs, obtenerRelaciones } = useTransformadores();
+  const { obtenerTIs, obtenerTVs, obtenerRelaciones, recargar: recargarTransformadores } = useTransformadores();
 
   // Estado del formulario
   const [modo, setModo] = useState("lista"); // "lista" | "crear" | "editar"
@@ -223,6 +267,13 @@ const ModalPlantillasRele = ({
     }
   }, []);
 
+  // Recargar transformadores cuando el modal se abre
+  useEffect(() => {
+    if (abierto) {
+      recargarTransformadores();
+    }
+  }, [abierto, recargarTransformadores]);
+
   // Si se pasa una plantilla para editar, entrar en modo edición
   useEffect(() => {
     if (plantillaEditando && abierto) {
@@ -232,14 +283,23 @@ const ModalPlantillasRele = ({
       setDescripcion(plantillaEditando.descripcion || "");
       // Convertir funcionalidades del formato objeto al formato array
       const funcsArray = Object.entries(plantillaEditando.funcionalidades || {}).map(
-        ([id, data]) => ({
-          id,
-          nombre: data.nombre || id,
-          habilitado: data.habilitado !== false,
-          categoria: data.categoria || "mediciones",
-          registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
-          transformadorId: data.transformadorId || null,
-        })
+        ([id, data]) => {
+          // Migración: si hay transformadorId a nivel de funcionalidad, aplicarlo a cada registro
+          const transformadorIdGrupo = data.transformadorId || null;
+          const registrosBase = data.registros || [{ etiqueta: "", valor: data.registro || 0 }];
+          const registrosMigrados = registrosBase.map((reg) => ({
+            ...reg,
+            // Usar transformadorId del registro si existe, sino usar el del grupo (migración)
+            transformadorId: reg.transformadorId !== undefined ? reg.transformadorId : transformadorIdGrupo,
+          }));
+          return {
+            id,
+            nombre: data.nombre || id,
+            habilitado: data.habilitado !== false,
+            categoria: data.categoria || "mediciones",
+            registros: registrosMigrados,
+          };
+        }
       );
       setFuncionalidades(funcsArray);
       // Cargar etiquetas de bits si existen
@@ -295,14 +355,23 @@ const ModalPlantillasRele = ({
 
     // Convertir funcionalidades del formato objeto al formato array
     const funcsArray = Object.entries(plantilla.funcionalidades || {}).map(
-      ([id, data]) => ({
-        id,
-        nombre: data.nombre || id,
-        habilitado: data.habilitado !== false,
-        categoria: data.categoria || "mediciones",
-        registros: data.registros || [{ etiqueta: "", valor: data.registro || 0 }],
-        transformadorId: data.transformadorId || null,
-      })
+      ([id, data]) => {
+        // Migración: si hay transformadorId a nivel de funcionalidad, aplicarlo a cada registro
+        const transformadorIdGrupo = data.transformadorId || null;
+        const registrosBase = data.registros || [{ etiqueta: "", valor: data.registro || 0 }];
+        const registrosMigrados = registrosBase.map((reg) => ({
+          ...reg,
+          // Usar transformadorId del registro si existe, sino usar el del grupo (migración)
+          transformadorId: reg.transformadorId !== undefined ? reg.transformadorId : transformadorIdGrupo,
+        }));
+        return {
+          id,
+          nombre: data.nombre || id,
+          habilitado: data.habilitado !== false,
+          categoria: data.categoria || "mediciones",
+          registros: registrosMigrados,
+        };
+      }
     );
     setFuncionalidades(funcsArray);
     // Cargar etiquetas de bits
@@ -396,12 +465,55 @@ const ModalPlantillasRele = ({
   };
 
   // Cambiar transformador asociado a una funcionalidad
-  const handleCambiarTransformador = (funcId, transformadorId) => {
+  // Cambiar transformador de un registro específico
+  const handleCambiarTransformadorRegistro = (funcId, registroIndex, transformadorId) => {
     setFuncionalidades((prev) =>
-      prev.map((f) =>
-        f.id === funcId ? { ...f, transformadorId: transformadorId || null } : f
-      )
+      prev.map((f) => {
+        if (f.id !== funcId) return f;
+        const nuevosRegistros = f.registros.map((reg, idx) =>
+          idx === registroIndex
+            ? { ...reg, transformadorId: transformadorId || null }
+            : reg
+        );
+        return { ...f, registros: nuevosRegistros };
+      })
     );
+  };
+
+  // Aplicar un transformador a todos los registros de una funcionalidad
+  const handleAplicarTransformadorATodos = (funcId, transformadorId) => {
+    setFuncionalidades((prev) =>
+      prev.map((f) => {
+        if (f.id !== funcId) return f;
+        const nuevosRegistros = f.registros.map((reg) => ({
+          ...reg,
+          transformadorId: transformadorId || null,
+        }));
+        return { ...f, registros: nuevosRegistros };
+      })
+    );
+  };
+
+  // Mover funcionalidad hacia arriba
+  const handleMoverFuncionalidadArriba = (funcId) => {
+    setFuncionalidades((prev) => {
+      const index = prev.findIndex((f) => f.id === funcId);
+      if (index <= 0) return prev;
+      const newArr = [...prev];
+      [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
+      return newArr;
+    });
+  };
+
+  // Mover funcionalidad hacia abajo
+  const handleMoverFuncionalidadAbajo = (funcId) => {
+    setFuncionalidades((prev) => {
+      const index = prev.findIndex((f) => f.id === funcId);
+      if (index < 0 || index >= prev.length - 1) return prev;
+      const newArr = [...prev];
+      [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
+      return newArr;
+    });
   };
 
   // ============================================
@@ -587,15 +699,14 @@ const ModalPlantillasRele = ({
     const funcParaGuardar = {};
     funcionalidades.forEach((func) => {
       if (func.habilitado) {
+        // Los registros ya incluyen transformadorId por registro
         funcParaGuardar[func.id] = {
           nombre: func.nombre,
           categoria: func.categoria || "mediciones",
           habilitado: true,
-          registros: func.registros,
+          registros: func.registros, // Cada registro tiene su propio transformadorId
           // Mantener compatibilidad: primer registro como "registro" principal
           registro: func.registros[0]?.valor || 0,
-          // Transformador asociado (solo para mediciones)
-          transformadorId: func.transformadorId || null,
         };
       }
     });
@@ -670,11 +781,8 @@ const ModalPlantillasRele = ({
   if (!abierto) return null;
 
   return (
-    <div className="modal-plantillas-overlay" onClick={onCerrar}>
-      <div
-        className="modal-plantillas-contenido"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="modal-plantillas-overlay">
+      <div className="modal-plantillas-contenido">
         {/* Header */}
         <div className="modal-plantillas-header">
           <h3>
@@ -873,28 +981,35 @@ const ModalPlantillasRele = ({
                                     {func.nombre}
                                   </span>
                                 </label>
-                                {/* Selector de TI/TV/Relación solo para mediciones */}
-                                {categoria.id === "mediciones" && (
-                                  <DropdownTransformador
-                                    value={func.transformadorId || ""}
-                                    onChange={(id) => handleCambiarTransformador(func.id, id)}
-                                    disabled={!func.habilitado}
-                                    tis={obtenerTIs()}
-                                    tvs={obtenerTVs()}
-                                    relaciones={obtenerRelaciones()}
-                                  />
-                                )}
-                                <button
-                                  type="button"
-                                  className="modal-plantillas-func-eliminar"
-                                  onClick={() => handleEliminarFuncionalidad(func.id)}
-                                  title="Eliminar funcionalidad"
-                                >
-                                  ×
-                                </button>
+                                <div className="modal-plantillas-func-acciones">
+                                  <button
+                                    type="button"
+                                    className="modal-plantillas-func-mover"
+                                    onClick={() => handleMoverFuncionalidadArriba(func.id)}
+                                    title="Mover arriba"
+                                  >
+                                    ▲
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="modal-plantillas-func-mover"
+                                    onClick={() => handleMoverFuncionalidadAbajo(func.id)}
+                                    title="Mover abajo"
+                                  >
+                                    ▼
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="modal-plantillas-func-eliminar"
+                                    onClick={() => handleEliminarFuncionalidad(func.id)}
+                                    title="Eliminar funcionalidad"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
                               </div>
 
-                              {/* Registros individuales */}
+                              {/* Registros individuales con selector de TI/TV por registro */}
                               <div className="modal-plantillas-registros">
                                 {func.registros.map((reg, index) => (
                                   <div
@@ -923,6 +1038,17 @@ const ModalPlantillasRele = ({
                                       disabled={!func.habilitado}
                                       min={0}
                                     />
+                                    {/* Selector de TI/TV/Relación por registro - solo para mediciones */}
+                                    {categoria.id === "mediciones" && (
+                                      <DropdownTransformador
+                                        value={reg.transformadorId || ""}
+                                        onChange={(id) => handleCambiarTransformadorRegistro(func.id, index, id)}
+                                        disabled={!func.habilitado}
+                                        tis={obtenerTIs()}
+                                        tvs={obtenerTVs()}
+                                        relaciones={obtenerRelaciones()}
+                                      />
+                                    )}
                                   </div>
                                 ))}
                               </div>

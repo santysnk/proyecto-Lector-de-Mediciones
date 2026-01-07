@@ -1275,17 +1275,23 @@
   white-space: nowrap;
 }
 
-/* Columna Etiqueta: se estira */
+/* Columna Etiqueta: ancho pequeño */
 .config-rele-subtabla th:first-child,
 .config-rele-subtabla td:first-child {
-  width: 100%;
+  width: 80px;
 }
 
 /* Columna Registro: ancho fijo */
+.config-rele-subtabla th:nth-child(2),
+.config-rele-subtabla td:nth-child(2) {
+  width: 80px;
+  text-align: center;
+}
+
+/* Columna TI/TV/Relación: se estira */
 .config-rele-subtabla th:last-child,
 .config-rele-subtabla td:last-child {
-  width: 100px;
-  text-align: center;
+  width: 100%;
 }
 
 .config-rele-subtabla td {
@@ -1359,6 +1365,25 @@
 }
 
 .config-rele-tabla-sin-ti-tv {
+  color: #52525b;
+}
+
+/* Transformador en subtabla (por registro) */
+.config-rele-subtabla-transformador {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #93c5fd;
+  font-size: 0.8rem;
+}
+
+.config-rele-subtabla-formula {
+  color: #71717a;
+  font-size: 0.75rem;
+  font-family: "Consolas", "Monaco", monospace;
+}
+
+.config-rele-subtabla-sin-ti {
   color: #52525b;
 }
 
