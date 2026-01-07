@@ -24,7 +24,7 @@ El proyecto se compone de **3 repositorios independientes**:
 
 - **Package manager:** npm (nunca pnpm ni yarn)
 - **Framework frontend:** React 18 + Vite
-- **Estilos:** Tailwind CSS (única solución de estilos)
+- **Estilos:** CSS vanilla con archivos `.css` por componente
 - **Backend:** Express.js + Supabase
 - **Agente:** Electron + modbus-serial
 - **Lenguaje:** JavaScript con JSDoc para tipos. Migración gradual a TypeScript es bienvenida.
