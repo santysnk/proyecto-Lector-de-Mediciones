@@ -82,12 +82,6 @@ export {
    consultarTestRegistrador,
    solicitarTestCoils,
    testConexionModbus,
-   obtenerRegistradores,
-   crearRegistrador,
-   actualizarRegistrador,
-   eliminarRegistrador,
-   toggleActivoRegistrador,
-   testConexionRegistrador,
 } from './registradores';
 
 // Permisos

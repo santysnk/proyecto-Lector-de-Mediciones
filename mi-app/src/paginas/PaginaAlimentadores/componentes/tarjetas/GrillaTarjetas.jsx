@@ -11,6 +11,7 @@ import { useChispas } from "../../hooks/ui";
 import { useDeteccionFilas, useModoMobile } from "./hooks";
 import { puedeHacerPolling, GAP_FIJO_MOBILE, ROW_GAP_FIJO_MOBILE } from "./utilidades";
 import { BotonEditarDiagrama, BotonesArchivo } from "./componentes";
+import { ESCALA_MIN, ESCALA_MAX } from "../../constantes/escalas";
 import "./GrillaTarjetas.css";
 
 /**
@@ -47,8 +48,6 @@ const GrillaTarjetas = ({
    obtenerErrorPolling,
    obtenerEscalaEfectiva,
    onEscalaChange,
-   ESCALA_MIN = 0.5,
-   ESCALA_MAX = 2.0,
 }) => {
    const gridRef = useRef(null);
    const esModoMobile = useModoMobile();

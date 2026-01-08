@@ -1,8 +1,9 @@
 // src/paginas/PaginaAlimentadores/componentes/modales/ModalEditarPuestos.jsx
 
-import React, { useState, useEffect } from "react";      // React + hooks para estado y efectos
-import "./ModalEditarPuestos.css";                       // estilos específicos de este modal
+import React, { useState, useEffect } from "react";
+import "./ModalEditarPuestos.css";
 import { ColorPickerSimple, TabApariencia } from "../comunes";
+import { ESCALA_MIN, ESCALA_MAX } from "../../../constantes/escalas";
 
 // Componente interno para el input de escala con estado local
 const InputEscala = ({ valor, onChange, min, max }) => {
@@ -55,10 +56,8 @@ const ModalEditarPuestos = ({
 	esCreador,                                            // si el usuario es creador del workspace
 	rolEnWorkspace,                                       // rol del usuario en el workspace (admin, operador, observador)
 	// Props de escala por puesto
-	obtenerEscalaPuesto,                                  // (puestoId) => number | undefined
-	onEscalaPuestoChange,                                 // (puestoId, escala) => void
-	ESCALA_MIN = 0.5,
-	ESCALA_MAX = 2.0,
+	obtenerEscalaPuesto,
+	onEscalaPuestoChange,
 	// Props de estilos globales (para pestaña Apariencia)
 	estilosGlobales,                                      // objeto con estilos actuales
 	onGuardarEstilos,                                     // callback para guardar todos los estilos

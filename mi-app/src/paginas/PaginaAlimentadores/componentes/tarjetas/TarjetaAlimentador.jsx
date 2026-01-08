@@ -6,6 +6,7 @@ import GrupoMedidores from "./GrupoMedidores.jsx";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import { useTarjetaAlimentador } from "../../hooks/mediciones";
 import { PopoverEscala, MenuFlotante } from "./componentes";
+import { ESCALA_MIN, ESCALA_MAX } from "../../constantes/escalas";
 
 // ============================================================================
 // Helper que prepara la estructura de un lado de la tarjeta (sup/inf)
@@ -133,8 +134,6 @@ const TarjetaAlimentador = ({
    // Escala de la tarjeta
    escala = 1.0,
    onEscalaChange,
-   ESCALA_MIN = 0.5,
-   ESCALA_MAX = 2.0,
 }) => {
    // Obtener estilos globales del contexto
    const { estilosGlobales } = usarContextoConfiguracion();

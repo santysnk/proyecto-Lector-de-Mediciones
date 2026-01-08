@@ -2,21 +2,17 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { CLAVES_STORAGE } from "../../constantes/clavesAlmacenamiento";
-
-// Valores por defecto - Gaps horizontales (entre tarjetas)
-const GAP_DEFAULT = 10;
-const GAP_MIN = 0;
-const GAP_MAX = 500;
-
-// Valores por defecto - Gaps verticales (entre filas)
-const ROW_GAP_DEFAULT = 40;
-const ROW_GAP_MIN = 0;
-const ROW_GAP_MAX = 400;
-
-// Valores por defecto - Escala de tarjetas
-const ESCALA_DEFAULT = 1.0;
-const ESCALA_MIN = 0.5;
-const ESCALA_MAX = 2.0;
+import {
+   GAP_DEFAULT,
+   GAP_MIN,
+   GAP_MAX,
+   ROW_GAP_DEFAULT,
+   ROW_GAP_MIN,
+   ROW_GAP_MAX,
+   ESCALA_DEFAULT,
+   ESCALA_MIN,
+   ESCALA_MAX,
+} from "../../constantes/escalas";
 
 /**
  * Hook para manejar preferencias de UI:

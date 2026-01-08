@@ -5,6 +5,7 @@ import React from "react";
 import "./MenuLateral.css";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
+import { ESCALA_MIN, ESCALA_MAX } from "../../constantes/escalas";
 
 import {
    SeccionWorkspace,
@@ -32,8 +33,6 @@ const MenuLateral = ({
    coloresSistema,
    escalaGlobal,
    onEscalaGlobalChange,
-   ESCALA_MIN = 0.5,
-   ESCALA_MAX = 2.0,
 }) => {
    const {
       configuraciones,

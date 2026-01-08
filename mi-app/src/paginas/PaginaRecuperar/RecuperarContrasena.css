@@ -1,0 +1,124 @@
+/* src/paginas/PaginaRecuperar/RecuperarContrasena.css */
+
+.recuperar-fondo {
+    min-height: 100vh;
+    background-color: rgb(75, 133, 174);
+    background-image: radial-gradient(
+        circle at center,
+        #5fa0d0 0%,
+        #4b85ae 50%,
+        #325a80 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.recuperar-caja {
+    background: rgb(8, 8, 8);
+    padding: 20px 40px;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px #e0f7fa;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+    position: relative;
+}
+
+.btn-volver {
+    position: absolute;
+    top: 20px;
+    left: 40px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #e0f7fa;
+}
+
+.logo-recuperar {
+    align-items: center;
+}
+
+.h2-Recuperar {
+    color: #e0f7fa;
+    margin: 0 0 15px 0;
+    font-size: 26px;
+}
+
+.texto-ayuda {
+    color: #e0f7fa;
+    margin-bottom: 30px;
+    line-height: 1.5;
+    font-size: 15px;
+}
+
+.input-recuperar {
+    width: 100%;
+    padding: 16px;
+    background: #111111;
+    border: 2px solid rgba(0, 255, 255, 0.4);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 16px;
+    margin-bottom: 25px;
+    box-sizing: border-box;
+}
+
+.input-recuperar::placeholder {
+    color: #666666;
+}
+
+.input-recuperar:focus {
+    border-color: #00ffff;
+    box-shadow:
+        0 0 20px rgba(0, 255, 255, 0.6),
+        0 0 40px rgba(0, 255, 255, 0.3);
+    background: #000;
+}
+
+.btn-enviar {
+    background: rgba(3, 185, 246, 0.4);
+    color: #f5f8f8;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    width: 100%;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.btn-enviar:hover {
+    background: #06a1e3;
+}
+
+.alerta {
+    position: fixed;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 16px 32px;
+    border-radius: 16px;
+    color: white;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: bajar 0.6s ease;
+}
+
+.alerta-error { background: #d32f2f; }
+.alerta-exito { background: #388e3c; }
+
+@keyframes bajar {
+    from {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%);
+        opacity: 1;
+    }
+}
