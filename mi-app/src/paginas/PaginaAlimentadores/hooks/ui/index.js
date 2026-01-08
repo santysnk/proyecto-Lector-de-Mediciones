@@ -5,3 +5,5 @@ export { useGestorModales } from "./useGestorModales";
 export { default as useChispas } from "./useChispas";
 export { default as useVentanasHistorial } from "./useVentanasHistorial";
 export { useVentanaFlotante } from "./useVentanaFlotante";
+export { useArrastrarVentana } from "./useArrastrarVentana";
+export { useModoCompacto } from "./useModoCompacto";

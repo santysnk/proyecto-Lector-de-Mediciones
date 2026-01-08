@@ -5,3 +5,4 @@ export { useAgentesConfig } from "./useAgentesConfig";
 export { useRegistradoresConfig } from "./useRegistradoresConfig";
 export { useConsolaTest } from "./useConsolaTest";
 export { default as useVentanaConfigAgente } from "./useVentanaConfigAgente";
+export { useRegistradoresWorkspace } from "./useRegistradoresWorkspace";

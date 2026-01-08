@@ -3,3 +3,4 @@
 
 export { PopoverEscala } from "./PopoverEscala";
 export { MenuFlotante } from "./MenuFlotante";
+export { BotonEditarDiagrama, BotonesArchivo } from "./BotonesUnifilar";
