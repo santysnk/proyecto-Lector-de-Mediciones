@@ -33,16 +33,6 @@ export async function crearAgente(nombre, descripcion = '') {
 }
 
 /**
- * Actualiza un agente (solo superadmin)
- */
-export async function actualizarAgente(agenteId, datos) {
-   return fetchConAuth(`/api/admin/agentes/${agenteId}`, {
-      method: 'PUT',
-      body: JSON.stringify(datos),
-   });
-}
-
-/**
  * Elimina un agente (solo superadmin)
  */
 export async function eliminarAgente(agenteId) {

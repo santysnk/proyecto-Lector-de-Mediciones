@@ -53,7 +53,6 @@ export {
    desvincularAgente,
    listarTodosLosAgentes,
    crearAgente,
-   actualizarAgente,
    eliminarAgente,
    rotarClaveAgentePorId,
    listarAgentesDisponibles,
