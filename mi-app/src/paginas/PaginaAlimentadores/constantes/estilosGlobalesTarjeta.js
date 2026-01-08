@@ -61,7 +61,7 @@ export const ESTILOS_GLOBALES_DEFAULT = {
   header: {
     fontFamily: "inherit",
     fontSize: "1rem",        // ~16px
-    fontWeight: 700,
+    fontWeight: 400,          // normal
   },
 
   // 2. Títulos de zona (superior e inferior como conjunto)
