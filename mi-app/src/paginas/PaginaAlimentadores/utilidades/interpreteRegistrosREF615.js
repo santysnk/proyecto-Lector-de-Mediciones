@@ -425,15 +425,6 @@ export function tieneInterpretacion(numeroRegistro) {
 }
 
 /**
- * Obtiene la definición de un registro
- * @param {number} numeroRegistro - Número del registro
- * @returns {Object|null}
- */
-export function obtenerDefinicionRegistro(numeroRegistro) {
-  return MAPA_REGISTROS[numeroRegistro] || null;
-}
-
-/**
  * Verifica si una categoría de funcionalidad requiere interpretación
  * @param {string} categoriaId - ID de la categoría
  * @returns {boolean}
@@ -458,26 +449,6 @@ export function obtenerClaseTipo(tipo) {
     unknown: "interpretacion-unknown"
   };
   return clases[tipo] || "interpretacion-info";
-}
-
-/**
- * Obtiene las etiquetas por defecto de un registro para usar en el formulario
- * @param {number} numeroRegistro - Número del registro
- * @returns {Object} - { bit: { texto, severidad }, ... }
- */
-export function obtenerEtiquetasDefecto(numeroRegistro) {
-  const definicion = MAPA_REGISTROS[numeroRegistro];
-  if (!definicion) return {};
-
-  const etiquetas = {};
-  Object.entries(definicion.bits).forEach(([bitPos, bitInfo]) => {
-    etiquetas[bitPos] = {
-      texto: bitInfo.nombre,
-      severidad: bitInfo.tipo
-    };
-  });
-
-  return etiquetas;
 }
 
 /**
@@ -543,19 +514,11 @@ export const PLANTILLAS_ETIQUETAS_LEDS = {
   }
 };
 
-/**
- * Exportar mapa de registros para referencia
- */
-export const REGISTROS_INTERPRETABLES = MAPA_REGISTROS;
-
 export default {
   interpretarRegistro,
   tieneInterpretacion,
-  obtenerDefinicionRegistro,
   categoriaRequiereInterpretacion,
   obtenerClaseTipo,
-  obtenerEtiquetasDefecto,
-  REGISTROS_INTERPRETABLES,
   SEVERIDADES_DISPONIBLES,
   PLANTILLAS_ETIQUETAS_LEDS
 };

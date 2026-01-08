@@ -47,14 +47,6 @@ export const INTERVALOS_INFORME = [
   { id: 720, label: "12 horas", minutos: 720 },
 ];
 
-// Intervalos de filtro para panel de datos (en minutos)
-export const INTERVALOS_FILTRO = [
-  { value: 0, label: "Todos" },
-  { value: 15, label: "cada 15m" },
-  { value: 30, label: "cada 30m" },
-  { value: 60, label: "cada 60m" },
-];
-
 // Colores del gradiente verde-amarillo-rojo
 export const COLORES_GRADIENTE = {
   verde: { r: 34, g: 197, b: 94 },     // #22c55e
@@ -62,31 +54,3 @@ export const COLORES_GRADIENTE = {
   rojo: { r: 239, g: 68, b: 68 },      // #ef4444
 };
 
-// Configuración de IndexedDB
-export const INDEXEDDB_CONFIG = {
-  nombre: "RelayWatchHistorial",
-  version: 1,
-  store: "lecturas",
-};
-
-// Estilos del gráfico base (tema oscuro)
-export const ESTILOS_GRAFICO_BASE = {
-  background: "#0f172a",
-  foreColor: "#e2e8f0",
-  gridColor: "#334155",
-  labelColor: "#94a3b8",
-  borderColor: "#334155",
-};
-
-// Estilos del gráfico para exportación (tema claro)
-export const ESTILOS_GRAFICO_EXPORT = {
-  background: "#ffffff",
-  foreColor: "#1a1a1a",
-  gridColor: "#bbbbbb",
-  labelColor: "#1a1a1a",
-  borderColor: "#333333",
-  fontSize: "16px",
-  fontSizeTitle: "17px",
-  fontWeight: 600,
-  fontWeightTitle: 700,
-};

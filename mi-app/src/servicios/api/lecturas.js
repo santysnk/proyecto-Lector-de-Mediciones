@@ -4,28 +4,6 @@
 import { fetchConAuth } from './base';
 
 /**
- * Obtiene las últimas lecturas de un alimentador
- */
-export async function obtenerUltimasLecturas(alimentadorId, tipo = null, limite = 1) {
-   let url = `/api/alimentadores/${alimentadorId}/lecturas?limite=${limite}`;
-   if (tipo) {
-      url += `&tipo=${tipo}`;
-   }
-   return fetchConAuth(url);
-}
-
-/**
- * Obtiene lecturas históricas de un alimentador
- */
-export async function obtenerLecturasHistoricas(alimentadorId, desde, hasta, tipo = null) {
-   let url = `/api/alimentadores/${alimentadorId}/lecturas/historico?desde=${desde}&hasta=${hasta}`;
-   if (tipo) {
-      url += `&tipo=${tipo}`;
-   }
-   return fetchConAuth(url);
-}
-
-/**
  * Obtiene las últimas lecturas de un registrador
  * @param {string} registradorId - ID del registrador
  * @param {number} limite - Cantidad de lecturas a obtener (default 1)

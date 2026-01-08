@@ -163,25 +163,6 @@ export const limpiarLecturasAntiguas = async (db, horasRetencion = 48) => {
 };
 
 /**
- * Cuenta el número de lecturas para un alimentador
- * @param {IDBDatabase} db - Conexión a la base de datos
- * @param {string} alimentadorId - ID del alimentador
- * @returns {Promise<number>} - Cantidad de lecturas
- */
-export const contarLecturas = async (db, alimentadorId) => {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readonly");
-    const store = tx.objectStore(STORE_NAME);
-    const index = store.index("alimentadorId");
-
-    const request = index.count(alimentadorId);
-
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-};
-
-/**
  * Obtiene estadísticas del almacenamiento
  * @param {IDBDatabase} db - Conexión a la base de datos
  * @returns {Promise<Object>} - Estadísticas

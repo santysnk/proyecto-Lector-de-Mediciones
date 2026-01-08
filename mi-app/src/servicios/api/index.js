@@ -25,7 +25,6 @@ export {
    crearPuesto,
    actualizarPuesto,
    eliminarPuesto,
-   reordenarPuestos,
 } from './puestos';
 
 // Alimentadores
@@ -35,13 +34,10 @@ export {
    actualizarAlimentadorAPI,
    eliminarAlimentadorAPI,
    reordenarAlimentadores,
-   moverAlimentador,
 } from './alimentadores';
 
 // Lecturas
 export {
-   obtenerUltimasLecturas,
-   obtenerLecturasHistoricas,
    obtenerUltimasLecturasPorRegistrador,
    obtenerLecturasHistoricasPorRegistrador,
 } from './lecturas';
@@ -54,12 +50,7 @@ export {
 
 // Agentes
 export {
-   // Legacy
-   obtenerEstadoAgente,
-   solicitarVinculacionAgente,
    desvincularAgente,
-   rotarClaveAgente,
-   // Nueva arquitectura
    listarTodosLosAgentes,
    crearAgente,
    actualizarAgente,
@@ -80,8 +71,6 @@ export {
    toggleRegistradorAgente,
    solicitarTestRegistrador,
    consultarTestRegistrador,
-   solicitarTestCoils,
-   testConexionModbus,
 } from './registradores';
 
 // Permisos
@@ -104,7 +93,6 @@ export {
 // Dispositivos
 export {
    registrarTokenDispositivo,
-   desregistrarTokenDispositivo,
 } from './dispositivos';
 
 // Default export para compatibilidad con: import apiService from '...'

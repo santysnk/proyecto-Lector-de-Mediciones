@@ -3,32 +3,8 @@
 
 import { fetchConAuth } from './base';
 
-// ============================================
-// AGENTES (Legacy - mantener por compatibilidad)
-// ============================================
-
 /**
- * Obtiene el estado de vinculación del workspace con un agente
- * @deprecated Usar listarAgentesWorkspace
- */
-export async function obtenerEstadoAgente(workspaceId) {
-   return fetchConAuth(`/api/agentes/estado?workspaceId=${workspaceId}`);
-}
-
-/**
- * Solicita un código de vinculación para conectar el workspace con un agente
- * @deprecated Usar vincularAgenteWorkspace
- */
-export async function solicitarVinculacionAgente(workspaceId) {
-   return fetchConAuth('/api/agentes/solicitar-vinculacion', {
-      method: 'POST',
-      body: JSON.stringify({ workspaceId }),
-   });
-}
-
-/**
- * Desvincula el agente del workspace
- * @deprecated Usar desvincularAgenteWorkspace
+ * Desvincula el agente del workspace (legacy)
  */
 export async function desvincularAgente(workspaceId) {
    return fetchConAuth('/api/agentes/desvincular', {
@@ -36,21 +12,6 @@ export async function desvincularAgente(workspaceId) {
       body: JSON.stringify({ workspaceId }),
    });
 }
-
-/**
- * Rota la clave del agente (genera nueva, mantiene anterior por 24h)
- * @deprecated Usar rotarClaveAgentePorId
- */
-export async function rotarClaveAgente(workspaceId) {
-   return fetchConAuth('/api/agentes/rotar-clave', {
-      method: 'POST',
-      body: JSON.stringify({ workspaceId }),
-   });
-}
-
-// ============================================
-// AGENTES (Nueva arquitectura N:M)
-// ============================================
 
 // --- Panel Admin (solo superadmin) ---
 

@@ -52,9 +52,6 @@ export const FUENTES_DISPONIBLES = [
   { id: "'Zilla Slab', serif", label: "Zilla Slab" },
 ];
 
-// Alias para compatibilidad (usa la misma lista)
-export const FUENTES_DIGITALES = FUENTES_DISPONIBLES;
-
 // Key para localStorage
 export const ESTILOS_GLOBALES_STORAGE_KEY = "alimentadores_estilos_globales";
 

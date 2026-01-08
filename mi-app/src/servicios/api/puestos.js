@@ -39,12 +39,3 @@ export async function eliminarPuesto(puestoId) {
    });
 }
 
-/**
- * Reordena los puestos
- */
-export async function reordenarPuestos(workspaceId, ordenIds) {
-   return fetchConAuth(`/api/workspaces/${workspaceId}/puestos/reordenar`, {
-      method: 'PUT',
-      body: JSON.stringify({ orden: ordenIds }),
-   });
-}

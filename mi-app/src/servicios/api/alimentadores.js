@@ -52,12 +52,3 @@ export async function reordenarAlimentadores(puestoId, ordenIds) {
    });
 }
 
-/**
- * Mueve un alimentador a otro puesto
- */
-export async function moverAlimentador(alimentadorId, nuevoPuestoId) {
-   return fetchConAuth(`/api/alimentadores/${alimentadorId}/mover`, {
-      method: 'PUT',
-      body: JSON.stringify({ nuevo_puesto_id: nuevoPuestoId }),
-   });
-}

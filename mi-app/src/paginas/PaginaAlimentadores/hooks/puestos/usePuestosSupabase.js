@@ -7,7 +7,6 @@ import {
   crearPuesto,
   actualizarPuesto,
   eliminarPuesto as eliminarPuestoAPI,
-  reordenarPuestos,
   obtenerAlimentadores,
   crearAlimentador,
   actualizarAlimentadorAPI,

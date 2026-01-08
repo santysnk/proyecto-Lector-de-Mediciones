@@ -96,25 +96,6 @@ export const CATEGORIAS_FUNCIONALIDADES = {
 };
 
 /**
- * Obtiene las funcionalidades agrupadas por categoría
- */
-export const getFuncionalidadesPorCategoria = () => {
-  const agrupadas = {};
-
-  Object.values(FUNCIONALIDADES_DISPONIBLES).forEach((func) => {
-    if (!agrupadas[func.categoria]) {
-      agrupadas[func.categoria] = {
-        ...CATEGORIAS_FUNCIONALIDADES[func.categoria],
-        funcionalidades: [],
-      };
-    }
-    agrupadas[func.categoria].funcionalidades.push(func);
-  });
-
-  return agrupadas;
-};
-
-/**
  * Key de localStorage para las plantillas de relé
  */
 export const STORAGE_KEY_PLANTILLAS = "rw-plantillas-rele";

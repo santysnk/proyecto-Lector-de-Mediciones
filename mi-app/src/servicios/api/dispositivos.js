@@ -16,14 +16,3 @@ export async function registrarTokenDispositivo(fcmToken, plataforma = 'android'
    });
 }
 
-/**
- * Desregistra el token FCM del dispositivo
- * @param {string} fcmToken - Token FCM a desregistrar
- * @returns {Promise<Object>} Confirmación
- */
-export async function desregistrarTokenDispositivo(fcmToken) {
-   return fetchConAuth('/api/dispositivos/desregistrar', {
-      method: 'DELETE',
-      body: JSON.stringify({ fcmToken }),
-   });
-}
