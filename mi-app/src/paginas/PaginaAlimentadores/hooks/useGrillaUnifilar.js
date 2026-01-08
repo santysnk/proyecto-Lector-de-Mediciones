@@ -1,913 +1,509 @@
 // src/paginas/PaginaAlimentadores/hooks/usarGrillaUnifilar.js
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import {
+   // Constantes
+   COLORES_UNIFILAR,
+   FUENTES_DISPONIBLES,
+   TAMANOS_FUENTE,
+   GROSORES_LINEA,
+   TIPOS_BORNE,
+   CONFIG_CHISPAS_DEFAULT,
+   CONFIG_TEXTO_INICIAL,
+   // Algoritmos
+   obtenerCeldasConectadas as obtenerConectadas,
+   calcularCeldasMovidas,
+   calcularFloodFill,
+   calcularBorradoArea,
+   calcularPosicionLineaRecta,
+   // Persistencia
+   generarClave,
+   cargarDatos,
+   guardarDatosEnStorage,
+   exportarAArchivo as exportarArchivo,
+   importarDesdeArchivo as importarArchivo,
+} from "./grilla-unifilar";
 
-/**
- * Clave base para localStorage - cada puesto tendrá su propio dibujo
- */
-const CLAVE_BASE = "rw-grilla-unifilar";
-
-/**
- * Colores predefinidos para dibujar el diagrama unifiliar
- */
-export const COLORES_UNIFILAR = [
-	{ id: "rojo", color: "#dc2626", nombre: "Rojo" },
-	{ id: "azul", color: "#2563eb", nombre: "Azul" },
-	{ id: "verde", color: "#16a34a", nombre: "Verde" },
-	{ id: "amarillo", color: "#ca8a04", nombre: "Amarillo" },
-	{ id: "naranja", color: "#ea580c", nombre: "Naranja" },
-	{ id: "rosa", color: "#db2777", nombre: "Rosa" },
-	{ id: "violeta", color: "#7c3aed", nombre: "Violeta" },
-	{ id: "celeste", color: "#0891b2", nombre: "Celeste" },
-	{ id: "blanco", color: "#ffffff", nombre: "Blanco" },
-	{ id: "negro", color: "#000000", nombre: "Negro" },
-];
-
-/**
- * Fuentes disponibles para texto
- */
-export const FUENTES_DISPONIBLES = [
-	{ id: "arial", nombre: "Arial", familia: "Arial, sans-serif" },
-	{ id: "helvetica", nombre: "Helvetica", familia: "Helvetica, Arial, sans-serif" },
-	{ id: "times", nombre: "Times New Roman", familia: "Times New Roman, serif" },
-	{ id: "courier", nombre: "Courier", familia: "Courier New, monospace" },
-	{ id: "georgia", nombre: "Georgia", familia: "Georgia, serif" },
-	{ id: "verdana", nombre: "Verdana", familia: "Verdana, sans-serif" },
-];
-
-/**
- * Tamaños de fuente disponibles
- */
-export const TAMANOS_FUENTE = [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48];
-
-/**
- * Grosores de línea disponibles (en píxeles)
- */
-export const GROSORES_LINEA = [
-	{ id: "fino", valor: 8, nombre: "Fino" },
-	{ id: "normal", valor: 12, nombre: "Normal" },
-	{ id: "medio", valor: 16, nombre: "Medio" },
-	{ id: "grueso", valor: 20, nombre: "Grueso" },
-	{ id: "extra", valor: 28, nombre: "Extra" },
-];
-
-/**
- * Tipos de bornes para el sistema de chispas
- */
-export const TIPOS_BORNE = {
-	EMISOR: "EMISOR",
-	RECEPTOR: "RECEPTOR",
-};
-
-/**
- * Configuración por defecto de chispas
- */
-export const CONFIG_CHISPAS_DEFAULT = {
-	velocidad: 8,        // celdas por segundo
-	tamano: 4,           // radio en píxeles
-	color: "#fef08a",    // amarillo brillante
-	estela: true,        // mostrar estela
-	longitudEstela: 5,   // cantidad de posiciones en la estela
-	frecuenciaEmision: 2000, // ms entre emisiones
-};
+// Re-exportar constantes para uso externo
+export { COLORES_UNIFILAR, FUENTES_DISPONIBLES, TAMANOS_FUENTE, GROSORES_LINEA, TIPOS_BORNE, CONFIG_CHISPAS_DEFAULT };
 
 /**
  * Hook para manejar la grilla de dibujo unifiliar
- *
  * @param {string} puestoId - ID del puesto actual
  * @param {string} workspaceId - ID del workspace actual
- * @returns {Object} Estado y funciones para manejar la grilla
  */
 const useGrillaUnifilar = (puestoId, workspaceId) => {
-	// Estado del dibujo: objeto con claves "x,y" y valores de color
-	const [celdas, setCeldas] = useState({});
-	// Textos: array de { id, x, y, texto, color, fuente, tamano, negrita, cursiva }
-	const [textos, setTextos] = useState([]);
-	// Modo edición activo
-	const [modoEdicion, setModoEdicion] = useState(false);
-	// Color seleccionado para pintar
-	const [colorSeleccionado, setColorSeleccionado] = useState(COLORES_UNIFILAR[0].color);
-	// Herramienta activa: "pincel", "borrador", "texto", "balde" o "mover"
-	const [herramienta, setHerramienta] = useState("pincel");
-	// Grosor de línea seleccionado (tamaño de celda en píxeles)
-	const [grosorLinea, setGrosorLinea] = useState(GROSORES_LINEA[1].valor); // Normal por defecto
-	// Estado de pintando (mouse presionado)
-	const [estaPintando, setEstaPintando] = useState(false);
-	// Punto inicial para líneas rectas con Shift
-	const puntoInicialRef = useRef(null);
-	// Dirección bloqueada para Shift (null, "horizontal", "vertical")
-	const direccionBloqueadaRef = useRef(null);
-
-	// Configuración de texto
-	const [configTexto, setConfigTexto] = useState({
-		fuente: FUENTES_DISPONIBLES[0].familia,
-		tamano: 16,
-		negrita: false,
-		cursiva: false,
-	});
-
-	// Texto seleccionado para editar/eliminar
-	const [textoSeleccionadoId, setTextoSeleccionadoId] = useState(null);
-
-	// === SISTEMA DE BORNES Y CHISPAS ===
-	// Bornes: array de { id, tipo, x, y, color, activo, frecuenciaMs, nombre }
-	const [bornes, setBornes] = useState([]);
-	// Configuración de chispas
-	const [chispasConfig, setChispasConfig] = useState(CONFIG_CHISPAS_DEFAULT);
-
-	/**
-	 * Genera la clave única de localStorage para este puesto/workspace
-	 */
-	const obtenerClave = useCallback(() => {
-		if (!puestoId || !workspaceId) return null;
-		return `${CLAVE_BASE}-${workspaceId}-${puestoId}`;
-	}, [puestoId, workspaceId]);
-
-	/**
-	 * Cargar datos del localStorage al montar o cambiar de puesto
-	 */
-	useEffect(() => {
-		const clave = obtenerClave();
-		if (!clave) {
-			setCeldas({});
-			setTextos([]);
-			setGrosorLinea(GROSORES_LINEA[1].valor);
-			setBornes([]);
-			setChispasConfig(CONFIG_CHISPAS_DEFAULT);
-			return;
-		}
-
-		try {
-			const datos = localStorage.getItem(clave);
-			if (datos) {
-				const parsed = JSON.parse(datos);
-				// Compatibilidad: si es objeto plano (formato antiguo), son solo celdas
-				if (parsed && typeof parsed === "object" && !parsed.celdas) {
-					setCeldas(parsed);
-					setTextos([]);
-					setGrosorLinea(GROSORES_LINEA[1].valor);
-					setBornes([]);
-					setChispasConfig(CONFIG_CHISPAS_DEFAULT);
-				} else {
-					// Formato nuevo con celdas, textos, grosor, bornes y chispasConfig
-					setCeldas(parsed.celdas || {});
-					setTextos(parsed.textos || []);
-					setGrosorLinea(parsed.grosor || GROSORES_LINEA[1].valor);
-					setBornes(parsed.bornes || []);
-					setChispasConfig(parsed.chispasConfig || CONFIG_CHISPAS_DEFAULT);
-				}
-			} else {
-				setCeldas({});
-				setTextos([]);
-				setGrosorLinea(GROSORES_LINEA[1].valor);
-				setBornes([]);
-				setChispasConfig(CONFIG_CHISPAS_DEFAULT);
-			}
-		} catch (error) {
-			console.error("Error al cargar grilla unifiliar:", error);
-			setCeldas({});
-			setTextos([]);
-			setGrosorLinea(GROSORES_LINEA[1].valor);
-			setBornes([]);
-			setChispasConfig(CONFIG_CHISPAS_DEFAULT);
-		}
-	}, [obtenerClave]);
-
-	/**
-	 * Guardar en localStorage (celdas, textos, grosor, bornes y chispasConfig)
-	 */
-	const guardarDatos = useCallback((nuevasCeldas, nuevosTextos, nuevoGrosor = null, nuevosBornes = null, nuevaChispasConfig = null) => {
-		const clave = obtenerClave();
-		if (!clave) return;
-
-		try {
-			const sinCeldas = Object.keys(nuevasCeldas).length === 0;
-			const sinTextos = nuevosTextos.length === 0;
-			const bornesAGuardar = nuevosBornes !== null ? nuevosBornes : bornes;
-			const sinBornes = bornesAGuardar.length === 0;
-
-			if (sinCeldas && sinTextos && sinBornes) {
-				localStorage.removeItem(clave);
-			} else {
-				localStorage.setItem(clave, JSON.stringify({
-					celdas: nuevasCeldas,
-					textos: nuevosTextos,
-					grosor: nuevoGrosor !== null ? nuevoGrosor : grosorLinea,
-					bornes: bornesAGuardar,
-					chispasConfig: nuevaChispasConfig !== null ? nuevaChispasConfig : chispasConfig,
-				}));
-			}
-		} catch (error) {
-			console.error("Error al guardar grilla unifiliar:", error);
-		}
-	}, [obtenerClave, grosorLinea, bornes, chispasConfig]);
-
-	/**
-	 * Pintar una celda con el color seleccionado
-	 * @param {number} x - Coordenada X de la celda
-	 * @param {number} y - Coordenada Y de la celda
-	 * @param {boolean} shiftPresionado - Si Shift está presionado para línea recta
-	 */
-	const pintarCelda = useCallback((x, y, shiftPresionado = false) => {
-		let xFinal = x;
-		let yFinal = y;
-
-		// Si Shift está presionado, restringir a línea recta
-		if (shiftPresionado && puntoInicialRef.current) {
-			const { x: xInicial, y: yInicial } = puntoInicialRef.current;
-			const deltaX = Math.abs(x - xInicial);
-			const deltaY = Math.abs(y - yInicial);
-
-			// Determinar dirección si no está bloqueada
-			if (direccionBloqueadaRef.current === null && (deltaX > 1 || deltaY > 1)) {
-				direccionBloqueadaRef.current = deltaX > deltaY ? "horizontal" : "vertical";
-			}
-
-			// Aplicar restricción según dirección
-			if (direccionBloqueadaRef.current === "horizontal") {
-				yFinal = yInicial;
-			} else if (direccionBloqueadaRef.current === "vertical") {
-				xFinal = xInicial;
-			}
-		}
-
-		const claveCelda = `${xFinal},${yFinal}`;
-
-		setCeldas(prev => {
-			let nuevasCeldas;
-
-			if (herramienta === "borrador") {
-				// Borrar celda
-				nuevasCeldas = { ...prev };
-				delete nuevasCeldas[claveCelda];
-			} else {
-				// Pintar celda con el color seleccionado
-				nuevasCeldas = {
-					...prev,
-					[claveCelda]: colorSeleccionado
-				};
-			}
-
-			// Guardar inmediatamente (usamos textos actuales)
-			setTextos(currentTextos => {
-				guardarDatos(nuevasCeldas, currentTextos);
-				return currentTextos;
-			});
-			return nuevasCeldas;
-		});
-	}, [colorSeleccionado, herramienta, guardarDatos]);
-
-	/**
-	 * Limpiar todo el dibujo (celdas y textos)
-	 */
-	const limpiarTodo = useCallback(() => {
-		setCeldas({});
-		setTextos([]);
-		guardarDatos({}, []);
-	}, [guardarDatos]);
-
-	/**
-	 * Activar modo edición
-	 */
-	const activarEdicion = useCallback(() => {
-		setModoEdicion(true);
-	}, []);
-
-	/**
-	 * Desactivar modo edición
-	 */
-	const desactivarEdicion = useCallback(() => {
-		setModoEdicion(false);
-		setEstaPintando(false);
-	}, []);
-
-	/**
-	 * Toggle modo edición
-	 */
-	const toggleEdicion = useCallback(() => {
-		if (modoEdicion) {
-			desactivarEdicion();
-		} else {
-			activarEdicion();
-		}
-	}, [modoEdicion, activarEdicion, desactivarEdicion]);
-
-	/**
-	 * Iniciar pintado (mouse down)
-	 * @param {number} x - Coordenada X inicial
-	 * @param {number} y - Coordenada Y inicial
-	 */
-	const iniciarPintado = useCallback((x, y) => {
-		setEstaPintando(true);
-		// Guardar punto inicial para líneas rectas con Shift
-		puntoInicialRef.current = { x, y };
-		direccionBloqueadaRef.current = null;
-	}, []);
-
-	/**
-	 * Detener pintado (mouse up)
-	 */
-	const detenerPintado = useCallback(() => {
-		setEstaPintando(false);
-		// Limpiar punto inicial
-		puntoInicialRef.current = null;
-		direccionBloqueadaRef.current = null;
-	}, []);
-
-	/**
-	 * Seleccionar herramienta pincel
-	 */
-	const seleccionarPincel = useCallback(() => {
-		setHerramienta("pincel");
-	}, []);
-
-	/**
-	 * Seleccionar herramienta borrador
-	 */
-	const seleccionarBorrador = useCallback(() => {
-		setHerramienta("borrador");
-		setTextoSeleccionadoId(null);
-	}, []);
-
-	/**
-	 * Seleccionar herramienta texto
-	 */
-	const seleccionarTexto = useCallback(() => {
-		setHerramienta("texto");
-	}, []);
-
-	/**
-	 * Seleccionar herramienta balde (flood fill)
-	 */
-	const seleccionarBalde = useCallback(() => {
-		setHerramienta("balde");
-		setTextoSeleccionadoId(null);
-	}, []);
-
-	/**
-	 * Seleccionar herramienta mover (arrastrar líneas conectadas)
-	 */
-	const seleccionarMover = useCallback(() => {
-		setHerramienta("mover");
-		setTextoSeleccionadoId(null);
-	}, []);
-
-	/**
-	 * Obtener todas las celdas conectadas a una celda dada (BFS)
-	 * Retorna un array de claves "x,y" de las celdas conectadas del mismo color
-	 * @param {number} x - Coordenada X de la celda inicial
-	 * @param {number} y - Coordenada Y de la celda inicial
-	 * @param {Object} celdasActuales - Objeto de celdas actual
-	 * @returns {Array<string>} Array de claves de celdas conectadas
-	 */
-	const obtenerCeldasConectadas = useCallback((x, y, celdasActuales) => {
-		const claveCelda = `${x},${y}`;
-		const colorOriginal = celdasActuales[claveCelda];
-
-		if (!colorOriginal) return []; // No hay celda pintada en esa posición
-
-		const visitadas = new Set();
-		const cola = [[x, y]];
-		const celdasConectadas = [];
-
-		while (cola.length > 0) {
-			const [cx, cy] = cola.shift();
-			const claveActual = `${cx},${cy}`;
-
-			if (visitadas.has(claveActual)) continue;
-			visitadas.add(claveActual);
-
-			// Solo incluir celdas que tengan el mismo color
-			if (celdasActuales[claveActual] !== colorOriginal) continue;
-
-			celdasConectadas.push(claveActual);
-
-			// Agregar vecinos a la cola (arriba, abajo, izquierda, derecha)
-			cola.push([cx, cy - 1]); // arriba
-			cola.push([cx, cy + 1]); // abajo
-			cola.push([cx - 1, cy]); // izquierda
-			cola.push([cx + 1, cy]); // derecha
-		}
-
-		return celdasConectadas;
-	}, []);
-
-	/**
-	 * Mover todas las celdas conectadas por un delta
-	 * @param {Array<string>} celdasAMover - Array de claves "x,y" a mover
-	 * @param {number} deltaX - Desplazamiento en X (en unidades de celda)
-	 * @param {number} deltaY - Desplazamiento en Y (en unidades de celda)
-	 */
-	const moverCeldasConectadas = useCallback((celdasAMover, deltaX, deltaY) => {
-		if (deltaX === 0 && deltaY === 0) return;
-		if (celdasAMover.length === 0) return;
-
-		setCeldas(prev => {
-			const nuevasCeldas = { ...prev };
-
-			// Primero, remover todas las celdas que vamos a mover
-			const coloresOriginales = {};
-			celdasAMover.forEach(clave => {
-				coloresOriginales[clave] = prev[clave];
-				delete nuevasCeldas[clave];
-			});
-
-			// Luego, agregar las celdas en sus nuevas posiciones
-			celdasAMover.forEach(clave => {
-				const [x, y] = clave.split(",").map(Number);
-				const nuevaClave = `${x + deltaX},${y + deltaY}`;
-				nuevasCeldas[nuevaClave] = coloresOriginales[clave];
-			});
-
-			// Guardar
-			setTextos(currentTextos => {
-				guardarDatos(nuevasCeldas, currentTextos);
-				return currentTextos;
-			});
-
-			return nuevasCeldas;
-		});
-	}, [guardarDatos]);
-
-	/**
-	 * Borrar todas las celdas dentro de un área rectangular
-	 * @param {number} x1 - Coordenada X de la esquina inicial
-	 * @param {number} y1 - Coordenada Y de la esquina inicial
-	 * @param {number} x2 - Coordenada X de la esquina final
-	 * @param {number} y2 - Coordenada Y de la esquina final
-	 */
-	const borrarArea = useCallback((x1, y1, x2, y2) => {
-		// Normalizar coordenadas (asegurar que min <= max)
-		const minX = Math.min(x1, x2);
-		const maxX = Math.max(x1, x2);
-		const minY = Math.min(y1, y2);
-		const maxY = Math.max(y1, y2);
-
-		setCeldas(prev => {
-			const nuevasCeldas = { ...prev };
-			let huboCambios = false;
-
-			// Iterar sobre todas las celdas del área y eliminarlas
-			for (let x = minX; x <= maxX; x++) {
-				for (let y = minY; y <= maxY; y++) {
-					const clave = `${x},${y}`;
-					if (nuevasCeldas[clave]) {
-						delete nuevasCeldas[clave];
-						huboCambios = true;
-					}
-				}
-			}
-
-			if (!huboCambios) return prev;
-
-			// Guardar
-			setTextos(currentTextos => {
-				guardarDatos(nuevasCeldas, currentTextos);
-				return currentTextos;
-			});
-
-			return nuevasCeldas;
-		});
-	}, [guardarDatos]);
-
-	/**
-	 * Rellenar todas las celdas conectadas con el color seleccionado (flood fill)
-	 * Busca celdas adyacentes (arriba, abajo, izquierda, derecha) del mismo color original
-	 * @param {number} x - Coordenada X de la celda inicial
-	 * @param {number} y - Coordenada Y de la celda inicial
-	 */
-	const rellenarConectadas = useCallback((x, y) => {
-		const claveCelda = `${x},${y}`;
-
-		setCeldas(prev => {
-			// Verificar que la celda inicial existe y tiene un color
-			const colorOriginal = prev[claveCelda];
-			if (!colorOriginal) return prev; // No hay celda pintada en esa posición
-
-			// Si el color original es igual al seleccionado, no hacer nada
-			if (colorOriginal === colorSeleccionado) return prev;
-
-			// Conjunto de celdas visitadas
-			const visitadas = new Set();
-			// Cola para BFS (Breadth-First Search)
-			const cola = [[x, y]];
-			// Celdas a cambiar
-			const celdasARellenar = [];
-
-			while (cola.length > 0) {
-				const [cx, cy] = cola.shift();
-				const claveActual = `${cx},${cy}`;
-
-				// Si ya visitamos esta celda, saltar
-				if (visitadas.has(claveActual)) continue;
-				visitadas.add(claveActual);
-
-				// Si la celda no existe o no tiene el color original, saltar
-				if (prev[claveActual] !== colorOriginal) continue;
-
-				// Agregar a la lista de celdas a rellenar
-				celdasARellenar.push(claveActual);
-
-				// Agregar vecinos a la cola (arriba, abajo, izquierda, derecha)
-				cola.push([cx, cy - 1]); // arriba
-				cola.push([cx, cy + 1]); // abajo
-				cola.push([cx - 1, cy]); // izquierda
-				cola.push([cx + 1, cy]); // derecha
-			}
-
-			// Crear nuevo objeto de celdas con las celdas rellenadas
-			const nuevasCeldas = { ...prev };
-			celdasARellenar.forEach(clave => {
-				nuevasCeldas[clave] = colorSeleccionado;
-			});
-
-			// Guardar
-			setTextos(currentTextos => {
-				guardarDatos(nuevasCeldas, currentTextos);
-				return currentTextos;
-			});
-
-			return nuevasCeldas;
-		});
-	}, [colorSeleccionado, guardarDatos]);
-
-	/**
-	 * Agregar un nuevo texto
-	 * @param {number} x - Coordenada X en píxeles
-	 * @param {number} y - Coordenada Y en píxeles
-	 * @param {string} contenido - Texto a mostrar
-	 */
-	const agregarTexto = useCallback((x, y, contenido) => {
-		if (!contenido.trim()) return;
-
-		const nuevoTexto = {
-			id: `texto-${Date.now()}`,
-			x,
-			y,
-			texto: contenido,
-			color: colorSeleccionado,
-			fuente: configTexto.fuente,
-			tamano: configTexto.tamano,
-			negrita: configTexto.negrita,
-			cursiva: configTexto.cursiva,
-		};
-
-		setTextos(prev => {
-			const nuevosTextos = [...prev, nuevoTexto];
-			setCeldas(currentCeldas => {
-				guardarDatos(currentCeldas, nuevosTextos);
-				return currentCeldas;
-			});
-			return nuevosTextos;
-		});
-	}, [colorSeleccionado, configTexto, guardarDatos]);
-
-	/**
-	 * Actualizar un texto existente
-	 */
-	const actualizarTexto = useCallback((id, cambios) => {
-		setTextos(prev => {
-			const nuevosTextos = prev.map(t =>
-				t.id === id ? { ...t, ...cambios } : t
-			);
-			setCeldas(currentCeldas => {
-				guardarDatos(currentCeldas, nuevosTextos);
-				return currentCeldas;
-			});
-			return nuevosTextos;
-		});
-	}, [guardarDatos]);
-
-	/**
-	 * Eliminar un texto
-	 */
-	const eliminarTexto = useCallback((id) => {
-		setTextos(prev => {
-			const nuevosTextos = prev.filter(t => t.id !== id);
-			setCeldas(currentCeldas => {
-				guardarDatos(currentCeldas, nuevosTextos);
-				return currentCeldas;
-			});
-			return nuevosTextos;
-		});
-		setTextoSeleccionadoId(null);
-	}, [guardarDatos]);
-
-	/**
-	 * Cambiar el grosor de línea y guardar
-	 */
-	const cambiarGrosor = useCallback((nuevoGrosor) => {
-		setGrosorLinea(nuevoGrosor);
-		// Guardar inmediatamente con el nuevo grosor
-		setCeldas(currentCeldas => {
-			setTextos(currentTextos => {
-				guardarDatos(currentCeldas, currentTextos, nuevoGrosor);
-				return currentTextos;
-			});
-			return currentCeldas;
-		});
-	}, [guardarDatos]);
-
-	// === FUNCIONES CRUD PARA BORNES ===
-
-	/**
-	 * Seleccionar herramienta borne
-	 * @param {string} tipo - "EMISOR" o "RECEPTOR"
-	 */
-	const seleccionarBorne = useCallback((tipo) => {
-		setHerramienta("borne");
-		// El tipo se pasa como parámetro a agregarBorne
-	}, []);
-
-	/**
-	 * Agregar un nuevo borne en una celda
-	 * @param {number} x - Coordenada X de la celda
-	 * @param {number} y - Coordenada Y de la celda
-	 * @param {string} tipo - "EMISOR" o "RECEPTOR"
-	 * @returns {boolean} - true si se agregó correctamente
-	 */
-	const agregarBorne = useCallback((x, y, tipo) => {
-		const claveCelda = `${x},${y}`;
-
-		// Verificar que la celda tenga una línea pintada
-		if (!celdas[claveCelda]) {
-			console.warn("Solo se pueden colocar bornes sobre líneas pintadas");
-			return false;
-		}
-
-		// Verificar que no haya otro borne en la misma posición
-		if (bornes.some(b => b.x === x && b.y === y)) {
-			console.warn("Ya existe un borne en esta posición");
-			return false;
-		}
-
-		const contadorTipo = bornes.filter(b => b.tipo === tipo).length + 1;
-		const nuevoBorne = {
-			id: `borne-${Date.now()}`,
-			tipo,
-			x,
-			y,
-			color: tipo === TIPOS_BORNE.EMISOR ? "#22d3ee" : "#f97316",
-			activo: true,
-			frecuenciaMs: chispasConfig.frecuenciaEmision,
-			nombre: `${tipo === TIPOS_BORNE.EMISOR ? "E" : "R"}${contadorTipo}`,
-		};
-
-		const nuevosBornes = [...bornes, nuevoBorne];
-		setBornes(nuevosBornes);
-
-		// Guardar inmediatamente
-		setCeldas(currentCeldas => {
-			setTextos(currentTextos => {
-				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
-				return currentTextos;
-			});
-			return currentCeldas;
-		});
-
-		return true;
-	}, [celdas, bornes, chispasConfig.frecuenciaEmision, grosorLinea, guardarDatos]);
-
-	/**
-	 * Eliminar un borne por su ID
-	 * @param {string} borneId - ID del borne a eliminar
-	 */
-	const eliminarBorne = useCallback((borneId) => {
-		const nuevosBornes = bornes.filter(b => b.id !== borneId);
-		setBornes(nuevosBornes);
-
-		// Guardar inmediatamente
-		setCeldas(currentCeldas => {
-			setTextos(currentTextos => {
-				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
-				return currentTextos;
-			});
-			return currentCeldas;
-		});
-	}, [bornes, grosorLinea, guardarDatos]);
-
-	/**
-	 * Eliminar borne en una posición específica
-	 * @param {number} x - Coordenada X
-	 * @param {number} y - Coordenada Y
-	 * @returns {boolean} - true si se eliminó un borne
-	 */
-	const eliminarBorneEnPosicion = useCallback((x, y) => {
-		const borneEnPosicion = bornes.find(b => b.x === x && b.y === y);
-		if (borneEnPosicion) {
-			eliminarBorne(borneEnPosicion.id);
-			return true;
-		}
-		return false;
-	}, [bornes, eliminarBorne]);
-
-	/**
-	 * Actualizar propiedades de un borne
-	 * @param {string} borneId - ID del borne
-	 * @param {Object} cambios - Propiedades a actualizar
-	 */
-	const actualizarBorne = useCallback((borneId, cambios) => {
-		const nuevosBornes = bornes.map(b =>
-			b.id === borneId ? { ...b, ...cambios } : b
-		);
-		setBornes(nuevosBornes);
-
-		// Guardar inmediatamente
-		setCeldas(currentCeldas => {
-			setTextos(currentTextos => {
-				guardarDatos(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
-				return currentTextos;
-			});
-			return currentCeldas;
-		});
-	}, [bornes, grosorLinea, guardarDatos]);
-
-	/**
-	 * Actualizar configuración de chispas
-	 * @param {Object} nuevaConfig - Nueva configuración (parcial o completa)
-	 */
-	const actualizarChispasConfig = useCallback((nuevaConfig) => {
-		const configActualizada = { ...chispasConfig, ...nuevaConfig };
-		setChispasConfig(configActualizada);
-
-		// Guardar inmediatamente
-		setCeldas(currentCeldas => {
-			setTextos(currentTextos => {
-				guardarDatos(currentCeldas, currentTextos, grosorLinea, bornes, configActualizada);
-				return currentTextos;
-			});
-			return currentCeldas;
-		});
-	}, [chispasConfig, grosorLinea, bornes, guardarDatos]);
-
-	/**
-	 * Obtener borne en una posición específica
-	 * @param {number} x - Coordenada X
-	 * @param {number} y - Coordenada Y
-	 * @returns {Object|null} - Borne encontrado o null
-	 */
-	const obtenerBorneEnPosicion = useCallback((x, y) => {
-		return bornes.find(b => b.x === x && b.y === y) || null;
-	}, [bornes]);
-
-	/**
-	 * Exportar el dibujo a un archivo JSON
-	 */
-	const exportarAArchivo = useCallback(() => {
-		const datos = {
-			version: 1,
-			celdas,
-			textos,
-			grosor: grosorLinea,
-			exportadoEn: new Date().toISOString(),
-		};
-
-		const blob = new Blob([JSON.stringify(datos, null, 2)], { type: "application/json" });
-		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
-		link.href = url;
-		link.download = `diagrama-unifiliar-${puestoId || "sin-puesto"}.json`;
-		document.body.appendChild(link);
-		link.click();
-		document.body.removeChild(link);
-		URL.revokeObjectURL(url);
-	}, [celdas, textos, grosorLinea, puestoId]);
-
-	/**
-	 * Importar un dibujo desde un archivo JSON
-	 * @param {File} archivo - Archivo JSON a importar
-	 * @returns {Promise<boolean>} - true si se importó correctamente
-	 */
-	const importarDesdeArchivo = useCallback((archivo) => {
-		return new Promise((resolve) => {
-			const reader = new FileReader();
-
-			reader.onload = (e) => {
-				try {
-					const datos = JSON.parse(e.target.result);
-
-					// Validar estructura básica
-					if (!datos || typeof datos !== "object") {
-						console.error("Archivo inválido: no es un objeto JSON");
-						resolve(false);
-						return;
-					}
-
-					// Extraer datos (compatible con formato antiguo y nuevo)
-					const nuevasCeldas = datos.celdas || (datos.version ? {} : datos);
-					const nuevosTextos = datos.textos || [];
-					const nuevoGrosor = datos.grosor || GROSORES_LINEA[1].valor;
-
-					// Validar que celdas sea un objeto
-					if (typeof nuevasCeldas !== "object" || Array.isArray(nuevasCeldas)) {
-						console.error("Archivo inválido: celdas no es un objeto");
-						resolve(false);
-						return;
-					}
-
-					// Aplicar los datos importados
-					setCeldas(nuevasCeldas);
-					setTextos(nuevosTextos);
-					setGrosorLinea(nuevoGrosor);
-					guardarDatos(nuevasCeldas, nuevosTextos, nuevoGrosor);
-
-					resolve(true);
-				} catch (error) {
-					console.error("Error al parsear archivo JSON:", error);
-					resolve(false);
-				}
-			};
-
-			reader.onerror = () => {
-				console.error("Error al leer archivo");
-				resolve(false);
-			};
-
-			reader.readAsText(archivo);
-		});
-	}, [guardarDatos]);
-
-	/**
-	 * Verificar si hay celdas o textos dibujados
-	 */
-	const tieneDibujo = Object.keys(celdas).length > 0 || textos.length > 0;
-
-	return {
-		// Estado
-		celdas,
-		textos,
-		modoEdicion,
-		colorSeleccionado,
-		herramienta,
-		estaPintando,
-		tieneDibujo,
-		grosorLinea,
-
-		// Configuración de texto
-		configTexto,
-		setConfigTexto,
-		textoSeleccionadoId,
-		setTextoSeleccionadoId,
-
-		// Colores, fuentes y grosores disponibles
-		coloresDisponibles: COLORES_UNIFILAR,
-		fuentesDisponibles: FUENTES_DISPONIBLES,
-		tamanosDisponibles: TAMANOS_FUENTE,
-		grosoresDisponibles: GROSORES_LINEA,
-
-		// Acciones de edición
-		toggleEdicion,
-		activarEdicion,
-		desactivarEdicion,
-
-		// Acciones de pintado
-		pintarCelda,
-		limpiarTodo,
-		iniciarPintado,
-		detenerPintado,
-		rellenarConectadas,
-		borrarArea,
-
-		// Acciones de texto
-		agregarTexto,
-		actualizarTexto,
-		eliminarTexto,
-
-		// Selección de herramientas
-		setColorSeleccionado,
-		seleccionarPincel,
-		seleccionarBorrador,
-		seleccionarTexto,
-		seleccionarBalde,
-		seleccionarMover,
-
-		// Funciones para mover líneas conectadas
-		obtenerCeldasConectadas,
-		moverCeldasConectadas,
-
-		// Grosor de línea
-		cambiarGrosor,
-
-		// Importar/Exportar archivo
-		exportarAArchivo,
-		importarDesdeArchivo,
-
-		// === SISTEMA DE BORNES Y CHISPAS ===
-		bornes,
-		chispasConfig,
-		tiposBorne: TIPOS_BORNE,
-
-		// Acciones de bornes
-		seleccionarBorne,
-		agregarBorne,
-		eliminarBorne,
-		eliminarBorneEnPosicion,
-		actualizarBorne,
-		obtenerBorneEnPosicion,
-
-		// Configuración de chispas
-		actualizarChispasConfig,
-	};
+   // Estado del dibujo
+   const [celdas, setCeldas] = useState({});
+   const [textos, setTextos] = useState([]);
+   const [modoEdicion, setModoEdicion] = useState(false);
+   const [colorSeleccionado, setColorSeleccionado] = useState(COLORES_UNIFILAR[0].color);
+   const [herramienta, setHerramienta] = useState("pincel");
+   const [grosorLinea, setGrosorLinea] = useState(GROSORES_LINEA[1].valor);
+   const [estaPintando, setEstaPintando] = useState(false);
+
+   // Referencias para líneas rectas con Shift
+   const puntoInicialRef = useRef(null);
+   const direccionBloqueadaRef = useRef(null);
+
+   // Configuración de texto
+   const [configTexto, setConfigTexto] = useState(CONFIG_TEXTO_INICIAL);
+   const [textoSeleccionadoId, setTextoSeleccionadoId] = useState(null);
+
+   // Sistema de bornes y chispas
+   const [bornes, setBornes] = useState([]);
+   const [chispasConfig, setChispasConfig] = useState(CONFIG_CHISPAS_DEFAULT);
+
+   // Clave de localStorage
+   const clave = generarClave(puestoId, workspaceId);
+
+   // Cargar datos al montar o cambiar de puesto
+   useEffect(() => {
+      const datos = cargarDatos(clave);
+      setCeldas(datos.celdas);
+      setTextos(datos.textos);
+      setGrosorLinea(datos.grosorLinea);
+      setBornes(datos.bornes);
+      setChispasConfig(datos.chispasConfig);
+   }, [clave]);
+
+   // Función de guardado
+   const guardar = useCallback(
+      (nuevasCeldas, nuevosTextos, nuevoGrosor = null, nuevosBornes = null, nuevaChispasConfig = null) => {
+         guardarDatosEnStorage(clave, {
+            celdas: nuevasCeldas,
+            textos: nuevosTextos,
+            grosorLinea: nuevoGrosor ?? grosorLinea,
+            bornes: nuevosBornes ?? bornes,
+            chispasConfig: nuevaChispasConfig ?? chispasConfig,
+         });
+      },
+      [clave, grosorLinea, bornes, chispasConfig]
+   );
+
+   // ============================================================================
+   // Acciones de pintado
+   // ============================================================================
+
+   const pintarCelda = useCallback(
+      (x, y, shiftPresionado = false) => {
+         const pos = shiftPresionado
+            ? calcularPosicionLineaRecta(x, y, puntoInicialRef.current, direccionBloqueadaRef.current)
+            : { x, y, direccion: null };
+
+         if (shiftPresionado) {
+            direccionBloqueadaRef.current = pos.direccion;
+         }
+
+         const claveCelda = `${pos.x},${pos.y}`;
+
+         setCeldas((prev) => {
+            let nuevasCeldas;
+            if (herramienta === "borrador") {
+               nuevasCeldas = { ...prev };
+               delete nuevasCeldas[claveCelda];
+            } else {
+               nuevasCeldas = { ...prev, [claveCelda]: colorSeleccionado };
+            }
+
+            setTextos((currentTextos) => {
+               guardar(nuevasCeldas, currentTextos);
+               return currentTextos;
+            });
+            return nuevasCeldas;
+         });
+      },
+      [colorSeleccionado, herramienta, guardar]
+   );
+
+   const limpiarTodo = useCallback(() => {
+      setCeldas({});
+      setTextos([]);
+      guardar({}, []);
+   }, [guardar]);
+
+   const iniciarPintado = useCallback((x, y) => {
+      setEstaPintando(true);
+      puntoInicialRef.current = { x, y };
+      direccionBloqueadaRef.current = null;
+   }, []);
+
+   const detenerPintado = useCallback(() => {
+      setEstaPintando(false);
+      puntoInicialRef.current = null;
+      direccionBloqueadaRef.current = null;
+   }, []);
+
+   const rellenarConectadas = useCallback(
+      (x, y) => {
+         setCeldas((prev) => {
+            const nuevasCeldas = calcularFloodFill(prev, x, y, colorSeleccionado);
+            if (!nuevasCeldas) return prev;
+
+            setTextos((currentTextos) => {
+               guardar(nuevasCeldas, currentTextos);
+               return currentTextos;
+            });
+            return nuevasCeldas;
+         });
+      },
+      [colorSeleccionado, guardar]
+   );
+
+   const borrarArea = useCallback(
+      (x1, y1, x2, y2) => {
+         setCeldas((prev) => {
+            const { celdas: nuevasCeldas, huboCambios } = calcularBorradoArea(prev, x1, y1, x2, y2);
+            if (!huboCambios) return prev;
+
+            setTextos((currentTextos) => {
+               guardar(nuevasCeldas, currentTextos);
+               return currentTextos;
+            });
+            return nuevasCeldas;
+         });
+      },
+      [guardar]
+   );
+
+   // ============================================================================
+   // Funciones para mover líneas conectadas
+   // ============================================================================
+
+   const obtenerCeldasConectadas = useCallback((x, y) => obtenerConectadas(x, y, celdas), [celdas]);
+
+   const moverCeldasConectadas = useCallback(
+      (celdasAMover, deltaX, deltaY) => {
+         if (deltaX === 0 && deltaY === 0 || celdasAMover.length === 0) return;
+
+         setCeldas((prev) => {
+            const nuevasCeldas = calcularCeldasMovidas(prev, celdasAMover, deltaX, deltaY);
+
+            setTextos((currentTextos) => {
+               guardar(nuevasCeldas, currentTextos);
+               return currentTextos;
+            });
+            return nuevasCeldas;
+         });
+      },
+      [guardar]
+   );
+
+   // ============================================================================
+   // Acciones de texto
+   // ============================================================================
+
+   const agregarTexto = useCallback(
+      (x, y, contenido) => {
+         if (!contenido.trim()) return;
+
+         const nuevoTexto = {
+            id: `texto-${Date.now()}`,
+            x,
+            y,
+            texto: contenido,
+            color: colorSeleccionado,
+            fuente: configTexto.fuente,
+            tamano: configTexto.tamano,
+            negrita: configTexto.negrita,
+            cursiva: configTexto.cursiva,
+         };
+
+         setTextos((prev) => {
+            const nuevosTextos = [...prev, nuevoTexto];
+            setCeldas((currentCeldas) => {
+               guardar(currentCeldas, nuevosTextos);
+               return currentCeldas;
+            });
+            return nuevosTextos;
+         });
+      },
+      [colorSeleccionado, configTexto, guardar]
+   );
+
+   const actualizarTexto = useCallback(
+      (id, cambios) => {
+         setTextos((prev) => {
+            const nuevosTextos = prev.map((t) => (t.id === id ? { ...t, ...cambios } : t));
+            setCeldas((currentCeldas) => {
+               guardar(currentCeldas, nuevosTextos);
+               return currentCeldas;
+            });
+            return nuevosTextos;
+         });
+      },
+      [guardar]
+   );
+
+   const eliminarTexto = useCallback(
+      (id) => {
+         setTextos((prev) => {
+            const nuevosTextos = prev.filter((t) => t.id !== id);
+            setCeldas((currentCeldas) => {
+               guardar(currentCeldas, nuevosTextos);
+               return currentCeldas;
+            });
+            return nuevosTextos;
+         });
+         setTextoSeleccionadoId(null);
+      },
+      [guardar]
+   );
+
+   // ============================================================================
+   // Selección de herramientas
+   // ============================================================================
+
+   const activarEdicion = useCallback(() => setModoEdicion(true), []);
+   const desactivarEdicion = useCallback(() => {
+      setModoEdicion(false);
+      setEstaPintando(false);
+   }, []);
+   const toggleEdicion = useCallback(
+      () => (modoEdicion ? desactivarEdicion() : activarEdicion()),
+      [modoEdicion, activarEdicion, desactivarEdicion]
+   );
+
+   const seleccionarPincel = useCallback(() => setHerramienta("pincel"), []);
+   const seleccionarBorrador = useCallback(() => {
+      setHerramienta("borrador");
+      setTextoSeleccionadoId(null);
+   }, []);
+   const seleccionarTexto = useCallback(() => setHerramienta("texto"), []);
+   const seleccionarBalde = useCallback(() => {
+      setHerramienta("balde");
+      setTextoSeleccionadoId(null);
+   }, []);
+   const seleccionarMover = useCallback(() => {
+      setHerramienta("mover");
+      setTextoSeleccionadoId(null);
+   }, []);
+   const seleccionarBorne = useCallback(() => setHerramienta("borne"), []);
+
+   const cambiarGrosor = useCallback(
+      (nuevoGrosor) => {
+         setGrosorLinea(nuevoGrosor);
+         setCeldas((currentCeldas) => {
+            setTextos((currentTextos) => {
+               guardar(currentCeldas, currentTextos, nuevoGrosor);
+               return currentTextos;
+            });
+            return currentCeldas;
+         });
+      },
+      [guardar]
+   );
+
+   // ============================================================================
+   // Sistema de bornes
+   // ============================================================================
+
+   const agregarBorne = useCallback(
+      (x, y, tipo) => {
+         const claveCelda = `${x},${y}`;
+         if (!celdas[claveCelda]) {
+            console.warn("Solo se pueden colocar bornes sobre líneas pintadas");
+            return false;
+         }
+         if (bornes.some((b) => b.x === x && b.y === y)) {
+            console.warn("Ya existe un borne en esta posición");
+            return false;
+         }
+
+         const contadorTipo = bornes.filter((b) => b.tipo === tipo).length + 1;
+         const nuevoBorne = {
+            id: `borne-${Date.now()}`,
+            tipo,
+            x,
+            y,
+            color: tipo === TIPOS_BORNE.EMISOR ? "#22d3ee" : "#f97316",
+            activo: true,
+            frecuenciaMs: chispasConfig.frecuenciaEmision,
+            nombre: `${tipo === TIPOS_BORNE.EMISOR ? "E" : "R"}${contadorTipo}`,
+         };
+
+         const nuevosBornes = [...bornes, nuevoBorne];
+         setBornes(nuevosBornes);
+
+         setCeldas((currentCeldas) => {
+            setTextos((currentTextos) => {
+               guardar(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+               return currentTextos;
+            });
+            return currentCeldas;
+         });
+
+         return true;
+      },
+      [celdas, bornes, chispasConfig.frecuenciaEmision, grosorLinea, guardar]
+   );
+
+   const eliminarBorne = useCallback(
+      (borneId) => {
+         const nuevosBornes = bornes.filter((b) => b.id !== borneId);
+         setBornes(nuevosBornes);
+
+         setCeldas((currentCeldas) => {
+            setTextos((currentTextos) => {
+               guardar(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+               return currentTextos;
+            });
+            return currentCeldas;
+         });
+      },
+      [bornes, grosorLinea, guardar]
+   );
+
+   const eliminarBorneEnPosicion = useCallback(
+      (x, y) => {
+         const borneEnPosicion = bornes.find((b) => b.x === x && b.y === y);
+         if (borneEnPosicion) {
+            eliminarBorne(borneEnPosicion.id);
+            return true;
+         }
+         return false;
+      },
+      [bornes, eliminarBorne]
+   );
+
+   const actualizarBorne = useCallback(
+      (borneId, cambios) => {
+         const nuevosBornes = bornes.map((b) => (b.id === borneId ? { ...b, ...cambios } : b));
+         setBornes(nuevosBornes);
+
+         setCeldas((currentCeldas) => {
+            setTextos((currentTextos) => {
+               guardar(currentCeldas, currentTextos, grosorLinea, nuevosBornes);
+               return currentTextos;
+            });
+            return currentCeldas;
+         });
+      },
+      [bornes, grosorLinea, guardar]
+   );
+
+   const obtenerBorneEnPosicion = useCallback((x, y) => bornes.find((b) => b.x === x && b.y === y) || null, [bornes]);
+
+   const actualizarChispasConfig = useCallback(
+      (nuevaConfig) => {
+         const configActualizada = { ...chispasConfig, ...nuevaConfig };
+         setChispasConfig(configActualizada);
+
+         setCeldas((currentCeldas) => {
+            setTextos((currentTextos) => {
+               guardar(currentCeldas, currentTextos, grosorLinea, bornes, configActualizada);
+               return currentTextos;
+            });
+            return currentCeldas;
+         });
+      },
+      [chispasConfig, grosorLinea, bornes, guardar]
+   );
+
+   // ============================================================================
+   // Importar/Exportar
+   // ============================================================================
+
+   const exportarAArchivo = useCallback(() => {
+      exportarArchivo({ celdas, textos, grosorLinea }, puestoId);
+   }, [celdas, textos, grosorLinea, puestoId]);
+
+   const importarDesdeArchivo = useCallback(
+      async (archivo) => {
+         const { exito, datos } = await importarArchivo(archivo);
+         if (exito && datos) {
+            setCeldas(datos.celdas);
+            setTextos(datos.textos);
+            setGrosorLinea(datos.grosorLinea);
+            guardar(datos.celdas, datos.textos, datos.grosorLinea);
+         }
+         return exito;
+      },
+      [guardar]
+   );
+
+   // ============================================================================
+   // Return
+   // ============================================================================
+
+   const tieneDibujo = Object.keys(celdas).length > 0 || textos.length > 0;
+
+   return {
+      // Estado
+      celdas,
+      textos,
+      modoEdicion,
+      colorSeleccionado,
+      herramienta,
+      estaPintando,
+      tieneDibujo,
+      grosorLinea,
+
+      // Configuración de texto
+      configTexto,
+      setConfigTexto,
+      textoSeleccionadoId,
+      setTextoSeleccionadoId,
+
+      // Colores, fuentes y grosores disponibles
+      coloresDisponibles: COLORES_UNIFILAR,
+      fuentesDisponibles: FUENTES_DISPONIBLES,
+      tamanosDisponibles: TAMANOS_FUENTE,
+      grosoresDisponibles: GROSORES_LINEA,
+
+      // Acciones de edición
+      toggleEdicion,
+      activarEdicion,
+      desactivarEdicion,
+
+      // Acciones de pintado
+      pintarCelda,
+      limpiarTodo,
+      iniciarPintado,
+      detenerPintado,
+      rellenarConectadas,
+      borrarArea,
+
+      // Acciones de texto
+      agregarTexto,
+      actualizarTexto,
+      eliminarTexto,
+
+      // Selección de herramientas
+      setColorSeleccionado,
+      seleccionarPincel,
+      seleccionarBorrador,
+      seleccionarTexto,
+      seleccionarBalde,
+      seleccionarMover,
+
+      // Funciones para mover líneas conectadas
+      obtenerCeldasConectadas,
+      moverCeldasConectadas,
+
+      // Grosor de línea
+      cambiarGrosor,
+
+      // Importar/Exportar archivo
+      exportarAArchivo,
+      importarDesdeArchivo,
+
+      // Sistema de bornes y chispas
+      bornes,
+      chispasConfig,
+      tiposBorne: TIPOS_BORNE,
+
+      // Acciones de bornes
+      seleccionarBorne,
+      agregarBorne,
+      eliminarBorne,
+      eliminarBorneEnPosicion,
+      actualizarBorne,
+      obtenerBorneEnPosicion,
+
+      // Configuración de chispas
+      actualizarChispasConfig,
+   };
 };
 
 export default useGrillaUnifilar;
