@@ -3,3 +3,4 @@
 
 export * from "./logicaFuenteDatos";
 export * from "./logicaPrecarga";
+export { useHistorialLocal } from "./useHistorialLocal";

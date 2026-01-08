@@ -1,7 +1,7 @@
 // componentes/modales/configurar-agente/FormularioRegistrador.jsx
 // Formulario para crear/editar registradores (analizador o relé)
 
-import ConfiguracionRele from "../ConfiguracionRele";
+import { ConfiguracionRele } from "../rele";
 
 /**
  * Formulario de analizador de redes

@@ -4,7 +4,7 @@ import "./TarjetaAlimentador.css";
 import CajaMedicion from "./CajaMedicion.jsx";
 import GrupoMedidores from "./GrupoMedidores.jsx";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
-import { useTarjetaAlimentador } from "../../hooks/useTarjetaAlimentador";
+import { useTarjetaAlimentador } from "../../hooks/mediciones";
 import { PopoverEscala, MenuFlotante } from "./componentes";
 
 // ============================================================================

@@ -11,26 +11,22 @@ import BarraNavegacion from "../navegacion/BarraNavegacion.jsx";    // barra sup
 import MenuLateral from "../navegacion/MenuLateral.jsx";            // menú lateral en modo compacto (mobile)
 import GrillaTarjetas from "../tarjetas/GrillaTarjetas.jsx";        // grilla de tarjetas de alimentadores
 import SkeletonCard from "../tarjetas/SkeletonCard.jsx";            // skeleton de tarjeta (loading state)
-import ModalNuevoPuesto from "../modales/ModalNuevoPuesto.jsx";     // modal para crear puestos
-import ModalEditarPuestos from "../modales/ModalEditarPuestos.jsx"; // modal para editar/renombrar/eliminar puestos
-import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx"; // modal de config de registrador
-import ModalConfiguracionPuesto from "../modales/ModalConfiguracionPuesto.jsx";           // modal de configuración global del puesto
-import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";                 // modal de configuración del agente
-import ModalGestionarAccesos from "../modales/ModalGestionarAccesos.jsx";                 // modal de gestión de accesos al workspace
-import ModalPanelPermisos from "../modales/ModalPanelPermisos.jsx";                       // modal de panel de permisos (solo superadmin)
-import ContenedorVentanasHistorial from "../modales/ContenedorVentanasHistorial.jsx";     // contenedor de ventanas flotantes de historial
-import { useVentanasHistorial } from "../../hooks/useVentanasHistorial";               // hook para gestionar ventanas de historial
-import { useVentanaConfigAgente } from "../../hooks/useVentanaConfigAgente";           // hook para gestionar ventana de configuración de agentes
+import { ModalNuevoPuesto, ModalEditarPuestos, ModalConfiguracionPuesto } from "../modales/puesto";
+import ModalConfiguracionAlimentador from "../modales/ModalConfiguracionAlimentador.jsx";
+import ModalConfigurarAgente from "../modales/ModalConfigurarAgente.jsx";
+import { ModalGestionarAccesos, ModalPanelPermisos } from "../modales/permisos";
+import { ContenedorVentanasHistorial } from "../modales/historial";
+import { useVentanasHistorial, useGestorModales } from "../../hooks/ui";
+import { useVentanaConfigAgente } from "../../hooks/agentes";
 
-import { COLORES_SISTEMA } from "../../constantes/colores";         // paleta de colores para botones/puestos
-import { useArrastrarSoltar } from "../../hooks/useArrastrarSoltar"; // hook de drag & drop de tarjetas
-import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase"; // contexto con datos y acciones (Supabase)
-import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion"; // contexto de workspaces
-import { useGestorModales } from "../../hooks/useGestorModales";    // hook para abrir/cerrar modales por clave
-import { listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService"; // API para cargar registradores
-import { useHistorialLocal } from "../../hooks/useHistorialLocal"; // Hook para guardar historial en IndexedDB
-import { usePushNotifications } from "../../../../hooks/usePushNotifications"; // Hook para push notifications (Android)
-import { usePollingLecturas } from "../../hooks/usePollingLecturas"; // Hook para polling de lecturas de registradores
+import { COLORES_SISTEMA } from "../../constantes/colores";
+import { useArrastrarSoltar } from "../../hooks/puestos";
+import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresSupabase";
+import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
+import { listarAgentesWorkspace, listarRegistradoresAgente } from "../../../../servicios/apiService";
+import { useHistorialLocal } from "../../hooks/historial";
+import { usePushNotifications } from "../../../../hooks/usePushNotifications";
+import { usePollingLecturas } from "../../hooks/mediciones";
 
 const VistaAlimentadores = () => {
 	const navigate = useNavigate();                                  // para salir al login

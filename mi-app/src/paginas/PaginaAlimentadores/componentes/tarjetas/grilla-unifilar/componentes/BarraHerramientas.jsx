@@ -2,7 +2,7 @@
 // Barra de herramientas de la grilla
 
 import React from "react";
-import ColorPickerSimple from "../../../modales/ColorPickerSimple";
+import { ColorPickerSimple } from "../../../modales/comunes";
 import { PanelConfigChispas } from "./PanelConfigChispas";
 
 // Iconos SVG

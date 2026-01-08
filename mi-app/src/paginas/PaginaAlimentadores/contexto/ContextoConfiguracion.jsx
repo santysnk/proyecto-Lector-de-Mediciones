@@ -2,8 +2,8 @@
 // Contexto global para manejar el workspace activo del usuario y estilos globales
 
 import React, { createContext, useContext, useMemo } from "react";
-import { useConfiguracion } from "../hooks/useConfiguracion";
-import useEstilosGlobales from "../hooks/useEstilosGlobales";
+import { useConfiguracion } from "../hooks/mediciones";
+import { useEstilosGlobales } from "../hooks/preferencias";
 
 const ContextoConfiguracion = createContext(null);
 

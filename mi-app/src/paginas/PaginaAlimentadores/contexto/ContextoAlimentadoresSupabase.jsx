@@ -3,11 +3,9 @@
 
 import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from "react";
 
-import { usePuestosSupabase } from "../hooks/usePuestosSupabase";
-import { useMediciones } from "../hooks/useMediciones";
-import { usePreferenciasUI } from "../hooks/usePreferenciasUI";
-import { usePreferenciasVisuales } from "../hooks/usePreferenciasVisuales";
-import { useCambiosPendientes } from "../hooks/useCambiosPendientes";
+import { usePuestosSupabase, useCambiosPendientes } from "../hooks/puestos";
+import { useMediciones } from "../hooks/mediciones";
+import { usePreferenciasUI, usePreferenciasVisuales } from "../hooks/preferencias";
 import { usarContextoConfiguracion } from "./ContextoConfiguracion";
 
 import { obtenerDisenoTarjeta, calcularValoresLadoTarjeta } from "../utilidades/calculosMediciones";

@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
-import ModalConfirmacion from "../modales/ModalConfirmacion";
+import { ModalConfirmacion } from "../modales/comunes";
 import "./SelectorConfiguracion.css";
 
 /**

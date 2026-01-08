@@ -5,8 +5,8 @@ import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
 import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
 import GrillaUnifilar from "./GrillaUnifilar.jsx";
-import useGrillaUnifilar from "../../hooks/useGrillaUnifilar.js";
-import useChispas from "../../hooks/useChispas.js";
+import { useGrillaUnifilar } from "../../hooks/grilla-unifilar";
+import { useChispas } from "../../hooks/ui";
 import "./GrillaTarjetas.css";
 
 // Breakpoint para desactivar los controles de gap en móviles/tablets

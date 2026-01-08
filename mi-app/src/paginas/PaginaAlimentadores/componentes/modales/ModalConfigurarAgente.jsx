@@ -4,9 +4,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
-import { useVentanaFlotante } from "../../hooks/useVentanaFlotante";
-import { useAgentesConfig } from "../../hooks/useAgentesConfig";
-import { useRegistradoresConfig } from "../../hooks/useRegistradoresConfig";
+import { useVentanaFlotante } from "../../hooks/ui";
+import { useAgentesConfig, useRegistradoresConfig } from "../../hooks/agentes";
 import {
    TarjetaAgente,
    ListaRegistradores,

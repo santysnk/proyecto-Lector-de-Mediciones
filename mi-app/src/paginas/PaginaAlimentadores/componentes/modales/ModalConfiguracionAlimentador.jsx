@@ -2,7 +2,7 @@
 // Modal unificado para configurar alimentador: nombre, color, registrador y diseño de card
 
 import "./ModalConfiguracionAlimentador.css";
-import "./ColorPickerSimple.css";
+import "./comunes/ColorPickerSimple.css";
 import {
    SeccionCardDesign,
    SelectorColor,
