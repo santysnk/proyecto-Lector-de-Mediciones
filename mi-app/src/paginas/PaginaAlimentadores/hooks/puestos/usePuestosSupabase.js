@@ -11,7 +11,6 @@ import {
   crearAlimentador,
   actualizarAlimentadorAPI,
   eliminarAlimentadorAPI,
-  reordenarAlimentadores as reordenarAlimentadoresAPI,
 } from "../../../../servicios/apiService";
 import { CLAVES_STORAGE } from "../../constantes/clavesAlmacenamiento";
 import { COLORES_SISTEMA } from "../../constantes/colores";

@@ -18,6 +18,7 @@ export function usePollingLecturas({
    const [lecturasPolling, setLecturasPolling] = useState({});
    const [contadoresPolling, setContadoresPolling] = useState({});
    const [contadoresErrorLectura, setContadoresErrorLectura] = useState({});
+   // eslint-disable-next-line no-unused-vars
    const [contadoresErrorRed, setContadoresErrorRed] = useState({});
    const [hayProblemaConexion, setHayProblemaConexion] = useState(false);
 

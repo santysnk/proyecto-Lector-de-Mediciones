@@ -250,9 +250,8 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
    * @param {string} id - ID del elemento (null para global)
    * @param {string} campo - Nombre del campo (color, escala, etc.)
    * @param {any} valor - Nuevo valor
-   * @param {string} puestoId - ID del puesto (solo para alimentadores)
    */
-  const guardarPreferencia = useCallback(async (tipo, id, campo, valor, puestoId = null) => {
+  const guardarPreferencia = useCallback(async (tipo, id, campo, valor) => {
     if (!workspaceId) return;
 
     try {

@@ -66,29 +66,33 @@ export const exportarCSV = (datos, nombreArchivo, opciones = {}) => {
  */
 const obtenerValorColumna = (dato, columna) => {
   switch (columna) {
-    case "timestamp":
+    case "timestamp": {
       // Formatear timestamp a fecha legible
       const fecha = dato.x instanceof Date ? dato.x : new Date(dato.timestamp || dato.x);
       return formatearFecha(fecha);
+    }
 
-    case "valor":
+    case "valor": {
       // Valor calculado con fórmula
       const val = dato.y ?? dato.valor;
       return val != null ? val.toFixed(4).replace(".", ",") : "";
+    }
 
-    case "valorCrudo":
+    case "valorCrudo": {
       // Valor sin procesar
       const raw = dato.raw ?? dato.valorCrudo;
       return raw != null ? String(raw).replace(".", ",") : "";
+    }
 
     case "variable":
       return dato.variable || dato.etiqueta || "";
 
-    default:
+    default: {
       const v = dato[columna];
       if (v == null) return "";
       if (typeof v === "number") return v.toString().replace(".", ",");
       return String(v);
+    }
   }
 };
 

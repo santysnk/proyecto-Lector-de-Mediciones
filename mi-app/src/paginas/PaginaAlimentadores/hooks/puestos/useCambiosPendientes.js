@@ -141,9 +141,9 @@ export const useCambiosPendientes = () => {
       // Detectar cambio de orden comparando arrays de IDs (todos como strings)
       const ordenActualIds = alimentadoresDelPuesto.map(a => String(a.id));
       const ordenOriginalIds = Object.entries(snapshot.alimentadores)
-        .filter(([_, data]) => data.puestoId === puestoIdStr)
+        .filter(([, data]) => data.puestoId === puestoIdStr)
         .sort((a, b) => a[1].orden - b[1].orden)
-        .map(([id, _]) => id); // ya es string porque es key de objeto
+        .map(([id]) => id); // ya es string porque es key de objeto
 
       // Comparar si el orden cambió (solo si tienen la misma cantidad de elementos)
       if (ordenActualIds.length === ordenOriginalIds.length && ordenActualIds.length > 0) {

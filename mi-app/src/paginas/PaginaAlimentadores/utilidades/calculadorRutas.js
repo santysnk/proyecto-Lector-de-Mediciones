@@ -159,9 +159,6 @@ export function decidirDireccionEnBifurcacion(posicionActual, posicionAnterior, 
 	}
 
 	// Crear sets para búsqueda rápida
-	const emisoresSet = new Set(
-		bornes.filter(b => b.tipo === "EMISOR").map(b => `${b.x},${b.y}`)
-	);
 	const receptoresSet = new Set(
 		bornes.filter(b => b.tipo === "RECEPTOR").map(b => `${b.x},${b.y}`)
 	);
