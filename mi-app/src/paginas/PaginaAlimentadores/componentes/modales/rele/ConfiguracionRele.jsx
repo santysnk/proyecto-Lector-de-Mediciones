@@ -240,7 +240,7 @@ const SeccionConexion = ({
                   type="text"
                   value={config.conexion.ip}
                   onChange={(e) => onConexionChange("ip", e.target.value)}
-                  placeholder="172.16.0.1"
+                  placeholder="Ej: 172.16.0.1"
                />
             </div>
             <div className="config-rele-campo-inline">
@@ -249,7 +249,7 @@ const SeccionConexion = ({
                   type="number"
                   value={config.conexion.puerto}
                   onChange={(e) => onConexionChange("puerto", e.target.value === "" ? "" : parseInt(e.target.value))}
-                  placeholder="502"
+                  placeholder="Ej: 502"
                />
             </div>
             <div className="config-rele-campo-inline">
@@ -258,7 +258,7 @@ const SeccionConexion = ({
                   type="number"
                   value={config.conexion.unitId}
                   onChange={(e) => onConexionChange("unitId", e.target.value === "" ? "" : parseInt(e.target.value))}
-                  placeholder="1"
+                  placeholder="Ej: 1"
                />
             </div>
          </div>
@@ -269,7 +269,7 @@ const SeccionConexion = ({
                   type="number"
                   value={config.registroInicial}
                   onChange={(e) => onRegistroInicialChange(e.target.value)}
-                  placeholder="120"
+                  placeholder="Ej: 120"
                   min={0}
                />
             </div>
@@ -279,26 +279,34 @@ const SeccionConexion = ({
                   type="number"
                   value={config.cantidadRegistros}
                   onChange={(e) => onCantidadRegistrosChange(e.target.value)}
-                  placeholder="80"
+                  placeholder="Ej: 80"
                   min={1}
                />
             </div>
          </div>
          <div className="config-rele-conexion-grupo">
-            <div className="config-rele-campo-inline">
+            <div className="config-rele-campo-inline config-rele-campo-inline--con-sufijo">
                <label>Intervalo</label>
-               <input
-                  type="number"
-                  value={config.intervalo}
-                  onChange={(e) => onIntervaloChange(e.target.value)}
-                  placeholder="60"
-                  min={1}
-               />
+               <div className="config-rele-input-con-sufijo">
+                  <input
+                     type="number"
+                     value={config.intervalo}
+                     onChange={(e) => onIntervaloChange(e.target.value)}
+                     min={1}
+                  />
+                  <span className="config-rele-input-sufijo">s</span>
+               </div>
             </div>
          </div>
       </div>
    </div>
 );
+
+const TABS_TRANSFORMADORES = [
+   { id: "ti", nombre: "T.I." },
+   { id: "tv", nombre: "T.V." },
+   { id: "relaciones", nombre: "Relaciones" },
+];
 
 const SeccionTransformadores = ({
    dropdownAbierto,
@@ -308,68 +316,139 @@ const SeccionTransformadores = ({
    obtenerTVs,
    obtenerRelaciones,
    onAbrirModal,
-}) => (
-   <div className="config-rele-seccion config-rele-seccion--transformadores">
-      <h6>⚡ Relaciones de transformación</h6>
-      <div className="config-rele-transformadores-compacto" ref={dropdownRef}>
-         <div className="config-rele-campo-inline">
-            <label>TI / TV / Relación [ x : y ]</label>
-            <button
-               type="button"
-               className="config-rele-btn-ver-transformadores"
-               onClick={() => setDropdownAbierto(!dropdownAbierto)}
-            >
-               <span>Ver disponibles ({obtenerTIs().length + obtenerTVs().length + obtenerRelaciones().length})</span>
-               <span className={`config-rele-dropdown-arrow ${dropdownAbierto ? "abierto" : ""}`}>▼</span>
-            </button>
-         </div>
-         <button type="button" className="config-rele-btn-editar-transformador" onClick={onAbrirModal} title="Gestionar transformadores">
-            ⚙️
-         </button>
+}) => {
+   const triggerRef = useRef(null);
+   const menuRef = useRef(null);
+   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+   const [tabActivo, setTabActivo] = useState("ti");
 
-         {dropdownAbierto && (
-            <div className="config-rele-transformadores-dropdown">
-               {obtenerTIs().length > 0 && (
-                  <div className="config-rele-dropdown-grupo">
-                     <div className="config-rele-dropdown-titulo">T.I. (Intensidad)</div>
-                     {obtenerTIs().map((t) => (
-                        <div key={t.id} className="config-rele-dropdown-item">
-                           <span className="config-rele-dropdown-nombre">{t.nombre}</span>
-                           <span className="config-rele-dropdown-formula">{t.formula}</span>
-                        </div>
-                     ))}
-                  </div>
-               )}
-               {obtenerTVs().length > 0 && (
-                  <div className="config-rele-dropdown-grupo">
-                     <div className="config-rele-dropdown-titulo">T.V. (Voltaje)</div>
-                     {obtenerTVs().map((t) => (
-                        <div key={t.id} className="config-rele-dropdown-item">
-                           <span className="config-rele-dropdown-nombre">{t.nombre}</span>
-                           <span className="config-rele-dropdown-formula">{t.formula}</span>
-                        </div>
-                     ))}
-                  </div>
-               )}
-               {obtenerRelaciones().length > 0 && (
-                  <div className="config-rele-dropdown-grupo">
-                     <div className="config-rele-dropdown-titulo">Relación [ x : y ]</div>
-                     {obtenerRelaciones().map((t) => (
-                        <div key={t.id} className="config-rele-dropdown-item">
-                           <span className="config-rele-dropdown-nombre">{t.nombre}</span>
-                           <span className="config-rele-dropdown-formula">{t.formula}</span>
-                        </div>
-                     ))}
-                  </div>
-               )}
-               {obtenerTIs().length === 0 && obtenerTVs().length === 0 && obtenerRelaciones().length === 0 && (
-                  <div className="config-rele-dropdown-vacio">No hay transformadores configurados</div>
-               )}
+   // Calcular posición del menú cuando se abre
+   useEffect(() => {
+      if (dropdownAbierto && triggerRef.current) {
+         const rect = triggerRef.current.getBoundingClientRect();
+         const menuHeight = 450;
+         const viewportHeight = window.innerHeight;
+
+         // Posición a la derecha del trigger
+         let left = rect.right + 8;
+
+         // Centrar verticalmente respecto al trigger
+         let top = rect.top + (rect.height / 2) - (menuHeight / 2);
+
+         // Ajustar si se sale por arriba
+         if (top < 10) top = 10;
+
+         // Ajustar si se sale por abajo
+         if (top + menuHeight > viewportHeight - 10) {
+            top = viewportHeight - menuHeight - 10;
+         }
+
+         // Si no cabe a la derecha, ponerlo a la izquierda
+         if (left + 340 > window.innerWidth) {
+            left = rect.left - 348;
+         }
+
+         setMenuPos({ top, left });
+      }
+   }, [dropdownAbierto]);
+
+   const tis = obtenerTIs();
+   const tvs = obtenerTVs();
+   const relaciones = obtenerRelaciones();
+   const total = tis.length + tvs.length + relaciones.length;
+
+   // Filtrar items según tab activo
+   const obtenerItemsFiltrados = () => {
+      switch (tabActivo) {
+         case "ti":
+            return tis;
+         case "tv":
+            return tvs;
+         case "relaciones":
+            return relaciones;
+         default:
+            return [];
+      }
+   };
+
+   const itemsFiltrados = obtenerItemsFiltrados();
+
+   // Contar items por categoría para mostrar en tabs
+   const conteos = {
+      ti: tis.length,
+      tv: tvs.length,
+      relaciones: relaciones.length,
+   };
+
+   return (
+      <div className="config-rele-seccion config-rele-seccion--transformadores">
+         <h6>⚡ Relaciones de transformación</h6>
+         <div className="config-rele-transformadores-compacto" ref={dropdownRef}>
+            <div className="config-rele-campo-inline">
+               <label>TI / TV / Relación [ x : y ]</label>
+               <button
+                  type="button"
+                  className="config-rele-btn-ver-transformadores"
+                  onClick={() => setDropdownAbierto(!dropdownAbierto)}
+                  ref={triggerRef}
+               >
+                  <span>Ver disponibles ({total})</span>
+                  <span className={`config-rele-dropdown-arrow ${dropdownAbierto ? "abierto" : ""}`}>▼</span>
+               </button>
             </div>
-         )}
+            <button type="button" className="config-rele-btn-editar-transformador" onClick={onAbrirModal} title="Gestionar transformadores">
+               ⚙️
+            </button>
+
+            {dropdownAbierto && (
+               <div
+                  className="config-rele-transformadores-dropdown config-rele-transformadores-dropdown--fixed"
+                  style={{ top: menuPos.top, left: menuPos.left }}
+                  ref={menuRef}
+               >
+                  {/* Tabs */}
+                  <div className="config-rele-dropdown-tabs">
+                     {TABS_TRANSFORMADORES.map((tab) => (
+                        <button
+                           key={tab.id}
+                           type="button"
+                           className={`config-rele-dropdown-tab ${tabActivo === tab.id ? "activo" : ""} ${conteos[tab.id] === 0 ? "vacio" : ""}`}
+                           onClick={() => setTabActivo(tab.id)}
+                           disabled={conteos[tab.id] === 0}
+                        >
+                           {tab.nombre}
+                           <span className="config-rele-dropdown-tab-count">{conteos[tab.id]}</span>
+                        </button>
+                     ))}
+                  </div>
+
+                  {/* Contenido */}
+                  <div className="config-rele-dropdown-contenido">
+                     {itemsFiltrados.length === 0 ? (
+                        <div className="config-rele-dropdown-vacio">
+                           {total === 0 ? "No hay transformadores configurados" : "No hay items en esta categoría"}
+                        </div>
+                     ) : (
+                        itemsFiltrados.map((t) => (
+                           <div key={t.id} className="config-rele-dropdown-item">
+                              <span className="config-rele-dropdown-nombre">{t.nombre}</span>
+                              <input
+                                 type="text"
+                                 className="config-rele-dropdown-formula-input"
+                                 value={t.formula}
+                                 readOnly
+                                 tabIndex={-1}
+                              />
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </div>
+            )}
+         </div>
       </div>
-   </div>
-);
+   );
+};
 
 const SeccionPlantilla = ({
    plantillas,

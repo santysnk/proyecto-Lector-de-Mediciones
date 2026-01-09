@@ -526,27 +526,27 @@
 .config-rele-conexion-fila {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 6px;
 }
 
 .config-rele-conexion-grupo {
   display: flex;
   align-items: flex-end;
-  gap: 12px;
+  gap: 10px;
   background: #1a1f2e;
-  padding: 10px 12px;
+  padding: 10px 10px;
   border-radius: 6px;
   border: 1px solid #2a3447;
 }
 
 .config-rele-conexion-grupo .config-rele-campo-inline {
   flex: 0 0 auto;
-  width: 60px;
+  width: 65px;
 }
 
 /* Solo el primer grupo tiene IP que necesita ser más ancho */
 .config-rele-conexion-grupo:first-child .config-rele-campo-inline:first-child {
-  width: 120px;
+  width: 110px;
 }
 
 /* ============================================================================
@@ -613,32 +613,117 @@
   background: #4b5563;
 }
 
-/* Dropdown de transformadores */
+/* Dropdown de transformadores - versión fixed a la derecha */
 .config-rele-transformadores-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
   margin-top: 4px;
-  background: #1e2433;
+  background: #1a1f2e;
   border: 1px solid #2a3447;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  min-width: 250px;
-  max-height: 300px;
-  overflow-y: auto;
+  min-width: 340px;
+  max-height: 450px;
+  overflow: hidden;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
 }
 
-.config-rele-dropdown-grupo {
-  padding: 8px 0;
+/* Versión fixed - aparece a la derecha del trigger */
+.config-rele-transformadores-dropdown--fixed {
+  position: fixed;
+  margin-top: 0;
+  z-index: 3000;
 }
 
-.config-rele-dropdown-grupo:not(:last-child) {
+/* Tabs del dropdown */
+.config-rele-dropdown-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 8px 0 8px;
+  background: #252b3b;
   border-bottom: 1px solid #2a3447;
+  flex-shrink: 0;
+}
+
+.config-rele-dropdown-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #71717a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: -1px;
+}
+
+.config-rele-dropdown-tab:hover:not(:disabled) {
+  color: #a1a1aa;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.config-rele-dropdown-tab.activo {
+  color: #e4e4e7;
+  border-bottom-color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+}
+
+.config-rele-dropdown-tab.vacio:not(.activo) {
+  opacity: 0.4;
+}
+
+.config-rele-dropdown-tab:disabled {
+  cursor: not-allowed;
+}
+
+.config-rele-dropdown-tab-count {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  background: #2a3447;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+}
+
+.config-rele-dropdown-tab.activo .config-rele-dropdown-tab-count {
+  background: #2563eb;
+  color: white;
+}
+
+/* Contenido scrolleable */
+.config-rele-dropdown-contenido {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #4b5567 #1a1f2e;
+}
+
+.config-rele-dropdown-contenido::-webkit-scrollbar {
+  width: 8px;
+}
+
+.config-rele-dropdown-contenido::-webkit-scrollbar-track {
+  background: #1a1f2e;
+}
+
+.config-rele-dropdown-contenido::-webkit-scrollbar-thumb {
+  background: #4b5567;
+  border-radius: 4px;
+}
+
+.config-rele-dropdown-contenido::-webkit-scrollbar-thumb:hover {
+  background: #5b6577;
 }
 
 .config-rele-dropdown-titulo {
-  padding: 4px 12px;
+  padding: 8px 16px 6px 16px;
   font-size: 0.7rem;
   font-weight: 600;
   color: #71717a;
@@ -650,27 +735,53 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  gap: 12px;
+  padding: 10px 16px;
+  gap: 16px;
+  transition: background 0.15s;
 }
 
 .config-rele-dropdown-item:hover {
-  background: rgba(37, 99, 235, 0.1);
+  background: rgba(37, 99, 235, 0.15);
 }
 
 .config-rele-dropdown-nombre {
   color: #e4e4e7;
   font-size: 0.85rem;
+  white-space: nowrap;
 }
 
-.config-rele-dropdown-formula {
-  color: #71717a;
-  font-size: 0.75rem;
+/* Input readonly para la fórmula - estilo similar a DropdownTransformador */
+.config-rele-dropdown-formula-input {
+  padding: 5px 10px;
+  background: #252b3b;
+  border: 1px solid #2a3447;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.8rem;
   font-family: "Consolas", "Monaco", monospace;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  width: auto;
+  field-sizing: content;
+}
+
+/* Línea divisoria con degradado */
+.config-rele-dropdown-divider {
+  height: 1px;
+  margin: 8px 16px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    #3b4557 20%,
+    #4b5567 50%,
+    #3b4557 80%,
+    transparent 100%
+  );
 }
 
 .config-rele-dropdown-vacio {
-  padding: 16px 12px;
+  padding: 20px 16px;
   color: #52525b;
   font-size: 0.85rem;
   text-align: center;
@@ -722,6 +833,48 @@
 .config-rele-campo-inline input:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Input con sufijo (ej: "seg") */
+.config-rele-input-con-sufijo {
+  display: flex;
+  align-items: center;
+  background: #1a1f2e;
+  border: 1px solid #2a3447;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 34px;
+}
+
+.config-rele-input-con-sufijo input {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  min-width: 40px;
+  height: 100%;
+  padding: 0 4px;
+}
+
+.config-rele-input-con-sufijo input:focus {
+  outline: none;
+}
+
+.config-rele-input-con-sufijo:focus-within {
+  border-color: #2563eb;
+}
+
+.config-rele-input-sufijo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  background: #252b3b;
+  color: #71717a;
+  font-size: 0.85rem;
+  border-left: 1px solid #2a3447;
+  height: 100%;
+  white-space: nowrap;
 }
 
 /* Ocultar spinners en inputs number */
