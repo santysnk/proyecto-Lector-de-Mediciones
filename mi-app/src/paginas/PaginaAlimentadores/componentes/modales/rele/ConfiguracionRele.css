@@ -6,12 +6,12 @@
 .config-rele {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
   padding: 8px 0;
 }
 
 /* ============================================================================
-   FILA SUPERIOR: Conexión + Plantilla lado a lado
+   FILA SUPERIOR: Conexión + Transformadores | Plantilla
    ============================================================================ */
 
 .config-rele-row-superior {
@@ -23,23 +23,22 @@
 /* Wrapper izquierdo contiene Conexión y Transformadores lado a lado */
 .config-rele-col-izquierda {
   display: flex;
-  flex-direction: row;
   gap: 16px;
 }
 
-/* Conexión se expande para ocupar más espacio */
+/* Conexión se ajusta a su contenido */
 .config-rele-col-izquierda .config-rele-seccion--conexion {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
-/* Transformadores tiene ancho fijo */
+/* Transformadores se expande para llenar el espacio */
 .config-rele-col-izquierda .config-rele-seccion--transformadores {
-  flex: 0 0 auto;
-  min-width: 240px;
+  flex: 1 1 auto;
+  min-width: 320px;
 }
 
 .config-rele-seccion--conexion {
-  /* Conexión a la izquierda - ancho basado en contenido */
+  /* Conexión a la izquierda */
 }
 
 .config-rele-seccion--transformadores {
@@ -50,22 +49,22 @@
   /* Plantilla a la derecha */
 }
 
-/* Fila inferior: Consola (izq) + Funcionalidades (der) lado a lado */
+/* Fila inferior: Consola | Funcionalidades - misma estructura que fila superior */
 .config-rele-row-inferior {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 16px;
   align-items: stretch;
 }
 
+/* Consola ocupa la primera columna */
 .config-rele-seccion--consola {
-  /* Consola a la izquierda */
   display: flex;
   flex-direction: column;
 }
 
+/* Funcionalidades ocupa la segunda columna */
 .config-rele-seccion--funcionalidades {
-  /* Funcionalidades a la derecha */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -527,15 +526,15 @@
 .config-rele-conexion-fila {
   display: flex;
   align-items: flex-end;
-  gap: 6px;
+  gap: 12px;
 }
 
 .config-rele-conexion-grupo {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 14px;
   background: #1a1f2e;
-  padding: 10px 10px;
+  padding: 10px 12px;
   border-radius: 6px;
   border: 1px solid #2a3447;
 }
@@ -547,7 +546,7 @@
 
 /* Solo el primer grupo tiene IP que necesita ser más ancho */
 .config-rele-conexion-grupo:first-child .config-rele-campo-inline:first-child {
-  width: 110px;
+  width: 130px;
 }
 
 /* ============================================================================
