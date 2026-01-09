@@ -1,10 +1,8 @@
 // src/paginas/PaginaLogin/PaginaLogin.jsx
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contextos/AuthContext";
-import { Capacitor } from "@capacitor/core";
-import { BiometricAuth } from "@aparajita/capacitor-biometric-auth";
 import "./PaginaLogin.css";
 import logoApp from "../../assets/imagenes/logo 2 rw.png";
 
@@ -33,24 +31,18 @@ const PaginaLogin = () => {
   const [alerta, setAlerta] = useState({ mensaje: "", tipo: "" });
   const [cargando, setCargando] = useState(false);
 
-  // Ref para saber si las credenciales vienen del localStorage (precargadas)
-  const credencialesPrecargadas = useRef(false);
-  const biometriaYaIntentada = useRef(false);
-
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Cargar credenciales guardadas al montar
+  // Cargar solo el email guardado al montar (NUNCA la contraseña por seguridad)
   useEffect(() => {
     const guardado = localStorage.getItem(STORAGE_KEY);
     if (guardado) {
       try {
-        const { email: emailGuardado, contrasena: contrasenaGuardada } = JSON.parse(guardado);
-        if (emailGuardado && contrasenaGuardada) {
+        const { email: emailGuardado } = JSON.parse(guardado);
+        if (emailGuardado) {
           setEmail(emailGuardado);
-          setContrasena(contrasenaGuardada);
           setRecordarme(true);
-          credencialesPrecargadas.current = true;
         }
       } catch {
         localStorage.removeItem(STORAGE_KEY);
@@ -65,54 +57,6 @@ const PaginaLogin = () => {
       setAlerta({ mensaje: "", tipo: "" });
     }, 4000);
   };
-
-  // Mostrar prompt de biometría automáticamente SOLO si hay credenciales precargadas
-  useEffect(() => {
-    const intentarBiometria = async () => {
-      // Solo ejecutar si:
-      // 1. Las credenciales vienen precargadas del localStorage
-      // 2. No se ha intentado ya la biometría
-      // 3. Estamos en plataforma nativa
-      if (!credencialesPrecargadas.current || biometriaYaIntentada.current) return;
-      if (!Capacitor.isNativePlatform()) return;
-
-      biometriaYaIntentada.current = true;
-
-      try {
-        const info = await BiometricAuth.checkBiometry();
-        if (!info.isAvailable) return;
-
-        await BiometricAuth.authenticate({
-          reason: "Inicia sesión con tu huella digital",
-          cancelTitle: "Cancelar",
-          allowDeviceCredential: true,
-        });
-
-        // Biometría exitosa, hacer login automático
-        setCargando(true);
-        const { exito, error } = await login(email.trim(), contrasena);
-        setCargando(false);
-
-        if (!exito) {
-          mostrarAlerta(error || "Error al iniciar sesión", "error");
-          return;
-        }
-
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ email: email.trim(), contrasena }));
-        mostrarAlerta("¡Bienvenido!", "exito");
-
-        setTimeout(() => {
-          navigate("/alimentadores");
-        }, 1200);
-      } catch {
-        // Usuario canceló o error de biometría - no mostrar error
-      }
-    };
-
-    // Pequeño delay para que la UI se renderice primero
-    const timer = setTimeout(intentarBiometria, 500);
-    return () => clearTimeout(timer);
-  }, [email, contrasena, login, navigate]);
 
   // Manejo del submit del formulario
   const handleSubmit = async (event) => {
@@ -134,9 +78,9 @@ const PaginaLogin = () => {
       return;
     }
 
-    // Guardar o limpiar credenciales según checkbox
+    // Guardar solo el email según checkbox (NUNCA la contraseña por seguridad)
     if (recordarme) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ email: email.trim(), contrasena }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ email: email.trim() }));
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
