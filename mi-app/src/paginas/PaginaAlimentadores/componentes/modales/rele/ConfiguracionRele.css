@@ -27,14 +27,15 @@
   gap: 16px;
 }
 
-/* Conexión ocupa el espacio que necesita */
+/* Conexión se expande para ocupar más espacio */
 .config-rele-col-izquierda .config-rele-seccion--conexion {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
 }
 
-/* Transformadores ocupa el resto */
+/* Transformadores tiene ancho fijo */
 .config-rele-col-izquierda .config-rele-seccion--transformadores {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 240px;
 }
 
 .config-rele-seccion--conexion {
