@@ -6,6 +6,7 @@ import { usePlantillasAnalizador, useConfigAnalizador } from "../../../hooks/ana
 import { useTransformadores } from "../../../hooks/mediciones";
 import { useConsolaTest } from "../../../hooks/agentes";
 import ModalPlantillasAnalizador from "./ModalPlantillasAnalizador";
+import { SeccionTransformadores, ModalTransformadores } from "../rele";
 // Reutilizamos los estilos de ConfiguracionRele
 import "../rele/ConfiguracionRele.css";
 
@@ -46,6 +47,7 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) =
    // Estado de modales
    const [modalPlantillasAbierto, setModalPlantillasAbierto] = useState(false);
    const [plantillaParaEditar, setPlantillaParaEditar] = useState(null);
+   const [modalTransformadoresAbierto, setModalTransformadoresAbierto] = useState(false);
 
    // Estado del dropdown de transformadores
    const [dropdownTransformadoresAbierto, setDropdownTransformadoresAbierto] = useState(false);
@@ -122,6 +124,7 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) =
                   obtenerTIs={obtenerTIs}
                   obtenerTVs={obtenerTVs}
                   obtenerRelaciones={obtenerRelaciones}
+                  onAbrirModal={() => setModalTransformadoresAbierto(true)}
                />
             </div>
 
@@ -184,6 +187,12 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) =
             obtenerTIs={obtenerTIs}
             obtenerTVs={obtenerTVs}
             obtenerRelaciones={obtenerRelaciones}
+         />
+
+         {/* Modal de transformadores (compartido) */}
+         <ModalTransformadores
+            abierto={modalTransformadoresAbierto}
+            onCerrar={() => setModalTransformadoresAbierto(false)}
          />
       </div>
    );
@@ -271,138 +280,6 @@ const SeccionConexion = ({
       </div>
    </div>
 );
-
-const TABS_TRANSFORMADORES = [
-   { id: "ti", nombre: "T.I." },
-   { id: "tv", nombre: "T.V." },
-   { id: "relaciones", nombre: "Relaciones" },
-];
-
-const SeccionTransformadores = ({
-   dropdownAbierto,
-   setDropdownAbierto,
-   dropdownRef,
-   obtenerTIs,
-   obtenerTVs,
-   obtenerRelaciones,
-}) => {
-   const triggerRef = useRef(null);
-   const menuRef = useRef(null);
-   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
-   const [tabActivo, setTabActivo] = useState("ti");
-
-   // Calcular posición del menú cuando se abre
-   useEffect(() => {
-      if (dropdownAbierto && triggerRef.current) {
-         const rect = triggerRef.current.getBoundingClientRect();
-         const menuHeight = 450;
-         const viewportHeight = window.innerHeight;
-
-         let left = rect.right + 8;
-         let top = rect.top + (rect.height / 2) - (menuHeight / 2);
-
-         if (top < 10) top = 10;
-         if (top + menuHeight > viewportHeight - 10) {
-            top = viewportHeight - menuHeight - 10;
-         }
-         if (left + 340 > window.innerWidth) {
-            left = rect.left - 348;
-         }
-
-         setMenuPos({ top, left });
-      }
-   }, [dropdownAbierto]);
-
-   const tis = obtenerTIs();
-   const tvs = obtenerTVs();
-   const relaciones = obtenerRelaciones();
-   const total = tis.length + tvs.length + relaciones.length;
-
-   const obtenerItemsFiltrados = () => {
-      switch (tabActivo) {
-         case "ti":
-            return tis;
-         case "tv":
-            return tvs;
-         case "relaciones":
-            return relaciones;
-         default:
-            return [];
-      }
-   };
-
-   const itemsFiltrados = obtenerItemsFiltrados();
-
-   const conteos = {
-      ti: tis.length,
-      tv: tvs.length,
-      relaciones: relaciones.length,
-   };
-
-   return (
-      <div className="config-rele-seccion config-rele-seccion--transformadores">
-         <h6>⚡ Relaciones de transformación</h6>
-         <div className="config-rele-transformadores-compacto" ref={dropdownRef}>
-            <div className="config-rele-campo-inline">
-               <label>TI / TV / Relación [ x : y ]</label>
-               <button
-                  type="button"
-                  className="config-rele-btn-ver-transformadores"
-                  onClick={() => setDropdownAbierto(!dropdownAbierto)}
-                  ref={triggerRef}
-               >
-                  <span>Ver disponibles ({total})</span>
-                  <span className={`config-rele-dropdown-arrow ${dropdownAbierto ? "abierto" : ""}`}>▼</span>
-               </button>
-            </div>
-
-            {dropdownAbierto && (
-               <div
-                  className="config-rele-transformadores-dropdown config-rele-transformadores-dropdown--fixed"
-                  style={{ top: menuPos.top, left: menuPos.left }}
-                  ref={menuRef}
-               >
-                  <div className="config-rele-dropdown-tabs">
-                     {TABS_TRANSFORMADORES.map((tab) => (
-                        <button
-                           key={tab.id}
-                           type="button"
-                           className={`config-rele-dropdown-tab ${tabActivo === tab.id ? "activo" : ""} ${conteos[tab.id] === 0 ? "vacio" : ""}`}
-                           onClick={() => setTabActivo(tab.id)}
-                           disabled={conteos[tab.id] === 0}
-                        >
-                           {tab.nombre}
-                           <span className="config-rele-dropdown-tab-count">{conteos[tab.id]}</span>
-                        </button>
-                     ))}
-                  </div>
-
-                  <div className="config-rele-dropdown-contenido">
-                     {itemsFiltrados.length === 0 ? (
-                        <div className="config-rele-dropdown-vacio">
-                           {total === 0 ? "No hay transformadores configurados" : "No hay items en esta categoría"}
-                        </div>
-                     ) : (
-                        itemsFiltrados.map((t) => (
-                           <div key={t.id} className="config-rele-dropdown-item">
-                              <span className="config-rele-dropdown-nombre">{t.nombre}</span>
-                              <input
-                                 type="text"
-                                 className="config-rele-dropdown-formula-input"
-                                 value={t.formula}
-                                 readOnly
-                                 tabIndex={-1}
-                              />
-                           </div>
-                        ))
-                     )}
-                  </div>
-               </div>
-            )}
-         </div>
-      </div>
-   );
-};
 
 const SeccionPlantilla = ({
    plantillas,
