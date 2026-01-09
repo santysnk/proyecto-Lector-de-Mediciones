@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { usePlantillasRele, useConfigRele } from "../../../hooks/rele";
-import { useTransformadores } from "../../../hooks/mediciones";
-import { useConsolaTest } from "../../../hooks/agentes";
+import { usePlantillasRele, useConfigRele } from "../../../../hooks/rele";
+import { useTransformadores } from "../../../../hooks/mediciones";
+import { useConsolaTest } from "../../../../hooks/agentes";
 import {
    interpretarRegistro,
    categoriaRequiereInterpretacion,
    obtenerClaseTipo
-} from "../../../utilidades/interpreteRegistrosREF615";
+} from "../../../../utilidades/interpreteRegistrosREF615";
 import ModalPlantillasRele from "./ModalPlantillasRele";
-import ModalTransformadores from "./ModalTransformadores";
-import SeccionTransformadores from "./SeccionTransformadores";
-import "./ConfiguracionRele.css";
+import ModalTransformadores from "../ModalTransformadores";
+import SeccionTransformadores from "../SeccionTransformadores";
+import "../ConfiguracionRegistrador.css";
 
 // Categorías disponibles para las funcionalidades
 const CATEGORIAS = {

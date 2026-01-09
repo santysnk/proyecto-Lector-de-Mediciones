@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { SEVERIDADES_DISPONIBLES, PLANTILLAS_ETIQUETAS_LEDS } from "../../../utilidades/interpreteRegistrosREF615";
-import { useTransformadores } from "../../../hooks/mediciones";
-import { useEtiquetasBits, useFuncionalidadesPlantilla, CATEGORIAS_FUNCIONALIDADES } from "../../../hooks/rele";
-import DropdownTransformador from "./DropdownTransformador";
+import { SEVERIDADES_DISPONIBLES, PLANTILLAS_ETIQUETAS_LEDS } from "../../../../utilidades/interpreteRegistrosREF615";
+import { useTransformadores } from "../../../../hooks/mediciones";
+import { useEtiquetasBits, useFuncionalidadesPlantilla, CATEGORIAS_FUNCIONALIDADES } from "../../../../hooks/rele";
+import DropdownTransformador from "../DropdownTransformador";
 import "./ModalPlantillasRele.css";
 
 /**

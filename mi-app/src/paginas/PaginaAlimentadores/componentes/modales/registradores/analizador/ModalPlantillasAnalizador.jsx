@@ -1,8 +1,8 @@
-// componentes/modales/analizador/ModalPlantillasAnalizador.jsx
+// componentes/modales/registradores/analizador/ModalPlantillasAnalizador.jsx
 // Modal para gestionar plantillas de analizadores de redes
 
 import { useState, useEffect } from "react";
-import { useFuncionalidadesAnalizador } from "../../../hooks/analizador";
+import { useFuncionalidadesAnalizador } from "../../../../hooks/analizador";
 // Reutilizamos los estilos del modal de plantillas de relé
 import "../rele/ModalPlantillasRele.css";
 

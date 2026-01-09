@@ -1,14 +1,14 @@
-// componentes/modales/analizador/ConfiguracionAnalizador.jsx
+// componentes/modales/registradores/analizador/ConfiguracionAnalizador.jsx
 // Componente para configurar un registrador de tipo Analizador de Redes
 
 import React, { useState, useEffect, useRef } from "react";
-import { usePlantillasAnalizador, useConfigAnalizador } from "../../../hooks/analizador";
-import { useTransformadores } from "../../../hooks/mediciones";
-import { useConsolaTest } from "../../../hooks/agentes";
+import { usePlantillasAnalizador, useConfigAnalizador } from "../../../../hooks/analizador";
+import { useTransformadores } from "../../../../hooks/mediciones";
+import { useConsolaTest } from "../../../../hooks/agentes";
 import ModalPlantillasAnalizador from "./ModalPlantillasAnalizador";
-import { SeccionTransformadores, ModalTransformadores } from "../rele";
-// Reutilizamos los estilos de ConfiguracionRele
-import "../rele/ConfiguracionRele.css";
+import SeccionTransformadores from "../SeccionTransformadores";
+import ModalTransformadores from "../ModalTransformadores";
+import "../ConfiguracionRegistrador.css";
 
 /**
  * Componente para configurar un registrador de tipo Analizador de Redes.

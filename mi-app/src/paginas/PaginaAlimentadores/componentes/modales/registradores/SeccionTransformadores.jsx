@@ -1,4 +1,4 @@
-// componentes/modales/rele/SeccionTransformadores.jsx
+// componentes/modales/registradores/SeccionTransformadores.jsx
 // Componente compartido para mostrar transformadores (usado por relé y analizador)
 
 import { useState, useEffect, useRef } from "react";
