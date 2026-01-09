@@ -94,6 +94,29 @@ export {
    registrarTokenDispositivo,
 } from './dispositivos';
 
+// Transformadores (TI/TV)
+export {
+   obtenerTransformadoresAPI,
+   crearTransformadorAPI,
+   actualizarTransformadorAPI,
+   eliminarTransformadorAPI,
+   migrarTransformadoresAPI,
+} from './transformadores';
+
+// Plantillas de dispositivo
+export {
+   obtenerPlantillasAPI,
+   obtenerPlantillaAPI,
+   crearPlantillaAPI,
+   actualizarPlantillaAPI,
+   eliminarPlantillaAPI,
+   migrarPlantillasAPI,
+   obtenerModelosAPI,
+   obtenerModeloAPI,
+   obtenerConfiguracionesProteccionAPI,
+   obtenerConfiguracionProteccionAPI,
+} from './plantillasDispositivo';
+
 // Default export para compatibilidad con: import apiService from '...'
 import * as usuarios from './usuarios';
 import * as workspaces from './workspaces';
@@ -106,6 +129,8 @@ import * as registradores from './registradores';
 import * as permisos from './permisos';
 import * as admin from './admin';
 import * as dispositivos from './dispositivos';
+import * as transformadores from './transformadores';
+import * as plantillasDispositivo from './plantillasDispositivo';
 
 export default {
    ...usuarios,
@@ -119,4 +144,6 @@ export default {
    ...permisos,
    ...admin,
    ...dispositivos,
+   ...transformadores,
+   ...plantillasDispositivo,
 };

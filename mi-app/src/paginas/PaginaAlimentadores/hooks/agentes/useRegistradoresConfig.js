@@ -23,6 +23,7 @@ const REGISTRADOR_INICIAL = {
    cantidadRegistros: '',
    intervaloSegundos: '',
    configuracionRele: null,
+   configuracionAnalizador: null,
 };
 
 /**
@@ -78,8 +79,9 @@ export function useRegistradoresConfig() {
     */
    const prepararDatosRegistrador = useCallback((formData) => {
       const esRele = formData.tipoDispositivo === 'rele';
+      const esAnalizador = formData.tipoDispositivo === 'analizador';
 
-      if (esRele) {
+      if (esRele && formData.configuracionRele) {
          const configRele = formData.configuracionRele;
          return {
             nombre: formData.nombre,
@@ -91,13 +93,31 @@ export function useRegistradoresConfig() {
             indiceInicial: String(configRele.registroInicial || 120),
             cantidadRegistros: String(configRele.cantidadRegistros || 80),
             intervaloSegundos: '60',
+            plantillaId: configRele.plantillaId || null,
             configuracionRele: configRele,
+         };
+      }
+
+      if (esAnalizador && formData.configuracionAnalizador) {
+         const configAnalizador = formData.configuracionAnalizador;
+         return {
+            nombre: formData.nombre,
+            tipo: 'modbus',
+            tipoDispositivo: 'analizador',
+            ip: configAnalizador.conexion?.ip || formData.ip,
+            puerto: String(configAnalizador.conexion?.puerto || formData.puerto || 502),
+            unitId: String(configAnalizador.conexion?.unitId || formData.unitId || 1),
+            indiceInicial: String(configAnalizador.registroInicial || formData.indiceInicial || 0),
+            cantidadRegistros: String(configAnalizador.cantidadRegistros || formData.cantidadRegistros || 10),
+            intervaloSegundos: '60',
+            plantillaId: configAnalizador.plantillaId || null,
+            configuracionRele: configAnalizador,
          };
       }
 
       return {
          ...formData,
-         tipoDispositivo: 'analizador',
+         tipoDispositivo: formData.tipoDispositivo || 'analizador',
          unitId: formData.unitId || '1',
          intervaloSegundos: formData.intervaloSegundos || '60',
       };
@@ -107,7 +127,11 @@ export function useRegistradoresConfig() {
     * Guardar registrador (crear o editar)
     */
    const guardarRegistrador = useCallback(async (agenteId, formData, registradorId = null) => {
+      console.log('[guardarRegistrador] formData recibido:', JSON.stringify(formData, null, 2));
+      console.log('[guardarRegistrador] tipoDispositivo:', formData.tipoDispositivo);
+      console.log('[guardarRegistrador] configuracionRele:', formData.configuracionRele);
       const datos = prepararDatosRegistrador(formData);
+      console.log('[guardarRegistrador] datos preparados:', JSON.stringify(datos, null, 2));
 
       setGuardandoRegistrador(true);
       try {
@@ -129,6 +153,10 @@ export function useRegistradoresConfig() {
     */
    const editarRegistrador = useCallback((reg) => {
       setRegistradorEditando(reg);
+
+      // Usar configuracion_completa (nuevo) o configuracion_rele (legacy)
+      const configuracion = reg.configuracion_completa || reg.configuracion_rele || null;
+
       setNuevoRegistrador({
          nombre: reg.nombre || '',
          tipo: reg.tipo || 'modbus',
@@ -139,7 +167,8 @@ export function useRegistradoresConfig() {
          indiceInicial: String(reg.indice_inicial || '0'),
          cantidadRegistros: String(reg.cantidad_registros || '10'),
          intervaloSegundos: String(reg.intervalo_segundos || '60'),
-         configuracionRele: reg.configuracion_rele || null,
+         configuracionRele: configuracion,
+         configuracionAnalizador: configuracion,
       });
       setMostrarFormRegistrador(reg.agente_id);
    }, []);

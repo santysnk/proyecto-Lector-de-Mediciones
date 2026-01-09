@@ -1,146 +1,243 @@
-import { useState, useEffect, useCallback } from "react";
+// hooks/mediciones/useTransformadores.js
+// Hook para gestionar transformadores de intensidad (TI) y voltaje (TV)
+// ACTUALIZADO: Usa API en lugar de localStorage
 
-const STORAGE_KEY = "transformadores_ti_tv";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+   obtenerTransformadoresAPI,
+   crearTransformadorAPI,
+   actualizarTransformadorAPI,
+   eliminarTransformadorAPI,
+   migrarTransformadoresAPI,
+} from "../../../../servicios/api/transformadores";
 
-// Transformadores por defecto
+// Clave de localStorage para migración
+const STORAGE_KEY_LEGACY = "transformadores_ti_tv";
+
+// Transformadores por defecto (solo si no hay nada en BD ni localStorage)
 const TRANSFORMADORES_DEFAULT = [
-  { id: "ti-1", tipo: "TI", nombre: "TI 200/1", formula: "x * 200 / 1000" },
-  { id: "ti-2", tipo: "TI", nombre: "TI 400/1", formula: "x * 400 / 1000" },
-  { id: "ti-3", tipo: "TI", nombre: "TI 600/1", formula: "x * 600 / 1000" },
-  { id: "tv-1", tipo: "TV", nombre: "TV 33kV", formula: "x * 33000 / 10000" },
-  { id: "tv-2", tipo: "TV", nombre: "TV 13.2kV", formula: "x * 13200 / 10000" },
+   { tipo: "TI", nombre: "TI 200/1", formula: "x * 200 / 1000" },
+   { tipo: "TI", nombre: "TI 400/1", formula: "x * 400 / 1000" },
+   { tipo: "TV", nombre: "TV 33kV", formula: "x * 33000 / 10000" },
+   { tipo: "TV", nombre: "TV 13.2kV", formula: "x * 13200 / 10000" },
 ];
 
 /**
  * Hook para gestionar transformadores de intensidad (TI) y voltaje (TV)
- * Persiste en localStorage
+ * @param {string} workspaceId - ID del workspace actual
  */
-export const useTransformadores = () => {
-  const [transformadores, setTransformadores] = useState([]);
-  const [cargando, setCargando] = useState(true);
+export const useTransformadores = (workspaceId) => {
+   const [transformadores, setTransformadores] = useState([]);
+   const [cargando, setCargando] = useState(true);
+   const [error, setError] = useState(null);
 
-  // Cargar transformadores del localStorage
-  const cargarTransformadores = useCallback(() => {
-    try {
-      const guardados = localStorage.getItem(STORAGE_KEY);
-      if (guardados) {
-        setTransformadores(JSON.parse(guardados));
-      } else {
-        // Primera vez: usar los por defecto
-        setTransformadores(TRANSFORMADORES_DEFAULT);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(TRANSFORMADORES_DEFAULT));
+   // Ref para evitar múltiples migraciones
+   const migracionIniciada = useRef(false);
+
+   /**
+    * Migra datos de localStorage a la BD (una sola vez)
+    */
+   const migrarDesdeLocalStorage = useCallback(async () => {
+      if (!workspaceId || migracionIniciada.current) return null;
+
+      try {
+         const datosLocal = localStorage.getItem(STORAGE_KEY_LEGACY);
+         if (!datosLocal) return null;
+
+         const transformadoresLocal = JSON.parse(datosLocal);
+         if (!Array.isArray(transformadoresLocal) || transformadoresLocal.length === 0) {
+            return null;
+         }
+
+         migracionIniciada.current = true;
+         console.log(`[useTransformadores] Migrando ${transformadoresLocal.length} transformadores a BD...`);
+
+         const resultado = await migrarTransformadoresAPI(workspaceId, transformadoresLocal);
+
+         if (resultado?.transformadores) {
+            // Migración exitosa - limpiar localStorage
+            localStorage.removeItem(STORAGE_KEY_LEGACY);
+            console.log('[useTransformadores] Migración completada, localStorage limpiado');
+            return resultado.transformadores;
+         }
+
+         return null;
+      } catch (err) {
+         console.error('[useTransformadores] Error en migración:', err);
+         migracionIniciada.current = false;
+         return null;
       }
-    } catch (error) {
-      console.error("Error cargando transformadores:", error);
-      setTransformadores(TRANSFORMADORES_DEFAULT);
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+   }, [workspaceId]);
 
-  useEffect(() => {
-    cargarTransformadores();
-  }, [cargarTransformadores]);
+   /**
+    * Carga transformadores desde la API
+    */
+   const cargarTransformadores = useCallback(async () => {
+      if (!workspaceId) {
+         setTransformadores([]);
+         setCargando(false);
+         return;
+      }
 
-  // Guardar en localStorage
-  const guardarEnStorage = useCallback((datos) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(datos));
-      setTransformadores(datos);
-      return true;
-    } catch (error) {
-      console.error("Error guardando transformadores:", error);
-      return false;
-    }
-  }, []);
+      setCargando(true);
+      setError(null);
 
-  // Generar ID único
-  const generarId = () => {
-    return "tr-" + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-  };
+      try {
+         const resultado = await obtenerTransformadoresAPI(workspaceId);
+         let datos = resultado?.transformadores || [];
 
-  // Obtener transformadores por tipo
-  const obtenerPorTipo = useCallback(
-    (tipo) => {
-      return transformadores.filter((t) => t.tipo === tipo);
-    },
-    [transformadores]
-  );
+         // Si no hay datos en BD, intentar migrar desde localStorage
+         if (datos.length === 0) {
+            const migrados = await migrarDesdeLocalStorage();
+            if (migrados && migrados.length > 0) {
+               datos = migrados;
+            }
+         }
 
-  // Obtener TIs
-  const obtenerTIs = useCallback(() => obtenerPorTipo("TI"), [obtenerPorTipo]);
+         // Si aún no hay datos, crear los por defecto
+         if (datos.length === 0) {
+            console.log('[useTransformadores] Creando transformadores por defecto...');
+            const resultadoMigrar = await migrarTransformadoresAPI(workspaceId, TRANSFORMADORES_DEFAULT);
+            datos = resultadoMigrar?.transformadores || [];
+         }
 
-  // Obtener TVs
-  const obtenerTVs = useCallback(() => obtenerPorTipo("TV"), [obtenerPorTipo]);
+         setTransformadores(datos);
 
-  // Obtener Relaciones
-  const obtenerRelaciones = useCallback(() => obtenerPorTipo("REL"), [obtenerPorTipo]);
+      } catch (err) {
+         console.error('[useTransformadores] Error cargando:', err);
+         setError(err.message || 'Error cargando transformadores');
 
-  // Obtener transformador por ID
-  const obtenerPorId = useCallback(
-    (id) => {
-      return transformadores.find((t) => t.id === id) || null;
-    },
-    [transformadores]
-  );
+         // Fallback: intentar cargar de localStorage si la API falla
+         try {
+            const datosLocal = localStorage.getItem(STORAGE_KEY_LEGACY);
+            if (datosLocal) {
+               setTransformadores(JSON.parse(datosLocal));
+            }
+         } catch {
+            setTransformadores([]);
+         }
+      } finally {
+         setCargando(false);
+      }
+   }, [workspaceId, migrarDesdeLocalStorage]);
 
-  // Crear transformador
-  const crearTransformador = useCallback(
-    (datos) => {
-      const nuevo = {
-        id: generarId(),
-        tipo: datos.tipo,
-        nombre: datos.nombre.trim(),
-        formula: datos.formula.trim(),
-      };
+   // Cargar al montar o cambiar workspace
+   useEffect(() => {
+      cargarTransformadores();
+   }, [cargarTransformadores]);
 
-      const nuevos = [...transformadores, nuevo];
-      const exito = guardarEnStorage(nuevos);
-      return exito ? nuevo : null;
-    },
-    [transformadores, guardarEnStorage]
-  );
+   // Obtener transformadores por tipo
+   const obtenerPorTipo = useCallback(
+      (tipo) => transformadores.filter((t) => t.tipo === tipo),
+      [transformadores]
+   );
 
-  // Actualizar transformador
-  const actualizarTransformador = useCallback(
-    (id, datos) => {
-      const indice = transformadores.findIndex((t) => t.id === id);
-      if (indice === -1) return false;
+   // Obtener TIs
+   const obtenerTIs = useCallback(() => obtenerPorTipo("TI"), [obtenerPorTipo]);
 
-      const actualizado = {
-        ...transformadores[indice],
-        nombre: datos.nombre?.trim() || transformadores[indice].nombre,
-        formula: datos.formula?.trim() || transformadores[indice].formula,
-      };
+   // Obtener TVs
+   const obtenerTVs = useCallback(() => obtenerPorTipo("TV"), [obtenerPorTipo]);
 
-      const nuevos = [...transformadores];
-      nuevos[indice] = actualizado;
-      return guardarEnStorage(nuevos);
-    },
-    [transformadores, guardarEnStorage]
-  );
+   // Obtener Relaciones
+   const obtenerRelaciones = useCallback(() => obtenerPorTipo("REL"), [obtenerPorTipo]);
 
-  // Eliminar transformador
-  const eliminarTransformador = useCallback(
-    (id) => {
-      const nuevos = transformadores.filter((t) => t.id !== id);
-      return guardarEnStorage(nuevos);
-    },
-    [transformadores, guardarEnStorage]
-  );
+   // Obtener transformador por ID
+   const obtenerPorId = useCallback(
+      (id) => transformadores.find((t) => t.id === id) || null,
+      [transformadores]
+   );
 
-  return {
-    transformadores,
-    cargando,
-    obtenerTIs,
-    obtenerTVs,
-    obtenerRelaciones,
-    obtenerPorId,
-    crearTransformador,
-    actualizarTransformador,
-    eliminarTransformador,
-    recargar: cargarTransformadores,
-  };
+   /**
+    * Crear transformador
+    */
+   const crearTransformador = useCallback(
+      async (datos) => {
+         if (!workspaceId) return null;
+
+         try {
+            const resultado = await crearTransformadorAPI(workspaceId, {
+               tipo: datos.tipo,
+               nombre: datos.nombre?.trim(),
+               formula: datos.formula?.trim(),
+               descripcion: datos.descripcion?.trim(),
+            });
+
+            if (resultado?.transformador) {
+               setTransformadores((prev) => [...prev, resultado.transformador]);
+               return resultado.transformador;
+            }
+
+            return null;
+         } catch (err) {
+            console.error('[useTransformadores] Error creando:', err);
+            setError(err.message);
+            return null;
+         }
+      },
+      [workspaceId]
+   );
+
+   /**
+    * Actualizar transformador
+    */
+   const actualizarTransformador = useCallback(
+      async (id, datos) => {
+         try {
+            const resultado = await actualizarTransformadorAPI(id, {
+               tipo: datos.tipo,
+               nombre: datos.nombre?.trim(),
+               formula: datos.formula?.trim(),
+               descripcion: datos.descripcion?.trim(),
+            });
+
+            if (resultado?.transformador) {
+               setTransformadores((prev) =>
+                  prev.map((t) => (t.id === id ? resultado.transformador : t))
+               );
+               return true;
+            }
+
+            return false;
+         } catch (err) {
+            console.error('[useTransformadores] Error actualizando:', err);
+            setError(err.message);
+            return false;
+         }
+      },
+      []
+   );
+
+   /**
+    * Eliminar transformador
+    */
+   const eliminarTransformador = useCallback(
+      async (id) => {
+         try {
+            await eliminarTransformadorAPI(id);
+            setTransformadores((prev) => prev.filter((t) => t.id !== id));
+            return true;
+         } catch (err) {
+            console.error('[useTransformadores] Error eliminando:', err);
+            setError(err.message);
+            return false;
+         }
+      },
+      []
+   );
+
+   return {
+      transformadores,
+      cargando,
+      error,
+      obtenerTIs,
+      obtenerTVs,
+      obtenerRelaciones,
+      obtenerPorId,
+      crearTransformador,
+      actualizarTransformador,
+      eliminarTransformador,
+      recargar: cargarTransformadores,
+   };
 };
 
 export default useTransformadores;

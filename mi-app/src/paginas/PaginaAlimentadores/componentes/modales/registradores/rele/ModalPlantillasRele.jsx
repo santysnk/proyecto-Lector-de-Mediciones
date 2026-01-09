@@ -8,6 +8,15 @@ import "./ModalPlantillasRele.css";
 /**
  * Modal para gestionar plantillas de relés de protección.
  * Permite crear funcionalidades personalizadas con registros individuales.
+ * @param {Object} props
+ * @param {boolean} props.abierto - Si el modal está abierto
+ * @param {Function} props.onCerrar - Callback al cerrar
+ * @param {Array} props.plantillas - Lista de plantillas
+ * @param {Function} props.onCrear - Callback al crear
+ * @param {Function} props.onActualizar - Callback al actualizar
+ * @param {Function} props.onEliminar - Callback al eliminar
+ * @param {Object} props.plantillaEditando - Plantilla en edición
+ * @param {string} props.workspaceId - ID del workspace actual
  */
 const ModalPlantillasRele = ({
    abierto,
@@ -17,9 +26,10 @@ const ModalPlantillasRele = ({
    onActualizar,
    onEliminar,
    plantillaEditando = null,
+   workspaceId,
 }) => {
    // Hook de transformadores
-   const { obtenerTIs, obtenerTVs, obtenerRelaciones, recargar: recargarTransformadores } = useTransformadores();
+   const { obtenerTIs, obtenerTVs, obtenerRelaciones, recargar: recargarTransformadores } = useTransformadores(workspaceId);
 
    // Hook de etiquetas de bits
    const etiquetasHook = useEtiquetasBits();

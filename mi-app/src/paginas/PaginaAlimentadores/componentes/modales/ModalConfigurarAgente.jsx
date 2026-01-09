@@ -651,6 +651,7 @@ const ModalConfigurarAgente = ({
                                           {mostrarFormRegistrador === agente.id && (
                                              <FormularioRegistrador
                                                 agenteId={agente.id}
+                                                workspaceId={workspaceId}
                                                 nuevoRegistrador={nuevoRegistrador}
                                                 setNuevoRegistrador={setNuevoRegistrador}
                                                 registradorEditando={registradorEditando}

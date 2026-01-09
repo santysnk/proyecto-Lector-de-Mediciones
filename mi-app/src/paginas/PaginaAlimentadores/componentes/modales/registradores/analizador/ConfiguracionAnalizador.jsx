@@ -12,8 +12,13 @@ import "../ConfiguracionRegistrador.css";
 
 /**
  * Componente para configurar un registrador de tipo Analizador de Redes.
+ * @param {Object} props
+ * @param {Object} props.configuracionInicial - Configuración inicial
+ * @param {Function} props.onChange - Callback al cambiar configuración
+ * @param {string} props.agenteId - ID del agente
+ * @param {string} props.workspaceId - ID del workspace actual
  */
-const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) => {
+const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId, workspaceId }) => {
    // Hooks de datos
    const {
       plantillas,
@@ -22,14 +27,18 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) =
       actualizarPlantilla,
       eliminarPlantilla,
       obtenerPlantilla,
-   } = usePlantillasAnalizador();
+   } = usePlantillasAnalizador(workspaceId);
 
    const {
+      transformadores,
       obtenerTIs,
       obtenerTVs,
       obtenerRelaciones,
       obtenerPorId: obtenerTransformadorPorId,
-   } = useTransformadores();
+      crearTransformador,
+      actualizarTransformador,
+      eliminarTransformador,
+   } = useTransformadores(workspaceId);
 
    // Hook de configuración
    const configHook = useConfigAnalizador({
@@ -193,6 +202,10 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId }) =
          <ModalTransformadores
             abierto={modalTransformadoresAbierto}
             onCerrar={() => setModalTransformadoresAbierto(false)}
+            transformadores={transformadores}
+            onCrear={crearTransformador}
+            onActualizar={actualizarTransformador}
+            onEliminar={eliminarTransformador}
          />
       </div>
    );

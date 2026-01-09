@@ -21,8 +21,13 @@ const CATEGORIAS = {
 
 /**
  * Componente para configurar un registrador de tipo Relé de Protección.
+ * @param {Object} props
+ * @param {Object} props.configuracionInicial - Configuración inicial
+ * @param {Function} props.onChange - Callback al cambiar configuración
+ * @param {string} props.agenteId - ID del agente
+ * @param {string} props.workspaceId - ID del workspace actual
  */
-const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
+const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId, workspaceId }) => {
    // Hooks de datos
    const {
       plantillas,
@@ -31,7 +36,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
       actualizarPlantilla,
       eliminarPlantilla,
       obtenerPlantilla,
-   } = usePlantillasRele();
+   } = usePlantillasRele(workspaceId);
 
    const {
       transformadores,
@@ -42,7 +47,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
       crearTransformador,
       actualizarTransformador,
       eliminarTransformador,
-   } = useTransformadores();
+   } = useTransformadores(workspaceId);
 
    // Hook de configuración
    const configHook = useConfigRele({
@@ -205,6 +210,7 @@ const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId }) => {
             onActualizar={handleActualizarPlantilla}
             onEliminar={eliminarPlantilla}
             plantillaEditando={plantillaParaEditar}
+            workspaceId={workspaceId}
          />
 
          <ModalTransformadores

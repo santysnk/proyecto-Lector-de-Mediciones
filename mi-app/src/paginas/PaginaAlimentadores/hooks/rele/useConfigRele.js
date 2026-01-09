@@ -69,6 +69,7 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
 
       if (configAnteriorRef.current !== configActualStr) {
          configAnteriorRef.current = configActualStr;
+         console.log('[useConfigRele] onChange llamado con:', config);
          onChange(config);
       }
    }, [config, onChange]);

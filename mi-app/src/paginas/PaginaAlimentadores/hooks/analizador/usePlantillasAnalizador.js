@@ -1,123 +1,213 @@
 // hooks/analizador/usePlantillasAnalizador.js
 // Hook para manejar las plantillas de configuración de analizadores
+// ACTUALIZADO: Usa API en lugar de localStorage
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+   obtenerPlantillasAPI,
+   crearPlantillaAPI,
+   actualizarPlantillaAPI,
+   eliminarPlantillaAPI,
+   migrarPlantillasAPI,
+} from "../../../../servicios/api/plantillasDispositivo";
 
-const STORAGE_KEY = "rw-plantillas-analizador";
+// Clave de localStorage para migración
+const STORAGE_KEY_LEGACY = "rw-plantillas-analizador";
 
 /**
- * Genera un ID único para plantillas
+ * Hook para gestionar plantillas de analizadores de redes.
+ * @param {string} workspaceId - ID del workspace actual
  */
-const generarId = () => `plt-analizador-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-/**
- * Hook para gestionar plantillas de analizadores en localStorage
- * @returns {Object} Estado y funciones de plantillas
- */
-export function usePlantillasAnalizador() {
+export function usePlantillasAnalizador(workspaceId) {
    const [plantillas, setPlantillas] = useState([]);
    const [cargando, setCargando] = useState(true);
+   const [error, setError] = useState(null);
+
+   // Ref para evitar múltiples migraciones
+   const migracionIniciada = useRef(false);
 
    /**
-    * Cargar plantillas desde localStorage
+    * Migra datos de localStorage a la BD (una sola vez)
     */
-   const cargarPlantillas = useCallback(() => {
+   const migrarDesdeLocalStorage = useCallback(async () => {
+      if (!workspaceId || migracionIniciada.current) return null;
+
       try {
-         const datos = localStorage.getItem(STORAGE_KEY);
-         if (datos) {
-            setPlantillas(JSON.parse(datos));
+         const datosLocal = localStorage.getItem(STORAGE_KEY_LEGACY);
+         if (!datosLocal) return null;
+
+         const plantillasLocal = JSON.parse(datosLocal);
+         if (!Array.isArray(plantillasLocal) || plantillasLocal.length === 0) {
+            return null;
          }
-      } catch (error) {
-         console.error("Error al cargar plantillas de analizador:", error);
+
+         migracionIniciada.current = true;
+         console.log(`[usePlantillasAnalizador] Migrando ${plantillasLocal.length} plantillas a BD...`);
+
+         const resultado = await migrarPlantillasAPI(workspaceId, plantillasLocal, 'analizador');
+
+         if (resultado?.plantillas) {
+            // Migración exitosa - limpiar localStorage
+            localStorage.removeItem(STORAGE_KEY_LEGACY);
+            console.log('[usePlantillasAnalizador] Migración completada, localStorage limpiado');
+            return resultado.plantillas;
+         }
+
+         return null;
+      } catch (err) {
+         console.error('[usePlantillasAnalizador] Error en migración:', err);
+         migracionIniciada.current = false;
+         return null;
+      }
+   }, [workspaceId]);
+
+   /**
+    * Carga las plantillas desde la API
+    */
+   const cargarPlantillas = useCallback(async () => {
+      if (!workspaceId) {
+         setPlantillas([]);
+         setCargando(false);
+         return;
+      }
+
+      setCargando(true);
+      setError(null);
+
+      try {
+         const resultado = await obtenerPlantillasAPI(workspaceId, 'analizador');
+         let datos = resultado?.plantillas || [];
+
+         // Si no hay datos en BD, intentar migrar desde localStorage
+         if (datos.length === 0) {
+            const migrados = await migrarDesdeLocalStorage();
+            if (migrados && migrados.length > 0) {
+               datos = migrados;
+            }
+         }
+
+         // Formatear plantillas
+         setPlantillas(datos.map(formatearPlantilla));
+
+      } catch (err) {
+         console.error('[usePlantillasAnalizador] Error cargando:', err);
+         setError(err.message || 'Error cargando plantillas');
+
+         // Fallback: intentar cargar de localStorage si la API falla
+         try {
+            const datosLocal = localStorage.getItem(STORAGE_KEY_LEGACY);
+            if (datosLocal) {
+               setPlantillas(JSON.parse(datosLocal));
+            }
+         } catch {
+            setPlantillas([]);
+         }
       } finally {
          setCargando(false);
       }
-   }, []);
+   }, [workspaceId, migrarDesdeLocalStorage]);
 
-   // Cargar al montar
+   // Cargar al montar o cambiar workspace
    useEffect(() => {
       cargarPlantillas();
    }, [cargarPlantillas]);
 
    /**
-    * Guardar plantillas en localStorage
+    * Crea una nueva plantilla
+    * @param {Object} datos - { nombre, descripcion, funcionalidades }
     */
-   const guardarEnStorage = useCallback((nuevasPlantillas) => {
-      try {
-         localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevasPlantillas));
-         setPlantillas(nuevasPlantillas);
-      } catch (error) {
-         console.error("Error al guardar plantillas de analizador:", error);
-      }
-   }, []);
+   const crearPlantilla = useCallback(
+      async (datos) => {
+         if (!workspaceId) return null;
+
+         try {
+            const resultado = await crearPlantillaAPI(workspaceId, {
+               tipo_dispositivo: 'analizador',
+               nombre: datos.nombre?.trim(),
+               descripcion: datos.descripcion?.trim() || null,
+               funcionalidades: datos.funcionalidades || {},
+            });
+
+            if (resultado?.plantilla) {
+               const plantillaFormateada = formatearPlantilla(resultado.plantilla);
+               setPlantillas((prev) => [...prev, plantillaFormateada]);
+               return plantillaFormateada;
+            }
+
+            return null;
+         } catch (err) {
+            console.error('[usePlantillasAnalizador] Error creando:', err);
+            setError(err.message);
+            return null;
+         }
+      },
+      [workspaceId]
+   );
 
    /**
-    * Crear una nueva plantilla
-    * @param {Object} datos - Datos de la plantilla
-    * @returns {Object|null} La plantilla creada o null si falla
-    */
-   const crearPlantilla = useCallback((datos) => {
-      const nuevaPlantilla = {
-         id: generarId(),
-         nombre: datos.nombre?.trim() || "Nueva Plantilla",
-         descripcion: datos.descripcion?.trim() || "",
-         fechaCreacion: new Date().toISOString(),
-         fechaModificacion: new Date().toISOString(),
-         funcionalidades: datos.funcionalidades || {},
-      };
-
-      const nuevasPlantillas = [...plantillas, nuevaPlantilla];
-      guardarEnStorage(nuevasPlantillas);
-      return nuevaPlantilla;
-   }, [plantillas, guardarEnStorage]);
-
-   /**
-    * Actualizar una plantilla existente
+    * Actualiza una plantilla existente
     * @param {string} id - ID de la plantilla
-    * @param {Object} datos - Nuevos datos
-    * @returns {boolean} Si la operación fue exitosa
+    * @param {Object} datos - Datos a actualizar
     */
-   const actualizarPlantilla = useCallback((id, datos) => {
-      const index = plantillas.findIndex((p) => p.id === id);
-      if (index === -1) return false;
+   const actualizarPlantilla = useCallback(
+      async (id, datos) => {
+         try {
+            const resultado = await actualizarPlantillaAPI(id, {
+               nombre: datos.nombre?.trim(),
+               descripcion: datos.descripcion?.trim(),
+               funcionalidades: datos.funcionalidades,
+            });
 
-      const plantillaActualizada = {
-         ...plantillas[index],
-         ...datos,
-         fechaModificacion: new Date().toISOString(),
-      };
+            if (resultado?.plantilla) {
+               const plantillaFormateada = formatearPlantilla(resultado.plantilla);
+               setPlantillas((prev) =>
+                  prev.map((p) => (p.id === id ? plantillaFormateada : p))
+               );
+               return true;
+            }
 
-      const nuevasPlantillas = [...plantillas];
-      nuevasPlantillas[index] = plantillaActualizada;
-      guardarEnStorage(nuevasPlantillas);
-      return true;
-   }, [plantillas, guardarEnStorage]);
+            return false;
+         } catch (err) {
+            console.error('[usePlantillasAnalizador] Error actualizando:', err);
+            setError(err.message);
+            return false;
+         }
+      },
+      []
+   );
 
    /**
-    * Eliminar una plantilla
-    * @param {string} id - ID de la plantilla
-    * @returns {boolean} Si la operación fue exitosa
+    * Elimina una plantilla
+    * @param {string} id - ID de la plantilla a eliminar
     */
-   const eliminarPlantilla = useCallback((id) => {
-      const nuevasPlantillas = plantillas.filter((p) => p.id !== id);
-      if (nuevasPlantillas.length === plantillas.length) return false;
-
-      guardarEnStorage(nuevasPlantillas);
-      return true;
-   }, [plantillas, guardarEnStorage]);
+   const eliminarPlantilla = useCallback(
+      async (id) => {
+         try {
+            await eliminarPlantillaAPI(id);
+            setPlantillas((prev) => prev.filter((p) => p.id !== id));
+            return true;
+         } catch (err) {
+            console.error('[usePlantillasAnalizador] Error eliminando:', err);
+            setError(err.message);
+            return false;
+         }
+      },
+      []
+   );
 
    /**
-    * Obtener una plantilla por ID
+    * Obtiene una plantilla por ID
     * @param {string} id - ID de la plantilla
-    * @returns {Object|null} La plantilla o null
     */
-   const obtenerPlantilla = useCallback((id) => {
-      return plantillas.find((p) => p.id === id) || null;
-   }, [plantillas]);
+   const obtenerPlantilla = useCallback(
+      (id) => plantillas.find((p) => p.id === id) || null,
+      [plantillas]
+   );
 
    return {
       plantillas,
       cargando,
+      error,
       crearPlantilla,
       actualizarPlantilla,
       eliminarPlantilla,
@@ -125,3 +215,19 @@ export function usePlantillasAnalizador() {
       recargar: cargarPlantillas,
    };
 }
+
+/**
+ * Convierte el formato de BD al formato esperado por el frontend
+ */
+function formatearPlantilla(plantillaBD) {
+   return {
+      id: plantillaBD.id,
+      nombre: plantillaBD.nombre,
+      descripcion: plantillaBD.descripcion || '',
+      fechaCreacion: plantillaBD.created_at,
+      fechaModificacion: plantillaBD.updated_at,
+      funcionalidades: plantillaBD.funcionalidades || {},
+   };
+}
+
+export default usePlantillasAnalizador;

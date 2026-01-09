@@ -13,6 +13,7 @@ const FormularioAnalizador = ({
    onCancelar,
    registradorEditando,
    agenteId,
+   workspaceId,
 }) => (
    <>
       {/* Nombre del registrador */}
@@ -35,6 +36,7 @@ const FormularioAnalizador = ({
             }))
          }
          agenteId={agenteId}
+         workspaceId={workspaceId}
       />
       <div className="config-agente-form-acciones">
          <div className="config-agente-form-acciones-derecha">
@@ -72,6 +74,7 @@ const FormularioRele = ({
    onCancelar,
    registradorEditando,
    agenteId,
+   workspaceId,
 }) => (
    <>
       {/* Nombre del registrador */}
@@ -94,6 +97,7 @@ const FormularioRele = ({
             }))
          }
          agenteId={agenteId}
+         workspaceId={workspaceId}
       />
       <div className="config-agente-form-acciones">
          <div className="config-agente-form-acciones-derecha">
@@ -126,6 +130,7 @@ const FormularioRele = ({
  *
  * @param {Object} props
  * @param {string} props.agenteId - ID del agente
+ * @param {string} props.workspaceId - ID del workspace
  * @param {Object} props.nuevoRegistrador - Estado del formulario
  * @param {Function} props.setNuevoRegistrador - Setter del estado
  * @param {Object|null} props.registradorEditando - Registrador en edición
@@ -135,6 +140,7 @@ const FormularioRele = ({
  */
 export function FormularioRegistrador({
    agenteId,
+   workspaceId,
    nuevoRegistrador,
    setNuevoRegistrador,
    registradorEditando,
@@ -176,6 +182,7 @@ export function FormularioRegistrador({
                onCancelar={onCancelar}
                registradorEditando={registradorEditando}
                agenteId={agenteId}
+               workspaceId={workspaceId}
             />
          ) : (
             <FormularioRele
@@ -185,6 +192,7 @@ export function FormularioRegistrador({
                onCancelar={onCancelar}
                registradorEditando={registradorEditando}
                agenteId={agenteId}
+               workspaceId={workspaceId}
             />
          )}
       </form>
