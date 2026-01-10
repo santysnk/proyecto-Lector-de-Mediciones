@@ -107,6 +107,7 @@ const TarjetaAlimentador = ({
    color,
    onConfigClick,
    onHistorialClick,
+   onExpandirClick,
    esObservador = false,
    topSide,
    bottomSide,
@@ -290,6 +291,21 @@ const TarjetaAlimentador = ({
             >
                {nombre}
             </span>
+
+            {/* Botón de expandir lectura completa */}
+            {onExpandirClick && (
+               <button
+                  type="button"
+                  className="alim-card-expandir-btn"
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     onExpandirClick();
+                  }}
+                  title="Ver lectura completa"
+               >
+                  <span className="alim-card-expandir-icon">⤢</span>
+               </button>
+            )}
          </div>
 
          {/* Barra de progreso de polling */}

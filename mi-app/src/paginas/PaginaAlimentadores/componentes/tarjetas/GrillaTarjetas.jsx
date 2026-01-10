@@ -26,6 +26,7 @@ const GrillaTarjetas = ({
    elementoArrastrandoId,
    onAbrirConfiguracion,
    onAbrirHistorial,
+   onExpandirLectura,
    onDragStart,
    onDragOver,
    onDrop,
@@ -189,6 +190,9 @@ const GrillaTarjetas = ({
                            onConfigClick={() => onAbrirConfiguracion(puestoId, alim)}
                            onHistorialClick={
                               onAbrirHistorial ? () => onAbrirHistorial(puestoId, alim) : undefined
+                           }
+                           onExpandirClick={
+                              onExpandirLectura ? () => onExpandirLectura(alim) : undefined
                            }
                            esObservador={esObservador}
                            topSide={lecturasAlim.parteSuperior}

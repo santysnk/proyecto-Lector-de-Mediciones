@@ -75,4 +75,13 @@ export async function consultarTestRegistrador(agenteId, testId) {
    return fetchConAuth(`/api/agentes/${agenteId}/test-registrador/${testId}`);
 }
 
+/**
+ * Obtiene las funcionalidades disponibles de un registrador basándose en su plantilla
+ * @param {string} registradorId - UUID del registrador
+ * @returns {Promise<{registrador, plantilla, funcionalidades}>}
+ */
+export async function obtenerFuncionalidadesRegistrador(registradorId) {
+   return fetchConAuth(`/api/registradores/${registradorId}/funcionalidades`);
+}
+
 

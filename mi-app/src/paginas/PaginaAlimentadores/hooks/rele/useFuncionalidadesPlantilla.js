@@ -171,6 +171,7 @@ export function useFuncionalidadesPlantilla() {
 
    /**
     * Cargar funcionalidades desde un objeto de plantilla
+    * Ordena por el campo 'orden' si existe para preservar el orden original
     */
    const cargarDesdeObjeto = useCallback((funcionalidadesObj) => {
       const funcsArray = Object.entries(funcionalidadesObj || {}).map(
@@ -188,18 +189,22 @@ export function useFuncionalidadesPlantilla() {
                habilitado: data.habilitado !== false,
                categoria: data.categoria || "mediciones",
                registros: registrosMigrados,
+               orden: data.orden ?? Infinity,
             };
          }
       );
+      // Ordenar por el campo 'orden' para preservar el orden guardado
+      funcsArray.sort((a, b) => a.orden - b.orden);
       setFuncionalidades(funcsArray);
    }, []);
 
    /**
     * Convertir funcionalidades a objeto para guardar
+    * Incluye el campo 'orden' para preservar el orden al recuperar
     */
    const obtenerParaGuardar = useCallback(() => {
       const funcParaGuardar = {};
-      funcionalidades.forEach((func) => {
+      funcionalidades.forEach((func, index) => {
          if (func.habilitado) {
             funcParaGuardar[func.id] = {
                nombre: func.nombre,
@@ -207,6 +212,7 @@ export function useFuncionalidadesPlantilla() {
                habilitado: true,
                registros: func.registros,
                registro: func.registros[0]?.valor || 0,
+               orden: index,
             };
          }
       });

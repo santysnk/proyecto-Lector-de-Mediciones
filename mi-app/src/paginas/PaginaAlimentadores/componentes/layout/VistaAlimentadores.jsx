@@ -17,7 +17,8 @@ import { usarContextoAlimentadores } from "../../contexto/ContextoAlimentadoresS
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import { useHistorialLocal } from "../../hooks/historial";
 import { usePushNotifications } from "../../../../hooks/usePushNotifications";
-import { usePollingLecturas } from "../../hooks/mediciones";
+import { usePollingLecturas, useModalLecturaCompleta, useTransformadores } from "../../hooks/mediciones";
+import { ModalLecturaCompleta } from "../modales/lectura-completa";
 
 // Hooks UI
 import { useVentanasHistorial, useGestorModales, useModoCompacto } from "../../hooks/ui";
@@ -85,7 +86,14 @@ const VistaAlimentadores = () => {
       obtenerBgColorPuesto,
       esCreador,
       preferenciasVisuales,
+      registrosEnVivo,
    } = usarContextoAlimentadores();
+
+   // Hook de transformadores para el modal de lectura completa
+   const transformadoresHook = useTransformadores(configuracionSeleccionada?.id);
+
+   // Hook del modal de lectura completa
+   const modalLecturaCompleta = useModalLecturaCompleta();
 
    // Hook de arrastre base
    const {
@@ -256,6 +264,14 @@ const VistaAlimentadores = () => {
    const abrirModalGestionarAccesos = () => setModalAccesosAbierto(true);
    const abrirModalPanelPermisos = () => setModalPanelPermisosAbierto(true);
 
+   // Handler para expandir lectura completa
+   const handleExpandirLectura = useCallback((alimentador) => {
+      const registrosAlim = registrosEnVivo[alimentador.id] || null;
+      // Obtener timestamp de la última lectura si existe
+      const timestamp = registrosAlim?.timestamp || Date.now();
+      modalLecturaCompleta.abrirModal(alimentador, registrosAlim, timestamp);
+   }, [registrosEnVivo, modalLecturaCompleta]);
+
    // Limpiar intervalos de polling al desmontar
    useEffect(() => {
       return () => limpiarTodosIntervalos();
@@ -367,6 +383,7 @@ const VistaAlimentadores = () => {
                   onEscalaChange={establecerEscalaTarjeta}
                   ESCALA_MIN={ESCALA_MIN}
                   ESCALA_MAX={ESCALA_MAX}
+                  onExpandirLectura={handleExpandirLectura}
                />
             )}
          </main>
@@ -434,6 +451,22 @@ const VistaAlimentadores = () => {
             toggleMaximizar={toggleMaximizar}
             enfocarVentana={enfocarVentana}
             moverVentana={moverVentana}
+         />
+
+         {/* Modal de lectura completa */}
+         <ModalLecturaCompleta
+            abierto={modalLecturaCompleta.modalAbierto}
+            onCerrar={modalLecturaCompleta.cerrarModal}
+            alimentador={modalLecturaCompleta.alimentadorSeleccionado}
+            timestampFormateado={modalLecturaCompleta.timestampFormateado}
+            funcionalidadesTabActivo={modalLecturaCompleta.funcionalidadesTabActivo}
+            tabs={modalLecturaCompleta.tabs}
+            tabActivo={modalLecturaCompleta.tabActivo}
+            setTabActivo={modalLecturaCompleta.setTabActivo}
+            cargandoFuncionalidades={modalLecturaCompleta.cargandoFuncionalidades}
+            interpretarEstado={modalLecturaCompleta.interpretarEstado}
+            exportarCSV={modalLecturaCompleta.exportarCSV}
+            obtenerTransformador={transformadoresHook.obtenerPorId}
          />
       </div>
    );

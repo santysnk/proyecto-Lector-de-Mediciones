@@ -1,0 +1,566 @@
+/* componentes/modales/lectura-completa/ModalLecturaCompleta.css */
+/* Estilos para el modal de lectura completa */
+
+/* Overlay del modal */
+.modal-lectura-overlay {
+   position: fixed;
+   top: 0;
+   left: 0;
+   right: 0;
+   bottom: 0;
+   background: rgba(0, 0, 0, 0.75);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   z-index: 9999;
+   padding: 20px;
+}
+
+/* Contenedor principal */
+.modal-lectura-contenedor {
+   background: #1a1a2e;
+   border-radius: 8px;
+   width: 100%;
+   max-width: 1100px;
+   max-height: 85vh;
+   display: flex;
+   flex-direction: column;
+   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+   border: 1px solid rgba(255, 255, 255, 0.1);
+   border-top: 3px solid var(--color-header, #0ea5e9);
+}
+
+/* Header del modal */
+.modal-lectura-header {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   padding: 16px 20px;
+   background: linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-header, #0ea5e9) 30%, #1a1a2e),
+      #1a1a2e
+   );
+   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-lectura-header-info {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+}
+
+.modal-lectura-indicador {
+   color: var(--color-header, #0ea5e9);
+   font-size: 14px;
+}
+
+.modal-lectura-titulo {
+   margin: 0;
+   font-size: 1.25rem;
+   font-weight: 600;
+   color: #fff;
+}
+
+.modal-lectura-cerrar {
+   background: transparent;
+   border: none;
+   color: #888;
+   cursor: pointer;
+   padding: 8px;
+   border-radius: 4px;
+   transition: all 0.2s;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.modal-lectura-cerrar:hover {
+   background: rgba(255, 255, 255, 0.1);
+   color: #fff;
+}
+
+/* Subtítulo */
+.modal-lectura-subtitulo {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 10px 20px;
+   background: rgba(0, 0, 0, 0.2);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+   font-size: 0.85rem;
+   color: #aaa;
+}
+
+.modal-lectura-plantilla {
+   color: #888;
+}
+
+.modal-lectura-timestamp {
+   color: #fff;
+}
+
+/* Tabs para múltiples registradores */
+.modal-lectura-tabs {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 8px;
+   padding: 12px 20px;
+   background: rgba(0, 0, 0, 0.15);
+   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-lectura-tab {
+   padding: 8px 14px;
+   border: 1px solid rgba(255, 255, 255, 0.15);
+   background: transparent;
+   color: #888;
+   border-radius: 4px;
+   cursor: pointer;
+   font-size: 0.75rem;
+   font-weight: 500;
+   transition: all 0.2s;
+   white-space: nowrap;
+}
+
+.modal-lectura-tab:hover {
+   background: rgba(255, 255, 255, 0.05);
+   border-color: rgba(255, 255, 255, 0.25);
+   color: #ccc;
+}
+
+.modal-lectura-tab--activo {
+   background: color-mix(in srgb, var(--color-header, #0ea5e9) 20%, transparent);
+   border-color: var(--color-header, #0ea5e9);
+   color: var(--color-header, #0ea5e9);
+}
+
+.modal-lectura-tab--activo:hover {
+   background: color-mix(in srgb, var(--color-header, #0ea5e9) 25%, transparent);
+   border-color: var(--color-header, #0ea5e9);
+   color: var(--color-header, #0ea5e9);
+}
+
+/* Spinner de carga */
+.modal-lectura-cargando {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   gap: 16px;
+   padding: 60px 20px;
+   color: #888;
+   font-size: 0.9rem;
+}
+
+.modal-lectura-spinner {
+   width: 40px;
+   height: 40px;
+   border: 3px solid rgba(255, 255, 255, 0.1);
+   border-top-color: var(--color-header, #0ea5e9);
+   border-radius: 50%;
+   animation: spinnerRotar 0.8s linear infinite;
+}
+
+@keyframes spinnerRotar {
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* Contenido scrolleable */
+.modal-lectura-contenido {
+   flex: 1;
+   overflow-y: auto;
+   padding: 20px;
+   display: flex;
+   flex-direction: column;
+   gap: 20px;
+}
+
+/* Sección de funcionalidad */
+.modal-lectura-seccion {
+   background: rgba(0, 0, 0, 0.2);
+   border-radius: 6px;
+   padding: 16px;
+   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Contenedor de funcionalidades (subtablas) */
+.modal-lectura-funcionalidades {
+   display: flex;
+   flex-direction: column;
+   gap: 16px;
+}
+
+.modal-lectura-funcionalidad {
+   background: rgba(255, 255, 255, 0.02);
+   border-radius: 4px;
+   padding: 12px;
+   border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.modal-lectura-funcionalidad-titulo {
+   margin: 0 0 10px 0;
+   font-size: 0.85rem;
+   font-weight: 500;
+   color: #fff;
+   padding-bottom: 6px;
+   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Tabla horizontal de mediciones (etiquetas como columnas) */
+.modal-lectura-tabla-horizontal {
+   width: 100%;
+   border-collapse: collapse;
+}
+
+.modal-lectura-fila {
+   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.modal-lectura-fila:last-child {
+   border-bottom: none;
+}
+
+.modal-lectura-celda-nombre {
+   padding: 12px 16px;
+   font-size: 0.85rem;
+   font-weight: 500;
+   color: #ccc;
+   white-space: nowrap;
+   border-right: 1px solid rgba(255, 255, 255, 0.08);
+   width: 1%;
+}
+
+.modal-lectura-celda-valor {
+   padding: 10px 8px;
+   min-width: 120px;
+}
+
+.modal-lectura-celda-valor {
+   display: table-cell;
+}
+
+.modal-lectura-celda-valor > span {
+   display: inline-block;
+   vertical-align: middle;
+}
+
+.modal-lectura-etiqueta {
+   font-size: 0.9rem;
+   color: #fff;
+   text-align: right;
+   width: 45%;
+}
+
+.modal-lectura-dos-puntos {
+   font-size: 1.1rem;
+   font-weight: 600;
+   color: #fff;
+   width: 10%;
+   text-align: center;
+   padding: 0 6px;
+}
+
+.modal-lectura-valor {
+   font-size: 1rem;
+   font-weight: 600;
+   color: #ffff00;
+   text-align: left;
+   width: 45%;
+}
+
+.modal-lectura-unidad {
+   font-size: 0.8rem;
+   font-weight: 400;
+   color: #888;
+}
+
+.modal-lectura-seccion-titulo {
+   margin: 0 0 12px 0;
+   font-size: 0.9rem;
+   font-weight: 600;
+   color: var(--color-header, #0ea5e9);
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+}
+
+/* Tabla de mediciones */
+.modal-lectura-tabla {
+   width: 100%;
+   border-collapse: collapse;
+   font-size: 0.9rem;
+}
+
+.modal-lectura-tabla th {
+   padding: 8px 12px;
+   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+   color: #888;
+   font-weight: 500;
+   font-size: 0.8rem;
+   text-transform: uppercase;
+}
+
+.modal-lectura-tabla th:first-child {
+   text-align: left;
+}
+
+.modal-lectura-tabla th:last-child {
+   text-align: right;
+}
+
+.modal-lectura-tabla td {
+   padding: 10px 12px;
+   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.modal-lectura-tabla tr:last-child td {
+   border-bottom: none;
+}
+
+.modal-lectura-tabla-etiqueta {
+   color: #ccc;
+}
+
+.modal-lectura-tabla-valor {
+   color: #ffff00;
+   font-size: 0.9rem;
+   text-align: right;
+}
+
+.modal-lectura-tabla-unidad {
+   color: #888;
+   font-size: 0.8rem;
+}
+
+/* Separador de secciones */
+.modal-lectura-separador {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   color: #666;
+   font-size: 0.75rem;
+   text-transform: uppercase;
+   letter-spacing: 1px;
+}
+
+.modal-lectura-separador::before,
+.modal-lectura-separador::after {
+   content: "";
+   flex: 1;
+   height: 1px;
+   background: linear-gradient(
+      to right,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+   );
+}
+
+/* Sección de estados */
+.modal-lectura-seccion--estados {
+   background: rgba(0, 0, 0, 0.3);
+}
+
+/* Grid de LEDs */
+.modal-lectura-leds-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+   gap: 8px;
+}
+
+/* Indicador LED */
+.modal-lectura-led {
+   display: flex;
+   align-items: center;
+   gap: 6px;
+   padding: 6px 10px;
+   border-radius: 4px;
+   font-size: 0.8rem;
+   transition: all 0.2s;
+}
+
+.modal-lectura-led-icon {
+   flex-shrink: 0;
+}
+
+.modal-lectura-led-nombre {
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+/* Estados de LEDs */
+.modal-lectura-led--inactivo {
+   background: rgba(100, 100, 100, 0.1);
+   color: #666;
+}
+
+.modal-lectura-led--inactivo .modal-lectura-led-icon {
+   color: #444;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--info {
+   background: rgba(147, 197, 253, 0.15);
+   color: #93c5fd;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--info .modal-lectura-led-icon {
+   color: #3b82f6;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--estado {
+   background: rgba(74, 222, 128, 0.15);
+   color: #4ade80;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--estado .modal-lectura-led-icon {
+   color: #22c55e;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--warning {
+   background: rgba(250, 204, 21, 0.15);
+   color: #facc15;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--warning .modal-lectura-led-icon {
+   color: #eab308;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--alarma {
+   background: rgba(239, 68, 68, 0.2);
+   color: #fca5a5;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--alarma .modal-lectura-led-icon {
+   color: #ef4444;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--error {
+   background: rgba(239, 68, 68, 0.25);
+   color: #fca5a5;
+}
+
+.modal-lectura-led--activo.modal-lectura-led--error .modal-lectura-led-icon {
+   color: #dc2626;
+}
+
+/* Parpadeo para alarmas y errores */
+.modal-lectura-led--parpadeo {
+   animation: parpadeoLed 0.8s ease-in-out infinite;
+}
+
+@keyframes parpadeoLed {
+   0%, 100% {
+      opacity: 1;
+   }
+   50% {
+      opacity: 0.4;
+   }
+}
+
+/* Resumen de estados */
+.modal-lectura-resumen {
+   margin: 12px 0 0 0;
+   padding: 10px 12px;
+   background: rgba(0, 0, 0, 0.3);
+   border-radius: 4px;
+   font-size: 0.8rem;
+   color: #888;
+   border-left: 3px solid var(--color-header, #0ea5e9);
+}
+
+/* Sin datos */
+.modal-lectura-sin-datos {
+   color: #666;
+   font-size: 0.9rem;
+   font-style: italic;
+   text-align: center;
+   padding: 20px;
+}
+
+/* Footer */
+.modal-lectura-footer {
+   display: flex;
+   justify-content: flex-end;
+   padding: 16px 20px;
+   border-top: 1px solid rgba(255, 255, 255, 0.05);
+   background: rgba(0, 0, 0, 0.2);
+}
+
+/* Botones */
+.modal-lectura-btn {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   padding: 8px 16px;
+   border-radius: 6px;
+   font-size: 0.85rem;
+   font-weight: 500;
+   cursor: pointer;
+   transition: all 0.2s;
+   border: none;
+}
+
+.modal-lectura-btn--exportar {
+   background: rgba(255, 255, 255, 0.1);
+   color: #ccc;
+}
+
+.modal-lectura-btn--exportar:hover {
+   background: rgba(255, 255, 255, 0.15);
+   color: #fff;
+}
+
+/* Scrollbar personalizado */
+.modal-lectura-contenido::-webkit-scrollbar {
+   width: 8px;
+}
+
+.modal-lectura-contenido::-webkit-scrollbar-track {
+   background: rgba(0, 0, 0, 0.2);
+   border-radius: 4px;
+}
+
+.modal-lectura-contenido::-webkit-scrollbar-thumb {
+   background: rgba(255, 255, 255, 0.15);
+   border-radius: 4px;
+}
+
+.modal-lectura-contenido::-webkit-scrollbar-thumb:hover {
+   background: rgba(255, 255, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+   .modal-lectura-contenedor {
+      max-width: 100%;
+      max-height: 95vh;
+      border-radius: 0;
+   }
+
+   .modal-lectura-subtitulo {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+   }
+
+   .modal-lectura-leds-grid {
+      grid-template-columns: repeat(2, 1fr);
+   }
+
+   .modal-lectura-celda-nombre {
+      padding: 8px 10px;
+      font-size: 0.8rem;
+   }
+
+   .modal-lectura-celda-valor {
+      padding: 8px 10px;
+      min-width: 70px;
+   }
+
+   .modal-lectura-valor {
+      font-size: 0.9rem;
+   }
+}

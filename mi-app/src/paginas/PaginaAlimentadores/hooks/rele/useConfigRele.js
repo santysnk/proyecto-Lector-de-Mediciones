@@ -38,10 +38,37 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
    // Estado para el tab activo en funcionalidades
    const [tabFuncionalidadesActivo, setTabFuncionalidadesActivo] = useState("mediciones");
 
+   /**
+    * Migrar funcionalidadesActivas para añadir campo 'orden' si no existe
+    * Usa el orden de la plantilla como referencia
+    */
+   const migrarFuncionalidadesConOrden = useCallback((funcActivas, plantillaId) => {
+      if (!funcActivas || Object.keys(funcActivas).length === 0) return funcActivas;
+
+      const plantilla = obtenerPlantilla(plantillaId);
+      if (!plantilla?.funcionalidades) return funcActivas;
+
+      const funcMigradas = {};
+      Object.entries(funcActivas).forEach(([funcId, func]) => {
+         const ordenPlantilla = plantilla.funcionalidades[funcId]?.orden;
+         funcMigradas[funcId] = {
+            ...func,
+            orden: func.orden ?? ordenPlantilla ?? Infinity,
+         };
+      });
+
+      return funcMigradas;
+   }, [obtenerPlantilla]);
+
    // Cargar configuración inicial si existe (solo una vez al montar)
    useEffect(() => {
       if (configuracionInicial && !inicializadoRef.current) {
          inicializadoRef.current = true;
+
+         // Migrar funcionalidadesActivas para añadir 'orden' si no existe
+         const funcActivas = configuracionInicial.funcionalidadesActivas || {};
+         const funcMigradas = migrarFuncionalidadesConOrden(funcActivas, configuracionInicial.plantillaId);
+
          setConfig((prev) => ({
             ...prev,
             plantillaId: configuracionInicial.plantillaId || "",
@@ -55,11 +82,11 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
             intervalo: configuracionInicial.intervalo || 60,
             transformadorTIId: configuracionInicial.transformadorTIId || "",
             transformadorTVId: configuracionInicial.transformadorTVId || "",
-            funcionalidadesActivas: configuracionInicial.funcionalidadesActivas || {},
+            funcionalidadesActivas: funcMigradas,
          }));
          configAnteriorRef.current = JSON.stringify(configuracionInicial);
       }
-   }, [configuracionInicial]);
+   }, [configuracionInicial, migrarFuncionalidadesConOrden]);
 
    // Notificar cambios al padre
    useEffect(() => {
@@ -81,17 +108,19 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
 
    /**
     * Generar configuración inicial basada en una plantilla
+    * Incluye el campo 'orden' para preservar el orden de las funcionalidades
     */
    const generarConfigDesdePlantilla = useCallback((plantilla) => {
       if (!plantilla) return {};
 
       const funcActivas = {};
-      Object.entries(plantilla.funcionalidades || {}).forEach(([funcId, func]) => {
+      Object.entries(plantilla.funcionalidades || {}).forEach(([funcId, func], index) => {
          if (func.habilitado !== false) {
             funcActivas[funcId] = {
                nombre: func.nombre,
                habilitado: true,
                registros: func.registros || [{ etiqueta: "", valor: func.registro || 0 }],
+               orden: func.orden ?? index,
             };
          }
       });
@@ -167,6 +196,7 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
 
    /**
     * Toggle habilitar/deshabilitar una funcionalidad
+    * Preserva el campo 'orden' de la plantilla
     */
    const handleToggleFuncionalidad = useCallback((funcId) => {
       setConfig((prev) => {
@@ -186,6 +216,7 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
                      nombre: plantillaFunc?.nombre || funcId,
                      habilitado: true,
                      registros: plantillaFunc?.registros || [{ etiqueta: "", valor: 0 }],
+                     orden: estadoActual?.orden ?? plantillaFunc?.orden ?? Infinity,
                   },
                },
             };
@@ -254,9 +285,10 @@ export function useConfigRele({ configuracionInicial, onChange, obtenerPlantilla
    // Verificar si la plantilla seleccionada aún existe
    const plantillaNoEncontrada = config.plantillaId && !plantillaSeleccionada;
 
-   // Obtener lista de funcionalidades de la plantilla
+   // Obtener lista de funcionalidades de la plantilla, ordenadas por el campo 'orden'
    const funcionalidadesPlantilla = plantillaSeleccionada
       ? Object.entries(plantillaSeleccionada.funcionalidades || {})
+           .sort(([, a], [, b]) => (a.orden ?? Infinity) - (b.orden ?? Infinity))
       : [];
 
    // Contar funcionalidades activas
