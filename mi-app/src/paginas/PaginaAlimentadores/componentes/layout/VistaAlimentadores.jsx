@@ -467,6 +467,7 @@ const VistaAlimentadores = () => {
             interpretarEstado={modalLecturaCompleta.interpretarEstado}
             exportarCSV={modalLecturaCompleta.exportarCSV}
             obtenerTransformador={transformadoresHook.obtenerPorId}
+            etiquetasBits={modalLecturaCompleta.etiquetasBitsTabActivo}
          />
       </div>
    );

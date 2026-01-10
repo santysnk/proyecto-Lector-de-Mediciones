@@ -168,7 +168,126 @@ const ContenedorMediciones = ({ mediciones, obtenerTransformador }) => {
 };
 
 /**
- * Sección de estados/LEDs
+ * LED de sistema (Ready/Start/Trip) - Fila superior del panel
+ */
+const LedSistema = ({ nombre, activo, color }) => {
+   const colorClase = {
+      verde: "led-sistema--verde",
+      amarillo: "led-sistema--amarillo",
+      rojo: "led-sistema--rojo"
+   }[color] || "led-sistema--gris";
+
+   return (
+      <div className={`led-sistema ${colorClase} ${activo ? "led-sistema--activo" : ""}`}>
+         <span className="led-sistema-indicador">●</span>
+         <span className="led-sistema-nombre">{nombre}</span>
+      </div>
+   );
+};
+
+/**
+ * LED programable (columna derecha del panel)
+ */
+const LedProgramable = ({ nombre, activo, tipo }) => {
+   return (
+      <div className={`led-programable ${activo ? "led-programable--activo" : ""} led-programable--${tipo || "info"}`}>
+         <span className="led-programable-indicador">{activo ? "●" : "○"}</span>
+         <span className="led-programable-nombre">{nombre}</span>
+      </div>
+   );
+};
+
+/**
+ * Panel de estados estilo REF615
+ * Simula el aspecto del panel frontal del relé ABB REF615
+ */
+const PanelEstadosREF615 = ({
+   estadoLeds,
+   estadoSalud,
+   interpretarEstado,
+   etiquetasPersonalizadas
+}) => {
+   // Interpretar registro de salud para Ready
+   const salud = estadoSalud?.valor !== null && estadoSalud?.valor !== undefined
+      ? interpretarEstado(estadoSalud.registro, estadoSalud.valor, null)
+      : null;
+
+   // Valor del registro de LEDs para operaciones de bits
+   const valorLeds = estadoLeds?.valor || 0;
+
+   // Determinar estado de LEDs de sistema basándose en registro 172
+   const ledReady = salud ? !salud.bitsActivos?.some(b => b.posicion === 0) : true;
+   const ledStart = (valorLeds >> 1) & 1; // Bit 1 del registro 172
+   const ledTrip = (valorLeds >> 2) & 1;  // Bit 2 del registro 172
+
+   // LEDs programables: usar todas las etiquetas personalizadas del usuario
+   const ledsProgramables = etiquetasPersonalizadas
+      ? Object.entries(etiquetasPersonalizadas)
+         .map(([bit, config]) => ({
+            posicion: parseInt(bit),
+            nombre: config.texto || config.nombre || `LED ${parseInt(bit) + 1}`,
+            activo: (valorLeds >> parseInt(bit)) & 1,
+            tipo: config.severidad || "info"
+         }))
+         .sort((a, b) => a.posicion - b.posicion)
+      : [];
+
+   return (
+      <div className="panel-ref615">
+         {/* LEDs de Sistema - Fila superior */}
+         <div className="panel-ref615-sistema">
+            <LedSistema
+               nombre="Ready"
+               activo={ledReady}
+               color="verde"
+            />
+            <LedSistema
+               nombre="Start"
+               activo={ledStart}
+               color="amarillo"
+            />
+            <LedSistema
+               nombre="Trip"
+               activo={ledTrip}
+               color="rojo"
+            />
+         </div>
+
+         {/* Contenedor principal con info y LEDs programables */}
+         <div className="panel-ref615-cuerpo">
+            {/* Zona de información/resumen */}
+            <div className="panel-ref615-info">
+               <div className="panel-ref615-estado-general">
+                  {ledTrip ? (
+                     <span className="estado-critico">DISPARO ACTIVO</span>
+                  ) : ledStart ? (
+                     <span className="estado-warning">PROTECCION EN ARRANQUE</span>
+                  ) : (
+                     <span className="estado-ok">OPERACION NORMAL</span>
+                  )}
+               </div>
+            </div>
+
+            {/* LEDs Programables - Columna derecha (solo si hay etiquetas configuradas) */}
+            {ledsProgramables.length > 0 && (
+               <div className="panel-ref615-leds-programables">
+                  {ledsProgramables.map((led) => (
+                     <LedProgramable
+                        key={led.posicion}
+                        nombre={led.nombre}
+                        activo={led.activo}
+                        tipo={led.tipo}
+                     />
+                  ))}
+               </div>
+            )}
+         </div>
+      </div>
+   );
+};
+
+/**
+ * Sección de estados/LEDs (fallback para registradores sin formato REF615)
  * @param {Object} props
  * @param {Object} props.funcionalidad - Datos de la funcionalidad de estados
  * @param {Function} props.interpretarEstado - Función para interpretar bits
@@ -233,6 +352,20 @@ const ContenidoFuncionalidades = ({
    interpretarEstado,
    etiquetasBits,
 }) => {
+   // Buscar estados relevantes para el panel REF615
+   const estadoLeds = estados.find(e =>
+      e.registros?.[0]?.registro === 172 ||
+      e.nombre?.toLowerCase().includes("led")
+   );
+   const estadoSalud = estados.find(e =>
+      e.registros?.[0]?.registro === 127 ||
+      e.nombre?.toLowerCase().includes("salud") ||
+      e.nombre?.toLowerCase().includes("ssr1")
+   );
+
+   // Verificar si hay estados para el panel REF615
+   const tieneEstadosREF615 = estadoLeds || estadoSalud;
+
    return (
       <>
          {/* Contenedor unificado de mediciones con subtablas */}
@@ -245,22 +378,15 @@ const ContenidoFuncionalidades = ({
             <p className="modal-lectura-sin-datos">No hay mediciones configuradas</p>
          )}
 
-         {/* Separador si hay estados */}
-         {estados.length > 0 && (
-            <div className="modal-lectura-separador">
-               <span>ESTADOS</span>
-            </div>
-         )}
-
-         {/* Secciones de estados */}
-         {estados.map((func) => (
-            <SeccionEstados
-               key={func.id || func.nombre}
-               funcionalidad={func}
+         {/* Panel de Estados estilo REF615 */}
+         {tieneEstadosREF615 && (
+            <PanelEstadosREF615
+               estadoLeds={estadoLeds?.registros?.[0]}
+               estadoSalud={estadoSalud?.registros?.[0]}
                interpretarEstado={interpretarEstado}
-               etiquetasBits={etiquetasBits}
+               etiquetasPersonalizadas={etiquetasBits}
             />
-         ))}
+         )}
       </>
    );
 };
@@ -290,6 +416,7 @@ const SpinnerCarga = () => (
  * @param {Function} props.interpretarEstado - Función para interpretar bits
  * @param {Function} props.exportarCSV - Función para exportar a CSV
  * @param {Function} props.obtenerTransformador - Función para obtener transformador por ID
+ * @param {Object} props.etiquetasBits - Etiquetas personalizadas de bits (LEDs programables)
  */
 export function ModalLecturaCompleta({
    abierto,
@@ -304,13 +431,11 @@ export function ModalLecturaCompleta({
    interpretarEstado,
    exportarCSV,
    obtenerTransformador,
+   etiquetasBits = null,
 }) {
    if (!abierto || !alimentador) return null;
 
    const colorHeader = alimentador.color || "#0ea5e9";
-
-   // Obtener etiquetas de bits personalizadas si existen
-   const etiquetasBits = null; // TODO: Obtener de configuracion_completa del registrador
 
    const contenidoModal = (
       <div className="modal-lectura-overlay" onClick={onCerrar}>

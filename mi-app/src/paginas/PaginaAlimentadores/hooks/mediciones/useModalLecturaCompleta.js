@@ -156,6 +156,9 @@ export function useModalLecturaCompleta() {
    const [cargandoFuncionalidades, setCargandoFuncionalidades] = useState(false);
    const [tabActivo, setTabActivo] = useState(null);
 
+   // Estado para etiquetas de bits (LEDs programables)
+   const [etiquetasBitsPorRegistrador, setEtiquetasBitsPorRegistrador] = useState({});
+
    /**
     * Abre el modal con los datos de un alimentador
     * @param {Object} alimentador - Datos del alimentador
@@ -168,6 +171,7 @@ export function useModalLecturaCompleta() {
       setTimestampLectura(timestamp);
       setModalAbierto(true);
       setFuncionalidadesPorRegistrador({});
+      setEtiquetasBitsPorRegistrador({});
       setTabActivo(null);
    }, []);
 
@@ -180,6 +184,7 @@ export function useModalLecturaCompleta() {
       setRegistrosSeleccionados(null);
       setTimestampLectura(null);
       setFuncionalidadesPorRegistrador({});
+      setEtiquetasBitsPorRegistrador({});
       setTabActivo(null);
    }, []);
 
@@ -231,11 +236,16 @@ export function useModalLecturaCompleta() {
       const cargarFuncionalidades = async () => {
          setCargandoFuncionalidades(true);
          const funcsPorReg = {};
+         const etiquetasPorReg = {};
 
          for (const regId of registradoresIds) {
             try {
                const resultado = await obtenerFuncionalidadesRegistrador(regId);
                funcsPorReg[regId] = resultado;
+               // Guardar etiquetas de bits si existen
+               if (resultado.etiquetasBits) {
+                  etiquetasPorReg[regId] = resultado.etiquetasBits;
+               }
             } catch (error) {
                console.error(`Error cargando funcionalidades del registrador ${regId}:`, error);
                funcsPorReg[regId] = { error: true, mensaje: error.message };
@@ -243,6 +253,7 @@ export function useModalLecturaCompleta() {
          }
 
          setFuncionalidadesPorRegistrador(funcsPorReg);
+         setEtiquetasBitsPorRegistrador(etiquetasPorReg);
 
          // Establecer el primer tab activo
          if (registradoresIds.length > 0) {
@@ -372,6 +383,32 @@ export function useModalLecturaCompleta() {
    }, [funcionalidadesProcesadas, tabActivo]);
 
    /**
+    * Obtiene las etiquetas de bits del tab activo (o del único registrador válido)
+    */
+   const etiquetasBitsTabActivo = useMemo(() => {
+      // Si hay tabs múltiples, usar el tab activo
+      if (funcionalidadesProcesadas.tabs.length > 0 && tabActivo) {
+         return etiquetasBitsPorRegistrador[tabActivo] || null;
+      }
+
+      // Obtener IDs de registradores que tienen datos válidos (no errores)
+      const registradoresValidos = Object.keys(etiquetasBitsPorRegistrador);
+
+      // Si solo hay un registrador válido con etiquetas, usar sus etiquetas
+      if (registradoresValidos.length === 1) {
+         return etiquetasBitsPorRegistrador[registradoresValidos[0]] || null;
+      }
+
+      // Si hay múltiples registradores válidos pero no hay tabs (se combinaron),
+      // usar el primero que tenga etiquetas
+      if (registradoresValidos.length > 0) {
+         return etiquetasBitsPorRegistrador[registradoresValidos[0]] || null;
+      }
+
+      return null;
+   }, [funcionalidadesProcesadas.tabs, tabActivo, etiquetasBitsPorRegistrador]);
+
+   /**
     * Interpreta los bits de un registro de estado/LEDs
     */
    const interpretarEstado = useCallback((registro, valor, etiquetasPersonalizadas = null) => {
@@ -462,6 +499,9 @@ export function useModalLecturaCompleta() {
       tabs: funcionalidadesProcesadas.tabs,
       tabActivo,
       setTabActivo,
+
+      // Etiquetas de bits (LEDs programables)
+      etiquetasBitsTabActivo,
 
       // Funciones
       abrirModal,

@@ -21,7 +21,7 @@
    background: #1a1a2e;
    border-radius: 8px;
    width: 100%;
-   max-width: 1100px;
+   max-width: 900px;
    max-height: 85vh;
    display: flex;
    flex-direction: column;
@@ -532,6 +532,171 @@
    background: rgba(255, 255, 255, 0.25);
 }
 
+/* ============================================
+   PANEL REF615 - Estilo panel físico
+   ============================================ */
+
+.panel-ref615 {
+   background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+   border: 2px solid #444;
+   border-radius: 8px;
+   padding: 16px;
+}
+
+/* LEDs de Sistema - Fila superior */
+.panel-ref615-sistema {
+   display: flex;
+   gap: 24px;
+   justify-content: flex-start;
+   padding: 12px 16px;
+   background: #1a1a1a;
+   border-radius: 6px;
+   margin-bottom: 16px;
+   border-bottom: 1px solid #333;
+}
+
+.led-sistema {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   padding: 6px 12px;
+   border-radius: 4px;
+   background: rgba(0, 0, 0, 0.3);
+}
+
+.led-sistema-indicador {
+   font-size: 18px;
+   opacity: 0.3;
+   transition: all 0.3s ease;
+}
+
+.led-sistema-nombre {
+   font-size: 12px;
+   font-weight: 600;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+   color: #888;
+}
+
+/* Colores de LEDs de sistema */
+.led-sistema--verde .led-sistema-indicador { color: #22c55e; }
+.led-sistema--amarillo .led-sistema-indicador { color: #eab308; }
+.led-sistema--rojo .led-sistema-indicador { color: #ef4444; }
+
+.led-sistema--activo .led-sistema-indicador {
+   opacity: 1;
+   text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+}
+
+.led-sistema--activo .led-sistema-nombre {
+   color: #fff;
+}
+
+/* LED activo con parpadeo para alarmas */
+.led-sistema--rojo.led-sistema--activo .led-sistema-indicador {
+   animation: parpadeo-alarma 0.5s ease-in-out infinite;
+}
+
+@keyframes parpadeo-alarma {
+   0%, 100% { opacity: 1; }
+   50% { opacity: 0.4; }
+}
+
+/* Cuerpo del panel */
+.panel-ref615-cuerpo {
+   display: flex;
+   gap: 16px;
+   min-height: 280px;
+}
+
+/* Zona de información */
+.panel-ref615-info {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   background: rgba(0, 0, 0, 0.2);
+   border-radius: 6px;
+   padding: 20px;
+}
+
+.panel-ref615-estado-general {
+   font-size: 14px;
+   font-weight: 600;
+   text-align: center;
+}
+
+.estado-ok { color: #22c55e; }
+.estado-warning { color: #eab308; }
+.estado-critico { color: #ef4444; animation: parpadeo-alarma 0.5s ease-in-out infinite; }
+
+/* LEDs Programables - Columna derecha */
+.panel-ref615-leds-programables {
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
+   padding: 12px;
+   background: rgba(0, 0, 0, 0.3);
+   border-radius: 6px;
+   min-width: 200px;
+   min-height: 280px;
+   overflow-y: auto;
+   justify-content: center;
+}
+
+.led-programable {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   padding: 6px 10px;
+   border-radius: 4px;
+   transition: all 0.2s ease;
+}
+
+.led-programable-indicador {
+   font-size: 12px;
+   color: #444;
+   transition: all 0.3s ease;
+}
+
+.led-programable-nombre {
+   font-size: 12px;
+   color: #fff;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+.led-programable--activo {
+   background: rgba(255, 255, 255, 0.05);
+}
+
+.led-programable--activo .led-programable-indicador {
+   color: #f59e0b;
+   text-shadow: 0 0 8px currentColor;
+}
+
+.led-programable--activo .led-programable-nombre {
+   color: #fff;
+}
+
+/* Tipos de LED programable */
+.led-programable--alarma.led-programable--activo .led-programable-indicador {
+   color: #ef4444;
+   text-shadow: 0 0 8px #ef4444;
+}
+
+.led-programable--warning.led-programable--activo .led-programable-indicador {
+   color: #eab308;
+   text-shadow: 0 0 8px #eab308;
+}
+
+.led-programable--estado.led-programable--activo .led-programable-indicador {
+   color: #22c55e;
+   text-shadow: 0 0 8px #22c55e;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
    .modal-lectura-contenedor {
@@ -562,5 +727,20 @@
 
    .modal-lectura-valor {
       font-size: 0.9rem;
+   }
+
+   /* Panel REF615 responsive */
+   .panel-ref615-sistema {
+      flex-wrap: wrap;
+      gap: 12px;
+   }
+
+   .panel-ref615-cuerpo {
+      flex-direction: column;
+   }
+
+   .panel-ref615-leds-programables {
+      min-width: 100%;
+      max-height: none;
    }
 }
