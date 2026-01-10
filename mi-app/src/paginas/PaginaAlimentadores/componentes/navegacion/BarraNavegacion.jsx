@@ -43,6 +43,23 @@ const BarraNavegacion = ({
 	const puedeHacerPolling = (alim) => {
 		if (!alim.intervalo_consulta_ms || alim.intervalo_consulta_ms <= 0) return false;
 
+		// 1. Verificar config_tarjeta (nueva estructura) primero
+		if (alim.config_tarjeta) {
+			const configTarjeta = alim.config_tarjeta;
+			const superiorConfig = configTarjeta.superior || {};
+			const inferiorConfig = configTarjeta.inferior || {};
+
+			const tieneRegistrador = !!superiorConfig.registrador_id || !!inferiorConfig.registrador_id;
+			if (!tieneRegistrador) return false;
+
+			// Verificar que al menos una zona tenga funcionalidad configurada
+			const tieneFuncionalidadSuperior = superiorConfig.registrador_id && superiorConfig.funcionalidad_id;
+			const tieneFuncionalidadInferior = inferiorConfig.registrador_id && inferiorConfig.funcionalidad_id;
+
+			return tieneFuncionalidadSuperior || tieneFuncionalidadInferior;
+		}
+
+		// 2. Fallback: card_design (estructura antigua)
 		const cardDesign = alim.card_design || {};
 		const superior = cardDesign.superior || {};
 		const inferior = cardDesign.inferior || {};

@@ -68,11 +68,15 @@ const ModalConfiguracionPuesto = ({
 
 	// Helper para obtener registrador_id de una zona (con compatibilidad legacy)
 	const obtenerRegistradorIdZona = (alim, zona) => {
-		// Primero intentar obtener de card_design
-		const regIdZona = alim.card_design?.[zona]?.registrador_id;
-		if (regIdZona) return regIdZona;
+		// 1. Priorizar config_tarjeta (nueva estructura)
+		const regIdConfigTarjeta = alim.config_tarjeta?.[zona]?.registrador_id;
+		if (regIdConfigTarjeta) return regIdConfigTarjeta;
 
-		// Fallback: usar registrador_id de la raíz (formato legacy)
+		// 2. Fallback: card_design (estructura antigua)
+		const regIdCardDesign = alim.card_design?.[zona]?.registrador_id;
+		if (regIdCardDesign) return regIdCardDesign;
+
+		// 3. Fallback: usar registrador_id de la raíz (formato legacy)
 		return alim.registrador_id || null;
 	};
 
@@ -84,6 +88,23 @@ const ModalConfiguracionPuesto = ({
 	const puedeHacerPolling = (alim) => {
 		if (!alim.intervalo_consulta_ms || alim.intervalo_consulta_ms <= 0) return false;
 
+		// 1. Verificar config_tarjeta (nueva estructura) primero
+		if (alim.config_tarjeta) {
+			const configTarjeta = alim.config_tarjeta;
+			const superiorConfig = configTarjeta.superior || {};
+			const inferiorConfig = configTarjeta.inferior || {};
+
+			const tieneRegistrador = !!superiorConfig.registrador_id || !!inferiorConfig.registrador_id;
+			if (!tieneRegistrador) return false;
+
+			// Verificar que al menos una zona tenga funcionalidad configurada
+			const tieneFuncionalidadSuperior = superiorConfig.registrador_id && superiorConfig.funcionalidad_id;
+			const tieneFuncionalidadInferior = inferiorConfig.registrador_id && inferiorConfig.funcionalidad_id;
+
+			return tieneFuncionalidadSuperior || tieneFuncionalidadInferior;
+		}
+
+		// 2. Fallback: card_design (estructura antigua)
 		const cardDesign = alim.card_design || {};
 		const superior = cardDesign.superior || {};
 		const inferior = cardDesign.inferior || {};
