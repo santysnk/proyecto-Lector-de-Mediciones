@@ -1,0 +1,231 @@
+/* SeccionCardDesignV2 - Estilos */
+
+.card-design-section {
+   border: 1px solid rgba(255, 255, 255, 0.1);
+   border-radius: 8px;
+   margin-bottom: 12px;
+   overflow: hidden;
+   background: rgba(0, 0, 0, 0.2);
+}
+
+.card-design-section--oculto {
+   opacity: 0.6;
+}
+
+.card-design-section--expandido {
+   border-color: rgba(100, 200, 255, 0.3);
+}
+
+/* Header */
+.card-design-section-header {
+   display: flex;
+   align-items: center;
+   gap: 10px;
+   width: 100%;
+   padding: 12px 16px;
+   background: transparent;
+   border: none;
+   color: #fff;
+   cursor: pointer;
+   text-align: left;
+   font-size: 14px;
+}
+
+.card-design-section-header:hover {
+   background: rgba(255, 255, 255, 0.05);
+}
+
+.card-design-section-arrow {
+   font-size: 10px;
+   transition: transform 0.2s;
+   color: #888;
+}
+
+.card-design-section-arrow--expandido {
+   transform: rotate(90deg);
+}
+
+.card-design-section-titulo {
+   font-weight: 600;
+}
+
+.card-design-section-info {
+   margin-left: auto;
+   font-size: 12px;
+   color: #4ecdc4;
+   background: rgba(78, 205, 196, 0.1);
+   padding: 4px 8px;
+   border-radius: 4px;
+}
+
+.card-design-section-oculto-badge {
+   margin-left: auto;
+   font-size: 11px;
+   color: #ff6b6b;
+   background: rgba(255, 107, 107, 0.1);
+   padding: 4px 8px;
+   border-radius: 4px;
+   text-transform: uppercase;
+}
+
+/* Contenido */
+.card-design-section-content {
+   padding: 16px;
+   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Toggle ocultar */
+.card-design-toggle-oculto {
+   margin-bottom: 16px;
+   padding-bottom: 12px;
+   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card-design-toggle-label {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   cursor: pointer;
+   font-size: 13px;
+   color: #aaa;
+}
+
+.card-design-toggle-label input[type="checkbox"] {
+   width: 16px;
+   height: 16px;
+   cursor: pointer;
+}
+
+/* Campos */
+.card-design-campo {
+   margin-bottom: 16px;
+}
+
+.card-design-campo label {
+   display: block;
+   font-size: 12px;
+   color: #aaa;
+   margin-bottom: 6px;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+}
+
+.card-design-select,
+.card-design-input {
+   width: 100%;
+   padding: 10px 12px;
+   background: #1a2332;
+   border: 1px solid rgba(255, 255, 255, 0.1);
+   border-radius: 6px;
+   color: #fff;
+   font-size: 14px;
+}
+
+.card-design-select {
+   cursor: pointer;
+   appearance: none;
+   -webkit-appearance: none;
+   -moz-appearance: none;
+   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+   background-repeat: no-repeat;
+   background-position: right 12px center;
+   padding-right: 36px;
+}
+
+/* Estilos para las opciones del select */
+.card-design-select option {
+   background: #1a2332;
+   color: #fff;
+   padding: 10px;
+}
+
+.card-design-select option:hover,
+.card-design-select option:focus,
+.card-design-select option:checked {
+   background: #2a3a4a;
+   color: #fff;
+}
+
+.card-design-select:focus,
+.card-design-input:focus {
+   outline: none;
+   border-color: rgba(100, 200, 255, 0.5);
+}
+
+.card-design-input--small {
+   padding: 8px 10px;
+   font-size: 13px;
+}
+
+/* Hints */
+.card-design-hint {
+   display: block;
+   font-size: 11px;
+   color: #666;
+   margin-top: 4px;
+   font-style: italic;
+}
+
+.card-design-hint-small {
+   font-size: 10px;
+   color: #555;
+}
+
+/* Info plantilla */
+.card-design-plantilla-info {
+   font-size: 12px;
+   color: #4ecdc4;
+   background: rgba(78, 205, 196, 0.1);
+   padding: 8px 12px;
+   border-radius: 6px;
+   margin-bottom: 16px;
+}
+
+/* Warnings */
+.card-design-warning {
+   font-size: 12px;
+   color: #ffaa00;
+   background: rgba(255, 170, 0, 0.1);
+   padding: 10px 12px;
+   border-radius: 6px;
+   margin-bottom: 16px;
+}
+
+/* Cargando */
+.card-design-cargando {
+   font-size: 13px;
+   color: #888;
+   padding: 10px 0;
+}
+
+/* Personalización */
+.card-design-personalizacion {
+   margin-top: 20px;
+   padding-top: 16px;
+   border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.card-design-personalizacion-header {
+   font-size: 13px;
+   color: #888;
+   margin-bottom: 16px;
+}
+
+/* Grid de etiquetas */
+.card-design-etiquetas-grid {
+   display: grid;
+   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+   gap: 12px;
+}
+
+.card-design-etiqueta-item {
+   display: flex;
+   flex-direction: column;
+   gap: 4px;
+}
+
+.card-design-etiqueta-numero {
+   font-size: 10px;
+   color: #666;
+   text-transform: uppercase;
+}
