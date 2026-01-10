@@ -108,16 +108,20 @@ export function usePollingLecturas({
          if (lectura.valores && Array.isArray(lectura.valores)) {
             const indiceInicial = lectura.indice_inicial ?? 0;
 
+            // Incluir registradorId para evitar conflictos entre registradores con mismo rango
             const registrosTransformados = lectura.valores.map((valor, idx) => ({
                index: idx,
                address: indiceInicial + idx,
                value: valor,
+               registradorId: registradorId,
             }));
 
             actualizarRegistros(alimId, (prevRegistros) => {
                const registrosAnteriores = prevRegistros?.rele || [];
-               const rangoNuevo = new Set(registrosTransformados.map(r => r.address));
-               const registrosFiltrados = registrosAnteriores.filter(r => !rangoNuevo.has(r.address));
+               // Solo filtrar registros del MISMO registrador para evitar sobreescribir otros
+               const registrosFiltrados = registrosAnteriores.filter(r =>
+                  r.registradorId !== registradorId
+               );
                return {
                   rele: [...registrosFiltrados, ...registrosTransformados]
                };
@@ -141,14 +145,17 @@ export function usePollingLecturas({
    }, [actualizarRegistros, guardarLecturaLocal]);
 
    /**
-    * Extrae los registrador_id del card_design de un alimentador
+    * Extrae los registrador_id de config_tarjeta o card_design de un alimentador
+    * Prioriza config_tarjeta (nueva estructura) sobre card_design (legacy)
     */
    const obtenerRegistradoresDeAlim = useCallback((alim) => {
       const registradores = [];
-      const card_design = alim.card_design;
 
-      const regSuperior = card_design?.superior?.registrador_id;
-      const regInferior = card_design?.inferior?.registrador_id;
+      // Priorizar config_tarjeta (nueva estructura) sobre card_design (legacy)
+      const config = alim.config_tarjeta || alim.card_design;
+
+      const regSuperior = config?.superior?.registrador_id;
+      const regInferior = config?.inferior?.registrador_id;
 
       if (regSuperior && regInferior) {
          if (regSuperior === regInferior) {

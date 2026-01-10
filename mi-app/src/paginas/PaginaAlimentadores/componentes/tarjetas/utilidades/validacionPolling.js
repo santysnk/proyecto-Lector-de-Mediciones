@@ -19,11 +19,25 @@ const tieneBoxHabilitado = (boxes) => {
 };
 
 /**
+ * Verifica si una zona de config_tarjeta tiene configuración válida
+ * @param {Object} zona - Zona de config_tarjeta
+ * @returns {boolean}
+ */
+const tieneConfigTarjetaValida = (zona) => {
+   if (!zona || zona.oculto) return false;
+   // Nueva estructura: requiere registrador_id y funcionalidad_id
+   return !!(zona.registrador_id && zona.funcionalidad_id);
+};
+
+/**
  * Verifica si un alimentador tiene la configuración completa para hacer polling.
+ * Soporta dos estructuras:
+ * - config_tarjeta (nueva): usa funcionalidad_id
+ * - card_design (legacy): usa boxes con índices
+ *
  * Requisitos:
  * - Al menos una zona (superior o inferior) con registrador_id definido
  * - intervalo_consulta_ms definido y > 0
- * - Al menos un box habilitado (enabled: true) con un índice válido
  * @param {Object} alim - Alimentador a verificar
  * @returns {boolean}
  */
@@ -33,12 +47,23 @@ export const puedeHacerPolling = (alim) => {
       return false;
    }
 
-   // 2. Verificar card_design y zonas
+   // 2. Verificar config_tarjeta (nueva estructura) primero
+   if (alim.config_tarjeta) {
+      const configTarjeta = alim.config_tarjeta;
+      const superiorValido = tieneConfigTarjetaValida(configTarjeta.superior);
+      const inferiorValido = tieneConfigTarjetaValida(configTarjeta.inferior);
+
+      if (superiorValido || inferiorValido) {
+         return true;
+      }
+   }
+
+   // 3. Fallback a card_design (legacy)
    const cardDesign = alim.card_design || {};
    const superior = cardDesign.superior || {};
    const inferior = cardDesign.inferior || {};
 
-   // 3. Verificar que haya al menos una zona con registrador_id
+   // 4. Verificar que haya al menos una zona con registrador_id
    const tieneRegistradorSuperior = !!superior.registrador_id;
    const tieneRegistradorInferior = !!inferior.registrador_id;
    const tieneRegistradorLegacy = !!alim.registrador_id;
@@ -47,7 +72,7 @@ export const puedeHacerPolling = (alim) => {
       return false;
    }
 
-   // 4. Verificar boxes habilitados
+   // 5. Verificar boxes habilitados (solo para legacy)
    const boxesSuperior = superior.boxes || [];
    const boxesInferior = inferior.boxes || [];
 

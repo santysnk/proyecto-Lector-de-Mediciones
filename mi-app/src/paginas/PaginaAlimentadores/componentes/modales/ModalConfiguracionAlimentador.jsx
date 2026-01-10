@@ -4,10 +4,9 @@
 import "./ModalConfiguracionAlimentador.css";
 import "./comunes/ColorPickerSimple.css";
 import {
-   SeccionCardDesign,
+   SeccionCardDesignV2,
    SelectorColor,
    useConfigAlimentador,
-   useDeteccionDuplicados,
    INTERVALO_CONSULTA_MIN,
 } from "./configuracion-alimentador";
 
@@ -40,36 +39,13 @@ const ModalConfiguracionAlimentador = ({
       intervaloConsultaSeg,
       setIntervaloConsultaSeg,
       cardDesign,
+      configTarjeta,
+      actualizarConfigTarjetaZona,
       agentesVinculados,
       cargandoAgentes,
       todosRegistradores,
-      buscarRegistrador,
-      obtenerIndicesZona,
       actualizarSide,
-      actualizarBox,
    } = useConfigAlimentador({ abierto, workspaceId, initialData });
-
-   // Hook de detección de duplicados
-   const { estaIndiceDuplicado, obtenerMensajeDuplicado } = useDeteccionDuplicados(cardDesign);
-
-   // Handlers de drag & drop
-   const handleDragStart = (e, indice) => {
-      e.dataTransfer.setData("text/plain", String(indice));
-      e.dataTransfer.effectAllowed = "copy";
-   };
-
-   const handleDragOver = (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "copy";
-   };
-
-   const handleDrop = (e, zona, boxIndex) => {
-      e.preventDefault();
-      const indice = parseInt(e.dataTransfer.getData("text/plain"), 10);
-      if (!isNaN(indice)) {
-         actualizarBox(zona, boxIndex, "indice", indice);
-      }
-   };
 
    // Submit
    const handleSubmit = (e) => {
@@ -82,6 +58,7 @@ const ModalConfiguracionAlimentador = ({
          color,
          intervalo_consulta_ms: intervaloConsultaSeg * 1000,
          card_design: cardDesign,
+         config_tarjeta: configTarjeta,
       });
    };
 
@@ -143,47 +120,25 @@ const ModalConfiguracionAlimentador = ({
                         ) : (
                            <>
                               <p className="alim-modal-seccion-ayuda">
-                                 Seleccioná un registrador para cada zona y arrastrá los índices a los campos.
+                                 Seleccioná un registrador y una funcionalidad para cada zona de la tarjeta.
                               </p>
 
                               {/* Parte Superior */}
-                              <SeccionCardDesign
+                              <SeccionCardDesignV2
                                  titulo="Parte superior"
                                  zona="superior"
-                                 design={cardDesign.superior}
+                                 config={configTarjeta.superior}
                                  registradores={todosRegistradores}
-                                 registradorActual={buscarRegistrador(cardDesign.superior?.registrador_id)}
-                                 indicesDisponibles={obtenerIndicesZona("superior")}
-                                 onChangeRegistrador={(regId) => actualizarSide("superior", "registrador_id", regId || null)}
-                                 onChangeTitulo={(val) => actualizarSide("superior", "tituloId", val)}
-                                 onChangeTituloCustom={(val) => actualizarSide("superior", "tituloCustom", val)}
-                                 onChangeCantidad={(val) => actualizarSide("superior", "cantidad", val)}
-                                 onChangeBox={(idx, campo, val) => actualizarBox("superior", idx, campo, val)}
-                                 onDragOver={handleDragOver}
-                                 onDrop={(e, idx) => handleDrop(e, "superior", idx)}
-                                 onDragStart={handleDragStart}
-                                 estaIndiceDuplicado={estaIndiceDuplicado}
-                                 obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+                                 onChangeConfig={(nuevaConfig) => actualizarConfigTarjetaZona("superior", nuevaConfig)}
                               />
 
                               {/* Parte Inferior */}
-                              <SeccionCardDesign
+                              <SeccionCardDesignV2
                                  titulo="Parte inferior"
                                  zona="inferior"
-                                 design={cardDesign.inferior}
+                                 config={configTarjeta.inferior}
                                  registradores={todosRegistradores}
-                                 registradorActual={buscarRegistrador(cardDesign.inferior?.registrador_id)}
-                                 indicesDisponibles={obtenerIndicesZona("inferior")}
-                                 onChangeRegistrador={(regId) => actualizarSide("inferior", "registrador_id", regId || null)}
-                                 onChangeTitulo={(val) => actualizarSide("inferior", "tituloId", val)}
-                                 onChangeTituloCustom={(val) => actualizarSide("inferior", "tituloCustom", val)}
-                                 onChangeCantidad={(val) => actualizarSide("inferior", "cantidad", val)}
-                                 onChangeBox={(idx, campo, val) => actualizarBox("inferior", idx, campo, val)}
-                                 onDragOver={handleDragOver}
-                                 onDrop={(e, idx) => handleDrop(e, "inferior", idx)}
-                                 onDragStart={handleDragStart}
-                                 estaIndiceDuplicado={estaIndiceDuplicado}
-                                 obtenerMensajeDuplicado={obtenerMensajeDuplicado}
+                                 onChangeConfig={(nuevaConfig) => actualizarConfigTarjetaZona("inferior", nuevaConfig)}
                               />
                            </>
                         )}
@@ -222,8 +177,8 @@ const ModalConfiguracionAlimentador = ({
                               >
                                  <input
                                     type="checkbox"
-                                    checked={cardDesign.superior?.oculto || false}
-                                    onChange={(e) => actualizarSide("superior", "oculto", e.target.checked)}
+                                    checked={configTarjeta.superior?.oculto || false}
+                                    onChange={(e) => actualizarConfigTarjetaZona("superior", { oculto: e.target.checked })}
                                     disabled={!puedeOcultarZonas}
                                  />
                                  <span>Parte superior</span>
@@ -233,8 +188,8 @@ const ModalConfiguracionAlimentador = ({
                               >
                                  <input
                                     type="checkbox"
-                                    checked={cardDesign.inferior?.oculto || false}
-                                    onChange={(e) => actualizarSide("inferior", "oculto", e.target.checked)}
+                                    checked={configTarjeta.inferior?.oculto || false}
+                                    onChange={(e) => actualizarConfigTarjetaZona("inferior", { oculto: e.target.checked })}
                                     disabled={!puedeOcultarZonas}
                                  />
                                  <span>Parte inferior</span>

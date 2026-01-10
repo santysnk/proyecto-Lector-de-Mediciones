@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { listarAgentesWorkspace, listarRegistradoresAgente } from "@/servicios/apiService";
-import { crearCardDesignDefault, INTERVALO_CONSULTA_DEFAULT } from "./constantes";
+import { crearCardDesignDefault, crearConfigTarjetaDefault, INTERVALO_CONSULTA_DEFAULT } from "./constantes";
 import { COLORES_SISTEMA } from "../../../constantes/colores";
 
 /**
@@ -21,6 +21,9 @@ export const useConfigAlimentador = ({ abierto, workspaceId, initialData }) => {
    const [color, setColor] = useState(COLORES_SISTEMA[0]);
    const [intervaloConsultaSeg, setIntervaloConsultaSeg] = useState(INTERVALO_CONSULTA_DEFAULT);
    const [cardDesign, setCardDesign] = useState(crearCardDesignDefault());
+
+   // Nueva estructura simplificada basada en funcionalidades
+   const [configTarjeta, setConfigTarjeta] = useState(crearConfigTarjetaDefault());
 
    // Estado de registradores
    const [agentesVinculados, setAgentesVinculados] = useState([]);
@@ -80,11 +83,15 @@ export const useConfigAlimentador = ({ abierto, workspaceId, initialData }) => {
          }
 
          setCardDesign(design);
+
+         // Cargar config_tarjeta (nueva estructura simplificada)
+         setConfigTarjeta(initialData.config_tarjeta || crearConfigTarjetaDefault());
       } else {
          setNombre("");
          setColor(COLORES_SISTEMA[0]);
          setIntervaloConsultaSeg(INTERVALO_CONSULTA_DEFAULT);
          setCardDesign(crearCardDesignDefault());
+         setConfigTarjeta(crearConfigTarjetaDefault());
       }
    }, [abierto, initialData]);
 
@@ -146,6 +153,17 @@ export const useConfigAlimentador = ({ abierto, workspaceId, initialData }) => {
       });
    }, []);
 
+   // Actualizar configuración de zona en config_tarjeta (nueva estructura)
+   const actualizarConfigTarjetaZona = useCallback((zona, nuevaConfig) => {
+      setConfigTarjeta((prev) => ({
+         ...prev,
+         [zona]: {
+            ...prev[zona],
+            ...nuevaConfig,
+         },
+      }));
+   }, []);
+
    return {
       // Estado básico
       nombre,
@@ -156,6 +174,11 @@ export const useConfigAlimentador = ({ abierto, workspaceId, initialData }) => {
       setIntervaloConsultaSeg,
       cardDesign,
       setCardDesign,
+
+      // Nueva estructura simplificada
+      configTarjeta,
+      setConfigTarjeta,
+      actualizarConfigTarjetaZona,
 
       // Registradores
       agentesVinculados,

@@ -3,6 +3,7 @@
 
 export { useMediciones } from "./useMediciones";
 export { usePollingLecturas } from "./usePollingLecturas";
-export { default as useTransformadores } from "./useTransformadores";
+export { useTransformadores } from "./useTransformadores";
 export { useTarjetaAlimentador } from "./useTarjetaAlimentador";
 export { useConfiguracion } from "./useConfiguracion";
+export { useModalLecturaCompleta } from "./useModalLecturaCompleta";

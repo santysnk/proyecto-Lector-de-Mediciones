@@ -204,6 +204,8 @@ export const usePuestosSupabase = (workspaceId) => {
         ? analizadorConfig.indiceInicial + analizadorConfig.cantRegistros
         : null,
       mapeoMediciones: alim.mapeo_mediciones || {},
+      // Nueva estructura simplificada para diseño de tarjeta
+      config_tarjeta: alim.config_tarjeta || null,
     };
   }
 
@@ -220,13 +222,14 @@ export const usePuestosSupabase = (workspaceId) => {
     };
 
     // === NUEVO FORMATO: con registrador_id y card_design ===
-    // El nuevo modal envía: { nombre, color, registrador_id, intervalo_consulta_ms, card_design }
-    if (alim.registrador_id !== undefined || alim.card_design !== undefined || alim.intervalo_consulta_ms !== undefined) {
+    // El nuevo modal envía: { nombre, color, registrador_id, intervalo_consulta_ms, card_design, config_tarjeta }
+    if (alim.registrador_id !== undefined || alim.card_design !== undefined || alim.intervalo_consulta_ms !== undefined || alim.config_tarjeta !== undefined) {
       return {
         ...base,
         registrador_id: alim.registrador_id || null,
         intervalo_consulta_ms: alim.intervalo_consulta_ms || 60000,
         card_design: alim.card_design || {},
+        config_tarjeta: alim.config_tarjeta || null,
         gap_horizontal: alim.gapHorizontal != null ? alim.gapHorizontal : 0,
         mapeo_mediciones: alim.mapeoMediciones || {},
       };

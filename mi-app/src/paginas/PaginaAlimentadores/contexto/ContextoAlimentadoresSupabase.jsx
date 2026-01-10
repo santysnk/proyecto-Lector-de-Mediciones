@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from "react";
 
 import { usePuestosSupabase, useCambiosPendientes } from "../hooks/puestos";
-import { useMediciones } from "../hooks/mediciones";
+import { useMediciones, useTransformadores } from "../hooks/mediciones";
 import { usePreferenciasUI, usePreferenciasVisuales } from "../hooks/preferencias";
 import {
    useGapsCombinados,
@@ -14,7 +14,12 @@ import {
 } from "../hooks/preferencias";
 import { usarContextoConfiguracion } from "./ContextoConfiguracion";
 
-import { obtenerDisenoTarjeta, calcularValoresLadoTarjeta } from "../utilidades/calculosMediciones";
+import {
+   obtenerDisenoTarjeta,
+   calcularValoresLadoTarjeta,
+   tieneConfiguracionValida,
+   calcularValoresFuncionalidad
+} from "../utilidades/calculosMediciones";
 
 const ContextoAlimentadores = createContext(null);
 
@@ -38,6 +43,9 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
    // Hook de mediciones
    const medicionesHook = useMediciones();
+
+   // Hook de transformadores (TI/TV/Relaciones)
+   const transformadoresHook = useTransformadores(configuracionSeleccionadaId);
 
    // Hook de preferencias UI (gaps horizontales y verticales) - localStorage
    const preferenciasHook = usePreferenciasUI();
@@ -203,18 +211,49 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
          puestoSeleccionado.alimentadores.forEach((alim) => {
             const regsDelAlim = registrosEnVivo[alim.id] || null;
-            const cardDesignData = alim.card_design || alim.mapeoMediciones || {};
-            const diseno = obtenerDisenoTarjeta(cardDesignData);
+            const configTarjeta = alim.config_tarjeta;
 
-            const parteSuperior = calcularValoresLadoTarjeta(regsDelAlim, diseno.superior);
-            const parteInferior = calcularValoresLadoTarjeta(regsDelAlim, diseno.inferior);
+            // Verificar si tiene la nueva estructura config_tarjeta
+            const usarConfigTarjeta =
+               configTarjeta &&
+               (tieneConfiguracionValida(configTarjeta.superior) ||
+                tieneConfiguracionValida(configTarjeta.inferior));
 
-            nuevo[alim.id] = { parteSuperior, parteInferior };
+            if (usarConfigTarjeta) {
+               // NUEVA ESTRUCTURA: usar config_tarjeta con funcionalidad_datos
+               const calcularZona = (configZona) => {
+                  if (!tieneConfiguracionValida(configZona)) {
+                     return { titulo: "", boxes: [], oculto: configZona?.oculto || false };
+                  }
+                  // Usar los datos de funcionalidad guardados en la configuración
+                  // Pasar función para obtener transformadores (TI/TV)
+                  return calcularValoresFuncionalidad(
+                     regsDelAlim,
+                     configZona,
+                     configZona.funcionalidad_datos,
+                     transformadoresHook.obtenerPorId
+                  );
+               };
+
+               nuevo[alim.id] = {
+                  parteSuperior: calcularZona(configTarjeta.superior),
+                  parteInferior: calcularZona(configTarjeta.inferior),
+               };
+            } else {
+               // ESTRUCTURA ANTIGUA: usar card_design (fallback)
+               const cardDesignData = alim.card_design || alim.mapeoMediciones || {};
+               const diseno = obtenerDisenoTarjeta(cardDesignData);
+
+               const parteSuperior = calcularValoresLadoTarjeta(regsDelAlim, diseno.superior);
+               const parteInferior = calcularValoresLadoTarjeta(regsDelAlim, diseno.inferior);
+
+               nuevo[alim.id] = { parteSuperior, parteInferior };
+            }
          });
 
          return nuevo;
       });
-   }, [puestoSeleccionado, registrosEnVivo]);
+   }, [puestoSeleccionado, registrosEnVivo, transformadoresHook.obtenerPorId]);
 
    // Objeto de contexto
    const valorContexto = useMemo(

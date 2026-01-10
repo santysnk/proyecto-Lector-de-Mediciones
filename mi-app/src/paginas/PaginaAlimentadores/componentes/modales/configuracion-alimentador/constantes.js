@@ -50,3 +50,30 @@ export const INTERVALO_CONSULTA_DEFAULT = 60;
 
 // Intervalo mínimo permitido en segundos
 export const INTERVALO_CONSULTA_MIN = 5;
+
+// ========================================
+// Nueva estructura simplificada (config_tarjeta)
+// Basada en funcionalidades de plantillas
+// ========================================
+
+/**
+ * Configuración por defecto para una zona de la tarjeta (superior/inferior)
+ * Usa funcionalidades de la plantilla del registrador en vez de índices manuales
+ */
+export const crearZonaConfigDefault = () => ({
+   registrador_id: null,
+   funcionalidad_id: null,
+   titulo_personalizado: null,
+   etiquetas_personalizadas: {},
+   oculto: false,
+   // Datos de la funcionalidad para renderizado (se guarda al seleccionar funcionalidad)
+   funcionalidad_datos: null
+});
+
+/**
+ * Configuración completa por defecto para config_tarjeta
+ */
+export const crearConfigTarjetaDefault = () => ({
+   superior: crearZonaConfigDefault(),
+   inferior: crearZonaConfigDefault()
+});
