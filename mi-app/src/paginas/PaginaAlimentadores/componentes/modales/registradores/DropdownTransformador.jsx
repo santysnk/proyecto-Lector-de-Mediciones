@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 /**
  * Dropdown personalizado para seleccionar TI/TV/Relación
- * Con líneas divisorias degradadas y fórmula en input readonly
+ * Con tabs para navegar entre categorías y fórmula en input readonly
  * Usa posición fixed para evitar ser cortado por el modal
  */
 const DropdownTransformador = ({
@@ -15,32 +15,38 @@ const DropdownTransformador = ({
 }) => {
   const [abierto, setAbierto] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+  const [tabActivo, setTabActivo] = useState("ti");
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
+
+  // Determinar tab inicial basado en el valor seleccionado
+  useEffect(() => {
+    if (value) {
+      if (tis.some(t => t.id === value)) {
+        setTabActivo("ti");
+      } else if (tvs.some(t => t.id === value)) {
+        setTabActivo("tv");
+      } else if (relaciones.some(t => t.id === value)) {
+        setTabActivo("relaciones");
+      }
+    }
+  }, [value, tis, tvs, relaciones]);
 
   // Calcular posición del menú cuando se abre
   useEffect(() => {
     if (abierto && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const menuHeight = 500; // altura máxima aproximada
+      const menuHeight = 400;
       const viewportHeight = window.innerHeight;
 
-      // Posición a la derecha del trigger
       let left = rect.right + 8;
-
-      // Centrar verticalmente respecto al trigger
       let top = rect.top + (rect.height / 2) - (menuHeight / 2);
 
-      // Ajustar si se sale por arriba
       if (top < 10) top = 10;
-
-      // Ajustar si se sale por abajo
       if (top + menuHeight > viewportHeight - 10) {
         top = viewportHeight - menuHeight - 10;
       }
-
-      // Si no cabe a la derecha, ponerlo a la izquierda
       if (left + 300 > window.innerWidth) {
         left = rect.left - 308;
       }
@@ -77,6 +83,18 @@ const DropdownTransformador = ({
     setAbierto(false);
   };
 
+  // Obtener items del tab activo
+  const getItemsTabActivo = () => {
+    switch (tabActivo) {
+      case "ti": return tis;
+      case "tv": return tvs;
+      case "relaciones": return relaciones;
+      default: return [];
+    }
+  };
+
+  const itemsActivos = getItemsTabActivo();
+
   return (
     <div
       className={`dropdown-transformador ${disabled ? "disabled" : ""}`}
@@ -112,83 +130,66 @@ const DropdownTransformador = ({
           style={{ top: menuPos.top, left: menuPos.left }}
           ref={menuRef}
         >
-          {/* Opción: Sin TI/TV */}
-          <div
-            className={`dropdown-transformador-opcion ${!value ? "seleccionado" : ""}`}
-            onClick={() => handleSeleccionar("")}
-          >
-            <span className="dropdown-transformador-nombre">Sin TI / TV</span>
+          {/* Tabs de navegación */}
+          <div className="dropdown-transformador-tabs">
+            <button
+              type="button"
+              className={`dropdown-transformador-tab ${tabActivo === "ti" ? "activo" : ""}`}
+              onClick={() => setTabActivo("ti")}
+            >
+              T.I. <span className="dropdown-transformador-tab-count">{tis.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`dropdown-transformador-tab ${tabActivo === "tv" ? "activo" : ""}`}
+              onClick={() => setTabActivo("tv")}
+            >
+              T.V. <span className="dropdown-transformador-tab-count">{tvs.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`dropdown-transformador-tab ${tabActivo === "relaciones" ? "activo" : ""}`}
+              onClick={() => setTabActivo("relaciones")}
+            >
+              Relaciones <span className="dropdown-transformador-tab-count">{relaciones.length}</span>
+            </button>
           </div>
 
-          {/* Línea divisoria después de Sin TI/TV si hay TIs */}
-          {tis.length > 0 && <div className="dropdown-transformador-divider" />}
-
-          {/* TIs */}
-          {tis.map((t) => (
+          {/* Contenido del tab */}
+          <div className="dropdown-transformador-contenido">
+            {/* Opción: Sin TI/TV (siempre visible) */}
             <div
-              key={t.id}
-              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
-              onClick={() => handleSeleccionar(t.id)}
+              className={`dropdown-transformador-opcion ${!value ? "seleccionado" : ""}`}
+              onClick={() => handleSeleccionar("")}
             >
-              <span className="dropdown-transformador-nombre">{t.nombre}</span>
-              <input
-                type="text"
-                className="dropdown-transformador-formula"
-                value={t.formula}
-                readOnly
-                tabIndex={-1}
-              />
+              <span className="dropdown-transformador-nombre">Sin TI / TV</span>
             </div>
-          ))}
 
-          {/* Línea divisoria entre TIs y TVs */}
-          {tis.length > 0 && tvs.length > 0 && <div className="dropdown-transformador-divider" />}
+            {/* Items del tab activo */}
+            {itemsActivos.map((t) => (
+              <div
+                key={t.id}
+                className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
+                onClick={() => handleSeleccionar(t.id)}
+              >
+                <span className="dropdown-transformador-nombre">{t.nombre}</span>
+                <input
+                  type="text"
+                  className="dropdown-transformador-formula"
+                  value={t.formula}
+                  readOnly
+                  tabIndex={-1}
+                />
+              </div>
+            ))}
 
-          {/* TVs */}
-          {tvs.map((t) => (
-            <div
-              key={t.id}
-              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
-              onClick={() => handleSeleccionar(t.id)}
-            >
-              <span className="dropdown-transformador-nombre">{t.nombre}</span>
-              <input
-                type="text"
-                className="dropdown-transformador-formula"
-                value={t.formula}
-                readOnly
-                tabIndex={-1}
-              />
-            </div>
-          ))}
-
-          {/* Línea divisoria entre TVs y Relaciones */}
-          {(tis.length > 0 || tvs.length > 0) && relaciones.length > 0 && <div className="dropdown-transformador-divider" />}
-
-          {/* Relaciones */}
-          {relaciones.map((t) => (
-            <div
-              key={t.id}
-              className={`dropdown-transformador-opcion ${value === t.id ? "seleccionado" : ""}`}
-              onClick={() => handleSeleccionar(t.id)}
-            >
-              <span className="dropdown-transformador-nombre">{t.nombre}</span>
-              <input
-                type="text"
-                className="dropdown-transformador-formula"
-                value={t.formula}
-                readOnly
-                tabIndex={-1}
-              />
-            </div>
-          ))}
-
-          {/* Mensaje si no hay transformadores */}
-          {tis.length === 0 && tvs.length === 0 && relaciones.length === 0 && (
-            <div className="dropdown-transformador-vacio">
-              No hay TI/TV/Relaciones configurados
-            </div>
-          )}
+            {/* Mensaje si no hay items en este tab */}
+            {itemsActivos.length === 0 && (
+              <div className="dropdown-transformador-vacio">
+                No hay {tabActivo === "ti" ? "TIs" : tabActivo === "tv" ? "TVs" : "relaciones"} configurados
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

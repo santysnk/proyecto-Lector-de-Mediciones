@@ -582,18 +582,60 @@
   gap: 12px;
 }
 
-/* Línea divisoria con degradado */
-.dropdown-transformador-divider {
-  height: 1px;
-  margin: 8px 16px;
-  background: linear-gradient(
-    to right,
-    transparent 0%,
-    #3b4557 20%,
-    #4b5567 50%,
-    #3b4557 80%,
-    transparent 100%
-  );
+/* Tabs de navegación */
+.dropdown-transformador-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a3447;
+  background: #1a1f2e;
+}
+
+.dropdown-transformador-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #71717a;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.dropdown-transformador-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #a1a1aa;
+}
+
+.dropdown-transformador-tab.activo {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.dropdown-transformador-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.dropdown-transformador-tab.activo .dropdown-transformador-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Contenido del dropdown */
+.dropdown-transformador-contenido {
+  max-height: 350px;
+  overflow-y: auto;
 }
 
 /* Opción individual */
