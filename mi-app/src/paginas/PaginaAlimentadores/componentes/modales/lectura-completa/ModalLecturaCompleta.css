@@ -234,12 +234,10 @@
 }
 
 .modal-lectura-celda-valor {
-   padding: 10px 8px;
-   min-width: 120px;
-}
-
-.modal-lectura-celda-valor {
+   padding: 10px 6px;
+   min-width: 100px;
    display: table-cell;
+   vertical-align: middle;
 }
 
 .modal-lectura-celda-valor > span {
@@ -248,27 +246,48 @@
 }
 
 .modal-lectura-etiqueta {
-   font-size: 0.9rem;
+   font-size: 0.8rem;
    color: #fff;
-   text-align: right;
+   white-space: nowrap;
    width: 45%;
+   text-align: right;
+}
+
+/* Layout vertical para etiquetas largas */
+.modal-lectura-celda-valor--vertical {
+   text-align: center;
+}
+
+.modal-lectura-celda-valor--vertical .modal-lectura-valor {
+   display: block;
+   text-align: center;
+   width: auto;
+}
+
+.modal-lectura-etiqueta-arriba {
+   display: block;
+   font-size: 0.7rem;
+   color: #fff;
+   text-align: center;
+   white-space: nowrap;
+   margin-bottom: 2px;
 }
 
 .modal-lectura-dos-puntos {
-   font-size: 1.1rem;
+   font-size: 1rem;
    font-weight: 600;
    color: #fff;
    width: 10%;
    text-align: center;
-   padding: 0 6px;
+   padding: 0 4px;
 }
 
 .modal-lectura-valor {
    font-size: 1rem;
    font-weight: 600;
    color: #ffff00;
-   text-align: left;
    width: 45%;
+   text-align: left;
 }
 
 .modal-lectura-unidad {

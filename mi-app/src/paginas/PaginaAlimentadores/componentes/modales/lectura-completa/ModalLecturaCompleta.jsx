@@ -145,16 +145,35 @@ const ContenedorMediciones = ({ mediciones, obtenerTransformador }) => {
                               etiquetaMostrar = "(Q)";
                            }
 
+                           // Detectar si la etiqueta es larga (más de 16 caracteres)
+                           const esEtiquetaLarga = etiquetaMostrar && etiquetaMostrar.length > 16;
+
                            return (
-                              <td key={`${func.id}-${idx}`} className="modal-lectura-celda-valor">
-                                 <span className="modal-lectura-etiqueta">{etiquetaMostrar}</span>
-                                 <span className="modal-lectura-dos-puntos">:</span>
-                                 <span className="modal-lectura-valor">
-                                    {valorFormateado}
-                                    {unidad && valorTransformado !== null && (
-                                       <span className="modal-lectura-unidad"> {unidad}</span>
-                                    )}
-                                 </span>
+                              <td key={`${func.id}-${idx}`} className={`modal-lectura-celda-valor ${esEtiquetaLarga ? 'modal-lectura-celda-valor--vertical' : ''}`}>
+                                 {esEtiquetaLarga ? (
+                                    // Layout vertical: etiqueta arriba, valor abajo
+                                    <>
+                                       <span className="modal-lectura-etiqueta-arriba">{etiquetaMostrar}</span>
+                                       <span className="modal-lectura-valor">
+                                          {valorFormateado}
+                                          {unidad && valorTransformado !== null && (
+                                             <span className="modal-lectura-unidad"> {unidad}</span>
+                                          )}
+                                       </span>
+                                    </>
+                                 ) : (
+                                    // Layout horizontal: etiqueta : valor
+                                    <>
+                                       <span className="modal-lectura-etiqueta">{etiquetaMostrar}</span>
+                                       <span className="modal-lectura-dos-puntos">:</span>
+                                       <span className="modal-lectura-valor">
+                                          {valorFormateado}
+                                          {unidad && valorTransformado !== null && (
+                                             <span className="modal-lectura-unidad"> {unidad}</span>
+                                          )}
+                                       </span>
+                                    </>
+                                 )}
                               </td>
                            );
                         })}
