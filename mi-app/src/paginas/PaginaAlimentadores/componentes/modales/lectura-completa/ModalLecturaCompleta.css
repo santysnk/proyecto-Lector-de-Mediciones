@@ -584,9 +584,12 @@
 }
 
 .led-sistema-indicador {
-   font-size: 18px;
+   font-size: 24px;
    opacity: 0.3;
    transition: all 0.3s ease;
+   line-height: 1;
+   vertical-align: middle;
+   margin-top: -2px;
 }
 
 .led-sistema-nombre {
@@ -599,7 +602,7 @@
 
 /* Colores de LEDs de sistema */
 .led-sistema--verde .led-sistema-indicador { color: #22c55e; }
-.led-sistema--amarillo .led-sistema-indicador { color: #eab308; }
+.led-sistema--amarillo .led-sistema-indicador { color: #ef4444; } /* En relé real es rojo parpadeante */
 .led-sistema--rojo .led-sistema-indicador { color: #ef4444; }
 
 .led-sistema--activo .led-sistema-indicador {
@@ -611,9 +614,19 @@
    color: #fff;
 }
 
-/* LED activo con parpadeo para alarmas */
+/* LED START activo - rojo parpadeante rápido (3 veces/segundo) */
+.led-sistema--amarillo.led-sistema--activo .led-sistema-indicador {
+   animation: parpadeo-rapido 0.333s ease-in-out infinite;
+}
+
+/* LED TRIP activo - rojo parpadeante */
 .led-sistema--rojo.led-sistema--activo .led-sistema-indicador {
    animation: parpadeo-alarma 0.5s ease-in-out infinite;
+}
+
+@keyframes parpadeo-rapido {
+   0%, 100% { opacity: 1; }
+   50% { opacity: 0.2; }
 }
 
 @keyframes parpadeo-alarma {
@@ -654,12 +667,11 @@
 .panel-ref615-leds-programables {
    display: flex;
    flex-direction: column;
-   gap: 6px;
-   padding: 12px;
+   gap: 2px;
+   padding: 8px;
    background: rgba(0, 0, 0, 0.3);
    border-radius: 6px;
    min-width: 200px;
-   min-height: 280px;
    overflow-y: auto;
    justify-content: center;
 }
@@ -667,14 +679,14 @@
 .led-programable {
    display: flex;
    align-items: center;
-   gap: 10px;
-   padding: 6px 10px;
+   gap: 8px;
+   padding: 3px 8px;
    border-radius: 4px;
    transition: all 0.2s ease;
 }
 
 .led-programable-indicador {
-   font-size: 12px;
+   font-size: 20px;
    color: #444;
    transition: all 0.3s ease;
 }
@@ -692,8 +704,9 @@
 }
 
 .led-programable--activo .led-programable-indicador {
-   color: #f59e0b;
+   color: #ef4444;
    text-shadow: 0 0 8px currentColor;
+   animation: parpadeo-rapido 0.333s ease-in-out infinite;
 }
 
 .led-programable--activo .led-programable-nombre {
@@ -707,13 +720,14 @@
 }
 
 .led-programable--warning.led-programable--activo .led-programable-indicador {
-   color: #eab308;
-   text-shadow: 0 0 8px #eab308;
+   color: #ef4444;
+   text-shadow: 0 0 8px #ef4444;
 }
 
 .led-programable--estado.led-programable--activo .led-programable-indicador {
    color: #22c55e;
    text-shadow: 0 0 8px #22c55e;
+   animation: none;
 }
 
 /* Responsive */

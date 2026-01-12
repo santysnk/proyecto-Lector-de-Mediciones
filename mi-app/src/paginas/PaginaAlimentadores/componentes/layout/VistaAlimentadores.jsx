@@ -384,6 +384,7 @@ const VistaAlimentadores = () => {
                   ESCALA_MIN={ESCALA_MIN}
                   ESCALA_MAX={ESCALA_MAX}
                   onExpandirLectura={handleExpandirLectura}
+                  registrosEnVivo={registrosEnVivo}
                />
             )}
          </main>

@@ -210,7 +210,7 @@ const LedSistema = ({ nombre, activo, color }) => {
 const LedProgramable = ({ nombre, activo, tipo }) => {
    return (
       <div className={`led-programable ${activo ? "led-programable--activo" : ""} led-programable--${tipo || "info"}`}>
-         <span className="led-programable-indicador">{activo ? "●" : "○"}</span>
+         <span className="led-programable-indicador">●</span>
          <span className="led-programable-nombre">{nombre}</span>
       </div>
    );

@@ -3,6 +3,7 @@
 import "./TarjetaAlimentador.css";
 import CajaMedicion from "./CajaMedicion.jsx";
 import GrupoMedidores from "./GrupoMedidores.jsx";
+import BadgeAlarmas from "./BadgeAlarmas.jsx";
 import { usarContextoConfiguracion } from "../../contexto/ContextoConfiguracion";
 import { useTarjetaAlimentador } from "../../hooks/mediciones";
 import { PopoverEscala, MenuFlotante } from "./componentes";
@@ -135,6 +136,12 @@ const TarjetaAlimentador = ({
    // Escala de la tarjeta
    escala = 1.0,
    onEscalaChange,
+
+   // Alarmas activas para el badge
+   alarmasActivas = [],
+   alarmasVistas = {},
+   onMarcarAlarmaVista,
+   onMarcarTodasAlarmasVistas,
 }) => {
    // Obtener estilos globales del contexto
    const { estilosGlobales } = usarContextoConfiguracion();
@@ -291,6 +298,15 @@ const TarjetaAlimentador = ({
             >
                {nombre}
             </span>
+
+            {/* Badge de alarmas activas */}
+            <BadgeAlarmas
+               nombreAlimentador={nombre}
+               alarmasActivas={alarmasActivas}
+               alarmasVistas={alarmasVistas}
+               onMarcarVista={onMarcarAlarmaVista}
+               onMarcarTodasVistas={onMarcarTodasAlarmasVistas}
+            />
 
             {/* Botón de expandir lectura completa */}
             {onExpandirClick && (

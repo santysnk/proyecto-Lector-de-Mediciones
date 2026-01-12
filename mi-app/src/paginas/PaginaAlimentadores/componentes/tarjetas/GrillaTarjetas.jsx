@@ -1,7 +1,7 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetas.jsx
 // Grilla de tarjetas de alimentadores
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
 import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
@@ -12,7 +12,11 @@ import { useDeteccionFilas, useModoMobile } from "./hooks";
 import { puedeHacerPolling, GAP_FIJO_MOBILE, ROW_GAP_FIJO_MOBILE } from "./utilidades";
 import { BotonEditarDiagrama, BotonesArchivo } from "./componentes";
 import { ESCALA_MIN, ESCALA_MAX } from "../../constantes/escalas";
+import { obtenerFuncionalidadesRegistrador } from "@/servicios/api/registradores";
 import "./GrillaTarjetas.css";
+
+// Clave para localStorage de alarmas vistas
+const STORAGE_KEY_ALARMAS_VISTAS = "rw-alarmas-vistas";
 
 /**
  * Grilla de tarjetas de alimentadores.
@@ -49,9 +53,142 @@ const GrillaTarjetas = ({
    obtenerErrorPolling,
    obtenerEscalaEfectiva,
    onEscalaChange,
+   registrosEnVivo = {},
 }) => {
    const gridRef = useRef(null);
    const esModoMobile = useModoMobile();
+
+   // Estado de alarmas vistas por alimentador
+   const [alarmasVistasPorAlimentador, setAlarmasVistasPorAlimentador] = useState(() => {
+      try {
+         const guardadas = localStorage.getItem(STORAGE_KEY_ALARMAS_VISTAS);
+         return guardadas ? JSON.parse(guardadas) : {};
+      } catch {
+         return {};
+      }
+   });
+
+   // Persistir alarmas vistas en localStorage
+   useEffect(() => {
+      try {
+         localStorage.setItem(STORAGE_KEY_ALARMAS_VISTAS, JSON.stringify(alarmasVistasPorAlimentador));
+      } catch (e) {
+         console.warn("No se pudo guardar alarmas vistas en localStorage:", e);
+      }
+   }, [alarmasVistasPorAlimentador]);
+
+   // Caché de etiquetasBits por registrador (cargado desde API)
+   const [etiquetasBitsCache, setEtiquetasBitsCache] = useState({});
+
+   // Obtener IDs únicos de registradores de todos los alimentadores
+   const registradoresIds = useMemo(() => {
+      const ids = new Set();
+      alimentadores.forEach(alim => {
+         const regId = alim.config_tarjeta?.superior?.registrador_id
+                    || alim.config_tarjeta?.inferior?.registrador_id
+                    || alim.card_design?.superior?.registrador_id
+                    || alim.card_design?.inferior?.registrador_id;
+         if (regId) ids.add(regId);
+      });
+      return Array.from(ids);
+   }, [alimentadores]);
+
+   // Cargar etiquetasBits de registradores que no están en caché
+   useEffect(() => {
+      const cargarEtiquetasFaltantes = async () => {
+         const faltantes = registradoresIds.filter(id => !etiquetasBitsCache[id]);
+         if (faltantes.length === 0) return;
+
+         for (const regId of faltantes) {
+            try {
+               const resultado = await obtenerFuncionalidadesRegistrador(regId);
+               if (resultado?.etiquetasBits) {
+                  setEtiquetasBitsCache(prev => ({
+                     ...prev,
+                     [regId]: resultado.etiquetasBits
+                  }));
+               }
+            } catch (error) {
+               console.warn(`Error cargando etiquetasBits del registrador ${regId}:`, error);
+            }
+         }
+      };
+
+      cargarEtiquetasFaltantes();
+   }, [registradoresIds, etiquetasBitsCache]);
+
+   // Funcion para obtener alarmas activas de un alimentador
+   const obtenerAlarmasActivas = useCallback((alimentador) => {
+      // 1. Obtener registros en vivo del alimentador
+      const registrosAlim = registrosEnVivo[alimentador.id];
+      if (!registrosAlim?.rele || !Array.isArray(registrosAlim.rele)) return [];
+
+      // 2. Buscar registro 172 (LEDs)
+      const registro172 = registrosAlim.rele.find(r => r.address === 172);
+      if (!registro172) return [];
+
+      const valorLeds = registro172.value || 0;
+
+      // 3. Obtener ID del registrador configurado
+      const regId = alimentador.config_tarjeta?.superior?.registrador_id
+                 || alimentador.config_tarjeta?.inferior?.registrador_id
+                 || alimentador.card_design?.superior?.registrador_id
+                 || alimentador.card_design?.inferior?.registrador_id;
+
+      if (!regId) return [];
+
+      // 4. Obtener etiquetas de bits desde el caché
+      const etiquetasBits = etiquetasBitsCache[regId];
+      if (!etiquetasBits) return [];
+
+      // 5. Extraer bits activos que sean alarmas/warnings
+      const alarmas = [];
+      Object.entries(etiquetasBits).forEach(([bit, config]) => {
+         const bitNum = parseInt(bit);
+         const activo = (valorLeds >> bitNum) & 1;
+
+         // Solo incluir si es warning o alarma (no "estado" ni "info")
+         if (activo && (config.severidad === "warning" || config.severidad === "alarma")) {
+            alarmas.push({
+               id: `${alimentador.id}-bit-${bit}`,
+               nombre: config.texto || config.nombre || `LED ${bitNum + 1}`,
+               tipo: config.severidad
+            });
+         }
+      });
+
+      return alarmas;
+   }, [registrosEnVivo, etiquetasBitsCache]);
+
+   // Handler para marcar/desmarcar una alarma como vista (toggle)
+   const handleMarcarAlarmaVista = useCallback((alimentadorId, alarmaId) => {
+      setAlarmasVistasPorAlimentador(prev => {
+         const estadoActual = prev[alimentadorId]?.[alarmaId] || false;
+         return {
+            ...prev,
+            [alimentadorId]: {
+               ...prev[alimentadorId],
+               [alarmaId]: !estadoActual // Toggle
+            }
+         };
+      });
+   }, []);
+
+   // Handler para marcar todas las alarmas como vistas
+   const handleMarcarTodasAlarmasVistas = useCallback((alimentadorId, alarmas) => {
+      const vistas = {};
+      alarmas.forEach(a => {
+         vistas[a.id] = true;
+      });
+
+      setAlarmasVistasPorAlimentador(prev => ({
+         ...prev,
+         [alimentadorId]: {
+            ...prev[alimentadorId],
+            ...vistas
+         }
+      }));
+   }, []);
 
    // Hook de detección de filas
    const { posicionesEntreFilas, filasPorTarjeta } = useDeteccionFilas({
@@ -176,6 +313,7 @@ const GrillaTarjetas = ({
                const mideAnalizador = estaMidiendo(alim.id, "analizador");
                const gapTarjeta = obtenerGap(alim.id);
                const marginTop = obtenerMarginTop(alim.id);
+               const alarmasActivas = obtenerAlarmasActivas(alim);
 
                return (
                   <React.Fragment key={alim.id}>
@@ -228,6 +366,10 @@ const GrillaTarjetas = ({
                            }
                            ESCALA_MIN={ESCALA_MIN}
                            ESCALA_MAX={ESCALA_MAX}
+                           alarmasActivas={alarmasActivas}
+                           alarmasVistas={alarmasVistasPorAlimentador[alim.id] || {}}
+                           onMarcarAlarmaVista={(alarmaId) => handleMarcarAlarmaVista(alim.id, alarmaId)}
+                           onMarcarTodasAlarmasVistas={() => handleMarcarTodasAlarmasVistas(alim.id, alarmasActivas)}
                         />
                      </div>
                      {!elementoArrastrandoId && !esModoMobile ? (

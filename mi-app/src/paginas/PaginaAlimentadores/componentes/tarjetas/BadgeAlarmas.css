@@ -1,0 +1,307 @@
+/* ============================================
+   BADGE DE ALARMAS
+   ============================================ */
+
+.badge-alarmas {
+   position: relative;
+   display: flex;
+   align-items: center;
+   margin-left: 8px;
+}
+
+/* Badge OK (sin alarmas) */
+.badge-alarmas--ok {
+   padding: 2px 6px;
+}
+
+.badge-alarmas-icon-ok {
+   color: #22c55e;
+   font-size: 14px;
+   font-weight: bold;
+}
+
+/* Boton del badge */
+.badge-alarmas-boton {
+   display: flex;
+   align-items: center;
+   gap: 4px;
+   padding: 3px 8px;
+   background: rgba(239, 68, 68, 0.2);
+   border: 1px solid rgba(239, 68, 68, 0.4);
+   border-radius: 12px;
+   cursor: pointer;
+   transition: all 0.2s ease;
+}
+
+.badge-alarmas-boton:hover {
+   background: rgba(239, 68, 68, 0.3);
+}
+
+.badge-alarmas-icon {
+   font-size: 10px;
+   color: #ef4444;
+}
+
+.badge-alarmas-cantidad {
+   font-size: 11px;
+   font-weight: 600;
+   color: #fff;
+}
+
+/* Severidad warning (rojo pulsante lento) */
+.badge-alarmas--warning .badge-alarmas-boton {
+   background: rgba(239, 68, 68, 0.2);
+   border-color: rgba(239, 68, 68, 0.4);
+}
+
+.badge-alarmas--warning .badge-alarmas-icon {
+   color: #ef4444;
+}
+
+/* Severidad critico (rojo parpadeante rapido) */
+.badge-alarmas--critico .badge-alarmas-boton {
+   background: rgba(239, 68, 68, 0.25);
+   border-color: rgba(239, 68, 68, 0.5);
+}
+
+.badge-alarmas--critico .badge-alarmas-icon {
+   color: #ef4444;
+}
+
+/* Efecto pulsante para alarmas no vistas */
+.badge-alarmas-boton--pulsante {
+   animation: badge-pulso 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulso {
+   0%, 100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+   }
+   50% {
+      box-shadow: 0 0 12px 4px rgba(239, 68, 68, 0.6);
+   }
+}
+
+/* Efecto parpadeante rapido para critico */
+.badge-alarmas-boton--critico.badge-alarmas-boton--pulsante {
+   animation: badge-parpadeo-critico 0.333s ease-in-out infinite;
+}
+
+@keyframes badge-parpadeo-critico {
+   0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 8px 2px rgba(239, 68, 68, 0.7);
+   }
+   50% {
+      opacity: 0.6;
+      box-shadow: 0 0 15px 5px rgba(239, 68, 68, 0.9);
+   }
+}
+
+/* ============================================
+   GLOBO EXPANDIBLE
+   ============================================ */
+
+.badge-alarmas-globo {
+   min-width: 220px;
+   animation: globo-aparecer 0.2s ease-out;
+}
+
+/* Globo arriba de la tarjeta */
+.badge-alarmas-globo--arriba {
+   display: flex;
+   flex-direction: column;
+}
+
+@keyframes globo-aparecer {
+   from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+   }
+}
+
+/* Flecha del globo - base */
+.badge-alarmas-globo-flecha {
+   position: absolute;
+   width: 12px;
+   height: 12px;
+   background: #1a1a2e;
+}
+
+/* Flecha apuntando hacia abajo (globo arriba) */
+.badge-alarmas-globo-flecha--abajo {
+   position: absolute;
+   bottom: -6px;
+   border-right: 1px solid rgba(239, 68, 68, 0.3);
+   border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+   transform: rotate(45deg);
+}
+
+/* Contenido del globo */
+.badge-alarmas-globo-contenido {
+   background: #1a1a2e;
+   border: 1px solid rgba(239, 68, 68, 0.3);
+   border-radius: 8px;
+   padding: 12px;
+   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Header del globo (titulo + botón cerrar) */
+.badge-alarmas-globo-header {
+   display: flex;
+   align-items: center;
+   justify-content: space-between;
+   gap: 8px;
+   margin-bottom: 10px;
+   padding-bottom: 8px;
+   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Titulo del globo */
+.badge-alarmas-globo-titulo {
+   font-size: 12px;
+   font-weight: 600;
+   color: #ef4444;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   flex: 1;
+}
+
+/* Botón cerrar */
+.badge-alarmas-globo-cerrar {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   width: 20px;
+   height: 20px;
+   padding: 0;
+   background: rgba(255, 255, 255, 0.1);
+   border: 1px solid rgba(255, 255, 255, 0.2);
+   border-radius: 4px;
+   color: #888;
+   font-size: 12px;
+   cursor: pointer;
+   transition: all 0.2s ease;
+   flex-shrink: 0;
+}
+
+.badge-alarmas-globo-cerrar:hover {
+   background: rgba(239, 68, 68, 0.2);
+   border-color: rgba(239, 68, 68, 0.4);
+   color: #ef4444;
+}
+
+/* Lista de alarmas */
+.badge-alarmas-lista {
+   list-style: none;
+   margin: 0;
+   padding: 0;
+   display: flex;
+   flex-direction: column;
+   gap: 6px;
+   max-height: 200px;
+   overflow-y: auto;
+}
+
+.badge-alarmas-item {
+   display: flex;
+   align-items: center;
+   gap: 8px;
+   padding: 6px 8px;
+   background: rgba(0, 0, 0, 0.2);
+   border-radius: 4px;
+   font-size: 12px;
+}
+
+.badge-alarmas-item-indicador {
+   font-size: 12px;
+   color: #ef4444;
+   text-shadow: 0 0 6px #ef4444;
+   animation: led-parpadeo 0.333s ease-in-out infinite;
+}
+
+@keyframes led-parpadeo {
+   0%, 100% { opacity: 1; }
+   50% { opacity: 0.3; }
+}
+
+.badge-alarmas-item--warning .badge-alarmas-item-indicador {
+   color: #ef4444;
+   text-shadow: 0 0 6px #ef4444;
+}
+
+.badge-alarmas-item--alarma .badge-alarmas-item-indicador {
+   color: #ef4444;
+   text-shadow: 0 0 8px #ef4444;
+}
+
+.badge-alarmas-item-nombre {
+   flex: 1;
+   color: #ddd;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+/* Checkbox de visto */
+.badge-alarmas-item-checkbox {
+   display: flex;
+   align-items: center;
+   gap: 4px;
+   cursor: pointer;
+   font-size: 10px;
+   color: #888;
+}
+
+.badge-alarmas-item-checkbox input {
+   width: 14px;
+   height: 14px;
+   cursor: pointer;
+   accent-color: #22c55e;
+}
+
+.badge-alarmas-item-checkbox-label {
+   user-select: none;
+}
+
+/* Boton marcar todas */
+.badge-alarmas-marcar-todas {
+   width: 100%;
+   margin-top: 10px;
+   padding: 8px;
+   background: rgba(34, 197, 94, 0.1);
+   border: 1px solid rgba(34, 197, 94, 0.3);
+   border-radius: 4px;
+   color: #22c55e;
+   font-size: 11px;
+   cursor: pointer;
+   transition: all 0.2s ease;
+}
+
+.badge-alarmas-marcar-todas:hover {
+   background: rgba(34, 197, 94, 0.2);
+}
+
+/* Scrollbar personalizado */
+.badge-alarmas-lista::-webkit-scrollbar {
+   width: 6px;
+}
+
+.badge-alarmas-lista::-webkit-scrollbar-track {
+   background: rgba(0, 0, 0, 0.2);
+   border-radius: 3px;
+}
+
+.badge-alarmas-lista::-webkit-scrollbar-thumb {
+   background: rgba(255, 255, 255, 0.15);
+   border-radius: 3px;
+}
+
+.badge-alarmas-lista::-webkit-scrollbar-thumb:hover {
+   background: rgba(255, 255, 255, 0.25);
+}
