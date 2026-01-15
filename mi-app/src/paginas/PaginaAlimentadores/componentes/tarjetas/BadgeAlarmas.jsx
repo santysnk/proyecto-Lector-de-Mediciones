@@ -185,7 +185,7 @@ const BadgeAlarmas = ({
                top: Math.max(10, posicionGlobo.top), // Evitar que salga por arriba
                left: Math.max(10, posicionGlobo.left),
                width: posicionGlobo.width,
-               zIndex: 10000,
+               zIndex: 100, // Menor que modales (1000+)
             }}
          >
             <div className="badge-alarmas-globo-contenido">

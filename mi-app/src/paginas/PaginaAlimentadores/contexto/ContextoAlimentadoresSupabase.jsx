@@ -299,6 +299,11 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
          obtenerContadorLecturas: medicionesHook.obtenerContadorLecturas,
          actualizarRegistros: medicionesHook.actualizarRegistros,
 
+         // Transformadores (TI/TV/Relaciones)
+         transformadores: transformadoresHook.transformadores,
+         obtenerTransformadorPorId: transformadoresHook.obtenerPorId,
+         transformadoresCargando: transformadoresHook.cargando,
+
          // Preferencias UI (gaps)
          gapsPorTarjeta: preferenciasHook.gapsPorTarjeta,
          gapsPorFila: preferenciasHook.gapsPorFila,
@@ -362,6 +367,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
          medicionesHook,
          preferenciasHook,
          preferenciasVisualesHook,
+         transformadoresHook,
          lecturasTarjetas,
          configuracionSeleccionada,
          cargando,

@@ -354,7 +354,7 @@ const VistaAlimentadores = () => {
                   workspaceId={configuracionSeleccionada?.id}
                   elementoArrastrandoId={elementoArrastrandoId}
                   onAbrirConfiguracion={abrirModalEditarAlim}
-                  onAbrirHistorial={(puestoId, alim) => abrirVentana(alim, alim.card_design)}
+                  onAbrirHistorial={(puestoId, alim) => abrirVentana(alim)}
                   onDragStart={handleDragStartAlim}
                   onDragOver={alPasarPorEncima}
                   onDrop={handleDropAlim}
