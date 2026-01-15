@@ -115,7 +115,7 @@ export const usePlantillasRele = (workspaceId) => {
 
    /**
     * Crea una nueva plantilla
-    * @param {Object} datos - { nombre, descripcion, funcionalidades, etiquetasBits, plantillaEtiquetasId }
+    * @param {Object} datos - { nombre, descripcion, funcionalidades }
     */
    const crearPlantilla = useCallback(
       async (datos) => {
@@ -127,8 +127,9 @@ export const usePlantillasRele = (workspaceId) => {
                nombre: datos.nombre?.trim(),
                descripcion: datos.descripcion?.trim() || null,
                funcionalidades: datos.funcionalidades || {},
-               etiquetas_bits: datos.etiquetasBits || {},
-               plantilla_etiquetas_id: datos.plantillaEtiquetasId || null,
+               // Etiquetas de bits ahora están embebidas en cada funcionalidad
+               etiquetas_bits: {},
+               plantilla_etiquetas_id: null,
             });
 
             if (resultado?.plantilla) {
@@ -160,8 +161,9 @@ export const usePlantillasRele = (workspaceId) => {
                nombre: datos.nombre?.trim(),
                descripcion: datos.descripcion?.trim(),
                funcionalidades: datos.funcionalidades,
-               etiquetas_bits: datos.etiquetasBits,
-               plantilla_etiquetas_id: datos.plantillaEtiquetasId,
+               // Limpiar etiquetas globales (ahora están embebidas en cada funcionalidad)
+               etiquetas_bits: {},
+               plantilla_etiquetas_id: null,
             });
 
             if (resultado?.plantilla) {

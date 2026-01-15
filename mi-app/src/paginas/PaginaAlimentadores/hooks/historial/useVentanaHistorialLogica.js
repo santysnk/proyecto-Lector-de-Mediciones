@@ -287,7 +287,6 @@ export const useVentanaHistorialLogica = ({
    const {
       funcionalidades,
       plantilla,
-      etiquetasBits,
       cargando: cargandoFuncionalidades,
       error: errorFuncionalidades,
    } = useFuncionalidadesRegistrador(registradorSeleccionadoId);
@@ -332,6 +331,11 @@ export const useVentanaHistorialLogica = ({
       if (!funcionalidadSeleccionadaId || !funcionalidades.length) return null;
       return funcionalidades.find((f) => f.id === funcionalidadSeleccionadaId);
    }, [funcionalidades, funcionalidadSeleccionadaId]);
+
+   // Etiquetas de bits de la funcionalidad seleccionada
+   const etiquetasBits = useMemo(() => {
+      return funcionalidadSeleccionada?.etiquetasBits || {};
+   }, [funcionalidadSeleccionada]);
 
    // Agrupar funcionalidades por categoría para el selector
    const funcionalidadesPorCategoria = useMemo(() => {

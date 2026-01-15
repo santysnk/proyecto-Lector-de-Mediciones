@@ -197,6 +197,8 @@ export function useFuncionalidadesPlantilla() {
                orden: data.orden ?? Infinity,
                // Preservar configHistorial o usar defaults
                configHistorial: data.configHistorial || { ...DEFAULT_CONFIG_HISTORIAL },
+               // Preservar etiquetasBits si existe (para funcionalidades de estados/alarmas)
+               etiquetasBits: data.etiquetasBits || null,
             };
          }
       );
@@ -214,7 +216,7 @@ export function useFuncionalidadesPlantilla() {
       const funcParaGuardar = {};
       funcionalidades.forEach((func, index) => {
          if (func.habilitado) {
-            funcParaGuardar[func.id] = {
+            const funcData = {
                nombre: func.nombre,
                categoria: func.categoria || "mediciones",
                habilitado: true,
@@ -224,6 +226,11 @@ export function useFuncionalidadesPlantilla() {
                // Incluir configHistorial
                configHistorial: func.configHistorial || DEFAULT_CONFIG_HISTORIAL,
             };
+            // Incluir etiquetasBits solo si tiene contenido
+            if (func.etiquetasBits && Object.keys(func.etiquetasBits).length > 0) {
+               funcData.etiquetasBits = func.etiquetasBits;
+            }
+            funcParaGuardar[func.id] = funcData;
          }
       });
       return funcParaGuardar;
@@ -255,6 +262,110 @@ export function useFuncionalidadesPlantilla() {
                   [campo]: valor,
                },
             };
+         })
+      );
+   }, []);
+
+   /**
+    * Cambiar etiqueta de un bit específico de una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad
+    * @param {number} bitIndex - Índice del bit (0-15)
+    * @param {string} texto - Texto de la etiqueta
+    */
+   const cambiarEtiquetaBitFunc = useCallback((funcId, bitIndex, texto) => {
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            const etiquetasBits = { ...(func.etiquetasBits || {}) };
+            if (!texto.trim()) {
+               // Si está vacío, eliminar la entrada
+               delete etiquetasBits[bitIndex];
+            } else {
+               etiquetasBits[bitIndex] = {
+                  ...(etiquetasBits[bitIndex] || { severidad: "info" }),
+                  texto: texto,
+               };
+            }
+            return { ...func, etiquetasBits };
+         })
+      );
+   }, []);
+
+   /**
+    * Cambiar severidad de un bit específico de una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad
+    * @param {number} bitIndex - Índice del bit (0-15)
+    * @param {string} severidad - Severidad (alarma, warning, info, estado)
+    */
+   const cambiarSeveridadBitFunc = useCallback((funcId, bitIndex, severidad) => {
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            const etiquetasBits = { ...(func.etiquetasBits || {}) };
+            etiquetasBits[bitIndex] = {
+               ...(etiquetasBits[bitIndex] || { texto: "" }),
+               severidad: severidad,
+            };
+            return { ...func, etiquetasBits };
+         })
+      );
+   }, []);
+
+   /**
+    * Agregar un nuevo bit a las etiquetas de una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad
+    */
+   const agregarBitFunc = useCallback((funcId) => {
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            const etiquetasBits = { ...(func.etiquetasBits || {}) };
+            // Encontrar el siguiente índice disponible
+            const indicesExistentes = Object.keys(etiquetasBits).map(Number);
+            const siguienteIndice = indicesExistentes.length > 0
+               ? Math.max(...indicesExistentes) + 1
+               : 0;
+            etiquetasBits[siguienteIndice] = { texto: "", severidad: "info" };
+            return { ...func, etiquetasBits };
+         })
+      );
+   }, []);
+
+   /**
+    * Quitar el último bit de las etiquetas de una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad
+    */
+   const quitarBitFunc = useCallback((funcId) => {
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            const etiquetasBits = { ...(func.etiquetasBits || {}) };
+            const indicesExistentes = Object.keys(etiquetasBits).map(Number);
+            if (indicesExistentes.length === 0) return func;
+            // Eliminar el bit con índice más alto
+            const maxIndice = Math.max(...indicesExistentes);
+            delete etiquetasBits[maxIndice];
+            return { ...func, etiquetasBits };
+         })
+      );
+   }, []);
+
+   /**
+    * Pegar etiquetas de bits copiadas a una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad destino
+    * @param {Object} etiquetasCopiadas - Objeto con las etiquetas a pegar
+    */
+   const pegarEtiquetasBitsFunc = useCallback((funcId, etiquetasCopiadas) => {
+      if (!etiquetasCopiadas || Object.keys(etiquetasCopiadas).length === 0) return;
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            // Copiar profundamente las etiquetas
+            const nuevasEtiquetas = {};
+            Object.entries(etiquetasCopiadas).forEach(([indice, config]) => {
+               nuevasEtiquetas[indice] = { ...config };
+            });
+            return { ...func, etiquetasBits: nuevasEtiquetas };
          })
       );
    }, []);
@@ -292,5 +403,11 @@ export function useFuncionalidadesPlantilla() {
       resetear,
       // Configuración de historial
       cambiarConfigHistorial,
+      // Etiquetas de bits por funcionalidad
+      cambiarEtiquetaBitFunc,
+      cambiarSeveridadBitFunc,
+      agregarBitFunc,
+      quitarBitFunc,
+      pegarEtiquetasBitsFunc,
    };
 }

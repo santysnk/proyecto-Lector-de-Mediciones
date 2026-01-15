@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { SEVERIDADES_DISPONIBLES, PLANTILLAS_ETIQUETAS_LEDS } from "../../../../utilidades/interpreteRegistrosREF615";
+import { SEVERIDADES_DISPONIBLES } from "../../../../utilidades/interpreteRegistrosREF615";
 import { useTransformadores } from "../../../../hooks/mediciones";
-import { useEtiquetasBits, useFuncionalidadesPlantilla, CATEGORIAS_FUNCIONALIDADES } from "../../../../hooks/rele";
+import { useFuncionalidadesPlantilla, CATEGORIAS_FUNCIONALIDADES } from "../../../../hooks/rele";
 import DropdownTransformador from "../DropdownTransformador";
 import "./ModalPlantillasRele.css";
 
@@ -31,9 +31,6 @@ const ModalPlantillasRele = ({
    // Hook de transformadores
    const { obtenerTIs, obtenerTVs, obtenerRelaciones, recargar: recargarTransformadores } = useTransformadores(workspaceId);
 
-   // Hook de etiquetas de bits
-   const etiquetasHook = useEtiquetasBits();
-
    // Hook de funcionalidades
    const funcionalidadesHook = useFuncionalidadesPlantilla();
 
@@ -43,6 +40,9 @@ const ModalPlantillasRele = ({
    const [descripcion, setDescripcion] = useState("");
    const [plantillaSeleccionada, setPlantillaSeleccionada] = useState(null);
    const [error, setError] = useState("");
+
+   // Portapapeles para copiar/pegar etiquetas de bits entre funcionalidades
+   const [portapapelesEtiquetasBits, setPortapapelesEtiquetasBits] = useState(null);
 
    // Recargar transformadores cuando el modal se abre
    useEffect(() => {
@@ -59,10 +59,6 @@ const ModalPlantillasRele = ({
          setNombre(plantillaEditando.nombre);
          setDescripcion(plantillaEditando.descripcion || "");
          funcionalidadesHook.cargarDesdeObjeto(plantillaEditando.funcionalidades);
-         etiquetasHook.cargarDesdeObjeto(
-            plantillaEditando.etiquetasBits,
-            plantillaEditando.plantillaEtiquetasId
-         );
       }
    }, [plantillaEditando, abierto]);
 
@@ -80,7 +76,6 @@ const ModalPlantillasRele = ({
       setPlantillaSeleccionada(null);
       setError("");
       funcionalidadesHook.resetear();
-      etiquetasHook.resetear();
    };
 
    const iniciarCreacion = () => {
@@ -93,24 +88,11 @@ const ModalPlantillasRele = ({
       setNombre(plantilla.nombre);
       setDescripcion(plantilla.descripcion || "");
       funcionalidadesHook.cargarDesdeObjeto(plantilla.funcionalidades);
-      etiquetasHook.cargarDesdeObjeto(
-         plantilla.etiquetasBits,
-         plantilla.plantillaEtiquetasId
-      );
       setModo("editar");
    };
 
    const handleAgregarFuncionalidad = () => {
       const resultado = funcionalidadesHook.agregarFuncionalidad();
-      if (!resultado.exito) {
-         setError(resultado.error);
-      } else {
-         setError("");
-      }
-   };
-
-   const handleGuardarPlantillaEtiquetas = () => {
-      const resultado = etiquetasHook.guardarPlantillaPersonalizada();
       if (!resultado.exito) {
          setError(resultado.error);
       } else {
@@ -146,8 +128,6 @@ const ModalPlantillasRele = ({
          nombre: nombre.trim(),
          descripcion: descripcion.trim(),
          funcionalidades: funcionalidadesHook.obtenerParaGuardar(),
-         etiquetasBits: etiquetasHook.obtenerEtiquetasLimpias(),
-         plantillaEtiquetasId: etiquetasHook.plantillaSeleccionada || null,
       };
 
       if (modo === "crear") {
@@ -157,6 +137,27 @@ const ModalPlantillasRele = ({
          const exito = onActualizar(plantillaSeleccionada.id, datos);
          if (exito) resetFormulario();
       }
+   };
+
+   /**
+    * Guardar sin cerrar el modal (para botones de guardado parcial como etiquetas de bits)
+    * Retorna true si se guardó exitosamente
+    */
+   const handleGuardarSinCerrar = async () => {
+      if (!validarFormulario()) return false;
+
+      const datos = {
+         nombre: nombre.trim(),
+         descripcion: descripcion.trim(),
+         funcionalidades: funcionalidadesHook.obtenerParaGuardar(),
+      };
+
+      if (modo === "editar" && plantillaSeleccionada) {
+         // Llamar a onActualizar pero NO resetear el formulario
+         const exito = onActualizar(plantillaSeleccionada.id, datos);
+         return exito;
+      }
+      return false;
    };
 
    const handleEliminar = (plantilla) => {
@@ -190,7 +191,6 @@ const ModalPlantillasRele = ({
                      onEditar={iniciarEdicion}
                      onEliminar={handleEliminar}
                      contarFuncionalidades={funcionalidadesHook.contarFuncionalidades}
-                     obtenerNombrePlantillaEtiquetas={etiquetasHook.obtenerNombrePlantilla}
                   />
                )}
 
@@ -214,11 +214,17 @@ const ModalPlantillasRele = ({
                      onCambiarValorRegistro={funcionalidadesHook.cambiarValorRegistro}
                      onCambiarTransformadorRegistro={funcionalidadesHook.cambiarTransformadorRegistro}
                      onCambiarConfigHistorial={funcionalidadesHook.cambiarConfigHistorial}
+                     onCambiarEtiquetaBitFunc={funcionalidadesHook.cambiarEtiquetaBitFunc}
+                     onCambiarSeveridadBitFunc={funcionalidadesHook.cambiarSeveridadBitFunc}
+                     onAgregarBitFunc={funcionalidadesHook.agregarBitFunc}
+                     onQuitarBitFunc={funcionalidadesHook.quitarBitFunc}
+                     onPegarEtiquetasBitsFunc={funcionalidadesHook.pegarEtiquetasBitsFunc}
+                     portapapelesEtiquetasBits={portapapelesEtiquetasBits}
+                     setPortapapelesEtiquetasBits={setPortapapelesEtiquetasBits}
+                     onGuardarSinCerrar={handleGuardarSinCerrar}
                      obtenerTIs={obtenerTIs}
                      obtenerTVs={obtenerTVs}
                      obtenerRelaciones={obtenerRelaciones}
-                     etiquetasHook={etiquetasHook}
-                     onGuardarPlantillaEtiquetas={handleGuardarPlantillaEtiquetas}
                   />
                )}
             </div>
@@ -254,7 +260,6 @@ const ListaPlantillas = ({
    onEditar,
    onEliminar,
    contarFuncionalidades,
-   obtenerNombrePlantillaEtiquetas
 }) => (
    <>
       <button className="modal-plantillas-btn-crear" onClick={onCrear}>
@@ -278,9 +283,6 @@ const ListaPlantillas = ({
                      )}
                      <span className="modal-plantillas-item-func">
                         {contarFuncionalidades(plantilla)} funcionalidades
-                        {obtenerNombrePlantillaEtiquetas(plantilla.plantillaEtiquetasId) && (
-                           <> · Panel: {obtenerNombrePlantillaEtiquetas(plantilla.plantillaEtiquetasId)}</>
-                        )}
                      </span>
                   </div>
                   <div className="modal-plantillas-item-acciones">
@@ -319,11 +321,17 @@ const FormularioPlantilla = ({
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
    onCambiarConfigHistorial,
+   onCambiarEtiquetaBitFunc,
+   onCambiarSeveridadBitFunc,
+   onAgregarBitFunc,
+   onQuitarBitFunc,
+   onPegarEtiquetasBitsFunc,
+   portapapelesEtiquetasBits,
+   setPortapapelesEtiquetasBits,
+   onGuardarSinCerrar,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
-   etiquetasHook,
-   onGuardarPlantillaEtiquetas,
 }) => (
    <div className="modal-plantillas-formulario">
       {error && <div className="modal-plantillas-error">{error}</div>}
@@ -367,6 +375,14 @@ const FormularioPlantilla = ({
             onCambiarValorRegistro={onCambiarValorRegistro}
             onCambiarTransformadorRegistro={onCambiarTransformadorRegistro}
             onCambiarConfigHistorial={onCambiarConfigHistorial}
+            onCambiarEtiquetaBitFunc={onCambiarEtiquetaBitFunc}
+            onCambiarSeveridadBitFunc={onCambiarSeveridadBitFunc}
+            onAgregarBitFunc={onAgregarBitFunc}
+            onQuitarBitFunc={onQuitarBitFunc}
+            onPegarEtiquetasBitsFunc={onPegarEtiquetasBitsFunc}
+            portapapelesEtiquetasBits={portapapelesEtiquetasBits}
+            setPortapapelesEtiquetasBits={setPortapapelesEtiquetasBits}
+            onGuardarSinCerrar={onGuardarSinCerrar}
             obtenerTIs={obtenerTIs}
             obtenerTVs={obtenerTVs}
             obtenerRelaciones={obtenerRelaciones}
@@ -377,12 +393,6 @@ const FormularioPlantilla = ({
             <p className="modal-plantillas-hint">Usa el formulario de arriba para agregar funcionalidades</p>
          </div>
       )}
-
-      {/* Sección de Etiquetas de Bits (LEDs) */}
-      <SeccionEtiquetasBits
-         etiquetasHook={etiquetasHook}
-         onGuardarPlantilla={onGuardarPlantillaEtiquetas}
-      />
    </div>
 );
 
@@ -445,6 +455,14 @@ const SeccionFuncionalidades = ({
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
    onCambiarConfigHistorial,
+   onCambiarEtiquetaBitFunc,
+   onCambiarSeveridadBitFunc,
+   onAgregarBitFunc,
+   onQuitarBitFunc,
+   onPegarEtiquetasBitsFunc,
+   portapapelesEtiquetasBits,
+   setPortapapelesEtiquetasBits,
+   onGuardarSinCerrar,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
@@ -476,6 +494,14 @@ const SeccionFuncionalidades = ({
                         onCambiarValorRegistro={onCambiarValorRegistro}
                         onCambiarTransformadorRegistro={onCambiarTransformadorRegistro}
                         onCambiarConfigHistorial={onCambiarConfigHistorial}
+                        onCambiarEtiquetaBitFunc={onCambiarEtiquetaBitFunc}
+                        onCambiarSeveridadBitFunc={onCambiarSeveridadBitFunc}
+                        onAgregarBitFunc={onAgregarBitFunc}
+                        onQuitarBitFunc={onQuitarBitFunc}
+                        onPegarEtiquetasBitsFunc={onPegarEtiquetasBitsFunc}
+                        portapapelesEtiquetasBits={portapapelesEtiquetasBits}
+                        setPortapapelesEtiquetasBits={setPortapapelesEtiquetasBits}
+                        onGuardarSinCerrar={onGuardarSinCerrar}
                         obtenerTIs={obtenerTIs}
                         obtenerTVs={obtenerTVs}
                         obtenerRelaciones={obtenerRelaciones}
@@ -502,12 +528,53 @@ const TarjetaFuncionalidad = ({
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
    onCambiarConfigHistorial,
+   onCambiarEtiquetaBitFunc,
+   onCambiarSeveridadBitFunc,
+   onAgregarBitFunc,
+   onQuitarBitFunc,
+   onPegarEtiquetasBitsFunc,
+   portapapelesEtiquetasBits,
+   setPortapapelesEtiquetasBits,
+   onGuardarSinCerrar,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
 }) => {
+   const [etiquetasBitsAbierto, setEtiquetasBitsAbierto] = useState(false);
+   const [guardando, setGuardando] = useState(false);
    const configHistorial = func.configHistorial || {};
    const tieneMultiplesRegistros = func.registros && func.registros.length > 1;
+   const tieneTimelineBits = configHistorial.timelineBits === true;
+   const etiquetasBits = func.etiquetasBits || {};
+   // Obtener los índices de bits existentes, ordenados numéricamente
+   const indicesBits = Object.keys(etiquetasBits).map(Number).sort((a, b) => a - b);
+   const cantidadEtiquetasConfiguradas = indicesBits.filter(k => etiquetasBits[k]?.texto).length;
+   // Verificar si hay algo en el portapapeles
+   const hayPortapapeles = portapapelesEtiquetasBits && Object.keys(portapapelesEtiquetasBits).length > 0;
+
+   const handleGuardarEtiquetas = async () => {
+      setGuardando(true);
+      try {
+         await onGuardarSinCerrar();
+      } finally {
+         setGuardando(false);
+      }
+   };
+
+   const handleCopiarEtiquetas = () => {
+      // Copiar profundamente las etiquetas actuales
+      const copia = {};
+      Object.entries(etiquetasBits).forEach(([indice, config]) => {
+         copia[indice] = { ...config };
+      });
+      setPortapapelesEtiquetasBits(copia);
+   };
+
+   const handlePegarEtiquetas = () => {
+      if (hayPortapapeles) {
+         onPegarEtiquetasBitsFunc(func.id, portapapelesEtiquetasBits);
+      }
+   };
 
    return (
       <div className={`modal-plantillas-func-card ${func.habilitado ? "activo" : "inactivo"}`}>
@@ -620,154 +687,108 @@ const TarjetaFuncionalidad = ({
                )}
             </div>
          </div>
+
+         {/* Sección de etiquetas de bits (solo si timelineBits está activo) */}
+         {tieneTimelineBits && func.habilitado && (
+            <div className="modal-plantillas-etiquetas-bits-func">
+               <div
+                  className="modal-plantillas-etiquetas-bits-header"
+                  onClick={() => setEtiquetasBitsAbierto(!etiquetasBitsAbierto)}
+               >
+                  <span className={`modal-plantillas-chevron-small ${etiquetasBitsAbierto ? "abierto" : ""}`}>▶</span>
+                  <span>Etiquetas de bits</span>
+                  {indicesBits.length > 0 && (
+                     <span className="modal-plantillas-badge-small">{indicesBits.length}</span>
+                  )}
+               </div>
+
+               {etiquetasBitsAbierto && (
+                  <div className="modal-plantillas-etiquetas-bits-contenido">
+                     {indicesBits.length === 0 ? (
+                        <div className="modal-plantillas-bits-vacio">
+                           No hay bits configurados. Usa el botón "+ Agregar bit" para comenzar.
+                        </div>
+                     ) : (
+                        indicesBits.map((bit) => (
+                           <div key={bit} className="modal-plantillas-bit-item-func">
+                              <span className="modal-plantillas-bit-numero-func">Bit {bit}:</span>
+                              <input
+                                 type="text"
+                                 className="modal-plantillas-bit-etiqueta-func"
+                                 value={etiquetasBits[bit]?.texto || ""}
+                                 onChange={(e) => onCambiarEtiquetaBitFunc(func.id, bit, e.target.value)}
+                                 placeholder={`Sin etiqueta`}
+                              />
+                              <select
+                                 className={`modal-plantillas-bit-severidad-func severidad-${etiquetasBits[bit]?.severidad || "info"}`}
+                                 value={etiquetasBits[bit]?.severidad || "info"}
+                                 onChange={(e) => onCambiarSeveridadBitFunc(func.id, bit, e.target.value)}
+                              >
+                                 {SEVERIDADES_DISPONIBLES.map((sev) => (
+                                    <option key={sev.id} value={sev.id}>{sev.nombre}</option>
+                                 ))}
+                              </select>
+                           </div>
+                        ))
+                     )}
+
+                     {/* Botones de agregar/quitar bit y guardar */}
+                     <div className="modal-plantillas-bits-acciones">
+                        <div className="modal-plantillas-bits-botones">
+                           <button
+                              type="button"
+                              className="modal-plantillas-btn-bit modal-plantillas-btn-agregar-bit"
+                              onClick={() => onAgregarBitFunc(func.id)}
+                              title="Agregar un nuevo bit"
+                           >
+                              + Agregar bit
+                           </button>
+                           <button
+                              type="button"
+                              className="modal-plantillas-btn-bit modal-plantillas-btn-quitar-bit"
+                              onClick={() => onQuitarBitFunc(func.id)}
+                              disabled={indicesBits.length === 0}
+                              title="Quitar el último bit"
+                           >
+                              - Quitar bit
+                           </button>
+                        </div>
+                        <div className="modal-plantillas-bits-botones-derecha">
+                           <button
+                              type="button"
+                              className="modal-plantillas-btn-bit modal-plantillas-btn-copiar-bits"
+                              onClick={handleCopiarEtiquetas}
+                              disabled={indicesBits.length === 0}
+                              title="Copiar etiquetas de bits"
+                           >
+                              Copiar
+                           </button>
+                           <button
+                              type="button"
+                              className="modal-plantillas-btn-bit modal-plantillas-btn-pegar-bits"
+                              onClick={handlePegarEtiquetas}
+                              disabled={!hayPortapapeles}
+                              title={hayPortapapeles ? `Pegar ${Object.keys(portapapelesEtiquetasBits).length} etiquetas` : "No hay etiquetas copiadas"}
+                           >
+                              Pegar
+                           </button>
+                           <button
+                              type="button"
+                              className="modal-plantillas-btn-guardar-bits"
+                              onClick={handleGuardarEtiquetas}
+                              disabled={guardando}
+                              title="Guardar etiquetas sin cerrar el modal"
+                           >
+                              {guardando ? "Guardando..." : "Guardar"}
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               )}
+            </div>
+         )}
       </div>
    );
 };
-
-/**
- * Sección de etiquetas de bits (LEDs)
- */
-const SeccionEtiquetasBits = ({ etiquetasHook, onGuardarPlantilla }) => (
-   <div className="modal-plantillas-seccion modal-plantillas-seccion-etiquetas">
-      <div
-         className="modal-plantillas-seccion-header-colapsable"
-         onClick={() => etiquetasHook.setSeccionAbierta(!etiquetasHook.seccionAbierta)}
-      >
-         <h4>
-            <span className={`modal-plantillas-chevron ${etiquetasHook.seccionAbierta ? "abierto" : ""}`}>▶</span>
-            Etiquetas de LEDs (Registro 172)
-            {etiquetasHook.contarEtiquetasConfiguradas() > 0 && (
-               <span className="modal-plantillas-badge">{etiquetasHook.contarEtiquetasConfiguradas()}</span>
-            )}
-         </h4>
-         <span className="modal-plantillas-hint-inline">Define qué significa cada LED del panel frontal</span>
-      </div>
-
-      {etiquetasHook.seccionAbierta && (
-         <div className="modal-plantillas-etiquetas-contenido">
-            {/* Selector de plantilla */}
-            <div className="modal-plantillas-etiquetas-acciones">
-               <label>Plantilla:</label>
-               <select
-                  onChange={(e) => {
-                     if (e.target.value === "__nueva__") {
-                        etiquetasHook.iniciarNuevaPlantilla();
-                     } else if (e.target.value) {
-                        etiquetasHook.aplicarPlantilla(e.target.value);
-                     } else {
-                        etiquetasHook.limpiarEtiquetas();
-                     }
-                  }}
-                  value={etiquetasHook.modoNuevaPlantilla ? "__nueva__" : etiquetasHook.plantillaSeleccionada}
-               >
-                  <option value="">Seleccionar...</option>
-                  <option value="__nueva__">+ Nueva plantilla...</option>
-                  <optgroup label="Predefinidas">
-                     {Object.entries(PLANTILLAS_ETIQUETAS_LEDS).map(([key, plantilla]) => (
-                        <option key={key} value={key}>{plantilla.nombre}</option>
-                     ))}
-                  </optgroup>
-                  {Object.keys(etiquetasHook.plantillasPersonalizadas).length > 0 && (
-                     <optgroup label="Mis plantillas">
-                        {Object.entries(etiquetasHook.plantillasPersonalizadas).map(([key, plantilla]) => (
-                           <option key={key} value={key}>{plantilla.nombre}</option>
-                        ))}
-                     </optgroup>
-                  )}
-               </select>
-               {etiquetasHook.contarEtiquetasConfiguradas() > 0 && !etiquetasHook.modoNuevaPlantilla && (
-                  <button type="button" className="modal-plantillas-btn-limpiar" onClick={etiquetasHook.limpiarEtiquetas}>
-                     Limpiar
-                  </button>
-               )}
-            </div>
-
-            {/* Formulario para nueva plantilla */}
-            {etiquetasHook.modoNuevaPlantilla && (
-               <div className="modal-plantillas-nueva-plantilla-etiquetas">
-                  <div className="modal-plantillas-nueva-plantilla-header">
-                     <input
-                        type="text"
-                        className="modal-plantillas-nueva-plantilla-nombre"
-                        value={etiquetasHook.nombreNuevaPlantilla}
-                        onChange={(e) => etiquetasHook.setNombreNuevaPlantilla(e.target.value)}
-                        placeholder="Nombre de la plantilla..."
-                     />
-                     <div className="modal-plantillas-nueva-plantilla-botones">
-                        <button type="button" className="modal-plantillas-btn-guardar-etiquetas" onClick={onGuardarPlantilla} title="Guardar plantilla">
-                           Guardar
-                        </button>
-                        <button type="button" className="modal-plantillas-btn-cancelar-etiquetas" onClick={etiquetasHook.cancelarNuevaPlantilla} title="Cancelar">
-                           Cancelar
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            )}
-
-            {/* Lista de bits */}
-            <div className="modal-plantillas-bits-lista">
-               {Array.from({ length: etiquetasHook.cantidadBits }, (_, bit) => (
-                  <div key={bit} className="modal-plantillas-bit-item">
-                     <span className="modal-plantillas-bit-numero">Bit {bit}:</span>
-                     <input
-                        type="text"
-                        className="modal-plantillas-bit-etiqueta"
-                        value={etiquetasHook.etiquetasBits[bit]?.texto || ""}
-                        onChange={(e) => etiquetasHook.cambiarEtiquetaBit(bit, e.target.value)}
-                        placeholder={`LED ${bit + 1} (sin etiqueta)`}
-                     />
-                     <select
-                        className={`modal-plantillas-bit-severidad severidad-${etiquetasHook.etiquetasBits[bit]?.severidad || "info"}`}
-                        value={etiquetasHook.etiquetasBits[bit]?.severidad || "info"}
-                        onChange={(e) => etiquetasHook.cambiarSeveridadBit(bit, e.target.value)}
-                     >
-                        {SEVERIDADES_DISPONIBLES.map((sev) => (
-                           <option key={sev.id} value={sev.id}>{sev.nombre}</option>
-                        ))}
-                     </select>
-                  </div>
-               ))}
-            </div>
-
-            {/* Botones agregar/quitar bits */}
-            {(etiquetasHook.modoNuevaPlantilla || etiquetasHook.contarEtiquetasConfiguradas() > 0) && (
-               <div className="modal-plantillas-bits-acciones">
-                  <button type="button" className="modal-plantillas-btn-agregar-bit" onClick={etiquetasHook.agregarFilaBit} title="Agregar fila">
-                     + Agregar bit
-                  </button>
-                  {etiquetasHook.cantidadBits > 1 && (
-                     <button type="button" className="modal-plantillas-btn-quitar-bit" onClick={etiquetasHook.quitarFilaBit} title="Quitar última fila">
-                        − Quitar bit
-                     </button>
-                  )}
-               </div>
-            )}
-
-            {/* Plantillas personalizadas guardadas */}
-            {Object.keys(etiquetasHook.plantillasPersonalizadas).length > 0 && !etiquetasHook.modoNuevaPlantilla && (
-               <div className="modal-plantillas-etiquetas-guardadas">
-                  <span className="modal-plantillas-etiquetas-guardadas-label">Mis plantillas guardadas:</span>
-                  <div className="modal-plantillas-etiquetas-guardadas-lista">
-                     {Object.entries(etiquetasHook.plantillasPersonalizadas).map(([key, plantilla]) => (
-                        <div key={key} className="modal-plantillas-etiqueta-guardada">
-                           <span>{plantilla.nombre}</span>
-                           <button
-                              type="button"
-                              className="modal-plantillas-btn-eliminar-etiqueta"
-                              onClick={() => etiquetasHook.eliminarPlantillaPersonalizada(key)}
-                              title="Eliminar plantilla"
-                           >
-                              ×
-                           </button>
-                        </div>
-                     ))}
-                  </div>
-               </div>
-            )}
-         </div>
-      )}
-   </div>
-);
 
 export default ModalPlantillasRele;
