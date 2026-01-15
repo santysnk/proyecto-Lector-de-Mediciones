@@ -1,0 +1,218 @@
+/**
+ * Estilos para el componente TimelineAlarmas
+ * Timeline visual de bits activos/alarmas
+ */
+
+.timeline-alarmas {
+   display: flex;
+   flex-direction: column;
+   height: 100%;
+   padding: 1rem;
+   overflow-y: auto;
+   background: var(--color-bg-primario, #ffffff);
+}
+
+.timeline-alarmas--vacio,
+.timeline-alarmas--sin-alarmas {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   color: var(--color-texto-secundario, #6b7280);
+   font-size: 0.9rem;
+}
+
+/* Leyenda de severidades */
+.timeline-leyenda {
+   display: flex;
+   gap: 1rem;
+   margin-bottom: 1rem;
+   padding-bottom: 0.5rem;
+   border-bottom: 1px solid var(--color-borde, #e5e7eb);
+   flex-wrap: wrap;
+}
+
+.timeline-leyenda-item {
+   display: flex;
+   align-items: center;
+   font-size: 0.75rem;
+   color: var(--color-texto-secundario, #6b7280);
+}
+
+.timeline-leyenda-item::before {
+   content: "";
+   display: inline-block;
+   width: 12px;
+   height: 12px;
+   border-radius: 2px;
+   margin-right: 0.35rem;
+}
+
+.timeline-leyenda-item--alarma::before {
+   background: var(--color-alarma, #ef4444);
+}
+
+.timeline-leyenda-item--warning::before {
+   background: var(--color-warning, #f59e0b);
+}
+
+.timeline-leyenda-item--info::before {
+   background: var(--color-info, #3b82f6);
+}
+
+.timeline-leyenda-item--estado::before {
+   background: var(--color-estado, #6b7280);
+}
+
+/* Contenedor de filas */
+.timeline-filas {
+   flex: 1;
+   display: flex;
+   flex-direction: column;
+   gap: 0.5rem;
+   overflow-y: auto;
+   min-height: 0;
+}
+
+/* Fila individual */
+.timeline-fila {
+   display: flex;
+   align-items: center;
+   height: 2rem;
+   min-height: 2rem;
+}
+
+.timeline-etiqueta {
+   width: 140px;
+   min-width: 140px;
+   font-size: 0.8rem;
+   white-space: nowrap;
+   overflow: hidden;
+   text-overflow: ellipsis;
+   padding-right: 0.5rem;
+   color: var(--color-texto-primario, #1f2937);
+}
+
+/* Barra del timeline */
+.timeline-barra {
+   flex: 1;
+   height: 1.5rem;
+   background: var(--color-bg-secundario, #f3f4f6);
+   border-radius: 4px;
+   position: relative;
+   overflow: hidden;
+}
+
+/* Segmento activo */
+.timeline-segmento {
+   position: absolute;
+   height: 100%;
+   border-radius: 2px;
+   cursor: pointer;
+   transition: opacity 0.15s ease;
+}
+
+.timeline-segmento:hover {
+   opacity: 0.85;
+}
+
+.timeline-segmento--alarma {
+   background: var(--color-alarma, #ef4444);
+}
+
+.timeline-segmento--warning {
+   background: var(--color-warning, #f59e0b);
+}
+
+.timeline-segmento--info {
+   background: var(--color-info, #3b82f6);
+}
+
+.timeline-segmento--estado {
+   background: var(--color-estado, #6b7280);
+}
+
+/* Eje de tiempo */
+.timeline-eje-tiempo {
+   position: relative;
+   height: 1.5rem;
+   margin-top: 0.75rem;
+   margin-left: 140px; /* Alinear con las barras */
+   border-top: 1px solid var(--color-borde, #e5e7eb);
+}
+
+.timeline-marca-tiempo {
+   position: absolute;
+   transform: translateX(-50%);
+   font-size: 0.7rem;
+   color: var(--color-texto-secundario, #6b7280);
+   top: 0.25rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+   .timeline-alarmas {
+      padding: 0.75rem;
+   }
+
+   .timeline-etiqueta {
+      width: 100px;
+      min-width: 100px;
+      font-size: 0.75rem;
+   }
+
+   .timeline-eje-tiempo {
+      margin-left: 100px;
+   }
+
+   .timeline-leyenda {
+      gap: 0.5rem;
+   }
+
+   .timeline-leyenda-item {
+      font-size: 0.7rem;
+   }
+}
+
+@media (max-width: 480px) {
+   .timeline-etiqueta {
+      width: 80px;
+      min-width: 80px;
+      font-size: 0.7rem;
+   }
+
+   .timeline-eje-tiempo {
+      margin-left: 80px;
+   }
+
+   .timeline-fila {
+      height: 1.75rem;
+      min-height: 1.75rem;
+   }
+
+   .timeline-barra {
+      height: 1.25rem;
+   }
+}
+
+/* Tema oscuro */
+@media (prefers-color-scheme: dark) {
+   .timeline-alarmas {
+      background: var(--color-bg-primario, #1f2937);
+   }
+
+   .timeline-etiqueta {
+      color: var(--color-texto-primario, #f3f4f6);
+   }
+
+   .timeline-barra {
+      background: var(--color-bg-secundario, #374151);
+   }
+
+   .timeline-leyenda {
+      border-bottom-color: var(--color-borde, #4b5563);
+   }
+
+   .timeline-eje-tiempo {
+      border-top-color: var(--color-borde, #4b5563);
+   }
+}

@@ -99,3 +99,38 @@ export const CATEGORIAS_FUNCIONALIDADES = {
  * Key de localStorage para las plantillas de relé
  */
 export const STORAGE_KEY_PLANTILLAS = "rw-plantillas-rele";
+
+/**
+ * Modos de visualización para el historial
+ * Usados internamente para determinar cómo renderizar los datos
+ * El modo se calcula en base a los flags de configHistorial
+ */
+export const MODOS_HISTORIAL = {
+   /** Muestra cada registro como un tab separado (comportamiento por defecto) */
+   INDIVIDUAL: "individual",
+   /** Combina 2 registros en valor de 32 bits: (HIGH << 16) | LOW */
+   COMBINAR_32BITS: "combinar32bits",
+   /** Muestra timeline visual de bits activos (para estados/alarmas) */
+   BITS: "bits",
+};
+
+/**
+ * Configuración por defecto para el historial de una funcionalidad
+ * Se usa cuando la funcionalidad no tiene configHistorial definido
+ *
+ * Campos:
+ * - habilitado: Si se muestra en el selector de historial
+ * - mostrarPromedio: Agrega tab "Prom" que muestra promedio de todos los registros
+ * - combinar32bits: Combina registros HIGH/LOW en valor de 32 bits
+ * - timelineBits: Muestra timeline visual de bits activos (para estados/alarmas)
+ * - unidad: Unidad de medida para mostrar en gráfico
+ * - decimales: Precisión decimal
+ */
+export const DEFAULT_CONFIG_HISTORIAL = {
+   habilitado: true,
+   mostrarPromedio: false,
+   combinar32bits: false,
+   timelineBits: false,
+   unidad: null,
+   decimales: 2,
+};

@@ -213,6 +213,7 @@ const ModalPlantillasRele = ({
                      onCambiarEtiqueta={funcionalidadesHook.cambiarEtiquetaRegistro}
                      onCambiarValorRegistro={funcionalidadesHook.cambiarValorRegistro}
                      onCambiarTransformadorRegistro={funcionalidadesHook.cambiarTransformadorRegistro}
+                     onCambiarConfigHistorial={funcionalidadesHook.cambiarConfigHistorial}
                      obtenerTIs={obtenerTIs}
                      obtenerTVs={obtenerTVs}
                      obtenerRelaciones={obtenerRelaciones}
@@ -317,6 +318,7 @@ const FormularioPlantilla = ({
    onCambiarEtiqueta,
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
+   onCambiarConfigHistorial,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
@@ -364,6 +366,7 @@ const FormularioPlantilla = ({
             onCambiarEtiqueta={onCambiarEtiqueta}
             onCambiarValorRegistro={onCambiarValorRegistro}
             onCambiarTransformadorRegistro={onCambiarTransformadorRegistro}
+            onCambiarConfigHistorial={onCambiarConfigHistorial}
             obtenerTIs={obtenerTIs}
             obtenerTVs={obtenerTVs}
             obtenerRelaciones={obtenerRelaciones}
@@ -441,6 +444,7 @@ const SeccionFuncionalidades = ({
    onCambiarEtiqueta,
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
+   onCambiarConfigHistorial,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
@@ -471,6 +475,7 @@ const SeccionFuncionalidades = ({
                         onCambiarEtiqueta={onCambiarEtiqueta}
                         onCambiarValorRegistro={onCambiarValorRegistro}
                         onCambiarTransformadorRegistro={onCambiarTransformadorRegistro}
+                        onCambiarConfigHistorial={onCambiarConfigHistorial}
                         obtenerTIs={obtenerTIs}
                         obtenerTVs={obtenerTVs}
                         obtenerRelaciones={obtenerRelaciones}
@@ -496,63 +501,128 @@ const TarjetaFuncionalidad = ({
    onCambiarEtiqueta,
    onCambiarValorRegistro,
    onCambiarTransformadorRegistro,
+   onCambiarConfigHistorial,
    obtenerTIs,
    obtenerTVs,
    obtenerRelaciones,
-}) => (
-   <div className={`modal-plantillas-func-card ${func.habilitado ? "activo" : "inactivo"}`}>
-      <div className="modal-plantillas-func-header">
-         <label className="modal-plantillas-func-check">
-            <input
-               type="checkbox"
-               checked={func.habilitado}
-               onChange={() => onToggle(func.id)}
-            />
-            <span className="modal-plantillas-func-nombre">{func.nombre}</span>
-         </label>
-         <div className="modal-plantillas-func-acciones">
-            <button type="button" className="modal-plantillas-func-mover" onClick={() => onMoverArriba(func.id)} title="Mover arriba">▲</button>
-            <button type="button" className="modal-plantillas-func-mover" onClick={() => onMoverAbajo(func.id)} title="Mover abajo">▼</button>
-            <button type="button" className="modal-plantillas-func-eliminar" onClick={() => onEliminar(func.id)} title="Eliminar funcionalidad">×</button>
-         </div>
-      </div>
+}) => {
+   const configHistorial = func.configHistorial || {};
+   const tieneMultiplesRegistros = func.registros && func.registros.length > 1;
 
-      <div className="modal-plantillas-registros">
-         {func.registros.map((reg, index) => (
-            <div key={index} className="modal-plantillas-registro-item">
+   return (
+      <div className={`modal-plantillas-func-card ${func.habilitado ? "activo" : "inactivo"}`}>
+         <div className="modal-plantillas-func-header">
+            <label className="modal-plantillas-func-check">
                <input
-                  type="text"
-                  className="modal-plantillas-registro-etiqueta"
-                  value={reg.etiqueta}
-                  onChange={(e) => onCambiarEtiqueta(func.id, index, e.target.value)}
-                  placeholder={`Etiqueta ${index + 1}`}
-                  disabled={!func.habilitado}
+                  type="checkbox"
+                  checked={func.habilitado}
+                  onChange={() => onToggle(func.id)}
                />
-               <span className="modal-plantillas-registro-separador">→</span>
-               <input
-                  type="number"
-                  className="modal-plantillas-registro-valor"
-                  value={reg.valor}
-                  onChange={(e) => onCambiarValorRegistro(func.id, index, e.target.value)}
-                  placeholder={`${137 + index}`}
-                  disabled={!func.habilitado}
-                  min={0}
-               />
-               {categoria.id === "mediciones" && (
-                  <DropdownTransformador
-                     value={reg.transformadorId || ""}
-                     onChange={(id) => onCambiarTransformadorRegistro(func.id, index, id)}
+               <span className="modal-plantillas-func-nombre">{func.nombre}</span>
+            </label>
+            <div className="modal-plantillas-func-acciones">
+               <button type="button" className="modal-plantillas-func-mover" onClick={() => onMoverArriba(func.id)} title="Mover arriba">▲</button>
+               <button type="button" className="modal-plantillas-func-mover" onClick={() => onMoverAbajo(func.id)} title="Mover abajo">▼</button>
+               <button type="button" className="modal-plantillas-func-eliminar" onClick={() => onEliminar(func.id)} title="Eliminar funcionalidad">×</button>
+            </div>
+         </div>
+
+         <div className="modal-plantillas-registros">
+            {func.registros.map((reg, index) => (
+               <div key={index} className="modal-plantillas-registro-item">
+                  <input
+                     type="text"
+                     className="modal-plantillas-registro-etiqueta"
+                     value={reg.etiqueta}
+                     onChange={(e) => onCambiarEtiqueta(func.id, index, e.target.value)}
+                     placeholder={`Etiqueta ${index + 1}`}
                      disabled={!func.habilitado}
-                     tis={obtenerTIs()}
-                     tvs={obtenerTVs()}
-                     relaciones={obtenerRelaciones()}
                   />
+                  <span className="modal-plantillas-registro-separador">→</span>
+                  <input
+                     type="number"
+                     className="modal-plantillas-registro-valor"
+                     value={reg.valor}
+                     onChange={(e) => onCambiarValorRegistro(func.id, index, e.target.value)}
+                     placeholder={`${137 + index}`}
+                     disabled={!func.habilitado}
+                     min={0}
+                  />
+                  {categoria.id === "mediciones" && (
+                     <DropdownTransformador
+                        value={reg.transformadorId || ""}
+                        onChange={(id) => onCambiarTransformadorRegistro(func.id, index, id)}
+                        disabled={!func.habilitado}
+                        tis={obtenerTIs()}
+                        tvs={obtenerTVs()}
+                        relaciones={obtenerRelaciones()}
+                     />
+                  )}
+               </div>
+            ))}
+         </div>
+
+         {/* Configuración de Historial */}
+         <div className="modal-plantillas-config-historial">
+            <div className="modal-plantillas-config-historial-header">
+               <span className="modal-plantillas-config-historial-icono">📈</span>
+               <span>Historial</span>
+            </div>
+            <div className="modal-plantillas-config-historial-controles">
+               {/* Checkbox: Mostrar en historial */}
+               <label className="modal-plantillas-config-check">
+                  <input
+                     type="checkbox"
+                     checked={configHistorial.habilitado !== false}
+                     onChange={(e) => onCambiarConfigHistorial(func.id, "habilitado", e.target.checked)}
+                     disabled={!func.habilitado}
+                  />
+                  <span>Mostrar</span>
+               </label>
+
+               {/* Checkbox: Promedio (solo para mediciones con múltiples registros) */}
+               {categoria.id === "mediciones" && tieneMultiplesRegistros && (
+                  <label className="modal-plantillas-config-check" title="Agrega tab de promedio de todos los registros">
+                     <input
+                        type="checkbox"
+                        checked={configHistorial.mostrarPromedio === true}
+                        onChange={(e) => onCambiarConfigHistorial(func.id, "mostrarPromedio", e.target.checked)}
+                        disabled={!func.habilitado || configHistorial.habilitado === false}
+                     />
+                     <span>Promedio</span>
+                  </label>
+               )}
+
+               {/* Checkbox: Combinar 32 bits (solo para mediciones) */}
+               {categoria.id === "mediciones" && (
+                  <label className="modal-plantillas-config-check" title="Combina registros HIGH/LOW en valor de 32 bits: (HIGH &lt;&lt; 16) | LOW">
+                     <input
+                        type="checkbox"
+                        checked={configHistorial.combinar32bits === true}
+                        onChange={(e) => onCambiarConfigHistorial(func.id, "combinar32bits", e.target.checked)}
+                        disabled={!func.habilitado || configHistorial.habilitado === false}
+                     />
+                     <span>32 bits</span>
+                  </label>
+               )}
+
+               {/* Checkbox: Timeline de bits (solo para estados/alarmas) */}
+               {(categoria.id === "estados" || categoria.id === "alarmas") && (
+                  <label className="modal-plantillas-config-check" title="Muestra timeline visual de bits activos">
+                     <input
+                        type="checkbox"
+                        checked={configHistorial.timelineBits === true}
+                        onChange={(e) => onCambiarConfigHistorial(func.id, "timelineBits", e.target.checked)}
+                        disabled={!func.habilitado || configHistorial.habilitado === false}
+                     />
+                     <span>Timeline bits</span>
+                  </label>
                )}
             </div>
-         ))}
+         </div>
       </div>
-   </div>
-);
+   );
+};
 
 /**
  * Sección de etiquetas de bits (LEDs)

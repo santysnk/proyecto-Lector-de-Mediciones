@@ -32,7 +32,7 @@ const PanelDatosHistorial = ({
       const fecha = new Date(punto.x);
       return {
         fecha: fecha.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "2-digit" }),
-        hora: fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        hora: fecha.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }),
         medicion: Math.ceil(punto.y * 100) / 100,
       };
     });

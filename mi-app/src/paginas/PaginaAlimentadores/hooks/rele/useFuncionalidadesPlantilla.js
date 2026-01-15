@@ -2,6 +2,7 @@
 // Hook para manejar el CRUD de funcionalidades en plantillas de relé
 
 import { useState, useCallback } from "react";
+import { MODOS_HISTORIAL, DEFAULT_CONFIG_HISTORIAL } from "../../constantes/funcionalidadesRele";
 
 // Categorías disponibles para las funcionalidades
 export const CATEGORIAS_FUNCIONALIDADES = {
@@ -9,6 +10,9 @@ export const CATEGORIAS_FUNCIONALIDADES = {
    estados: { id: "estados", nombre: "Estados y Alarmas", icono: "🚦" },
    sistema: { id: "sistema", nombre: "Sistema", icono: "⚙️" },
 };
+
+// Re-exportar para uso externo
+export { MODOS_HISTORIAL, DEFAULT_CONFIG_HISTORIAL };
 
 /**
  * Hook para manejar el CRUD de funcionalidades
@@ -172,6 +176,7 @@ export function useFuncionalidadesPlantilla() {
    /**
     * Cargar funcionalidades desde un objeto de plantilla
     * Ordena por el campo 'orden' si existe para preservar el orden original
+    * Preserva configHistorial si existe
     */
    const cargarDesdeObjeto = useCallback((funcionalidadesObj) => {
       const funcsArray = Object.entries(funcionalidadesObj || {}).map(
@@ -190,6 +195,8 @@ export function useFuncionalidadesPlantilla() {
                categoria: data.categoria || "mediciones",
                registros: registrosMigrados,
                orden: data.orden ?? Infinity,
+               // Preservar configHistorial o usar defaults
+               configHistorial: data.configHistorial || { ...DEFAULT_CONFIG_HISTORIAL },
             };
          }
       );
@@ -201,6 +208,7 @@ export function useFuncionalidadesPlantilla() {
    /**
     * Convertir funcionalidades a objeto para guardar
     * Incluye el campo 'orden' para preservar el orden al recuperar
+    * Incluye configHistorial para configuración de visualización en historial
     */
    const obtenerParaGuardar = useCallback(() => {
       const funcParaGuardar = {};
@@ -213,6 +221,8 @@ export function useFuncionalidadesPlantilla() {
                registros: func.registros,
                registro: func.registros[0]?.valor || 0,
                orden: index,
+               // Incluir configHistorial
+               configHistorial: func.configHistorial || DEFAULT_CONFIG_HISTORIAL,
             };
          }
       });
@@ -226,6 +236,27 @@ export function useFuncionalidadesPlantilla() {
       return Object.values(plantilla?.funcionalidades || {}).filter(
          (f) => f.habilitado !== false
       ).length;
+   }, []);
+
+   /**
+    * Cambiar configuración de historial de una funcionalidad
+    * @param {string} funcId - ID de la funcionalidad
+    * @param {string} campo - Campo a modificar (habilitado, modo, mostrarPromedio, unidad, decimales)
+    * @param {*} valor - Nuevo valor
+    */
+   const cambiarConfigHistorial = useCallback((funcId, campo, valor) => {
+      setFuncionalidades((prev) =>
+         prev.map((func) => {
+            if (func.id !== funcId) return func;
+            return {
+               ...func,
+               configHistorial: {
+                  ...(func.configHistorial || DEFAULT_CONFIG_HISTORIAL),
+                  [campo]: valor,
+               },
+            };
+         })
+      );
    }, []);
 
    /**
@@ -259,5 +290,7 @@ export function useFuncionalidadesPlantilla() {
       obtenerParaGuardar,
       contarFuncionalidades,
       resetear,
+      // Configuración de historial
+      cambiarConfigHistorial,
    };
 }

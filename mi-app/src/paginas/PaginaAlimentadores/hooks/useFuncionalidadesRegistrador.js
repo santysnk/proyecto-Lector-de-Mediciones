@@ -15,6 +15,7 @@ export function useFuncionalidadesRegistrador(registradorId) {
    const [funcionalidades, setFuncionalidades] = useState([]);
    const [plantilla, setPlantilla] = useState(null);
    const [registrador, setRegistrador] = useState(null);
+   const [etiquetasBits, setEtiquetasBits] = useState({});
    const [cargando, setCargando] = useState(false);
    const [error, setError] = useState(null);
 
@@ -24,6 +25,7 @@ export function useFuncionalidadesRegistrador(registradorId) {
          setFuncionalidades([]);
          setPlantilla(null);
          setRegistrador(null);
+         setEtiquetasBits({});
          setError(null);
          return;
       }
@@ -42,6 +44,7 @@ export function useFuncionalidadesRegistrador(registradorId) {
             setFuncionalidades(data.funcionalidades || []);
             setPlantilla(data.plantilla || null);
             setRegistrador(data.registrador || null);
+            setEtiquetasBits(data.etiquetasBits || {});
 
             if (data.mensaje) {
                setError(data.mensaje);
@@ -67,6 +70,7 @@ export function useFuncionalidadesRegistrador(registradorId) {
       funcionalidades,
       plantilla,
       registrador,
+      etiquetasBits,
       cargando,
       error,
       tienePlantilla: plantilla !== null

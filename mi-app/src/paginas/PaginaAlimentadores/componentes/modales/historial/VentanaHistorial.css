@@ -307,6 +307,76 @@
   cursor: not-allowed;
 }
 
+/* Selectores generales */
+.ventana-select {
+  padding: 0.35rem 0.5rem;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #e2e8f0;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 220px;
+}
+
+.ventana-select:hover {
+  border-color: #64748b;
+}
+
+.ventana-select:focus {
+  outline: none;
+  border-color: #0ea5e9;
+}
+
+.ventana-select option {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.ventana-select optgroup {
+  background: #0f172a;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+/* Selector de registrador */
+.ventana-selector-registrador {
+  margin-right: 0.5rem;
+}
+
+.ventana-select--registrador {
+  max-width: 140px;
+}
+
+/* Selector de funcionalidad */
+.ventana-selector-funcionalidad {
+  margin-right: 0.5rem;
+}
+
+.ventana-select--funcionalidad {
+  min-width: 180px;
+  max-width: 280px;
+}
+
+/* Selector de medición específica */
+.ventana-selector-medicion {
+  margin-right: 0.5rem;
+}
+
+.ventana-tabs--medicion {
+  border-color: #22c55e;
+}
+
+.ventana-tab--medicion {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.7rem;
+}
+
+.ventana-tab--medicion.ventana-tab--activo {
+  background: #22c55e;
+}
+
 /* Selector de rango */
 .ventana-rango {
   display: flex;
@@ -658,6 +728,7 @@
   flex-direction: column;
   overflow: hidden;
   animation: panelSlideIn 0.25s ease;
+  max-height: 100%;
 }
 
 @keyframes panelSlideIn {
@@ -706,8 +777,29 @@
 
 .ventana-panel-tabla-container {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow-y: scroll;
   overflow-x: hidden;
+  scrollbar-width: auto;
+  scrollbar-color: #475569 #1e293b;
+}
+
+.ventana-panel-tabla-container::-webkit-scrollbar {
+  width: 16px;
+}
+
+.ventana-panel-tabla-container::-webkit-scrollbar-track {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+.ventana-panel-tabla-container::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.ventana-panel-tabla-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 .ventana-panel-tabla {

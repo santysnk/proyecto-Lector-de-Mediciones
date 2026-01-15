@@ -26,11 +26,11 @@ export const useVentanasHistorial = () => {
 
   /**
    * Estado inicial de una ventana
+   * Ya no requiere cardDesign - se obtiene de alimentador.config_tarjeta
    */
-  const crearEstadoVentana = useCallback((alimentador, cardDesign, posicionInicial) => ({
+  const crearEstadoVentana = useCallback((alimentador, posicionInicial) => ({
     id: alimentador.id,
     alimentador,
-    cardDesign,
     minimizada: false,
     maximizada: false,
     posicion: posicionInicial || { x: 100 + Math.random() * 100, y: 50 + Math.random() * 50 },
@@ -41,8 +41,9 @@ export const useVentanasHistorial = () => {
   /**
    * Abre una ventana de historial para un alimentador
    * Si ya existe, la trae al frente y la restaura si estaba minimizada
+   * Ya no requiere cardDesign como parámetro
    */
-  const abrirVentana = useCallback((alimentador, cardDesign) => {
+  const abrirVentana = useCallback((alimentador) => {
     setVentanas((prev) => {
       // Si ya existe la ventana para este alimentador
       if (prev[alimentador.id]) {
@@ -67,7 +68,7 @@ export const useVentanasHistorial = () => {
       // Crear nueva ventana
       return {
         ...prev,
-        [alimentador.id]: crearEstadoVentana(alimentador, cardDesign, posicionInicial),
+        [alimentador.id]: crearEstadoVentana(alimentador, posicionInicial),
       };
     });
   }, [crearEstadoVentana, getNextZIndex]);

@@ -1,15 +1,17 @@
 /**
  * Ventana flotante para visualizar el historial de lecturas con gráficos
  * Soporta: arrastrar, minimizar, maximizar, múltiples instancias
+ * REDISEÑADO: Usa config_tarjeta y soporta múltiples funcionalidades
  */
 
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import ApexChartWrapper from "../../../../../componentes/comunes/ApexChartWrapper";
 import { usarContextoAlimentadores } from "../../../contexto/ContextoAlimentadoresSupabase";
 import { useVentanaHistorialLogica } from "../../../hooks/historial";
 import { useArrastrarVentana } from "../../../hooks/ui";
 import { exportarCSV } from "../../../utilidades/exportarCSV";
 import { generarInformePDF } from "../../../utilidades/exportarInformePDF";
+import { MODOS_HISTORIAL } from "../../../constantes/funcionalidadesRele";
 import ModalConfigInforme from "./ModalConfigInforme";
 import PanelDatosHistorial from "../../historial/PanelDatosHistorial";
 import BarraTituloVentana from "../../historial/BarraTituloVentana";
@@ -17,6 +19,7 @@ import BarraControlesHistorial from "../../historial/BarraControlesHistorial";
 import ControlEscalaY from "../../historial/ControlEscalaY";
 import EstadoGrafico from "../../historial/EstadoGrafico";
 import EstadisticasHistorial from "../../historial/EstadisticasHistorial";
+import TimelineAlarmas from "../../historial/TimelineAlarmas";
 import "./VentanaHistorial.css";
 
 const VentanaHistorial = ({
@@ -27,10 +30,11 @@ const VentanaHistorial = ({
    onEnfocar,
    onMover,
 }) => {
-   const { alimentador: alimentadorInicial, cardDesign: cardDesignInicial, minimizada, maximizada, posicion, zIndex } = ventana;
+   // Ya no usamos cardDesign de la ventana
+   const { alimentador: alimentadorInicial, minimizada, maximizada, posicion, zIndex } = ventana;
 
-   // Obtener alimentadores del puesto desde el contexto
-   const { puestoSeleccionado } = usarContextoAlimentadores();
+   // Obtener alimentadores del puesto y transformadores desde el contexto
+   const { puestoSeleccionado, obtenerTransformadorPorId } = usarContextoAlimentadores();
    const alimentadoresPuesto = puestoSeleccionado?.alimentadores || [];
 
    // Refs
@@ -46,7 +50,7 @@ const VentanaHistorial = ({
       onMover,
    });
 
-   // Hook de lógica principal
+   // Hook de lógica principal (REDISEÑADO)
    const {
       alimentador,
       cargando,
@@ -64,12 +68,28 @@ const VentanaHistorial = ({
       setModalInformeVisible,
       editandoEscalaY,
       setEditandoEscalaY,
-      zonaSeleccionada,
-      setZonaSeleccionada,
-      zonaDisponible,
-      tituloSuperior,
-      tituloInferior,
-      tituloZonaActual,
+      // Registradores
+      registradoresUnicos,
+      registradorSeleccionadoId,
+      setRegistradorSeleccionadoId,
+      // Funcionalidades
+      funcionalidades,
+      funcionalidadesPorCategoria,
+      funcionalidadSeleccionada,
+      funcionalidadSeleccionadaId,
+      setFuncionalidadSeleccionadaId,
+      cargandoFuncionalidades,
+      plantilla,
+      etiquetasBits,
+      // Medición específica
+      indiceMedicionSeleccionado,
+      setIndiceMedicionSeleccionado,
+      tituloMedicionActual,
+      // Modo de visualización (configHistorial)
+      modoVisualizacion,
+      configHistorial,
+      tabsMedicion,
+      // Rango y gráfico
       rangoSeleccionado,
       fechaRangoDesde,
       fechaRangoHasta,
@@ -93,17 +113,17 @@ const VentanaHistorial = ({
       handleAlimentadorChange,
    } = useVentanaHistorialLogica({
       alimentadorInicial,
-      cardDesignInicial,
       minimizada,
       alimentadoresPuesto,
+      obtenerTransformadorPorId,
    });
 
    // Handlers de exportación
    const handleExportarCSV = () => {
       if (datosGrafico.length === 0) return;
-      exportarCSV(datosGrafico, `historial_${alimentador?.nombre}_${zonaSeleccionada}_${Date.now()}`, {
+      exportarCSV(datosGrafico, `historial_${alimentador?.nombre}_${funcionalidadSeleccionadaId}_${Date.now()}`, {
          columnas: ["timestamp", "valor"],
-         etiquetas: { timestamp: "Fecha/Hora", valor: `Promedio ${tituloZonaActual}` },
+         etiquetas: { timestamp: "Fecha/Hora", valor: tituloMedicionActual },
       });
    };
 
@@ -116,7 +136,7 @@ const VentanaHistorial = ({
       const { solicitadoPor, datosFiltrados: datosInforme, fechaInicio, fechaFin, intervalo, imagenGrafico } = configInforme;
       await generarInformePDF({
          nombreAlimentador: alimentador?.nombre || "Alimentador",
-         tituloMedicion: tituloZonaActual,
+         tituloMedicion: tituloMedicionActual,
          datos: datosInforme,
          fechaInicio,
          fechaFin,
@@ -157,11 +177,23 @@ const VentanaHistorial = ({
             <BarraControlesHistorial
                panelDatosAbierto={panelDatosAbierto}
                onTogglePanel={() => setPanelDatosAbierto(!panelDatosAbierto)}
-               zonaSeleccionada={zonaSeleccionada}
-               onZonaChange={setZonaSeleccionada}
-               zonaDisponible={zonaDisponible}
-               tituloSuperior={tituloSuperior}
-               tituloInferior={tituloInferior}
+               // Registradores
+               registradoresUnicos={registradoresUnicos}
+               registradorSeleccionadoId={registradorSeleccionadoId}
+               onRegistradorChange={setRegistradorSeleccionadoId}
+               // Funcionalidades
+               funcionalidades={funcionalidades}
+               funcionalidadesPorCategoria={funcionalidadesPorCategoria}
+               funcionalidadSeleccionadaId={funcionalidadSeleccionadaId}
+               onFuncionalidadChange={setFuncionalidadSeleccionadaId}
+               cargandoFuncionalidades={cargandoFuncionalidades}
+               // Medición específica (usa tabsMedicion del hook)
+               tabsMedicion={tabsMedicion}
+               indiceMedicionSeleccionado={indiceMedicionSeleccionado}
+               onMedicionChange={setIndiceMedicionSeleccionado}
+               // Modo de visualización
+               modoVisualizacion={modoVisualizacion}
+               // Rango y gráfico
                rangoSeleccionado={rangoSeleccionado}
                onRangoChange={handleRangoChange}
                fechaRangoDesde={fechaRangoDesde}
@@ -193,18 +225,20 @@ const VentanaHistorial = ({
                   tipoGrafico={tipoGrafico}
                />
 
-               {/* Control de escala Y */}
-               <ControlEscalaY
-                  visible={datosGrafico.length > 0 && !cargando && !error}
-                  escalaYMax={escalaYMax}
-                  setEscalaYMax={setEscalaYMax}
-                  limitesEscalaY={limitesEscalaY}
-                  editandoEscalaY={editandoEscalaY}
-                  setEditandoEscalaY={setEditandoEscalaY}
-                  handleEscalaYManual={handleEscalaYManual}
-               />
+               {/* Control de escala Y (oculto en modo bits) */}
+               {modoVisualizacion !== MODOS_HISTORIAL.BITS && (
+                  <ControlEscalaY
+                     visible={datosGrafico.length > 0 && !cargando && !error}
+                     escalaYMax={escalaYMax}
+                     setEscalaYMax={setEscalaYMax}
+                     limitesEscalaY={limitesEscalaY}
+                     editandoEscalaY={editandoEscalaY}
+                     setEditandoEscalaY={setEditandoEscalaY}
+                     handleEscalaYManual={handleEscalaYManual}
+                  />
+               )}
 
-               {/* Gráfico */}
+               {/* Gráfico o Timeline según modo */}
                <div className="ventana-grafico">
                   <EstadoGrafico
                      cargando={cargando}
@@ -213,14 +247,23 @@ const VentanaHistorial = ({
                      datosLength={datosGrafico.length}
                      onReintentar={cargarDatos}
                   >
-                     <ApexChartWrapper
-                        key={`chart-${tipoGrafico}-${escalaYMax}`}
-                        ref={chartRef}
-                        options={opcionesGrafico}
-                        series={seriesGrafico}
-                        type={tipoGrafico}
-                        height="100%"
-                     />
+                     {modoVisualizacion === MODOS_HISTORIAL.BITS ? (
+                        <TimelineAlarmas
+                           datos={datosGrafico}
+                           etiquetasBits={etiquetasBits || {}}
+                           rangoInicio={fechaRangoDesde}
+                           rangoFin={fechaRangoHasta}
+                        />
+                     ) : (
+                        <ApexChartWrapper
+                           key={`chart-${tipoGrafico}-${escalaYMax}`}
+                           ref={chartRef}
+                           options={opcionesGrafico}
+                           series={seriesGrafico}
+                           type={tipoGrafico}
+                           height="100%"
+                        />
+                     )}
                   </EstadoGrafico>
                </div>
             </div>
@@ -241,7 +284,7 @@ const VentanaHistorial = ({
             onGenerar={handleGenerarInforme}
             datos={datosGrafico}
             nombreAlimentador={alimentador?.nombre || "Alimentador"}
-            tituloMedicion={tituloZonaActual}
+            tituloMedicion={tituloMedicionActual}
             tipoGrafico={tipoGrafico}
          />
       </div>

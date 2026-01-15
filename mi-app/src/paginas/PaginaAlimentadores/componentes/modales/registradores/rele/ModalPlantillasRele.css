@@ -1201,3 +1201,91 @@
 .modal-plantillas-btn-eliminar-etiqueta:hover {
   color: #ef4444;
 }
+
+/* ===============================================
+   Configuración de Historial por Funcionalidad
+   =============================================== */
+
+.modal-plantillas-config-historial {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 4px;
+}
+
+.modal-plantillas-config-historial-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: #71717a;
+  margin-bottom: 6px;
+}
+
+.modal-plantillas-config-historial-icono {
+  font-size: 0.9rem;
+}
+
+.modal-plantillas-config-historial-controles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modal-plantillas-config-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #a1a1aa;
+  cursor: pointer;
+}
+
+.modal-plantillas-config-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.modal-plantillas-config-check input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-plantillas-config-check span {
+  user-select: none;
+}
+
+.modal-plantillas-config-modo {
+  padding: 4px 8px;
+  background: #1a1f2e;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  color: #e4e4e7;
+  font-size: 0.8rem;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.modal-plantillas-config-modo:hover:not(:disabled) {
+  border-color: #2563eb;
+}
+
+.modal-plantillas-config-modo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-plantillas-config-modo:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Tarjeta funcionalidad inactiva - atenuar config historial */
+.modal-plantillas-func-card.inactivo .modal-plantillas-config-historial {
+  opacity: 0.5;
+}

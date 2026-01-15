@@ -210,6 +210,7 @@ export const ejecutarPrecarga48h = async ({
 
 /**
  * Recopila tareas pendientes de precarga para un puesto
+ * ACTUALIZADO: Usa config_tarjeta en lugar de card_design
  * @param {IDBDatabase} db
  * @param {Array} alimentadores
  * @param {Object} abortRef
@@ -221,42 +222,38 @@ export const recopilarTareasPuesto = async (db, alimentadores, abortRef) => {
    for (const alimentador of alimentadores) {
       if (abortRef.current) break;
 
-      const cardDesign = alimentador.card_design || {};
-      const regSuperior = cardDesign.superior?.registrador_id || alimentador.registrador_id;
-      const regInferior = cardDesign.inferior?.registrador_id || alimentador.registrador_id;
+      // CORREGIDO: Usar config_tarjeta en lugar de card_design
+      const configTarjeta = alimentador.config_tarjeta || {};
+      const regSuperior = configTarjeta.superior?.registrador_id || alimentador.registrador_id;
+      const regInferior = configTarjeta.inferior?.registrador_id;
 
-      if (regSuperior) {
-         const cacheSuperiorOK = await verificarCacheExistente(db, alimentador.id, regSuperior, "superior");
-         if (!cacheSuperiorOK) {
-            tareasPendientes.push({
-               alimentadorId: alimentador.id,
-               registradorId: regSuperior,
-               zona: "superior",
-            });
-         }
-      }
+      // Recopilar registradores únicos para este alimentador
+      const registradoresUnicos = new Set();
+      if (regSuperior) registradoresUnicos.add(regSuperior);
+      if (regInferior) registradoresUnicos.add(regInferior);
 
-      if (regInferior && regInferior !== regSuperior) {
-         const cacheInferiorOK = await verificarCacheExistente(db, alimentador.id, regInferior, "inferior");
-         if (!cacheInferiorOK) {
+      console.log(`[Precarga] Alimentador ${alimentador.nombre}:`, {
+         regSuperior,
+         regInferior,
+         registradoresUnicos: Array.from(registradoresUnicos),
+      });
+
+      // Para cada registrador único, verificar si necesita precarga
+      // Usamos zona "datos" para simplificar (ya no distinguimos superior/inferior en el cache)
+      for (const regId of registradoresUnicos) {
+         const cacheOK = await verificarCacheExistente(db, alimentador.id, regId, "datos");
+         console.log(`[Precarga] Verificando cache para registrador ${regId}:`, { cacheOK });
+         if (!cacheOK) {
             tareasPendientes.push({
                alimentadorId: alimentador.id,
-               registradorId: regInferior,
-               zona: "inferior",
-            });
-         }
-      } else if (regInferior && regInferior === regSuperior) {
-         const cacheInferiorOK = await verificarCacheExistente(db, alimentador.id, regInferior, "inferior");
-         if (!cacheInferiorOK) {
-            tareasPendientes.push({
-               alimentadorId: alimentador.id,
-               registradorId: regInferior,
-               zona: "inferior",
+               registradorId: regId,
+               zona: "datos",
             });
          }
       }
    }
 
+   console.log(`[Precarga] Total tareas pendientes:`, tareasPendientes.length, tareasPendientes);
    return tareasPendientes;
 };
 
