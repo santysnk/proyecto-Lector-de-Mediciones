@@ -93,29 +93,53 @@ const GrillaTarjetas = ({
       return Array.from(ids);
    }, [alimentadores]);
 
-   // Cargar etiquetasBits de registradores que no están en caché
+   // Cargar etiquetasBits de registradores
+   // Las etiquetasBits ahora están embebidas en las funcionalidades de tipo "estados"
+   // Se recargan cada vez que cambian los registradoresIds para reflejar cambios en plantillas
    useEffect(() => {
-      const cargarEtiquetasFaltantes = async () => {
-         const faltantes = registradoresIds.filter(id => !etiquetasBitsCache[id]);
-         if (faltantes.length === 0) return;
+      const cargarEtiquetas = async () => {
+         if (registradoresIds.length === 0) return;
 
-         for (const regId of faltantes) {
+         const nuevoCache = {};
+
+         for (const regId of registradoresIds) {
             try {
                const resultado = await obtenerFuncionalidadesRegistrador(regId);
-               if (resultado?.etiquetasBits) {
-                  setEtiquetasBitsCache(prev => ({
-                     ...prev,
-                     [regId]: resultado.etiquetasBits
-                  }));
+
+               // Buscar etiquetasBits en funcionalidades de tipo "estados" con registro 172 (LEDs)
+               let etiquetasBitsEncontradas = null;
+
+               if (resultado?.funcionalidades && Array.isArray(resultado.funcionalidades)) {
+                  // Buscar la funcionalidad de LEDs (registro 172) en categoría estados - puede estar en r.valor o r.registro
+                  const funcLeds = resultado.funcionalidades.find(f =>
+                     (f.categoria === "estados" || f.categoria === "alarmas") &&
+                     f.habilitado !== false &&
+                     f.registros?.some(r => r.valor === 172 || r.registro === 172)
+                  );
+
+                  if (funcLeds?.etiquetasBits && Object.keys(funcLeds.etiquetasBits).length > 0) {
+                     etiquetasBitsEncontradas = funcLeds.etiquetasBits;
+                  }
+               }
+
+               // Fallback: usar etiquetasBits a nivel de registrador (plantillas antiguas)
+               if (!etiquetasBitsEncontradas && resultado?.etiquetasBits) {
+                  etiquetasBitsEncontradas = resultado.etiquetasBits;
+               }
+
+               if (etiquetasBitsEncontradas) {
+                  nuevoCache[regId] = etiquetasBitsEncontradas;
                }
             } catch (error) {
                console.warn(`Error cargando etiquetasBits del registrador ${regId}:`, error);
             }
          }
+
+         setEtiquetasBitsCache(nuevoCache);
       };
 
-      cargarEtiquetasFaltantes();
-   }, [registradoresIds, etiquetasBitsCache]);
+      cargarEtiquetas();
+   }, [registradoresIds]);
 
    // Funcion para obtener alarmas activas de un alimentador
    const obtenerAlarmasActivas = useCallback((alimentador) => {

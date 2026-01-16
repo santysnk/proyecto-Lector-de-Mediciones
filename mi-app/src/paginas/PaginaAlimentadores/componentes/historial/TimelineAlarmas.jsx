@@ -71,11 +71,17 @@ const procesarPeriodosBits = (datos, etiquetasBits) => {
 
    const bitsOrdenados = Array.from(bitsEnDatos).sort((a, b) => a - b);
 
-   // Procesar cada bit
-   return bitsOrdenados.map((bitIndex) => {
-      const config = etiquetasBits?.[bitIndex] || {};
-      const nombre = config.texto || `Bit ${bitIndex}`;
-      const severidad = config.severidad || "estado";
+   // Procesar cada bit - solo incluir bits que tengan etiqueta con texto configurado
+   return bitsOrdenados
+      .filter((bitIndex) => {
+         const config = etiquetasBits?.[bitIndex];
+         // Solo incluir si tiene una etiqueta con texto no vacío
+         return config?.texto && config.texto.trim() !== "";
+      })
+      .map((bitIndex) => {
+         const config = etiquetasBits[bitIndex];
+         const nombre = config.texto;
+         const severidad = config.severidad || "estado";
 
       // Encontrar períodos donde este bit está activo
       const periodos = [];

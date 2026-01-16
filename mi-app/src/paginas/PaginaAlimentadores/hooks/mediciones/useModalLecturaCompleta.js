@@ -242,9 +242,30 @@ export function useModalLecturaCompleta() {
             try {
                const resultado = await obtenerFuncionalidadesRegistrador(regId);
                funcsPorReg[regId] = resultado;
-               // Guardar etiquetas de bits si existen
-               if (resultado.etiquetasBits) {
-                  etiquetasPorReg[regId] = resultado.etiquetasBits;
+
+               // Buscar etiquetas de bits en funcionalidades de tipo "estados" con registro 172 (LEDs)
+               let etiquetasBitsEncontradas = null;
+
+               if (resultado?.funcionalidades && Array.isArray(resultado.funcionalidades)) {
+                  // Buscar funcionalidad de LEDs (registro 172) - puede estar en r.valor o r.registro
+                  const funcLeds = resultado.funcionalidades.find(f =>
+                     (f.categoria === "estados" || f.categoria === "alarmas") &&
+                     f.habilitado !== false &&
+                     f.registros?.some(r => r.valor === 172 || r.registro === 172)
+                  );
+
+                  if (funcLeds?.etiquetasBits && Object.keys(funcLeds.etiquetasBits).length > 0) {
+                     etiquetasBitsEncontradas = funcLeds.etiquetasBits;
+                  }
+               }
+
+               // Fallback: usar etiquetasBits a nivel de registrador (plantillas antiguas)
+               if (!etiquetasBitsEncontradas && resultado?.etiquetasBits) {
+                  etiquetasBitsEncontradas = resultado.etiquetasBits;
+               }
+
+               if (etiquetasBitsEncontradas) {
+                  etiquetasPorReg[regId] = etiquetasBitsEncontradas;
                }
             } catch (error) {
                console.error(`Error cargando funcionalidades del registrador ${regId}:`, error);
@@ -294,7 +315,10 @@ export function useModalLecturaCompleta() {
          // Procesar cada funcionalidad habilitada
          // El backend devuelve funcionalidades como ARRAY, no como objeto
          if (Array.isArray(funcionalidades)) {
-            funcionalidades.forEach((func) => {
+            // Filtrar solo funcionalidades habilitadas
+            const funcionalidadesHabilitadas = funcionalidades.filter(f => f.habilitado !== false);
+
+            funcionalidadesHabilitadas.forEach((func) => {
                const registrosFunc = func.registros || [];
 
                // Obtener valores de los registros en vivo
@@ -314,8 +338,8 @@ export function useModalLecturaCompleta() {
                   };
                });
 
-               // Determinar categoría
-               const categoria = determinarCategoria(func.nombre);
+               // Determinar categoría (usar la categoría explícita si existe, o inferir del nombre)
+               const categoria = func.categoria || determinarCategoria(func.nombre);
 
                // Procesar registros (combinar pares High/Low si existen)
                const registrosProcesados = procesarRegistrosConPares(registrosConValor);

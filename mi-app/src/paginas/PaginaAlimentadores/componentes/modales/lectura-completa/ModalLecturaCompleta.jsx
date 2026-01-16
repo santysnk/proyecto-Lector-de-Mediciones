@@ -372,14 +372,18 @@ const ContenidoFuncionalidades = ({
    etiquetasBits,
 }) => {
    // Buscar estados relevantes para el panel REF615
+   // El registro puede estar en 'registro' o 'valor' dependiendo del procesamiento
    const estadoLeds = estados.find(e =>
       e.registros?.[0]?.registro === 172 ||
+      e.registros?.some(r => r.registro === 172) ||
       e.nombre?.toLowerCase().includes("led")
    );
    const estadoSalud = estados.find(e =>
       e.registros?.[0]?.registro === 127 ||
+      e.registros?.some(r => r.registro === 127) ||
       e.nombre?.toLowerCase().includes("salud") ||
-      e.nombre?.toLowerCase().includes("ssr1")
+      e.nombre?.toLowerCase().includes("ssr1") ||
+      e.nombre?.toLowerCase().includes("ready")
    );
 
    // Verificar si hay estados para el panel REF615
