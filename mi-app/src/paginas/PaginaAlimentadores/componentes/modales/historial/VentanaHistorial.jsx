@@ -274,6 +274,7 @@ const VentanaHistorial = ({
                onExportarCSV={handleExportarCSV}
                onAbrirInforme={handleAbrirModalInforme}
                datosDisponibles={datosGrafico.length > 0}
+               modoVisualizacion={modoVisualizacion}
             />
          </div>
 

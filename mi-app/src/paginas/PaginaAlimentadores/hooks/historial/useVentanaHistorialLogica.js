@@ -356,11 +356,31 @@ export const useVentanaHistorialLogica = ({
    // Título de la medición seleccionada
    const tituloMedicionActual = useMemo(() => {
       if (!funcionalidadSeleccionada) return "Sin selección";
+
+      const config = obtenerConfigHistorial(funcionalidadSeleccionada);
+      const modoEfectivo = determinarModoEfectivo(config);
       const registros = funcionalidadSeleccionada.registros || [];
-      if (registros.length <= 1) {
-         // Si solo hay un registro, mostrar etiqueta o nombre de funcionalidad
-         return registros[0]?.etiqueta || funcionalidadSeleccionada.nombre;
+
+      // Modo 32 bits: mostrar solo el nombre de la funcionalidad
+      if (modoEfectivo === MODOS_HISTORIAL.COMBINAR_32BITS) {
+         return funcionalidadSeleccionada.nombre;
       }
+
+      // Modo bits (timeline): mostrar nombre de funcionalidad
+      if (modoEfectivo === MODOS_HISTORIAL.BITS) {
+         return funcionalidadSeleccionada.nombre;
+      }
+
+      // Modo individual: verificar si hay tab de promedio seleccionado
+      if (config.mostrarPromedio && indiceMedicionSeleccionado === registros.length) {
+         return `${funcionalidadSeleccionada.nombre} - Promedio`;
+      }
+
+      // Si solo hay un registro, mostrar nombre de funcionalidad
+      if (registros.length <= 1) {
+         return funcionalidadSeleccionada.nombre;
+      }
+
       // Múltiples registros: mostrar etiqueta del seleccionado
       const etiqueta =
          registros[indiceMedicionSeleccionado]?.etiqueta ||
