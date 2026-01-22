@@ -219,6 +219,12 @@ const LedProgramable = ({ nombre, activo, tipo }) => {
 /**
  * Panel de estados estilo REF615
  * Simula el aspecto del panel frontal del relé ABB REF615
+ *
+ * IMPORTANTE: Los LEDs físicos Ready/Start/Trip del panel NO están disponibles vía Modbus.
+ * En su lugar, usamos las etiquetas configuradas por el usuario para determinar:
+ * - READY: Verde si hay comunicación (SSR1 bit 0 = 0)
+ * - START: Amarillo si hay bits con severidad "warning" activos
+ * - TRIP: Rojo si hay bits con severidad "alarma" activos
  */
 const PanelEstadosREF615 = ({
    estadoLeds,
@@ -234,11 +240,6 @@ const PanelEstadosREF615 = ({
    // Valor del registro de LEDs para operaciones de bits
    const valorLeds = estadoLeds?.valor || 0;
 
-   // Determinar estado de LEDs de sistema basándose en registro 172
-   const ledReady = salud ? !salud.bitsActivos?.some(b => b.posicion === 0) : true;
-   const ledStart = (valorLeds >> 1) & 1; // Bit 1 del registro 172
-   const ledTrip = (valorLeds >> 2) & 1;  // Bit 2 del registro 172
-
    // LEDs programables: usar todas las etiquetas personalizadas del usuario
    const ledsProgramables = etiquetasPersonalizadas
       ? Object.entries(etiquetasPersonalizadas)
@@ -250,6 +251,20 @@ const PanelEstadosREF615 = ({
          }))
          .sort((a, b) => a.posicion - b.posicion)
       : [];
+
+   // Determinar estado de LEDs de sistema basándose en severidades configuradas
+   // READY: Verde si hay comunicación (SSR1 bit 0 = 0)
+   const ledReady = salud ? !salud.bitsActivos?.some(b => b.posicion === 0) : true;
+
+   // START: Amarillo si hay algún bit con severidad "warning" activo
+   const ledStart = ledsProgramables.some(led =>
+      led.activo && led.tipo === "warning"
+   );
+
+   // TRIP: Rojo si hay algún bit con severidad "alarma" activo
+   const ledTrip = ledsProgramables.some(led =>
+      led.activo && led.tipo === "alarma"
+   );
 
    return (
       <div className="panel-ref615">
