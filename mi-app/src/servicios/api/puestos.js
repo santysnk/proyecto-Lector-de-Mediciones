@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/puestos.js
 // API de puestos
 

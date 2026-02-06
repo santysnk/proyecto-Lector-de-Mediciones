@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/dispositivos.js
 // API de dispositivos (Push Notifications)
 

@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/usuarios.js
 // API de usuarios y perfiles
 

@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/registradores.js
 // API de registradores
 

@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/workspaces.js
 // API de workspaces
 

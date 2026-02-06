@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/permisos.js
 // API de permisos de workspace
 

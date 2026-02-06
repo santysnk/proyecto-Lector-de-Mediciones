@@ -1,3 +1,4 @@
+// @ts-check
 // src/servicios/api/transformadores.js
 // Funciones API para transformadores (TI/TV)
 

@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/index.js
 // Exportaciones centralizadas de todas las APIs
 

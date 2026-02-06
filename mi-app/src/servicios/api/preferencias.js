@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/preferencias.js
 // API de preferencias de usuario
 

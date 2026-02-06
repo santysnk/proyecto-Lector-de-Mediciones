@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/lecturas.js
 // API de lecturas y mediciones
 

@@ -561,6 +561,25 @@ console.log(`[Modbus] Respuesta:`, data);
 
 ---
 
+## Deploy Workflows — CRÍTICO
+
+| Repo | Después de modificar código... |
+|------|-------------------------------|
+| **Frontend** | Commit + push a `dev`. Probar local. Solo merge `dev` → `main` cuando esté confirmado (Vercel auto-deploys `main` a producción) |
+| **Backend** | Commit + push. Santiago manualmente hace deploy del último commit en Render |
+| **Agente** | Commit + push. Santiago hace `git pull` desde la PC remota y ejecuta `npm run dev` o recompila |
+
+⚠️ **SIEMPRE hacer commit y push después de cambios en backend o agente.** Santiago completa el deploy manualmente.
+
+## Supabase — Acceso Directo DB
+
+- **Project URL**: `https://pgxjkbqpkbusnozyndft.supabase.co`
+- **Service Role Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBneGprYnFwa2J1c25venluZGZ0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTc2OTc1MywiZXhwIjoyMDgxMTI5NzUzfQ.c0BORjitDBIfGYPtBzciIGsyheLmIHk4f2m4wnjeICM`
+
+Usar para consultas directas a la base de datos al debuggear o verificar datos.
+
+---
+
 ## Documentation References
 
 ### Documentación General

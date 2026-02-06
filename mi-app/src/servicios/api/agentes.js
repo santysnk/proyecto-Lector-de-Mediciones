@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/agentes.js
 // API de agentes y registradores
 

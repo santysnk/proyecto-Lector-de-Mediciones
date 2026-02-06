@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/admin.js
 // API de administración (solo superadmin)
 

@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/alimentadores.js
 // API de alimentadores
 

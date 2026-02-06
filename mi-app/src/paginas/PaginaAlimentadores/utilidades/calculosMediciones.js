@@ -1,3 +1,4 @@
+// @ts-check
 // src/paginas/PaginaAlimentadores/utilidades/calculosMediciones.js
 
 import { aplicarFormula, formatearValor } from "./calculosFormulas"; // helpers para fórmulas y formato de números

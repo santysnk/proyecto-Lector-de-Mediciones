@@ -1,3 +1,4 @@
+// @ts-check
 // src/servicios/apiService.js
 // Re-exporta todas las funciones de API desde los módulos organizados
 // Mantiene compatibilidad con imports existentes

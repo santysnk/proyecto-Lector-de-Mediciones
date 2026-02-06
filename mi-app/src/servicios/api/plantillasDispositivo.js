@@ -1,3 +1,4 @@
+// @ts-check
 // src/servicios/api/plantillasDispositivo.js
 // Funciones API para plantillas de dispositivo (relés y analizadores)
 

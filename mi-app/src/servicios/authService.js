@@ -1,3 +1,4 @@
+// @ts-check
 // src/servicios/authService.js
 // Servicio de autenticación usando Supabase
 // NOTA: Las operaciones de supabase.auth.* van directas a Supabase (correcto)

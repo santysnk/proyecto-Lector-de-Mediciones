@@ -1,3 +1,4 @@
+// @ts-check
 // servicios/api/base.js
 // Funciones base para comunicación con el backend
 

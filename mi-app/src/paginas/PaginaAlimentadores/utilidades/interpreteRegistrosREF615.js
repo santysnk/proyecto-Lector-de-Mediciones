@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Intérprete de Registros Modbus para Relés ABB REF615/RET615
  *

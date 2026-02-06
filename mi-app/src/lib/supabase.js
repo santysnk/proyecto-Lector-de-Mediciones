@@ -1,3 +1,4 @@
+// @ts-check
 // src/lib/supabase.js
 // Cliente de Supabase para el frontend
 

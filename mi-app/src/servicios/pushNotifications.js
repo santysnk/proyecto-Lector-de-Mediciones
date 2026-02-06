@@ -1,3 +1,4 @@
+// @ts-check
 // src/servicios/pushNotifications.js
 // Servicio para gestionar Push Notifications con Capacitor + Firebase
 

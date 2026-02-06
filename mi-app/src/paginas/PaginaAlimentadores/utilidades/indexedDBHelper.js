@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * Helper para operaciones con IndexedDB
  * Almacena lecturas de los últimos 48 horas para acceso rápido local
@@ -25,7 +26,7 @@ export const abrirDB = () => {
     };
 
     request.onupgradeneeded = (event) => {
-      const db = event.target.result;
+      const db = /** @type {IDBOpenDBRequest} */ (event.target).result;
 
       // Crear object store con índices
       if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -148,7 +149,7 @@ export const limpiarLecturasAntiguas = async (db, horasRetencion = 48) => {
     const request = index.openCursor(rango);
 
     request.onsuccess = (event) => {
-      const cursor = event.target.result;
+      const cursor = /** @type {IDBRequest} */ (event.target).result;
       if (cursor) {
         cursor.delete();
         eliminados++;
