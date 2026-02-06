@@ -8,6 +8,8 @@
       "build": "vite build",
       "lint": "eslint .",
       "preview": "vite preview",
+      "test": "vitest",
+      "test:run": "vitest run",
       "db": "json-server --watch db.json --port 4000",
       "backend": "node server/modbusServer.js"
    },
@@ -38,6 +40,7 @@
       "globals": "^16.4.0",
       "json-server": "^1.0.0-beta.3",
       "sharp": "^0.34.5",
-      "vite": "^7.1.7"
+      "vite": "^7.1.7",
+      "vitest": "^4.0.18"
    }
 }
