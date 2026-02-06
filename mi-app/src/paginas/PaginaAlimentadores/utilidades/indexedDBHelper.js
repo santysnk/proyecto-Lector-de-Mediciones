@@ -75,7 +75,7 @@ export const guardarLectura = async (db, lectura) => {
 
     const request = store.add(registro);
 
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => resolve(/** @type {number} */ (request.result));
     request.onerror = () => reject(request.error);
   });
 };

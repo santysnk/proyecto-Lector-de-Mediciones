@@ -158,7 +158,9 @@ const BarraControlesHistorial = ({
                   value={fechaRangoDesde}
                   valueHasta={fechaRangoHasta}
                   modoRango={true}
+                  onChange={() => {}}
                   onChangeRango={onFechaRangoChange}
+                  minDate={null}
                   maxDate={new Date()}
                   placeholder="Seleccionar fechas"
                />

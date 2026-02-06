@@ -109,7 +109,11 @@ const ApexChartWrapper = forwardRef(({ options, series, type, height, width }, r
         // Capturar imagen del gráfico temporal
         const result = await tempChart.dataURI({ scale: exportOptions.scale || 2 });
 
-        return result;
+        // dataURI puede devolver { imgURI } o { blob } según el navegador
+        if ("imgURI" in result) {
+          return result;
+        }
+        return { imgURI: null };
       } catch (err) {
         console.warn("Error capturando gráfico para informe:", err);
         return { imgURI: null };
