@@ -6,8 +6,6 @@
  * captura la imagen y lo destruye.
  */
 
-import ApexCharts from "apexcharts";
-
 /**
  * Genera una imagen de gráfico a partir de datos de series temporales
  * @param {Array} datos - Array de puntos [{x: timestamp, y: valor}]
@@ -23,6 +21,8 @@ export const generarImagenGrafico = async (datos, opciones = {}) => {
   if (!datos || datos.length === 0) {
     return null;
   }
+
+  const { default: ApexCharts } = await import("apexcharts");
 
   const {
     tipo = "line",

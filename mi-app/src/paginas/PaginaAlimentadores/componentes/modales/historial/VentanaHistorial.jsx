@@ -4,13 +4,12 @@
  * REDISEÑADO: Usa config_tarjeta y soporta múltiples funcionalidades
  */
 
-import { useRef, useMemo } from "react";
-import ApexChartWrapper from "../../../../../componentes/comunes/ApexChartWrapper";
+import { useRef, useMemo, lazy, Suspense } from "react";
+const ApexChartWrapper = lazy(() => import("../../../../../componentes/comunes/ApexChartWrapper"));
 import { usarContextoAlimentadores } from "../../../contexto/ContextoAlimentadoresSupabase";
 import { useVentanaHistorialLogica } from "../../../hooks/historial";
 import { useArrastrarVentana } from "../../../hooks/ui";
 import { exportarCSV } from "../../../utilidades/exportarCSV";
-import { generarInformePDF } from "../../../utilidades/exportarInformePDF";
 import { MODOS_HISTORIAL } from "../../../constantes/funcionalidadesRele";
 import ModalConfigInforme from "./ModalConfigInforme";
 import PanelDatosHistorial from "../../historial/PanelDatosHistorial";
@@ -134,6 +133,7 @@ const VentanaHistorial = ({
 
    const handleGenerarInforme = async (configInforme) => {
       const { solicitadoPor, datosFiltrados: datosInforme, fechaInicio, fechaFin, intervalo, imagenGrafico } = configInforme;
+      const { generarInformePDF } = await import("../../../utilidades/exportarInformePDF");
       await generarInformePDF({
          nombreAlimentador: alimentador?.nombre || "Alimentador",
          tituloMedicion: tituloMedicionActual,
@@ -255,14 +255,16 @@ const VentanaHistorial = ({
                            rangoFin={fechaRangoHasta}
                         />
                      ) : (
-                        <ApexChartWrapper
-                           key={`chart-${tipoGrafico}-${escalaYMax}`}
-                           ref={chartRef}
-                           options={opcionesGrafico}
-                           series={seriesGrafico}
-                           type={tipoGrafico}
-                           height="100%"
-                        />
+                        <Suspense fallback={<div className="ventana-grafico-cargando">Cargando gráfico...</div>}>
+                           <ApexChartWrapper
+                              key={`chart-${tipoGrafico}-${escalaYMax}`}
+                              ref={chartRef}
+                              options={opcionesGrafico}
+                              series={seriesGrafico}
+                              type={tipoGrafico}
+                              height="100%"
+                           />
+                        </Suspense>
                      )}
                   </EstadoGrafico>
                </div>

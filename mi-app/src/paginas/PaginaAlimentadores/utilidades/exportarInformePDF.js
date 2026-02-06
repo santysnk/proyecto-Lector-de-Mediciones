@@ -3,15 +3,19 @@
  * Usa pdfmake para generar archivos .pdf con tablas, gráficos e información
  */
 
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-
-// Configurar fuentes de pdfmake
-if (pdfFonts.pdfMake) {
-  pdfMake.vfs = pdfFonts.pdfMake.vfs;
-} else if (pdfFonts.vfs) {
-  pdfMake.vfs = pdfFonts.vfs;
-}
+/** Carga pdfmake bajo demanda (el bundler cachea automáticamente el chunk) */
+const cargarPdfMake = async () => {
+  const [{ default: pdfMake }, pdfFonts] = await Promise.all([
+    import("pdfmake/build/pdfmake"),
+    import("pdfmake/build/vfs_fonts"),
+  ]);
+  if (pdfFonts.pdfMake) {
+    pdfMake.vfs = pdfFonts.pdfMake.vfs;
+  } else if (pdfFonts.vfs) {
+    pdfMake.vfs = pdfFonts.vfs;
+  }
+  return pdfMake;
+};
 
 // Colores del tema (en formato hex para pdfmake)
 const COLORES = {
@@ -487,7 +491,9 @@ export const generarInformePDF = async (config) => {
   const fechaArchivo = formatearSoloFecha(new Date()).replace(/\//g, "-");
   const nombreArchivo = `Informe_${nombreAlimentador}_${tituloMedicion}_${fechaArchivo}.pdf`;
 
-  // Crear PDF y descargar
+  // Cargar pdfmake bajo demanda y crear PDF
+  const pdfMake = await cargarPdfMake();
+
   return new Promise((resolve) => {
     const pdfDoc = pdfMake.createPdf(docDefinition);
 
