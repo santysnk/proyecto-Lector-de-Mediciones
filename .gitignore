@@ -17,4 +17,5 @@ mi-app/android/app/google-services.json
 # Build outputs
 *.apk
 *.aab
-*.keystore
+*.keystoreCLAUDE.md
+CLAUDE.md
