@@ -1,155 +1,80 @@
-// hooks/useFuncionalidadesPlantilla.js
+// hooks/rele/useFuncionalidadesPlantilla.js
 // Hook para manejar el CRUD de funcionalidades en plantillas de relé
 
 import { useState, useCallback } from "react";
 import { MODOS_HISTORIAL, DEFAULT_CONFIG_HISTORIAL } from "../../constantes/funcionalidadesRele";
+import { convertirDesdeObjeto, convertirParaGuardar, contarFuncionalidadesHabilitadas } from "./funcionalidadesPlantillaUtils";
 
-// Categorías disponibles para las funcionalidades
 export const CATEGORIAS_FUNCIONALIDADES = {
    mediciones: { id: "mediciones", nombre: "Mediciones", icono: "📊" },
    estados: { id: "estados", nombre: "Estados y Alarmas", icono: "🚦" },
    sistema: { id: "sistema", nombre: "Sistema", icono: "⚙️" },
 };
 
-// Re-exportar para uso externo
 export { MODOS_HISTORIAL, DEFAULT_CONFIG_HISTORIAL };
 
-/**
- * Hook para manejar el CRUD de funcionalidades
- * @returns {Object} Estado y funciones de funcionalidades
- */
 export function useFuncionalidadesPlantilla() {
    const [funcionalidades, setFuncionalidades] = useState([]);
+   const [nuevaFunc, setNuevaFunc] = useState({ nombre: "", cantidad: 1, categoria: "mediciones" });
 
-   // Estado para agregar nueva funcionalidad
-   const [nuevaFunc, setNuevaFunc] = useState({
-      nombre: "",
-      cantidad: 1,
-      categoria: "mediciones",
-   });
-
-   /**
-    * Generar ID único para funcionalidad
-    */
    const generarIdFunc = useCallback(() => {
       return "func-" + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
    }, []);
 
-   /**
-    * Agregar nueva funcionalidad
-    * @returns {{ exito: boolean, error?: string }}
-    */
    const agregarFuncionalidad = useCallback(() => {
-      if (!nuevaFunc.nombre.trim()) {
-         return { exito: false, error: "Ingresa un nombre para la funcionalidad" };
-      }
-
+      if (!nuevaFunc.nombre.trim()) return { exito: false, error: "Ingresa un nombre para la funcionalidad" };
       const cantidad = parseInt(nuevaFunc.cantidad) || 1;
-
-      // Crear array de registros vacíos según la cantidad
-      const registros = Array.from({ length: cantidad }, () => ({
-         etiqueta: "",
-         valor: 0,
-      }));
-
+      const registros = Array.from({ length: cantidad }, () => ({ etiqueta: "", valor: 0 }));
       const nuevaFuncionalidad = {
-         id: generarIdFunc(),
-         nombre: nuevaFunc.nombre.trim(),
-         categoria: nuevaFunc.categoria,
-         habilitado: true,
-         registros,
+         id: generarIdFunc(), nombre: nuevaFunc.nombre.trim(),
+         categoria: nuevaFunc.categoria, habilitado: true, registros,
       };
-
       setFuncionalidades((prev) => [...prev, nuevaFuncionalidad]);
       setNuevaFunc({ nombre: "", cantidad: 1, categoria: nuevaFunc.categoria });
       return { exito: true };
    }, [nuevaFunc, generarIdFunc]);
 
-   /**
-    * Eliminar funcionalidad
-    */
    const eliminarFuncionalidad = useCallback((funcId) => {
       setFuncionalidades((prev) => prev.filter((f) => f.id !== funcId));
    }, []);
 
-   /**
-    * Toggle habilitar/deshabilitar funcionalidad
-    */
    const toggleFuncionalidad = useCallback((funcId) => {
-      setFuncionalidades((prev) =>
-         prev.map((f) =>
-            f.id === funcId ? { ...f, habilitado: !f.habilitado } : f
-         )
-      );
+      setFuncionalidades((prev) => prev.map((f) => f.id === funcId ? { ...f, habilitado: !f.habilitado } : f));
    }, []);
 
-   /**
-    * Cambiar etiqueta de un registro
-    */
    const cambiarEtiquetaRegistro = useCallback((funcId, regIndex, valor) => {
-      setFuncionalidades((prev) =>
-         prev.map((f) => {
-            if (f.id !== funcId) return f;
-            const nuevosRegistros = [...f.registros];
-            nuevosRegistros[regIndex] = { ...nuevosRegistros[regIndex], etiqueta: valor };
-            return { ...f, registros: nuevosRegistros };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((f) => {
+         if (f.id !== funcId) return f;
+         const nuevosRegistros = [...f.registros];
+         nuevosRegistros[regIndex] = { ...nuevosRegistros[regIndex], etiqueta: valor };
+         return { ...f, registros: nuevosRegistros };
+      }));
    }, []);
 
-   /**
-    * Cambiar valor de un registro
-    */
    const cambiarValorRegistro = useCallback((funcId, regIndex, valor) => {
-      setFuncionalidades((prev) =>
-         prev.map((f) => {
-            if (f.id !== funcId) return f;
-            const nuevosRegistros = [...f.registros];
-            nuevosRegistros[regIndex] = {
-               ...nuevosRegistros[regIndex],
-               valor: valor === "" ? "" : parseInt(valor) || 0,
-            };
-            return { ...f, registros: nuevosRegistros };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((f) => {
+         if (f.id !== funcId) return f;
+         const nuevosRegistros = [...f.registros];
+         nuevosRegistros[regIndex] = { ...nuevosRegistros[regIndex], valor: valor === "" ? "" : parseInt(valor) || 0 };
+         return { ...f, registros: nuevosRegistros };
+      }));
    }, []);
 
-   /**
-    * Cambiar transformador de un registro específico
-    */
    const cambiarTransformadorRegistro = useCallback((funcId, registroIndex, transformadorId) => {
-      setFuncionalidades((prev) =>
-         prev.map((f) => {
-            if (f.id !== funcId) return f;
-            const nuevosRegistros = f.registros.map((reg, idx) =>
-               idx === registroIndex
-                  ? { ...reg, transformadorId: transformadorId || null }
-                  : reg
-            );
-            return { ...f, registros: nuevosRegistros };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((f) => {
+         if (f.id !== funcId) return f;
+         const nuevosRegistros = f.registros.map((reg, idx) => idx === registroIndex ? { ...reg, transformadorId: transformadorId || null } : reg);
+         return { ...f, registros: nuevosRegistros };
+      }));
    }, []);
 
-   /**
-    * Aplicar un transformador a todos los registros de una funcionalidad
-    */
    const aplicarTransformadorATodos = useCallback((funcId, transformadorId) => {
-      setFuncionalidades((prev) =>
-         prev.map((f) => {
-            if (f.id !== funcId) return f;
-            const nuevosRegistros = f.registros.map((reg) => ({
-               ...reg,
-               transformadorId: transformadorId || null,
-            }));
-            return { ...f, registros: nuevosRegistros };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((f) => {
+         if (f.id !== funcId) return f;
+         return { ...f, registros: f.registros.map((reg) => ({ ...reg, transformadorId: transformadorId || null })) };
+      }));
    }, []);
 
-   /**
-    * Mover funcionalidad hacia arriba
-    */
    const moverFuncionalidadArriba = useCallback((funcId) => {
       setFuncionalidades((prev) => {
          const index = prev.findIndex((f) => f.id === funcId);
@@ -160,9 +85,6 @@ export function useFuncionalidadesPlantilla() {
       });
    }, []);
 
-   /**
-    * Mover funcionalidad hacia abajo
-    */
    const moverFuncionalidadAbajo = useCallback((funcId) => {
       setFuncionalidades((prev) => {
          const index = prev.findIndex((f) => f.id === funcId);
@@ -173,241 +95,88 @@ export function useFuncionalidadesPlantilla() {
       });
    }, []);
 
-   /**
-    * Cargar funcionalidades desde un objeto de plantilla
-    * Ordena por el campo 'orden' si existe para preservar el orden original
-    * Preserva configHistorial si existe
-    */
    const cargarDesdeObjeto = useCallback((funcionalidadesObj) => {
-      const funcsArray = Object.entries(funcionalidadesObj || {}).map(
-         ([id, data]) => {
-            // Migración: si hay transformadorId a nivel de funcionalidad, aplicarlo a cada registro
-            const transformadorIdGrupo = data.transformadorId || null;
-            const registrosBase = data.registros || [{ etiqueta: "", valor: data.registro || 0 }];
-            const registrosMigrados = registrosBase.map((reg) => ({
-               ...reg,
-               transformadorId: reg.transformadorId !== undefined ? reg.transformadorId : transformadorIdGrupo,
-            }));
-            return {
-               id,
-               nombre: data.nombre || id,
-               habilitado: data.habilitado !== false,
-               categoria: data.categoria || "mediciones",
-               registros: registrosMigrados,
-               orden: data.orden ?? Infinity,
-               // Preservar configHistorial o usar defaults
-               configHistorial: data.configHistorial || { ...DEFAULT_CONFIG_HISTORIAL },
-               // Preservar etiquetasBits si existe (para funcionalidades de estados/alarmas)
-               etiquetasBits: data.etiquetasBits || null,
-            };
-         }
-      );
-      // Ordenar por el campo 'orden' para preservar el orden guardado
-      funcsArray.sort((a, b) => a.orden - b.orden);
-      setFuncionalidades(funcsArray);
+      setFuncionalidades(convertirDesdeObjeto(funcionalidadesObj));
    }, []);
 
-   /**
-    * Convertir funcionalidades a objeto para guardar
-    * Incluye el campo 'orden' para preservar el orden al recuperar
-    * Incluye configHistorial para configuración de visualización en historial
-    */
    const obtenerParaGuardar = useCallback(() => {
-      const funcParaGuardar = {};
-      funcionalidades.forEach((func, index) => {
-         if (func.habilitado) {
-            const funcData = {
-               nombre: func.nombre,
-               categoria: func.categoria || "mediciones",
-               habilitado: true,
-               registros: func.registros,
-               registro: func.registros[0]?.valor || 0,
-               orden: index,
-               // Incluir configHistorial
-               configHistorial: func.configHistorial || DEFAULT_CONFIG_HISTORIAL,
-            };
-            // Incluir etiquetasBits solo si tiene contenido
-            if (func.etiquetasBits && Object.keys(func.etiquetasBits).length > 0) {
-               funcData.etiquetasBits = func.etiquetasBits;
-            }
-            funcParaGuardar[func.id] = funcData;
-         }
-      });
-      return funcParaGuardar;
+      return convertirParaGuardar(funcionalidades);
    }, [funcionalidades]);
 
-   /**
-    * Contar funcionalidades en una plantilla
-    */
    const contarFuncionalidades = useCallback((plantilla) => {
-      return Object.values(plantilla?.funcionalidades || {}).filter(
-         (f) => f.habilitado !== false
-      ).length;
+      return contarFuncionalidadesHabilitadas(plantilla);
    }, []);
 
-   /**
-    * Cambiar configuración de historial de una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad
-    * @param {string} campo - Campo a modificar (habilitado, modo, mostrarPromedio, unidad, decimales)
-    * @param {*} valor - Nuevo valor
-    */
    const cambiarConfigHistorial = useCallback((funcId, campo, valor) => {
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            return {
-               ...func,
-               configHistorial: {
-                  ...(func.configHistorial || DEFAULT_CONFIG_HISTORIAL),
-                  [campo]: valor,
-               },
-            };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         return { ...func, configHistorial: { ...(func.configHistorial || DEFAULT_CONFIG_HISTORIAL), [campo]: valor } };
+      }));
    }, []);
 
-   /**
-    * Cambiar etiqueta de un bit específico de una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad
-    * @param {number} bitIndex - Índice del bit (0-15)
-    * @param {string} texto - Texto de la etiqueta
-    */
    const cambiarEtiquetaBitFunc = useCallback((funcId, bitIndex, texto) => {
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            const etiquetasBits = { ...(func.etiquetasBits || {}) };
-            if (!texto.trim()) {
-               // Si está vacío, eliminar la entrada
-               delete etiquetasBits[bitIndex];
-            } else {
-               etiquetasBits[bitIndex] = {
-                  ...(etiquetasBits[bitIndex] || { severidad: "info" }),
-                  texto: texto,
-               };
-            }
-            return { ...func, etiquetasBits };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         const etiquetasBits = { ...(func.etiquetasBits || {}) };
+         if (!texto.trim()) { delete etiquetasBits[bitIndex]; }
+         else { etiquetasBits[bitIndex] = { ...(etiquetasBits[bitIndex] || { severidad: "info" }), texto }; }
+         return { ...func, etiquetasBits };
+      }));
    }, []);
 
-   /**
-    * Cambiar severidad de un bit específico de una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad
-    * @param {number} bitIndex - Índice del bit (0-15)
-    * @param {string} severidad - Severidad (alarma, warning, info, estado)
-    */
    const cambiarSeveridadBitFunc = useCallback((funcId, bitIndex, severidad) => {
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            const etiquetasBits = { ...(func.etiquetasBits || {}) };
-            etiquetasBits[bitIndex] = {
-               ...(etiquetasBits[bitIndex] || { texto: "" }),
-               severidad: severidad,
-            };
-            return { ...func, etiquetasBits };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         const etiquetasBits = { ...(func.etiquetasBits || {}) };
+         etiquetasBits[bitIndex] = { ...(etiquetasBits[bitIndex] || { texto: "" }), severidad };
+         return { ...func, etiquetasBits };
+      }));
    }, []);
 
-   /**
-    * Agregar un nuevo bit a las etiquetas de una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad
-    */
    const agregarBitFunc = useCallback((funcId) => {
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            const etiquetasBits = { ...(func.etiquetasBits || {}) };
-            // Encontrar el siguiente índice disponible
-            const indicesExistentes = Object.keys(etiquetasBits).map(Number);
-            const siguienteIndice = indicesExistentes.length > 0
-               ? Math.max(...indicesExistentes) + 1
-               : 0;
-            etiquetasBits[siguienteIndice] = { texto: "", severidad: "info" };
-            return { ...func, etiquetasBits };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         const etiquetasBits = { ...(func.etiquetasBits || {}) };
+         const indicesExistentes = Object.keys(etiquetasBits).map(Number);
+         const siguienteIndice = indicesExistentes.length > 0 ? Math.max(...indicesExistentes) + 1 : 0;
+         etiquetasBits[siguienteIndice] = { texto: "", severidad: "info" };
+         return { ...func, etiquetasBits };
+      }));
    }, []);
 
-   /**
-    * Quitar el último bit de las etiquetas de una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad
-    */
    const quitarBitFunc = useCallback((funcId) => {
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            const etiquetasBits = { ...(func.etiquetasBits || {}) };
-            const indicesExistentes = Object.keys(etiquetasBits).map(Number);
-            if (indicesExistentes.length === 0) return func;
-            // Eliminar el bit con índice más alto
-            const maxIndice = Math.max(...indicesExistentes);
-            delete etiquetasBits[maxIndice];
-            return { ...func, etiquetasBits };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         const etiquetasBits = { ...(func.etiquetasBits || {}) };
+         const indicesExistentes = Object.keys(etiquetasBits).map(Number);
+         if (indicesExistentes.length === 0) return func;
+         delete etiquetasBits[Math.max(...indicesExistentes)];
+         return { ...func, etiquetasBits };
+      }));
    }, []);
 
-   /**
-    * Pegar etiquetas de bits copiadas a una funcionalidad
-    * @param {string} funcId - ID de la funcionalidad destino
-    * @param {Object} etiquetasCopiadas - Objeto con las etiquetas a pegar
-    */
    const pegarEtiquetasBitsFunc = useCallback((funcId, etiquetasCopiadas) => {
       if (!etiquetasCopiadas || Object.keys(etiquetasCopiadas).length === 0) return;
-      setFuncionalidades((prev) =>
-         prev.map((func) => {
-            if (func.id !== funcId) return func;
-            // Copiar profundamente las etiquetas
-            const nuevasEtiquetas = {};
-            Object.entries(etiquetasCopiadas).forEach(([indice, config]) => {
-               nuevasEtiquetas[indice] = { ...config };
-            });
-            return { ...func, etiquetasBits: nuevasEtiquetas };
-         })
-      );
+      setFuncionalidades((prev) => prev.map((func) => {
+         if (func.id !== funcId) return func;
+         const nuevasEtiquetas = {};
+         Object.entries(etiquetasCopiadas).forEach(([indice, config]) => { nuevasEtiquetas[indice] = { ...config }; });
+         return { ...func, etiquetasBits: nuevasEtiquetas };
+      }));
    }, []);
 
-   /**
-    * Resetear todo el estado
-    */
    const resetear = useCallback(() => {
       setFuncionalidades([]);
       setNuevaFunc({ nombre: "", cantidad: 1, categoria: "mediciones" });
    }, []);
 
    return {
-      // Estado
-      funcionalidades,
-      nuevaFunc,
-
-      // Setters
-      setNuevaFunc,
-      setFuncionalidades,
-
-      // Funciones
-      agregarFuncionalidad,
-      eliminarFuncionalidad,
-      toggleFuncionalidad,
-      cambiarEtiquetaRegistro,
-      cambiarValorRegistro,
-      cambiarTransformadorRegistro,
-      aplicarTransformadorATodos,
-      moverFuncionalidadArriba,
-      moverFuncionalidadAbajo,
-      cargarDesdeObjeto,
-      obtenerParaGuardar,
-      contarFuncionalidades,
-      resetear,
-      // Configuración de historial
-      cambiarConfigHistorial,
-      // Etiquetas de bits por funcionalidad
-      cambiarEtiquetaBitFunc,
-      cambiarSeveridadBitFunc,
-      agregarBitFunc,
-      quitarBitFunc,
-      pegarEtiquetasBitsFunc,
+      funcionalidades, nuevaFunc, setNuevaFunc, setFuncionalidades,
+      agregarFuncionalidad, eliminarFuncionalidad, toggleFuncionalidad,
+      cambiarEtiquetaRegistro, cambiarValorRegistro, cambiarTransformadorRegistro,
+      aplicarTransformadorATodos, moverFuncionalidadArriba, moverFuncionalidadAbajo,
+      cargarDesdeObjeto, obtenerParaGuardar, contarFuncionalidades, resetear,
+      cambiarConfigHistorial, cambiarEtiquetaBitFunc, cambiarSeveridadBitFunc,
+      agregarBitFunc, quitarBitFunc, pegarEtiquetasBitsFunc,
    };
 }
