@@ -133,17 +133,22 @@ const VentanaHistorial = ({
 
    const handleGenerarInforme = async (configInforme) => {
       const { solicitadoPor, datosFiltrados: datosInforme, fechaInicio, fechaFin, intervalo, imagenGrafico } = configInforme;
-      const { generarInformePDF } = await import("../../../utilidades/exportarInformePDF");
-      await generarInformePDF({
-         nombreAlimentador: alimentador?.nombre || "Alimentador",
-         tituloMedicion: tituloMedicionActual,
-         datos: datosInforme,
-         fechaInicio,
-         fechaFin,
-         solicitadoPor,
-         imagenGrafico,
-         intervalo,
-      });
+      try {
+         const { generarInformePDF } = await import("../../../utilidades/exportarInformePDF");
+         await generarInformePDF({
+            nombreAlimentador: alimentador?.nombre || "Alimentador",
+            tituloMedicion: tituloMedicionActual,
+            datos: datosInforme,
+            fechaInicio,
+            fechaFin,
+            solicitadoPor,
+            imagenGrafico,
+            intervalo,
+         });
+      } catch (err) {
+         console.error("Error generando informe PDF:", err);
+         throw err;
+      }
    };
 
    // No renderizar si está minimizada
@@ -289,6 +294,7 @@ const VentanaHistorial = ({
             nombreAlimentador={alimentador?.nombre || "Alimentador"}
             tituloMedicion={tituloMedicionActual}
             tipoGrafico={tipoGrafico}
+            escalaYMax={escalaYMax}
          />
       </div>
    );

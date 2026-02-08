@@ -30,6 +30,7 @@ export const generarImagenGrafico = async (datos, opciones = {}) => {
     width = 1100,
     height = 450,
     scale = 2,
+    escalaYMax = null,
   } = opciones;
 
   // Crear contenedor temporal - usar visibility:hidden para que ApexCharts
@@ -103,10 +104,11 @@ export const generarImagenGrafico = async (datos, opciones = {}) => {
       },
     },
     yaxis: {
-      min: Math.floor(minY - margen),
-      max: Math.ceil(maxY + margen),
+      min: 0,
+      max: escalaYMax != null ? escalaYMax : Math.ceil(maxY + margen),
+      forceNiceScale: true,
       labels: {
-        formatter: (val) => val.toFixed(2),
+        formatter: (val) => Number.isInteger(val) ? val.toString() : val.toFixed(2),
       },
     },
     grid: {

@@ -12,17 +12,15 @@ import ControlesVisualizacion from "./ControlesVisualizacion";
 const BarraControlesHistorial = (props) => {
    return (
       <div className="ventana-controles">
-         <IndicadoresCache
-            panelDatosAbierto={props.panelDatosAbierto}
-            onTogglePanel={props.onTogglePanel}
-            graficoVisible={props.graficoVisible}
-            onToggleGrafico={props.onToggleGrafico}
-            precargaProgreso={props.precargaProgreso}
-            precargaCompleta={props.precargaCompleta}
-            precargando={props.precargando}
-            fuenteDatos={props.fuenteDatos}
-            onLimpiarCache={props.onLimpiarCache}
-         />
+         {/* Toggle panel - siempre primero */}
+         <button
+            type="button"
+            className={`ventana-toggle-datos ${props.panelDatosAbierto ? "ventana-toggle-datos--activo" : ""}`}
+            onClick={props.onTogglePanel}
+            title={props.panelDatosAbierto ? "Ocultar datos" : "Ver datos"}
+         >
+            <span className="ventana-toggle-icono">▲</span>
+         </button>
 
          <SelectorDatosHistorial
             registradoresUnicos={props.registradoresUnicos}
@@ -50,6 +48,17 @@ const BarraControlesHistorial = (props) => {
             onFechaRangoChange={props.onFechaRangoChange}
             tipoGrafico={props.tipoGrafico}
             onTipoGraficoChange={props.onTipoGraficoChange}
+         />
+
+         {/* Cache + Fuente - último, usa margin-left:auto para alinearse a la derecha */}
+         <IndicadoresCache
+            graficoVisible={props.graficoVisible}
+            onToggleGrafico={props.onToggleGrafico}
+            precargaProgreso={props.precargaProgreso}
+            precargaCompleta={props.precargaCompleta}
+            precargando={props.precargando}
+            fuenteDatos={props.fuenteDatos}
+            onLimpiarCache={props.onLimpiarCache}
          />
       </div>
    );

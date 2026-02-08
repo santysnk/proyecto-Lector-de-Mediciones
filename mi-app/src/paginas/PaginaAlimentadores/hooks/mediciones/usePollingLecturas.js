@@ -61,14 +61,15 @@ export function usePollingLecturas({ actualizarRegistros, guardarLecturaLocal, b
          });
 
          const registrosTransformados = transformarLecturaARegistros(lectura, registradorId);
+         const timestampLectura = lectura.timestamp ? new Date(lectura.timestamp).getTime() : null;
          if (registrosTransformados) {
             actualizarRegistros(alimId, (prevRegistros) => {
                const registrosAnteriores = prevRegistros?.rele || [];
                const registrosFiltrados = registrosAnteriores.filter(r => r.registradorId !== registradorId);
-               return { rele: [...registrosFiltrados, ...registrosTransformados] };
+               return { rele: [...registrosFiltrados, ...registrosTransformados], timestamp: timestampLectura };
             });
             guardarLecturaLocal(alimId, registradorId, zona, {
-               timestamp: lectura.timestamp ? new Date(lectura.timestamp).getTime() : Date.now(),
+               timestamp: timestampLectura,
                valores: lectura.valores,
                indiceInicial: lectura.indice_inicial ?? 0,
                exito: true,

@@ -91,7 +91,7 @@ export function useVistaAlimentadores() {
 
    const handleExpandirLectura = useCallback((alimentador) => {
       const registrosAlim = registrosEnVivo[alimentador.id] || null;
-      modalLecturaCompleta.abrirModal(alimentador, registrosAlim, registrosAlim?.timestamp || Date.now());
+      modalLecturaCompleta.abrirModal(alimentador, registrosAlim, registrosAlim?.timestamp || null);
    }, [registrosEnVivo, modalLecturaCompleta]);
 
    useEffect(() => { return () => limpiarTodosIntervalos(); }, [limpiarTodosIntervalos]);

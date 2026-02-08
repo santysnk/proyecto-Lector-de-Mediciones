@@ -52,9 +52,11 @@ export function ModalLecturaCompleta({
 
             {/* Subtítulo con timestamp */}
             <div className="modal-lectura-subtitulo">
-               {timestampFormateado && (
-                  <span className="modal-lectura-timestamp">Última lectura: {timestampFormateado}</span>
-               )}
+               <span className="modal-lectura-timestamp">
+                  {timestampFormateado
+                     ? `Última lectura: ${timestampFormateado}`
+                     : "Sin fecha de lectura disponible"}
+               </span>
             </div>
 
             {/* Tabs si hay múltiples registradores */}
