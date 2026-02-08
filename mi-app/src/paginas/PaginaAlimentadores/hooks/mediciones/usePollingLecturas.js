@@ -1,19 +1,11 @@
-// hooks/usePollingLecturas.js
+// hooks/mediciones/usePollingLecturas.js
 // Hook para manejar el polling de lecturas de registradores
 
 import { useState, useRef, useCallback } from "react";
 import { obtenerUltimasLecturasPorRegistrador } from "../../../../servicios/apiService";
+import { obtenerRegistradoresDeAlim, transformarLecturaARegistros } from "./pollingLecturasUtils";
 
-/**
- * Hook para manejar el polling de lecturas de registradores Modbus
- * @param {Object} params - Parámetros del hook
- * @returns {Object} Estado y funciones de polling
- */
-export function usePollingLecturas({
-   actualizarRegistros,
-   guardarLecturaLocal,
-   buscarAlimentador
-}) {
+export function usePollingLecturas({ actualizarRegistros, guardarLecturaLocal, buscarAlimentador }) {
    const [alimentadoresPolling, setAlimentadoresPolling] = useState({});
    const [lecturasPolling, setLecturasPolling] = useState({});
    const [contadoresPolling, setContadoresPolling] = useState({});
@@ -25,326 +17,140 @@ export function usePollingLecturas({
    const pollingIntervalsRef = useRef({});
    const contadorIntervalsRef = useRef({});
 
-   /**
-    * Verifica si un alimentador está haciendo polling
-    */
    const estaPolling = useCallback((alimId) => !!alimentadoresPolling[alimId], [alimentadoresPolling]);
-
-   /**
-    * Obtiene el contador de lecturas de polling
-    */
    const obtenerContadorPolling = useCallback((alimId) => contadoresPolling[alimId] || 0, [contadoresPolling]);
 
-   /**
-    * Obtiene el estado de error de lectura por zona
-    */
    const obtenerErrorPolling = useCallback((alimId) => {
       const contadorSuperior = contadoresErrorLectura[`${alimId}_superior`] || 0;
       const contadorInferior = contadoresErrorLectura[`${alimId}_inferior`] || 0;
-
       if (contadorSuperior === 0 && contadorInferior === 0) return null;
-
       return {
-         superior: contadorSuperior >= 1,
-         inferior: contadorInferior >= 1,
-         superiorCritico: contadorSuperior >= 3,
-         inferiorCritico: contadorInferior >= 3,
+         superior: contadorSuperior >= 1, inferior: contadorInferior >= 1,
+         superiorCritico: contadorSuperior >= 3, inferiorCritico: contadorInferior >= 3,
       };
    }, [contadoresErrorLectura]);
 
-   /**
-    * Obtiene lecturas de un registrador
-    */
    const fetchLecturasRegistrador = useCallback(async (alimId, registradorId, zona = null) => {
       const claveError = zona ? `${alimId}_${zona}` : `${alimId}_superior`;
-
       try {
          const lecturas = await obtenerUltimasLecturasPorRegistrador(registradorId, 1);
 
-         // Resetear errores de red si el fetch fue exitoso
          setContadoresErrorRed((prev) => {
-            if (prev[claveError]) {
-               const nuevo = { ...prev };
-               delete nuevo[claveError];
-               if (Object.keys(nuevo).length === 0) {
-                  setHayProblemaConexion(false);
-               }
-               return nuevo;
-            }
-            return prev;
+            if (!prev[claveError]) return prev;
+            const nuevo = { ...prev };
+            delete nuevo[claveError];
+            if (Object.keys(nuevo).length === 0) setHayProblemaConexion(false);
+            return nuevo;
          });
 
          if (!lecturas || lecturas.length === 0) return;
-
          const lectura = lecturas[0];
          const clavePolling = zona ? `${alimId}_${zona}` : alimId;
+         setLecturasPolling((prev) => ({ ...prev, [clavePolling]: lectura }));
 
-         setLecturasPolling((prev) => ({
-            ...prev,
-            [clavePolling]: lectura,
-         }));
-
-         const tieneErrorLectura = lectura.exito === false;
-
-         if (tieneErrorLectura) {
-            setContadoresErrorLectura((prev) => ({
-               ...prev,
-               [claveError]: (prev[claveError] || 0) + 1,
-            }));
+         if (lectura.exito === false) {
+            setContadoresErrorLectura((prev) => ({ ...prev, [claveError]: (prev[claveError] || 0) + 1 }));
             return;
          }
 
-         // Resetear errores si la lectura es exitosa
          setContadoresErrorLectura((prev) => {
-            if (prev[claveError]) {
-               const nuevo = { ...prev };
-               delete nuevo[claveError];
-               return nuevo;
-            }
-            return prev;
+            if (!prev[claveError]) return prev;
+            const nuevo = { ...prev };
+            delete nuevo[claveError];
+            return nuevo;
          });
 
-         // Transformar y actualizar registros
-         if (lectura.valores && Array.isArray(lectura.valores)) {
-            const indiceInicial = lectura.indice_inicial ?? 0;
-
-            // Incluir registradorId para evitar conflictos entre registradores con mismo rango
-            const registrosTransformados = lectura.valores.map((valor, idx) => ({
-               index: idx,
-               address: indiceInicial + idx,
-               value: valor,
-               registradorId: registradorId,
-            }));
-
+         const registrosTransformados = transformarLecturaARegistros(lectura, registradorId);
+         if (registrosTransformados) {
             actualizarRegistros(alimId, (prevRegistros) => {
                const registrosAnteriores = prevRegistros?.rele || [];
-               // Solo filtrar registros del MISMO registrador para evitar sobreescribir otros
-               const registrosFiltrados = registrosAnteriores.filter(r =>
-                  r.registradorId !== registradorId
-               );
-               return {
-                  rele: [...registrosFiltrados, ...registrosTransformados]
-               };
+               const registrosFiltrados = registrosAnteriores.filter(r => r.registradorId !== registradorId);
+               return { rele: [...registrosFiltrados, ...registrosTransformados] };
             });
-
             guardarLecturaLocal(alimId, registradorId, zona, {
                timestamp: lectura.timestamp ? new Date(lectura.timestamp).getTime() : Date.now(),
                valores: lectura.valores,
-               indiceInicial: indiceInicial,
+               indiceInicial: lectura.indice_inicial ?? 0,
                exito: true,
             });
          }
       } catch (error) {
          console.error(`[Polling] Error de red para alimentador ${alimId}:`, error);
-         setContadoresErrorRed((prev) => ({
-            ...prev,
-            [claveError]: (prev[claveError] || 0) + 1,
-         }));
+         setContadoresErrorRed((prev) => ({ ...prev, [claveError]: (prev[claveError] || 0) + 1 }));
          setHayProblemaConexion(true);
       }
    }, [actualizarRegistros, guardarLecturaLocal]);
 
-   /**
-    * Extrae los registrador_id de config_tarjeta o card_design de un alimentador
-    * Prioriza config_tarjeta (nueva estructura) sobre card_design (legacy)
-    */
-   const obtenerRegistradoresDeAlim = useCallback((alim) => {
-      const registradores = [];
-
-      // Priorizar config_tarjeta (nueva estructura) sobre card_design (legacy)
-      const config = alim.config_tarjeta || alim.card_design;
-
-      const regSuperior = config?.superior?.registrador_id;
-      const regInferior = config?.inferior?.registrador_id;
-
-      if (regSuperior && regInferior) {
-         if (regSuperior === regInferior) {
-            registradores.push({ zona: "superior", zonas: ["superior", "inferior"], id: regSuperior });
-         } else {
-            registradores.push({ zona: "superior", id: regSuperior });
-            registradores.push({ zona: "inferior", id: regInferior });
-         }
-      } else if (regSuperior) {
-         registradores.push({ zona: "superior", zonas: ["superior", "inferior"], id: regSuperior });
-      } else if (regInferior) {
-         registradores.push({ zona: "inferior", zonas: ["superior", "inferior"], id: regInferior });
-      }
-
-      if (registradores.length === 0 && alim.registrador_id) {
-         registradores.push({ zona: "legacy", zonas: ["superior", "inferior"], id: alim.registrador_id });
-      }
-
-      return registradores;
-   }, []);
-
-   /**
-    * Inicia el polling para un alimentador
-    */
    const iniciarPolling = useCallback((alim) => {
       const registradores = obtenerRegistradoresDeAlim(alim);
+      if (registradores.length === 0 || !alim.intervalo_consulta_ms) return;
 
-      if (registradores.length === 0) {
-         console.warn(`[Polling] Alimentador ${alim.id} sin registradores`);
-         return;
-      }
-
-      if (!alim.intervalo_consulta_ms) {
-         console.warn(`[Polling] Alimentador ${alim.id} sin intervalo`);
-         return;
-      }
-
-      // Limpiar intervalos existentes
       if (pollingIntervalsRef.current[alim.id]) {
          const intervalos = pollingIntervalsRef.current[alim.id];
-         if (Array.isArray(intervalos)) {
-            intervalos.forEach(clearInterval);
-         } else {
-            clearInterval(intervalos);
-         }
+         (Array.isArray(intervalos) ? intervalos : [intervalos]).forEach(clearInterval);
       }
-      if (contadorIntervalsRef.current[alim.id]) {
-         clearInterval(contadorIntervalsRef.current[alim.id]);
-      }
+      if (contadorIntervalsRef.current[alim.id]) clearInterval(contadorIntervalsRef.current[alim.id]);
 
       const intervalos = [];
-
       registradores.forEach(({ zona, zonas, id: registradorId }) => {
          const zonasACubrir = zonas || [zona];
-
-         zonasACubrir.forEach((z) => {
-            fetchLecturasRegistrador(alim.id, registradorId, z);
-         });
-
-         const intervalId = setInterval(() => {
-            zonasACubrir.forEach((z) => {
-               fetchLecturasRegistrador(alim.id, registradorId, z);
-            });
-         }, alim.intervalo_consulta_ms);
-
-         intervalos.push(intervalId);
+         zonasACubrir.forEach((z) => fetchLecturasRegistrador(alim.id, registradorId, z));
+         intervalos.push(setInterval(() => {
+            zonasACubrir.forEach((z) => fetchLecturasRegistrador(alim.id, registradorId, z));
+         }, alim.intervalo_consulta_ms));
       });
 
       pollingIntervalsRef.current[alim.id] = intervalos.length === 1 ? intervalos[0] : intervalos;
-
-      setContadoresPolling((prev) => ({
-         ...prev,
-         [alim.id]: (prev[alim.id] || 0) + 1,
-      }));
-
-      const contadorIntervalId = setInterval(() => {
-         setContadoresPolling((prev) => ({
-            ...prev,
-            [alim.id]: (prev[alim.id] || 0) + 1,
-         }));
+      setContadoresPolling((prev) => ({ ...prev, [alim.id]: (prev[alim.id] || 0) + 1 }));
+      contadorIntervalsRef.current[alim.id] = setInterval(() => {
+         setContadoresPolling((prev) => ({ ...prev, [alim.id]: (prev[alim.id] || 0) + 1 }));
       }, alim.intervalo_consulta_ms);
+   }, [fetchLecturasRegistrador]);
 
-      contadorIntervalsRef.current[alim.id] = contadorIntervalId;
-   }, [fetchLecturasRegistrador, obtenerRegistradoresDeAlim]);
-
-   /**
-    * Detiene el polling para un alimentador
-    */
    const detenerPolling = useCallback((alimId) => {
       if (pollingIntervalsRef.current[alimId]) {
          const intervalos = pollingIntervalsRef.current[alimId];
-         if (Array.isArray(intervalos)) {
-            intervalos.forEach(clearInterval);
-         } else {
-            clearInterval(intervalos);
-         }
+         (Array.isArray(intervalos) ? intervalos : [intervalos]).forEach(clearInterval);
          delete pollingIntervalsRef.current[alimId];
       }
-
       if (contadorIntervalsRef.current[alimId]) {
          clearInterval(contadorIntervalsRef.current[alimId]);
          delete contadorIntervalsRef.current[alimId];
       }
-
       setLecturasPolling((prev) => {
          const nuevo = { ...prev };
-         delete nuevo[alimId];
-         delete nuevo[`${alimId}_superior`];
-         delete nuevo[`${alimId}_inferior`];
-         delete nuevo[`${alimId}_legacy`];
+         delete nuevo[alimId]; delete nuevo[`${alimId}_superior`]; delete nuevo[`${alimId}_inferior`]; delete nuevo[`${alimId}_legacy`];
          return nuevo;
       });
-
-      setContadoresPolling((prev) => {
-         const nuevo = { ...prev };
-         delete nuevo[alimId];
-         return nuevo;
-      });
-
+      setContadoresPolling((prev) => { const nuevo = { ...prev }; delete nuevo[alimId]; return nuevo; });
       setContadoresErrorLectura((prev) => {
-         const claveSup = `${alimId}_superior`;
-         const claveInf = `${alimId}_inferior`;
-         if (prev[claveSup] || prev[claveInf]) {
-            const nuevo = { ...prev };
-            delete nuevo[claveSup];
-            delete nuevo[claveInf];
-            return nuevo;
-         }
-         return prev;
+         if (!prev[`${alimId}_superior`] && !prev[`${alimId}_inferior`]) return prev;
+         const nuevo = { ...prev }; delete nuevo[`${alimId}_superior`]; delete nuevo[`${alimId}_inferior`]; return nuevo;
       });
-
       setContadoresErrorRed((prev) => {
-         const claveSup = `${alimId}_superior`;
-         const claveInf = `${alimId}_inferior`;
-         if (prev[claveSup] || prev[claveInf]) {
-            const nuevo = { ...prev };
-            delete nuevo[claveSup];
-            delete nuevo[claveInf];
-            if (Object.keys(nuevo).length === 0) {
-               setHayProblemaConexion(false);
-            }
-            return nuevo;
-         }
-         return prev;
+         if (!prev[`${alimId}_superior`] && !prev[`${alimId}_inferior`]) return prev;
+         const nuevo = { ...prev }; delete nuevo[`${alimId}_superior`]; delete nuevo[`${alimId}_inferior`];
+         if (Object.keys(nuevo).length === 0) setHayProblemaConexion(false);
+         return nuevo;
       });
    }, []);
 
-   /**
-    * Alterna el polling de un alimentador (play/stop)
-    */
    const handlePlayStopClick = useCallback((alimId) => {
       const alimentador = buscarAlimentador(alimId);
       if (!alimentador) return;
-
-      const estaActivo = alimentadoresPolling[alimId];
-
-      if (estaActivo) {
-         detenerPolling(alimId);
-      } else {
-         iniciarPolling(alimentador);
-      }
-
-      setAlimentadoresPolling((prev) => ({
-         ...prev,
-         [alimId]: !prev[alimId],
-      }));
+      if (alimentadoresPolling[alimId]) { detenerPolling(alimId); } else { iniciarPolling(alimentador); }
+      setAlimentadoresPolling((prev) => ({ ...prev, [alimId]: !prev[alimId] }));
    }, [alimentadoresPolling, buscarAlimentador, detenerPolling, iniciarPolling]);
 
-   /**
-    * Limpia todos los intervalos
-    */
    const limpiarTodosIntervalos = useCallback(() => {
       Object.values(pollingIntervalsRef.current).forEach((intervalos) => {
-         if (Array.isArray(intervalos)) {
-            intervalos.forEach(clearInterval);
-         } else {
-            clearInterval(intervalos);
-         }
+         (Array.isArray(intervalos) ? intervalos : [intervalos]).forEach(clearInterval);
       });
       Object.values(contadorIntervalsRef.current).forEach(clearInterval);
    }, []);
 
    return {
-      estaPolling,
-      obtenerContadorPolling,
-      obtenerErrorPolling,
-      handlePlayStopClick,
-      limpiarTodosIntervalos,
-      hayProblemaConexion,
-      lecturasPolling,
+      estaPolling, obtenerContadorPolling, obtenerErrorPolling,
+      handlePlayStopClick, limpiarTodosIntervalos, hayProblemaConexion, lecturasPolling,
    };
 }
