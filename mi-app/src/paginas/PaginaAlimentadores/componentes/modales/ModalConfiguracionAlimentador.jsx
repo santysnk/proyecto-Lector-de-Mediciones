@@ -53,12 +53,31 @@ const ModalConfiguracionAlimentador = ({
       const limpioNombre = nombre.trim();
       if (!limpioNombre) return;
 
+      // Limpiar espacios en títulos y etiquetas personalizadas al guardar
+      const configLimpia = { ...configTarjeta };
+      for (const zona of ["superior", "inferior"]) {
+         if (!configLimpia[zona]) continue;
+         const zonaLimpia = { ...configLimpia[zona] };
+         if (zonaLimpia.titulo_personalizado) {
+            zonaLimpia.titulo_personalizado = zonaLimpia.titulo_personalizado.trim() || null;
+         }
+         if (zonaLimpia.etiquetas_personalizadas) {
+            const etiquetasLimpias = {};
+            for (const [idx, valor] of Object.entries(zonaLimpia.etiquetas_personalizadas)) {
+               const limpio = typeof valor === "string" ? valor.trim() : valor;
+               if (limpio) etiquetasLimpias[idx] = limpio;
+            }
+            zonaLimpia.etiquetas_personalizadas = etiquetasLimpias;
+         }
+         configLimpia[zona] = zonaLimpia;
+      }
+
       onConfirmar({
          nombre: limpioNombre,
          color,
          intervalo_consulta_ms: intervaloConsultaSeg * 1000,
          card_design: cardDesign,
-         config_tarjeta: configTarjeta,
+         config_tarjeta: configLimpia,
       });
    };
 

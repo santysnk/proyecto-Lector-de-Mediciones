@@ -91,6 +91,7 @@ export const useGestionAlimentadores = ({
             }
          } catch (error) {
             console.error("Error guardando alimentador:", error);
+            alert("Error al guardar alimentador: " + (error.message || "Error desconocido"));
             setGuardandoAlimentador(false);
          } finally {
             if (modoAlimentador === "crear") {
