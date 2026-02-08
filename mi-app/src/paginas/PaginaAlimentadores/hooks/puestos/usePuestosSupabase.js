@@ -56,9 +56,11 @@ export const usePuestosSupabase = (workspaceId) => {
         const seleccionValida = puestosConAlimentadores.some((p) => p.id === puestoSeleccionadoId);
         if (!seleccionValida) setPuestoSeleccionadoId(puestosConAlimentadores[0].id);
       }
+      return puestosConAlimentadores;
     } catch (err) {
       console.error("Error cargando puestos:", err);
       setError(err.message);
+      return null;
     } finally {
       setCargando(false);
     }

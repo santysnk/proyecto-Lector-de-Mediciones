@@ -88,8 +88,10 @@ export const useSincronizacionCambios = ({
    }, [configuracionSeleccionadaId]);
 
    // Detectar cambios cada vez que cambian los datos locales
+   // Nota: snapshotGuardado en deps asegura re-detección tras actualizar el snapshot (guardado en ref)
    useEffect(() => {
       if (esCreador === null) return;
+      if (cargandoPuestos) return;
 
       if (puestos.length > 0) {
          const puestosParaDeteccion = esCreador ? puestos : obtenerPuestosConPreferencias();
@@ -105,6 +107,8 @@ export const useSincronizacionCambios = ({
       }
    }, [
       puestos,
+      cargandoPuestos,
+      snapshotGuardado,
       gapsPorTarjeta,
       gapsPorFila,
       escalasPorPuesto,
@@ -179,14 +183,27 @@ export const useSincronizacionCambios = ({
          preferenciasHook.resetearTodasLasEscalasTarjetas();
       };
 
+      // Después de guardar, recarga puestos y actualiza snapshot imperativamente
+      // para evitar depender del timing de efectos React
+      const actualizarSnapshotTrasGuardado = async () => {
+         limpiarLocalStorage();
+         if (!esCreador) {
+            await preferenciasVisualesHook.cargarPreferencias();
+         }
+         const puestosFrescos = await puestosHook.cargarPuestos();
+         if (puestosFrescos) {
+            guardarSnapshot(puestosFrescos);
+            setSnapshotGuardado(true);
+         } else {
+            setSnapshotGuardado(false);
+         }
+         setHayCambiosPendientes(false);
+      };
+
       if (esCreador) {
          await sincronizarConBD(
             cambios,
-            async () => {
-               limpiarLocalStorage();
-               setSnapshotGuardado(false);
-               await puestosHook.cargarPuestos();
-            },
+            actualizarSnapshotTrasGuardado,
             (error) => {
                console.error("Error al sincronizar:", error);
             }
@@ -194,10 +211,7 @@ export const useSincronizacionCambios = ({
       } else {
          try {
             await sincronizarCambiosInvitado(cambios);
-            limpiarLocalStorage();
-            await preferenciasVisualesHook.cargarPreferencias();
-            setSnapshotGuardado(false);
-            await puestosHook.cargarPuestos();
+            await actualizarSnapshotTrasGuardado();
          } catch (error) {
             console.error("Error al sincronizar preferencias:", error);
          }
@@ -211,6 +225,7 @@ export const useSincronizacionCambios = ({
       escalasPorTarjeta,
       detectarCambios,
       sincronizarConBD,
+      guardarSnapshot,
       puestosHook,
       preferenciasHook,
       esCreador,
@@ -227,14 +242,20 @@ export const useSincronizacionCambios = ({
       preferenciasHook.resetearTodosLosRowGaps();
       preferenciasHook.resetearTodasLasEscalasPuestos();
       preferenciasHook.resetearTodasLasEscalasTarjetas();
-      setSnapshotGuardado(false);
 
       if (!esCreador) {
          await preferenciasVisualesHook.cargarPreferencias();
       }
 
-      await puestosHook.cargarPuestos();
-   }, [preferenciasHook, puestosHook, esCreador, preferenciasVisualesHook]);
+      const puestosFrescos = await puestosHook.cargarPuestos();
+      if (puestosFrescos) {
+         guardarSnapshot(puestosFrescos);
+         setSnapshotGuardado(true);
+      } else {
+         setSnapshotGuardado(false);
+      }
+      setHayCambiosPendientes(false);
+   }, [preferenciasHook, puestosHook, esCreador, preferenciasVisualesHook, guardarSnapshot]);
 
    return {
       hayCambiosPendientes,
