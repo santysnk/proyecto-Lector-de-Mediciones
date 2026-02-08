@@ -93,6 +93,9 @@ const GrillaTarjetas = ({
       return Array.from(ids);
    }, [alimentadores]);
 
+   // Clave estable: solo cambia cuando los IDs reales cambian, no cuando cambia la referencia del array
+   const registradoresIdsKey = useMemo(() => registradoresIds.join(","), [registradoresIds]);
+
    // Cargar etiquetasBits de registradores
    // Las etiquetasBits ahora están embebidas en las funcionalidades de tipo "estados"
    // Se recargan cada vez que cambian los registradoresIds para reflejar cambios en plantillas
@@ -139,7 +142,8 @@ const GrillaTarjetas = ({
       };
 
       cargarEtiquetas();
-   }, [registradoresIds]);
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [registradoresIdsKey]);
 
    // Funcion para obtener alarmas activas de un alimentador
    const obtenerAlarmasActivas = useCallback((alimentador) => {
