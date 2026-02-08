@@ -83,9 +83,10 @@ export const usePuestosSupabase = (workspaceId) => {
         color: colorPuesto || COLORES_SISTEMA[0],
         bg_color: COLOR_FONDO_POR_DEFECTO,
       });
-      setPuestos((prev) => [...prev, { ...nuevoPuesto, alimentadores: [] }]);
-      setPuestoSeleccionadoId(nuevoPuesto.id);
-      return nuevoPuesto;
+      const puestoTransformado = { ...transformarPuestoDeDB(nuevoPuesto), alimentadores: [] };
+      setPuestos((prev) => [...prev, puestoTransformado]);
+      setPuestoSeleccionadoId(puestoTransformado.id);
+      return puestoTransformado;
     } catch (err) {
       console.error("Error creando puesto:", err);
       setError(err.message);
@@ -141,7 +142,7 @@ export const usePuestosSupabase = (workspaceId) => {
       return alimentadorFrontend;
     } catch (err) {
       console.error("Error creando alimentador:", err);
-      setError(err.message);
+      // No setear error de página — el llamador maneja el error con alert
       throw err;
     }
   };
