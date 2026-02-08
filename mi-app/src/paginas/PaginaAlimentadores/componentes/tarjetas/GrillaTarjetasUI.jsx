@@ -169,9 +169,17 @@ const GrillaTarjetas = ({
 
          {/* Mensaje sin alimentadores */}
          {alimentadores.length === 0 && (
-            <p className="alim-empty-message">
-               Este puesto no tiene alimentadores. Haz clic en el botón de abajo para agregar.
-            </p>
+            <div className="alim-empty-message">
+               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="3" width="20" height="18" rx="2" />
+                  <line x1="12" y1="9" x2="12" y2="15" />
+                  <line x1="9" y1="12" x2="15" y2="12" />
+               </svg>
+               <p className="alim-empty-message-titulo">Este puesto no tiene alimentadores</p>
+               <p className="alim-empty-message-texto">
+                  Usá la tarjeta <strong>Nuevo Registrador</strong> para agregar uno.
+               </p>
+            </div>
          )}
 
          <div ref={gridRef} className="alim-cards-grid">

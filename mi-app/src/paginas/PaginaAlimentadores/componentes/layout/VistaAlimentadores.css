@@ -77,41 +77,21 @@
 	background: #2563eb;
 }
 
-/* Estado sin workspaces (dentro de main) */
-.alim-sin-workspace {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	height: 100%;
-	min-height: 300px;
-	text-align: center;
-	padding: 2rem;
-}
-
-.alim-sin-workspace h2 {
-	color: #475569;
-	margin-bottom: 0.5rem;
-	font-size: 1.25rem;
-}
-
-.alim-sin-workspace p {
-	color: #64748b;
-	margin-bottom: 0.5rem;
-}
-
-.alim-sin-workspace button {
-	margin-top: 1rem;
-	padding: 10px 20px;
+/* Botón dentro del empty state (usado en sinWorkspace) */
+.alim-empty-state-btn {
+	margin-top: 0.5rem;
+	padding: 0.5rem 1.25rem;
 	background: #3b82f6;
 	color: white;
 	border: none;
 	border-radius: 6px;
 	cursor: pointer;
 	font-weight: 500;
+	font-size: 0.9rem;
+	transition: background 0.15s;
 }
 
-.alim-sin-workspace button:hover {
+.alim-empty-state-btn:hover {
 	background: #2563eb;
 }
 
@@ -239,9 +219,43 @@
 }
 
 .alim-empty-state {
-	margin-bottom: 1rem;
-	color: #020202;
-	font-size: 0.95rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	min-height: 60vh;
+}
+
+.alim-empty-state-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 2.5rem 3rem;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	max-width: 400px;
+	text-align: center;
+}
+
+.alim-empty-state-icono {
+	color: #94a3b8;
+}
+
+.alim-empty-state-titulo {
+	margin: 0;
+	font-size: 1.15rem;
+	font-weight: 600;
+	color: #334155;
+}
+
+.alim-empty-state-texto {
+	margin: 0;
+	font-size: 0.9rem;
+	color: #64748b;
+	line-height: 1.5;
 }
 
 /* =========================================================
