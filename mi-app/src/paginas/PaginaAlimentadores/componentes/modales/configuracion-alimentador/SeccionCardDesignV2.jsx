@@ -77,15 +77,17 @@ const SeccionCardDesignV2 = ({
    const handleChangeTitulo = (valor) => {
       onChangeConfig({
          ...config,
-         titulo_personalizado: valor.trim() || null  // null = usar plantilla
+         // No hacer trim() aquí para permitir espacios mientras se escribe.
+         // El trim se aplica al guardar en ModalConfiguracionAlimentador.
+         titulo_personalizado: valor || null  // vacío = usar plantilla
       });
    };
 
    const handleChangeEtiqueta = (indice, valor) => {
       const nuevasEtiquetas = { ...config.etiquetas_personalizadas };
 
-      if (valor.trim()) {
-         nuevasEtiquetas[indice] = valor.trim();
+      if (valor) {
+         nuevasEtiquetas[indice] = valor;  // Sin trim para permitir escritura natural
       } else {
          delete nuevasEtiquetas[indice];  // Eliminar = usar plantilla
       }

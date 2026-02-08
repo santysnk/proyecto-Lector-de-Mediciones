@@ -148,7 +148,6 @@ export const usePuestosSupabase = (workspaceId) => {
 
   const actualizarAlimentador = async (idPuesto, idAlimentador, nuevosDatos) => {
     try {
-      setError(null);
       const datosDB = transformarAlimentadorADB(nuevosDatos);
       const actualizado = await actualizarAlimentadorAPI(idAlimentador, datosDB);
       const alimentadorFrontend = transformarAlimentadorDeDB(actualizado);
@@ -161,7 +160,7 @@ export const usePuestosSupabase = (workspaceId) => {
       return alimentadorFrontend;
     } catch (err) {
       console.error("Error actualizando alimentador:", err);
-      setError(err.message);
+      // No setear error de página — el llamador maneja el error en el modal
       throw err;
     }
   };
