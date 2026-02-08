@@ -65,6 +65,7 @@ body {
 	min-width: 100%;
 	/* ocupa todo el ancho disponible del form/viewport */
 	display: flex;
+	background-color: #000;
 	font-family: "Baloo Bhai 2", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
@@ -270,7 +271,7 @@ label.recordarme {
 		z-index: 1;
 	}
 
-	/* El panel celeste ocupa toda la pantalla */
+	/* El panel oscuro ocupa toda la pantalla */
 	.derecha {
 		flex: 1;
 		width: 100%;

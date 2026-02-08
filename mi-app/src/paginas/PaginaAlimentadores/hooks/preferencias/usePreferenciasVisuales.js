@@ -157,10 +157,15 @@ export const usePreferenciasVisuales = (workspaceId, esCreador, puestos, recarga
     return preferenciasUsuario.escalaGlobal != null || Object.keys(preferenciasUsuario.puestos || {}).length > 0 || Object.keys(preferenciasUsuario.alimentadores || {}).length > 0;
   }, [preferenciasUsuario]);
 
-  return {
+  return useMemo(() => ({
     preferenciasUsuario, cargando, error, guardando, esCreador, tienePreferenciasPersonales,
     obtenerConfigPuesto, obtenerConfigAlimentador, obtenerEscalaEfectiva, escalaGlobal,
     guardarPreferencia, guardarPreferenciasPuesto, guardarPreferenciasAlimentador, resetearPreferencias,
     cargarPreferencias, limpiarHuerfanos, DEFAULTS,
-  };
+  }), [
+    preferenciasUsuario, cargando, error, guardando, esCreador, tienePreferenciasPersonales,
+    obtenerConfigPuesto, obtenerConfigAlimentador, obtenerEscalaEfectiva, escalaGlobal,
+    guardarPreferencia, guardarPreferenciasPuesto, guardarPreferenciasAlimentador, resetearPreferencias,
+    cargarPreferencias, limpiarHuerfanos,
+  ]);
 };

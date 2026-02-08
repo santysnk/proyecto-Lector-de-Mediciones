@@ -18,6 +18,7 @@ const ModalConfigInforme = ({
   nombreAlimentador,
   tituloMedicion,
   tipoGrafico = "line",
+  escalaYMax = null,
 }) => {
   const [solicitadoPor, setSolicitadoPor] = useState("");
   const [intervaloSeleccionado, setIntervaloSeleccionado] = useState(null);
@@ -68,9 +69,10 @@ const ModalConfigInforme = ({
       const imagenGrafico = await generarImagenGrafico(datosFiltrados, {
         tipo: tipoGrafico,
         titulo: "", // Sin título en el gráfico, ya está en el Excel
+        escalaYMax,
       });
 
-      onGenerar({
+      await onGenerar({
         solicitadoPor: solicitadoPor.trim() || "No especificado",
         intervalo: intervaloSeleccionado,
         datosFiltrados,
@@ -213,6 +215,7 @@ ModalConfigInforme.propTypes = {
   nombreAlimentador: PropTypes.string,
   tituloMedicion: PropTypes.string,
   tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]),
+  escalaYMax: PropTypes.number,
 };
 
 ModalConfigInforme.defaultProps = {
@@ -220,6 +223,7 @@ ModalConfigInforme.defaultProps = {
   nombreAlimentador: "Alimentador",
   tituloMedicion: "Medición",
   tipoGrafico: "line",
+  escalaYMax: null,
 };
 
 export default ModalConfigInforme;

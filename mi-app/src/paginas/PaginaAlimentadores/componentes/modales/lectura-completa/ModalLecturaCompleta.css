@@ -619,9 +619,9 @@
    animation: parpadeo-rapido 0.333s ease-in-out infinite;
 }
 
-/* LED TRIP activo - rojo parpadeante */
+/* LED TRIP activo - rojo fijo (sin parpadeo) */
 .led-sistema--rojo.led-sistema--activo .led-sistema-indicador {
-   animation: parpadeo-alarma 0.5s ease-in-out infinite;
+   opacity: 1;
 }
 
 @keyframes parpadeo-rapido {
@@ -661,7 +661,7 @@
 
 .estado-ok { color: #22c55e; }
 .estado-warning { color: #eab308; }
-.estado-critico { color: #ef4444; animation: parpadeo-alarma 0.5s ease-in-out infinite; }
+.estado-critico { color: #ef4444; }
 
 /* LEDs Programables - Columna derecha */
 .panel-ref615-leds-programables {

@@ -29,7 +29,8 @@ export const PanelEstadosREF615 = ({
    estadoLeds,
    estadoSalud,
    interpretarEstado,
-   etiquetasPersonalizadas
+   etiquetasPersonalizadas,
+   mediciones
 }) => {
    const salud = estadoSalud?.valor !== null && estadoSalud?.valor !== undefined
       ? interpretarEstado(estadoSalud.registro, estadoSalud.valor, null)
@@ -48,9 +49,25 @@ export const PanelEstadosREF615 = ({
          .sort((a, b) => a.posicion - b.posicion)
       : [];
 
-   const ledReady = salud ? !salud.bitsActivos?.some(b => b.posicion === 0) : true;
-   const ledStart = ledsProgramables.some(led => led.activo && led.tipo === "warning");
-   const ledTrip = ledsProgramables.some(led => led.activo && led.tipo === "alarma");
+   // Detectar si todas las corrientes de fase son 0
+   const corrientesCero = (() => {
+      const funcCorrientes = mediciones?.find(m =>
+         m.nombre?.toLowerCase().includes("corriente") &&
+         m.nombre?.toLowerCase().includes("fase")
+      );
+      if (!funcCorrientes?.registros?.length) return false;
+      return funcCorrientes.registros.every(r => r.valor === 0 || r.valor == null);
+   })();
+
+   // TRIP: alarma activa + corrientes en 0
+   const hayAlarmaActiva = ledsProgramables.some(led => led.activo && led.tipo === "alarma");
+   const ledTrip = hayAlarmaActiva && corrientesCero;
+
+   // START: no se puede detectar desde registros, solo decorativo
+   const ledStart = false;
+
+   // READY: activo si no está en TRIP
+   const ledReady = !ledTrip;
 
    return (
       <div className="panel-ref615">
@@ -65,8 +82,6 @@ export const PanelEstadosREF615 = ({
                <div className="panel-ref615-estado-general">
                   {ledTrip ? (
                      <span className="estado-critico">DISPARO ACTIVO</span>
-                  ) : ledStart ? (
-                     <span className="estado-warning">PROTECCION EN ARRANQUE</span>
                   ) : (
                      <span className="estado-ok">OPERACION NORMAL</span>
                   )}
@@ -176,6 +191,7 @@ export const ContenidoFuncionalidades = ({
                estadoSalud={estadoSalud?.registros?.[0]}
                interpretarEstado={interpretarEstado}
                etiquetasPersonalizadas={etiquetasBits}
+               mediciones={mediciones}
             />
          )}
       </>
