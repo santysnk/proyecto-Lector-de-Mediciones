@@ -12,10 +12,13 @@ const cargarPdfMake = async () => {
     import("pdfmake/build/pdfmake"),
     import("pdfmake/build/vfs_fonts"),
   ]);
-  if (pdfFonts.pdfMake) {
+  if (pdfFonts.pdfMake?.vfs) {
     pdfMake.vfs = pdfFonts.pdfMake.vfs;
   } else if (pdfFonts.vfs) {
     pdfMake.vfs = pdfFonts.vfs;
+  } else {
+    // pdfmake >= 0.2.x exporta fuentes directamente como propiedades del módulo
+    pdfMake.vfs = pdfFonts;
   }
   return pdfMake;
 };

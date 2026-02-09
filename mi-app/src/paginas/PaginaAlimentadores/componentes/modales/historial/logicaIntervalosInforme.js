@@ -3,35 +3,19 @@
  */
 
 /**
- * Determina qué intervalos están habilitados según la duración del período
+ * Determina el intervalo de muestreo por defecto según la duración del período
  * @param {number} duracionMs - Duración en milisegundos
- * @returns {number[]} - Array de IDs de intervalos habilitados
+ * @returns {number} - ID del intervalo recomendado (el más corto adecuado)
  */
-export const obtenerIntervalosHabilitados = (duracionMs) => {
+export const obtenerIntervaloPorDefecto = (duracionMs) => {
   const duracionHoras = duracionMs / (1000 * 60 * 60);
 
-  if (duracionHoras <= 1) {
-    // Hasta 1 hora: solo 15 min
-    return [15];
-  } else if (duracionHoras <= 2) {
-    // Más de 1h hasta 2h: 15 min o 30 min
-    return [15, 30];
-  } else if (duracionHoras <= 6) {
-    // Más de 2h hasta 6h: 15, 30 min o 1 hora
-    return [15, 30, 60];
-  } else if (duracionHoras <= 12) {
-    // Más de 6h hasta 12h: 30 min o 1 hora
-    return [30, 60];
-  } else if (duracionHoras <= 24) {
-    // Más de 12h hasta 24h: 30 min, 1 hora o 3 horas
-    return [30, 60, 180];
-  } else if (duracionHoras <= 48) {
-    // Más de 24h hasta 48h: 3 horas o 6 horas
-    return [180, 360];
-  } else {
-    // Más de 48h (7 días o más): 3, 6 o 12 horas
-    return [180, 360, 720];
-  }
+  if (duracionHoras <= 1) return 15;
+  if (duracionHoras <= 6) return 15;
+  if (duracionHoras <= 12) return 30;
+  if (duracionHoras <= 24) return 30;
+  if (duracionHoras <= 48) return 180;
+  return 180; // Más de 48h
 };
 
 /**

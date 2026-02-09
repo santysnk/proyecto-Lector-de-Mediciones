@@ -7,7 +7,7 @@ import { useState, useMemo, useEffect } from "react";
 import PropTypes from "prop-types";
 import { INTERVALOS_INFORME } from "../../../constantes/historialConfig";
 import { generarImagenGrafico } from "../../../utilidades/generarGraficoInforme";
-import { obtenerIntervalosHabilitados, filtrarDatosPorIntervalo } from "./logicaIntervalosInforme";
+import { obtenerIntervaloPorDefecto, filtrarDatosPorIntervalo } from "./logicaIntervalosInforme";
 import "./ModalConfigInforme.css";
 
 const ModalConfigInforme = ({
@@ -41,20 +41,17 @@ const ModalConfigInforme = ({
     };
   }, [datos]);
 
-  // Intervalos habilitados según la duración
-  const intervalosHabilitados = useMemo(() => {
-    return obtenerIntervalosHabilitados(duracionMs);
+  // Intervalo recomendado por defecto según la duración
+  const intervaloPorDefecto = useMemo(() => {
+    return obtenerIntervaloPorDefecto(duracionMs);
   }, [duracionMs]);
 
-  // Seleccionar automáticamente el primer intervalo habilitado si no hay selección válida
+  // Seleccionar automáticamente el intervalo recomendado si no hay selección
   useEffect(() => {
-    if (
-      intervalosHabilitados.length > 0 &&
-      (!intervaloSeleccionado || !intervalosHabilitados.includes(intervaloSeleccionado))
-    ) {
-      setIntervaloSeleccionado(intervalosHabilitados[0]);
+    if (!intervaloSeleccionado) {
+      setIntervaloSeleccionado(intervaloPorDefecto);
     }
-  }, [intervalosHabilitados, intervaloSeleccionado]);
+  }, [intervaloPorDefecto]);
 
   // Filtrar datos según el intervalo seleccionado
   const datosFiltrados = useMemo(() => {
@@ -157,22 +154,16 @@ const ModalConfigInforme = ({
           <div className="modal-config-campo">
             <label>Intervalo de muestreo:</label>
             <div className="modal-config-intervalos">
-              {INTERVALOS_INFORME.map((intervalo) => {
-                const habilitado = intervalosHabilitados.includes(intervalo.id);
-                const seleccionado = intervaloSeleccionado === intervalo.id;
-
-                return (
+              {INTERVALOS_INFORME.map((intervalo) => (
                   <button
                     key={intervalo.id}
                     type="button"
-                    className={`modal-config-intervalo ${seleccionado ? "seleccionado" : ""}`}
-                    disabled={!habilitado}
+                    className={`modal-config-intervalo ${intervaloSeleccionado === intervalo.id ? "seleccionado" : ""}`}
                     onClick={() => setIntervaloSeleccionado(intervalo.id)}
                   >
                     {intervalo.label}
                   </button>
-                );
-              })}
+              ))}
             </div>
           </div>
 
