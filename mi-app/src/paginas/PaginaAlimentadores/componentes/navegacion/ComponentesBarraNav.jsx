@@ -57,16 +57,20 @@ export const BarraDesktop = ({
          </div>
          <div className="alim-nav-buttons">
             <div className="alim-nav-bloque-puestos">
-               {puestos.map((p) => (
-                  <button
-                     key={p.id}
-                     className={"alim-btn" + (puestoSeleccionado && puestoSeleccionado.id === p.id ? " alim-btn-active" : "")}
-                     onClick={() => onSeleccionarPuesto(p.id)}
-                     style={{ backgroundColor: obtenerColorPuesto(p.id) || coloresSistema[0] }}
-                  >
-                     {p.nombre}
-                  </button>
-               ))}
+               {puestos.map((p) => {
+                  const esActivo = puestoSeleccionado && puestoSeleccionado.id === p.id;
+                  const color = obtenerColorPuesto(p.id) || coloresSistema[0];
+                  return (
+                     <button
+                        key={p.id}
+                        className={"alim-btn" + (esActivo ? " alim-btn-active" : "")}
+                        onClick={() => onSeleccionarPuesto(p.id)}
+                        style={{ "--puesto-color": color }}
+                     >
+                        {p.nombre}
+                     </button>
+                  );
+               })}
             </div>
             <div className="alim-nav-bloque-controles">
                <BotonGuardarCambios hayCambios={hayCambiosPendientes} sincronizando={sincronizando} onGuardar={sincronizarCambios} onDescartar={descartarCambios} />
