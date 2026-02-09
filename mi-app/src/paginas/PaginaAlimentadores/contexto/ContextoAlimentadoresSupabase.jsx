@@ -18,7 +18,7 @@ export const ProveedorAlimentadoresSupabase = ({ children }) => {
 
    const puestosHook = usePuestosSupabase(configuracionSeleccionadaId);
    const medicionesHook = useMediciones();
-   const transformadoresHook = useTransformadores(configuracionSeleccionadaId, { global: rolGlobal === 'superadmin' });
+   const transformadoresHook = useTransformadores(configuracionSeleccionadaId, { global: true });
    const preferenciasHook = usePreferenciasUI();
    const preferenciasVisualesHook = usePreferenciasVisuales(configuracionSeleccionadaId, esCreador, puestosHook.puestos, puestosHook.cargarPuestos);
    const cambiosPendientesHook = useCambiosPendientes();
