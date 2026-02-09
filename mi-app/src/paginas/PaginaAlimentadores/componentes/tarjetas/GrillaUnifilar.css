@@ -31,7 +31,15 @@
 .grilla-unifilar--editando {
    z-index: 100;
    pointer-events: auto;
+}
+
+/* Overlay oscuro que cubre todo el viewport (incluyendo padding del padre) */
+.grilla-unifilar--editando::before {
+   content: "";
+   position: fixed;
+   inset: 0;
    background-color: rgba(15, 23, 42, 0.6);
+   z-index: -1;
 }
 
 /* Canvas de dibujo */
