@@ -14,6 +14,7 @@ import PropTypes from "prop-types";
  * @param {Function} props.onIntervaloChange - Callback al cambiar intervalo
  * @param {Array} props.datosFiltrados - Datos ya filtrados [{x, y}]
  * @param {string} props.tipoGrafico - Tipo de gráfico actual (line, area, bar)
+ * @param {boolean} props.incluyeHistorico - Si el rango incluye datos de lecturas_historico (resolución 15 min)
  */
 const PanelDatosHistorial = ({
   abierto,
@@ -22,9 +23,10 @@ const PanelDatosHistorial = ({
   onIntervaloChange,
   datosFiltrados,
   tipoGrafico,
+  incluyeHistorico,
 }) => {
-  // El gráfico de barras no soporta "Todos (1/min)" por rendimiento
-  const todosDeshabilitado = tipoGrafico === "bar";
+  // "Todos" se deshabilita en gráficos de barras o cuando hay datos históricos (resolución 15 min)
+  const todosDeshabilitado = tipoGrafico === "bar" || incluyeHistorico;
 
   // Formatear datos para la tabla
   const datosTabla = useMemo(() => {
@@ -93,6 +95,7 @@ PanelDatosHistorial.propTypes = {
     })
   ),
   tipoGrafico: PropTypes.oneOf(["line", "area", "bar"]),
+  incluyeHistorico: PropTypes.bool,
 };
 
 PanelDatosHistorial.defaultProps = {
@@ -100,6 +103,7 @@ PanelDatosHistorial.defaultProps = {
   intervaloFiltro: 60,
   datosFiltrados: [],
   tipoGrafico: "line",
+  incluyeHistorico: false,
 };
 
 export default PanelDatosHistorial;

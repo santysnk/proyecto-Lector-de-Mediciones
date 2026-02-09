@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useHistorialLocal } from "./useHistorialLocal";
 import { useFuncionalidadesRegistrador } from "../useFuncionalidadesRegistrador";
-import { RANGOS_TIEMPO } from "../../constantes/historialConfig";
+import { RANGOS_TIEMPO, DIAS_RETENCION_LECTURAS } from "../../constantes/historialConfig";
 import {
    calcularEstadisticasGrafico,
    calcularLimitesEscalaY,
@@ -294,6 +294,26 @@ export const useVentanaHistorialLogica = ({
       }
    }, [cargarDatos, minimizada, precargaCompleta, precargando]);
 
+   // Determinar si el rango incluye datos de lecturas_historico (resolución 15 min)
+   const incluyeHistorico = useMemo(() => {
+      const ahora = Date.now();
+      const limiteHistorico = ahora - DIAS_RETENCION_LECTURAS * 24 * 60 * 60 * 1000;
+      let desde;
+      if (fechaRangoDesde) {
+         desde = new Date(fechaRangoDesde).getTime();
+      } else {
+         const rango = RANGOS_TIEMPO.find((r) => r.id === rangoSeleccionado);
+         desde = rango?.ms ? ahora - rango.ms : ahora;
+      }
+      return desde < limiteHistorico;
+   }, [fechaRangoDesde, rangoSeleccionado]);
+
+   // Auto-corregir intervalo cuando hay datos históricos y está en "Todos"
+   useEffect(() => {
+      if (incluyeHistorico && intervaloFiltro === 0) {
+         setIntervaloFiltro(15);
+      }
+   }, [incluyeHistorico, intervaloFiltro]);
    // Datos filtrados por intervalo
    const datosFiltrados = useMemo(
       () => filtrarDatosPorIntervalo(datosGrafico, intervaloFiltro),
@@ -498,6 +518,7 @@ export const useVentanaHistorialLogica = ({
       // Filtro de intervalo
       intervaloFiltro,
       setIntervaloFiltro,
+      incluyeHistorico,
 
       // Panel de datos
       tituloPanelDatos,
