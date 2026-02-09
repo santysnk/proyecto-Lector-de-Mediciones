@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
    obtenerPlantillasAPI,
+   obtenerTodasPlantillasAPI,
    crearPlantillaAPI,
    actualizarPlantillaAPI,
    eliminarPlantillaAPI,
@@ -18,7 +19,7 @@ const STORAGE_KEY_LEGACY = "rw-plantillas-analizador";
  * Hook para gestionar plantillas de analizadores de redes.
  * @param {string} workspaceId - ID del workspace actual
  */
-export function usePlantillasAnalizador(workspaceId) {
+export function usePlantillasAnalizador(workspaceId, { global = false } = {}) {
    const [plantillas, setPlantillas] = useState([]);
    const [cargando, setCargando] = useState(true);
    const [error, setError] = useState(null);
@@ -65,7 +66,7 @@ export function usePlantillasAnalizador(workspaceId) {
     * Carga las plantillas desde la API
     */
    const cargarPlantillas = useCallback(async () => {
-      if (!workspaceId) {
+      if (!global && !workspaceId) {
          setPlantillas([]);
          setCargando(false);
          return;
@@ -75,7 +76,9 @@ export function usePlantillasAnalizador(workspaceId) {
       setError(null);
 
       try {
-         const resultado = await obtenerPlantillasAPI(workspaceId, 'analizador');
+         const resultado = global
+            ? await obtenerTodasPlantillasAPI('analizador')
+            : await obtenerPlantillasAPI(workspaceId, 'analizador');
          let datos = resultado?.plantillas || [];
 
          // Si no hay datos en BD, intentar migrar desde localStorage
@@ -105,7 +108,7 @@ export function usePlantillasAnalizador(workspaceId) {
       } finally {
          setCargando(false);
       }
-   }, [workspaceId, migrarDesdeLocalStorage]);
+   }, [workspaceId, global, migrarDesdeLocalStorage]);
 
    // Cargar al montar o cambiar workspace
    useEffect(() => {

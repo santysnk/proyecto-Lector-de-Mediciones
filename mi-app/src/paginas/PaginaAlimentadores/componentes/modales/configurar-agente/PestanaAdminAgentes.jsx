@@ -108,6 +108,7 @@ const PestanaAdminAgentes = ({
                                        setMostrarFormRegistrador(null);
                                        resetFormRegistrador();
                                     }}
+                                    plantillasGlobal
                                  />
                               )}
 

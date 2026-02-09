@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-   obtenerPlantillasAPI, crearPlantillaAPI, actualizarPlantillaAPI,
-   eliminarPlantillaAPI, migrarPlantillasAPI,
+   obtenerPlantillasAPI, obtenerTodasPlantillasAPI, crearPlantillaAPI,
+   actualizarPlantillaAPI, eliminarPlantillaAPI, migrarPlantillasAPI,
 } from "../../../../servicios/api/plantillasDispositivo";
 import { FUNCIONALIDADES_DISPONIBLES } from "../../constantes/funcionalidadesRele";
 import { STORAGE_KEY_LEGACY, formatearPlantilla } from "./plantillasReleUtils";
 
-export const usePlantillasRele = (workspaceId) => {
+export const usePlantillasRele = (workspaceId, { global = false } = {}) => {
    const [plantillas, setPlantillas] = useState([]);
    const [cargando, setCargando] = useState(true);
    const [error, setError] = useState(null);
@@ -38,11 +38,13 @@ export const usePlantillasRele = (workspaceId) => {
    }, [workspaceId]);
 
    const cargarPlantillas = useCallback(async () => {
-      if (!workspaceId) { setPlantillas([]); setCargando(false); return; }
+      if (!global && !workspaceId) { setPlantillas([]); setCargando(false); return; }
       setCargando(true);
       setError(null);
       try {
-         const resultado = await obtenerPlantillasAPI(workspaceId, 'rele');
+         const resultado = global
+            ? await obtenerTodasPlantillasAPI('rele')
+            : await obtenerPlantillasAPI(workspaceId, 'rele');
          let datos = resultado?.plantillas || [];
          if (datos.length === 0) {
             const migrados = await migrarDesdeLocalStorage();
@@ -59,7 +61,7 @@ export const usePlantillasRele = (workspaceId) => {
       } finally {
          setCargando(false);
       }
-   }, [workspaceId, migrarDesdeLocalStorage]);
+   }, [workspaceId, global, migrarDesdeLocalStorage]);
 
    useEffect(() => { cargarPlantillas(); }, [cargarPlantillas]);
 

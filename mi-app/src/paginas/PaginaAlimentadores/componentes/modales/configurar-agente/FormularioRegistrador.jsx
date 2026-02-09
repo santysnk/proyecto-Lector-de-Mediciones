@@ -14,6 +14,7 @@ const FormularioAnalizador = ({
    registradorEditando,
    agenteId,
    workspaceId,
+   plantillasGlobal,
 }) => (
    <>
       {/* Nombre del registrador */}
@@ -37,6 +38,7 @@ const FormularioAnalizador = ({
          }
          agenteId={agenteId}
          workspaceId={workspaceId}
+         plantillasGlobal={plantillasGlobal}
       />
       <div className="config-agente-form-acciones">
          <div className="config-agente-form-acciones-derecha">
@@ -75,6 +77,7 @@ const FormularioRele = ({
    registradorEditando,
    agenteId,
    workspaceId,
+   plantillasGlobal,
 }) => (
    <>
       {/* Nombre del registrador */}
@@ -98,6 +101,7 @@ const FormularioRele = ({
          }
          agenteId={agenteId}
          workspaceId={workspaceId}
+         plantillasGlobal={plantillasGlobal}
       />
       <div className="config-agente-form-acciones">
          <div className="config-agente-form-acciones-derecha">
@@ -147,6 +151,7 @@ export function FormularioRegistrador({
    guardandoRegistrador,
    onSubmit,
    onCancelar,
+   plantillasGlobal,
 }) {
    return (
       <form className="config-agente-reg-form" onSubmit={onSubmit}>
@@ -183,6 +188,7 @@ export function FormularioRegistrador({
                registradorEditando={registradorEditando}
                agenteId={agenteId}
                workspaceId={workspaceId}
+               plantillasGlobal={plantillasGlobal}
             />
          ) : (
             <FormularioRele
@@ -193,6 +199,7 @@ export function FormularioRegistrador({
                registradorEditando={registradorEditando}
                agenteId={agenteId}
                workspaceId={workspaceId}
+               plantillasGlobal={plantillasGlobal}
             />
          )}
       </form>
