@@ -14,6 +14,15 @@ export async function obtenerTransformadoresAPI(workspaceId) {
 }
 
 /**
+ * Obtiene TODOS los transformadores del sistema (solo superadmin).
+ * Usado desde Panel SuperAdmin donde no hay contexto de workspace.
+ * @returns {Promise<{transformadores: Array}>}
+ */
+export async function obtenerTodosTransformadoresAPI() {
+   return fetchConAuth(`/api/transformadores`);
+}
+
+/**
  * Crea un nuevo transformador
  * @param {string} workspaceId - ID del workspace
  * @param {Object} datos - {tipo, nombre, formula, descripcion}

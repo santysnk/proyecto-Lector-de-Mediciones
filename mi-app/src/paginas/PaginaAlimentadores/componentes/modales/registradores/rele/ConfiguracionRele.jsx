@@ -10,7 +10,7 @@ import "../ConfiguracionRegistrador.css";
 
 const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId, workspaceId, plantillasGlobal = false }) => {
    const { plantillas, cargando: cargandoPlantillas, crearPlantilla, actualizarPlantilla, eliminarPlantilla, obtenerPlantilla } = usePlantillasRele(workspaceId, { global: plantillasGlobal });
-   const { transformadores, obtenerTIs, obtenerTVs, obtenerRelaciones, obtenerPorId: obtenerTransformadorPorId, crearTransformador, actualizarTransformador, eliminarTransformador } = useTransformadores(workspaceId);
+   const { transformadores, obtenerTIs, obtenerTVs, obtenerRelaciones, obtenerPorId: obtenerTransformadorPorId, crearTransformador, actualizarTransformador, eliminarTransformador } = useTransformadores(workspaceId, { global: plantillasGlobal });
    const configHook = useConfigRele({ configuracionInicial, onChange, obtenerPlantilla });
    const consolaHook = useConsolaTest({ config: configHook.config, agenteId });
 

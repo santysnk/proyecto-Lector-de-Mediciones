@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
    obtenerTransformadoresAPI,
+   obtenerTodosTransformadoresAPI,
    crearTransformadorAPI,
    actualizarTransformadorAPI,
    eliminarTransformadorAPI,
@@ -26,7 +27,7 @@ const TRANSFORMADORES_DEFAULT = [
  * Hook para gestionar transformadores de intensidad (TI) y voltaje (TV)
  * @param {string} workspaceId - ID del workspace actual
  */
-export const useTransformadores = (workspaceId) => {
+export const useTransformadores = (workspaceId, { global = false } = {}) => {
    const [transformadores, setTransformadores] = useState([]);
    const [cargando, setCargando] = useState(true);
    const [error, setError] = useState(null);
@@ -73,7 +74,7 @@ export const useTransformadores = (workspaceId) => {
     * Carga transformadores desde la API
     */
    const cargarTransformadores = useCallback(async () => {
-      if (!workspaceId) {
+      if (!global && !workspaceId) {
          setTransformadores([]);
          setCargando(false);
          return;
@@ -83,19 +84,21 @@ export const useTransformadores = (workspaceId) => {
       setError(null);
 
       try {
-         const resultado = await obtenerTransformadoresAPI(workspaceId);
+         const resultado = global
+            ? await obtenerTodosTransformadoresAPI()
+            : await obtenerTransformadoresAPI(workspaceId);
          let datos = resultado?.transformadores || [];
 
-         // Si no hay datos en BD, intentar migrar desde localStorage
-         if (datos.length === 0) {
+         // Si no hay datos en BD y no estamos en modo global, intentar migrar desde localStorage
+         if (!global && datos.length === 0) {
             const migrados = await migrarDesdeLocalStorage();
             if (migrados && migrados.length > 0) {
                datos = migrados;
             }
          }
 
-         // Si aún no hay datos, crear los por defecto
-         if (datos.length === 0) {
+         // Si aún no hay datos y no estamos en modo global, crear los por defecto
+         if (!global && datos.length === 0) {
             console.log('[useTransformadores] Creando transformadores por defecto...');
             const resultadoMigrar = await migrarTransformadoresAPI(workspaceId, TRANSFORMADORES_DEFAULT);
             datos = resultadoMigrar?.transformadores || [];
@@ -119,7 +122,7 @@ export const useTransformadores = (workspaceId) => {
       } finally {
          setCargando(false);
       }
-   }, [workspaceId, migrarDesdeLocalStorage]);
+   }, [workspaceId, global, migrarDesdeLocalStorage]);
 
    // Cargar al montar o cambiar workspace
    useEffect(() => {

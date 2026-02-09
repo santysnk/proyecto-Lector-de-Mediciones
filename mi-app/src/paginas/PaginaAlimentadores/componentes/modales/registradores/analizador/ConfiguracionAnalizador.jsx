@@ -32,7 +32,7 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId, wor
       crearTransformador,
       actualizarTransformador,
       eliminarTransformador,
-   } = useTransformadores(workspaceId);
+   } = useTransformadores(workspaceId, { global: plantillasGlobal });
 
    const configHook = useConfigAnalizador({
       configuracionInicial,
