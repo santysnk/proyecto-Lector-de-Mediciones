@@ -91,6 +91,32 @@
 }
 
 /* Estado deshabilitado para usuarios sin permisos */
+/* Card Nuevo Registrador con animación scale */
+.alim-card-add--nuevo {
+   width: 304px;
+   min-width: 304px;
+   max-width: 304px;
+   height: 279px;
+   min-height: 279px;
+   overflow: hidden;
+   transform-origin: center center;
+   transition: transform 0.3s ease, opacity 0.3s ease,
+               width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease,
+               height 0.3s ease, min-height 0.3s ease;
+}
+
+.alim-card-add--nuevo-oculto {
+   width: 0;
+   min-width: 0;
+   max-width: 0;
+   height: 0;
+   min-height: 0;
+   transform: scale(0);
+   opacity: 0;
+   pointer-events: none;
+   border: none;
+}
+
 .alim-card-add--disabled {
    cursor: not-allowed;
    opacity: 0.4;
@@ -200,6 +226,59 @@
 }
 
 /* =========================================================
+   BOTÓN FLOTANTE TOGGLE NUEVO REGISTRADOR
+   ========================================================= */
+.grilla-btn-toggle-nuevo {
+   position: fixed;
+   bottom: 80px;
+   right: 20px;
+   width: 48px;
+   height: 48px;
+   border-radius: 50%;
+   background-color: #6b7280;
+   border: none;
+   color: #ffffff;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   cursor: pointer;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+   z-index: 50;
+   opacity: 0;
+   transition: opacity 0.5s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.grilla-btn-toggle-nuevo:hover {
+   background-color: #4b5563;
+   opacity: 1;
+   transition: opacity 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+
+.grilla-btn-toggle-nuevo--oculto {
+   opacity: 0.7;
+}
+
+.grilla-btn-toggle-nuevo--oculto:hover {
+   opacity: 1;
+}
+
+.grilla-btn-toggle-nuevo:active {
+   transform: scale(0.95);
+}
+
+@media (max-width: 982px) {
+   .grilla-btn-toggle-nuevo {
+      display: none;
+   }
+}
+
+@media (max-width: 600px) {
+   .grilla-btn-toggle-nuevo {
+      display: none;
+   }
+}
+
+/* =========================================================
    BOTONES FLOTANTES PARA GUARDAR/CARGAR DIAGRAMA
    ========================================================= */
 .grilla-btns-archivo {
@@ -208,8 +287,14 @@
    right: 20px;
    display: flex;
    flex-direction: column;
+   align-items: flex-end;
    gap: 10px;
    z-index: 102;
+}
+
+.grilla-btns-archivo-fila {
+   display: flex;
+   gap: 10px;
 }
 
 .grilla-btn-archivo {
@@ -251,6 +336,16 @@
 
 .grilla-btn-archivo--abrir:hover {
    background-color: #0284c7;
+}
+
+/* Botón cerrar edición - rojo */
+.grilla-btn-archivo--cerrar {
+   background-color: #ef4444;
+   color: #ffffff;
+}
+
+.grilla-btn-archivo--cerrar:hover {
+   background-color: #dc2626;
 }
 
 /* En móvil, ajustar posición y tamaño */

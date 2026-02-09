@@ -1,7 +1,7 @@
 // src/paginas/PaginaAlimentadores/componentes/tarjetas/GrillaTarjetasUI.jsx
 // Grilla de tarjetas de alimentadores
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import TarjetaAlimentador from "./TarjetaAlimentador.jsx";
 import GapResizer from "./GapResizer.jsx";
 import RowGapResizer from "./RowGapResizer.jsx";
@@ -10,7 +10,7 @@ import { useGrillaUnifilar } from "../../hooks/grilla-unifilar";
 import { useChispas } from "../../hooks/ui";
 import { useDeteccionFilas, useModoMobile } from "./hooks";
 import { puedeHacerPolling, GAP_FIJO_MOBILE, ROW_GAP_FIJO_MOBILE } from "./utilidades";
-import { BotonEditarDiagrama, BotonesArchivo } from "./componentes";
+import { BotonEditarDiagrama, BotonesArchivo, BotonToggleNuevoRegistrador } from "./componentes";
 import { ESCALA_MIN, ESCALA_MAX } from "../../constantes/escalas";
 import { useAlarmasGrilla } from "./useAlarmasGrilla";
 import "./GrillaTarjetas.css";
@@ -54,6 +54,24 @@ const GrillaTarjetas = ({
 }) => {
    const gridRef = useRef(null);
    const esModoMobile = useModoMobile();
+
+   // Estado para ocultar/mostrar card "Nuevo Registrador"
+   const [mostrarNuevoRegistrador, setMostrarNuevoRegistrador] = useState(() => {
+      const guardado = localStorage.getItem("ocultar_nuevo_registrador");
+      return guardado !== "true";
+   });
+
+   const toggleNuevoRegistrador = useCallback(() => {
+      setMostrarNuevoRegistrador(prev => {
+         const nuevoValor = !prev;
+         if (nuevoValor) {
+            localStorage.removeItem("ocultar_nuevo_registrador");
+         } else {
+            localStorage.setItem("ocultar_nuevo_registrador", "true");
+         }
+         return nuevoValor;
+      });
+   }, []);
 
    // Hook de alarmas
    const {
@@ -143,16 +161,25 @@ const GrillaTarjetas = ({
             />
          )}
 
+         {/* Botón toggle Nuevo Registrador - solo en desktop y si puede agregar */}
+         {!esModoMobile && puedeAgregarNuevo && (
+            <BotonToggleNuevoRegistrador
+               visible={mostrarNuevoRegistrador}
+               onToggle={toggleNuevoRegistrador}
+            />
+         )}
+
          {/* Botón editar diagrama - solo en desktop */}
          {!esModoMobile && !grillaUnifilar.modoEdicion && (
             <BotonEditarDiagrama onActivar={grillaUnifilar.activarEdicion} />
          )}
 
-         {/* Botones guardar/cargar - solo en modo edición y desktop */}
+         {/* Botones guardar/cargar/cerrar - solo en modo edición y desktop */}
          {!esModoMobile && grillaUnifilar.modoEdicion && (
             <BotonesArchivo
                onExportar={grillaUnifilar.exportarAArchivo}
                onImportar={grillaUnifilar.importarDesdeArchivo}
+               onCerrar={grillaUnifilar.desactivarEdicion}
             />
          )}
 
@@ -285,16 +312,15 @@ const GrillaTarjetas = ({
                );
             })()}
 
-            {/* Tarjeta "Nuevo Registrador" o zona de drop */}
-            {(elementoArrastrandoId || puedeAgregarNuevo) && (() => {
+            {/* Zona de drop al arrastrar */}
+            {elementoArrastrandoId && (() => {
                const marginTopNuevo = obtenerMarginTop("nuevo-registrador");
                const styleNuevo = {
                   width: 304, minWidth: 304, maxWidth: 304,
                   height: 279, minHeight: 279,
                   ...(marginTopNuevo > 0 && { marginTop: `${marginTopNuevo}px` }),
                };
-
-               return elementoArrastrandoId ? (
+               return (
                   <div
                      className="alim-card-add"
                      style={styleNuevo}
@@ -308,8 +334,18 @@ const GrillaTarjetas = ({
                         Soltar aquí para mover al final
                      </span>
                   </div>
-               ) : (
-                  <div className="alim-card-add" style={styleNuevo} onClick={onAgregarNuevo}>
+               );
+            })()}
+
+            {/* Card "Nuevo Registrador" con animación scale */}
+            {!elementoArrastrandoId && puedeAgregarNuevo && (() => {
+               const marginTopNuevo = obtenerMarginTop("nuevo-registrador");
+               return (
+                  <div
+                     className={`alim-card-add alim-card-add--nuevo${mostrarNuevoRegistrador ? "" : " alim-card-add--nuevo-oculto"}`}
+                     style={marginTopNuevo > 0 ? { marginTop: `${marginTopNuevo}px` } : undefined}
+                     onClick={mostrarNuevoRegistrador ? onAgregarNuevo : undefined}
+                  >
                      <span className="alim-card-add-plus">+</span>
                      <span className="alim-card-add-text">Nuevo Registrador</span>
                   </div>
