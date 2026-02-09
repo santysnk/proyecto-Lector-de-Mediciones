@@ -13,7 +13,7 @@ import { SeccionConsola } from "./ConsolaAnalizador";
 import { SeccionFuncionalidades } from "./FuncionalidadesAnalizador";
 import "../ConfiguracionRegistrador.css";
 
-const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId, workspaceId }) => {
+const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId, workspaceId, plantillasGlobal = false }) => {
    const {
       plantillas,
       cargando: cargandoPlantillas,
@@ -21,7 +21,7 @@ const ConfiguracionAnalizador = ({ configuracionInicial, onChange, agenteId, wor
       actualizarPlantilla,
       eliminarPlantilla,
       obtenerPlantilla,
-   } = usePlantillasAnalizador(workspaceId);
+   } = usePlantillasAnalizador(workspaceId, { global: plantillasGlobal });
 
    const {
       transformadores,

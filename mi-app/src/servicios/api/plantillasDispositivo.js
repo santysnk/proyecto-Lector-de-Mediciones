@@ -16,6 +16,17 @@ export async function obtenerPlantillasAPI(workspaceId, tipo = null) {
 }
 
 /**
+ * Obtiene TODAS las plantillas del sistema (solo superadmin).
+ * Usado desde Panel SuperAdmin donde no hay contexto de workspace.
+ * @param {string} tipo - Tipo de dispositivo: 'rele' | 'analizador' (opcional)
+ * @returns {Promise<{plantillas: Array}>}
+ */
+export async function obtenerTodasPlantillasAPI(tipo = null) {
+   const query = tipo ? `?tipo=${tipo}` : '';
+   return fetchConAuth(`/api/plantillas-dispositivo${query}`);
+}
+
+/**
  * Obtiene una plantilla específica
  * @param {string} plantillaId - ID de la plantilla
  * @returns {Promise<{plantilla: Object}>}

@@ -8,8 +8,8 @@ import SeccionTransformadores from "../SeccionTransformadores";
 import { SeccionConexion, SeccionPlantilla, SeccionConsola, SeccionFuncionalidades } from "./ComponentesConfigRele";
 import "../ConfiguracionRegistrador.css";
 
-const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId, workspaceId }) => {
-   const { plantillas, cargando: cargandoPlantillas, crearPlantilla, actualizarPlantilla, eliminarPlantilla, obtenerPlantilla } = usePlantillasRele(workspaceId);
+const ConfiguracionRele = ({ configuracionInicial, onChange, agenteId, workspaceId, plantillasGlobal = false }) => {
+   const { plantillas, cargando: cargandoPlantillas, crearPlantilla, actualizarPlantilla, eliminarPlantilla, obtenerPlantilla } = usePlantillasRele(workspaceId, { global: plantillasGlobal });
    const { transformadores, obtenerTIs, obtenerTVs, obtenerRelaciones, obtenerPorId: obtenerTransformadorPorId, crearTransformador, actualizarTransformador, eliminarTransformador } = useTransformadores(workspaceId);
    const configHook = useConfigRele({ configuracionInicial, onChange, obtenerPlantilla });
    const consolaHook = useConsolaTest({ config: configHook.config, agenteId });
