@@ -254,14 +254,6 @@
    transition: opacity 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
-.grilla-btn-toggle-nuevo--oculto {
-   opacity: 0.7;
-}
-
-.grilla-btn-toggle-nuevo--oculto:hover {
-   opacity: 1;
-}
-
 .grilla-btn-toggle-nuevo:active {
    transform: scale(0.95);
 }
