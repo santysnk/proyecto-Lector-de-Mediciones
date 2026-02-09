@@ -13,12 +13,12 @@ import { aplicarPreferenciasAPuestos, calcularLecturasTarjetas, extraerCambiosCo
 const ContextoAlimentadores = createContext(null);
 
 export const ProveedorAlimentadoresSupabase = ({ children }) => {
-   const { configuracionSeleccionada, configuracionSeleccionadaId, cargando: cargandoConfig } = usarContextoConfiguracion();
+   const { configuracionSeleccionada, configuracionSeleccionadaId, cargando: cargandoConfig, rolGlobal } = usarContextoConfiguracion();
    const esCreador = configuracionSeleccionada?.esCreador ?? null;
 
    const puestosHook = usePuestosSupabase(configuracionSeleccionadaId);
    const medicionesHook = useMediciones();
-   const transformadoresHook = useTransformadores(configuracionSeleccionadaId);
+   const transformadoresHook = useTransformadores(configuracionSeleccionadaId, { global: rolGlobal === 'superadmin' });
    const preferenciasHook = usePreferenciasUI();
    const preferenciasVisualesHook = usePreferenciasVisuales(configuracionSeleccionadaId, esCreador, puestosHook.puestos, puestosHook.cargarPuestos);
    const cambiosPendientesHook = useCambiosPendientes();
