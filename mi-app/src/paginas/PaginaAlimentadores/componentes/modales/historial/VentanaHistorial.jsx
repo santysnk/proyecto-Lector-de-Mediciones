@@ -104,6 +104,7 @@ const VentanaHistorial = ({
       limitesEscalaY,
       intervaloFiltro,
       setIntervaloFiltro,
+      incluyeHistorico,
       fuenteDatosEfectiva,
       tituloPanelDatos,
       estadisticasGrafico,
@@ -228,6 +229,7 @@ const VentanaHistorial = ({
                   onIntervaloChange={setIntervaloFiltro}
                   datosFiltrados={datosFiltrados}
                   tipoGrafico={tipoGrafico}
+                  incluyeHistorico={incluyeHistorico}
                />
 
                {/* Control de escala Y (oculto en modo bits) */}
