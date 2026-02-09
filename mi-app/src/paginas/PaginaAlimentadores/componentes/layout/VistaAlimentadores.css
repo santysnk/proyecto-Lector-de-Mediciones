@@ -120,38 +120,62 @@
    BOTONES GENERALES
    ========================================================= */
 
-/* Botones de puesto / genéricos */
+/* Botones de puesto (tabs con color) */
 .alim-btn {
-	border: none;
-	border-radius: 10px;
-	padding: 0.45rem 1.2rem;
-	font-size: 0.9rem;
-	font-weight: 600;
+	border: 1px solid #1e293b;
+	border-radius: 8px;
+	padding: 0 0.85rem;
+	font-size: 0.85rem;
+	font-weight: 500;
 	cursor: pointer;
-	background-color: #22c55e;
-	color: #022c22;
-	transition: transform 0.1s ease, box-shadow 0.1s ease,
-		background-color 0.15s ease;
+	background: color-mix(in srgb, var(--puesto-color) 12%, #0f172a);
+	color: color-mix(in srgb, var(--puesto-color) 60%, #94a3b8);
+	transition: color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	white-space: nowrap;
+	position: relative;
+}
+
+/* Línea de subrayado animada */
+.alim-btn::after {
+	content: "";
+	position: absolute;
+	bottom: 25%;
+	left: 0.85rem;
+	right: 0.85rem;
+	height: 2px;
+	background: var(--puesto-color);
+	transform: scaleX(0);
+	transform-origin: center;
+	transition: transform 0.3s ease;
 }
 
 .alim-btn:hover {
-	background-color: #16a34a;
-	box-shadow: 0 4px 10px rgba(21, 128, 61, 0.4);
-	transform: translateY(-1px);
+	background: color-mix(in srgb, var(--puesto-color) 22%, #0f172a);
+	color: color-mix(in srgb, var(--puesto-color) 70%, #e2e8f0);
+	box-shadow: 0 0 12px color-mix(in srgb, var(--puesto-color) 20%, transparent);
+	transform: none;
 }
 
 .alim-btn:active {
-	transform: translateY(0);
-	box-shadow: none;
+	transform: none;
 }
 
-/* Botón de puesto activo */
+/* Tab activo: borde de color + subrayado progresivo + glow */
 .alim-btn-active {
-	background-color: #0ea5e9;
-	color: #0f172a;
+	border-color: var(--puesto-color);
+	background: color-mix(in srgb, var(--puesto-color) 30%, #0f172a);
+	color: var(--puesto-color);
+	font-weight: 600;
+	box-shadow:
+		0 0 10px color-mix(in srgb, var(--puesto-color) 35%, transparent),
+		inset 0 0 12px color-mix(in srgb, var(--puesto-color) 15%, transparent);
+}
+
+.alim-btn-active::after {
+	transform: scaleX(1);
 }
 
 /* Botón "+" para agregar puesto (nav y drawer) */
