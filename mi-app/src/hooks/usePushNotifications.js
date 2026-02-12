@@ -62,7 +62,6 @@ export function usePushNotifications({
 
   useEffect(() => {
     if (!esNativo || !habilitado) {
-      console.log('[Push Hook] Saltando inicialización (nativo:', esNativo, ', habilitado:', habilitado, ')');
       return;
     }
 
